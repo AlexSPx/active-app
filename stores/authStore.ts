@@ -1,0 +1,148 @@
+import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
+import { apiService } from '../services/apiService'
+import type { User, LoginRequest, ApiError } from '../types/api'
+
+interface AuthState {
+  // State
+  isAuthenticated: boolean
+  user: User | null
+  token: string | null
+  isLoading: boolean
+  error: string | null
+
+  // Actions
+  login: (credentials: LoginRequest) => Promise<void>
+  logout: () => Promise<void>
+  fetchUser: () => Promise<void>
+  clearError: () => void
+
+  // Internal actions
+  setLoading: (loading: boolean) => void
+  setError: (error: string | null) => void
+  setUser: (user: User | null) => void
+  setToken: (token: string | null) => void
+}
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      // Initial state
+      isAuthenticated: false,
+      user: null,
+      token: null,
+      isLoading: false,
+      error: null,
+
+      // Actions
+      login: async (credentials: LoginRequest) => {
+        try {
+          set({ isLoading: true, error: null })
+
+          // Call login API
+          const response = await apiService.login(credentials)
+
+          // Store token
+          await apiService.setToken(response.token)
+
+          // Update state
+          set({
+            token: response.token,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+
+          // Fetch user data
+          await get().fetchUser()
+        } catch (error) {
+          const apiError = error as ApiError
+          set({
+            isLoading: false,
+            error: apiError.message || 'Login failed',
+            isAuthenticated: false,
+            token: null,
+            user: null,
+          })
+          throw error
+        }
+      },
+
+      logout: async () => {
+        try {
+          // Clear token from storage
+          await apiService.removeToken()
+
+          // Clear state
+          set({
+            isAuthenticated: false,
+            user: null,
+            token: null,
+            error: null,
+          })
+        } catch (error) {
+          console.error('Logout error:', error)
+        }
+      },
+
+      fetchUser: async () => {
+        try {
+          set({ isLoading: true, error: null })
+
+          const user = await apiService.getUser()
+
+          set({
+            user,
+            isLoading: false,
+          })
+        } catch (error) {
+          const apiError = error as ApiError
+
+          // If unauthorized, clear auth state
+          if (apiError.status === 401) {
+            await get().logout()
+          } else {
+            set({
+              isLoading: false,
+              error: apiError.message || 'Failed to fetch user data',
+            })
+          }
+          throw error
+        }
+      },
+
+      clearError: () => set({ error: null }),
+
+      // Internal actions
+      setLoading: (isLoading: boolean) => set({ isLoading }),
+      setError: (error: string | null) => set({ error }),
+      setUser: (user: User | null) => set({ user }),
+      setToken: (token: string | null) => set({ token, isAuthenticated: !!token }),
+    }),
+    {
+      name: 'auth-storage',
+      // Only persist essential data
+      partialize: (state) => ({
+        token: state.token,
+        user: state.user,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
+)
+
+// Initialize auth state on app start
+export const initializeAuth = async () => {
+  const token = await apiService.getToken()
+  const { setToken, fetchUser } = useAuthStore.getState()
+
+  if (token) {
+    setToken(token)
+    try {
+      await fetchUser()
+    } catch (error) {
+      console.error('Failed to initialize auth:', error)
+      // If fetching user fails, clear the token
+      await useAuthStore.getState().logout()
+    }
+  }
+}
