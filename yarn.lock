@@ -2547,6 +2547,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@tamagui/babel-plugin@npm:^1.132.16":
+  version: 1.132.16
+  resolution: "@tamagui/babel-plugin@npm:1.132.16"
+  dependencies:
+    "@babel/core": "npm:^7.25.2"
+    "@babel/generator": "npm:^7.25.5"
+    "@babel/helper-plugin-utils": "npm:^7.24.8"
+    "@babel/template": "npm:^7.25.0"
+    "@babel/traverse": "npm:^7.25.4"
+    "@tamagui/static": "npm:1.132.16"
+  checksum: 10/c3edb122e826291fbdb1ec6df602f028ef675ca1e4a2ce8a9062b791420bba93937f82caa1131e0d39a4a9b8e4336671f09571e3586ff4c6b3d0bd0dc3fe8cc8
+  languageName: node
+  linkType: hard
+
 "@tamagui/button@npm:1.132.16":
   version: 1.132.16
   resolution: "@tamagui/button@npm:1.132.16"
@@ -4236,6 +4250,7 @@ __metadata:
     "@react-native-async-storage/async-storage": "npm:2.1.2"
     "@react-navigation/native": "npm:^7.1.6"
     "@shopify/flash-list": "npm:1.7.6"
+    "@tamagui/babel-plugin": "npm:^1.132.16"
     "@tamagui/cli": "npm:^1.132.13"
     "@tamagui/config": "npm:^1.132.16"
     "@tamagui/lucide-icons": "npm:^1.132.13"
