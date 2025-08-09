@@ -1,5 +1,4 @@
 import { useTheme, View } from 'tamagui'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { FlashList } from '@shopify/flash-list'
 
 import { WorkoutSessionExercise } from '../../components/workout-session/WorkoutSessionExercise'
@@ -55,20 +54,18 @@ export default function WorkoutSessionScreen() {
   )
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background.val }}>
-      <View style={{ flex: 1, paddingHorizontal: 16, paddingVertical: 16 }}>
-        <FlashList
-          data={exercises}
-          renderItem={renderExercise}
-          keyExtractor={(item) => item.id}
-          estimatedItemSize={200}
-          ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
-          ListHeaderComponent={ListHeaderComponent}
-          ListHeaderComponentStyle={{ marginBottom: 16 }}
-          ListFooterComponent={ListFooterComponent}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
-    </SafeAreaView>
+    <View style={{ flex: 1, paddingHorizontal: 16, paddingVertical: 16 }}>
+      <FlashList
+        data={exercises}
+        renderItem={renderExercise}
+        keyExtractor={(item) => item.id}
+        estimatedItemSize={200}
+        ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
+        ListHeaderComponent={ListHeaderComponent}
+        ListHeaderComponentStyle={{ marginBottom: 16 }}
+        ListFooterComponent={ListFooterComponent}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
   )
 }

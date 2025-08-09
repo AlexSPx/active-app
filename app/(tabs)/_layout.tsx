@@ -1,7 +1,6 @@
-import { Link, Tabs } from 'expo-router'
-import { Button, Text, useTheme, XStack, YStack } from 'tamagui'
-import { Clock, Dumbbell, History, Home, Play } from '@tamagui/lucide-icons'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { Tabs } from 'expo-router'
+import { useTheme, YStack } from 'tamagui'
+import { Dumbbell, History, Home } from '@tamagui/lucide-icons'
 import RunningWorkoutFloat from '../../components/workout-session/RunningWorkoutFloat'
 
 export default function TabLayout() {
@@ -16,11 +15,7 @@ export default function TabLayout() {
             backgroundColor: theme.background.val,
             borderTopColor: theme.borderColor.val,
           },
-          headerStyle: {
-            backgroundColor: theme.background.val,
-            borderBottomColor: theme.borderColor.val,
-          },
-          headerTintColor: theme.color.val,
+          headerShown: false,
         }}
       >
         <Tabs.Screen

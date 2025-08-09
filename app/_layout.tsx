@@ -1,16 +1,11 @@
 import '../tamagui-web.css'
 
 import { useEffect } from 'react'
-import { useColorScheme } from 'react-native'
-import { StatusBar } from 'expo-status-bar'
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
-import { SplashScreen, Stack } from 'expo-router'
+import { SplashScreen } from 'expo-router'
 import { Provider } from './Provider'
-import { Theme, useTheme, View } from 'tamagui'
 import { AuthProvider } from '../contexts/AuthContext'
 import { AuthGuard } from '../components/AuthGuard'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 export {
   // Catch any errors thrown by the Layout component.

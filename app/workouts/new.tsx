@@ -7,7 +7,6 @@ import { apiService } from 'services/apiService'
 import { convertToCreateWorkoutRequest, validateWorkoutData } from 'utils/workoutUtils'
 import ExerciseEditor from 'components/ExerciseEditor'
 import { LoadingSpinner } from 'components/ui'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 export default function NewWorkoutScreen() {
   const router = useRouter()

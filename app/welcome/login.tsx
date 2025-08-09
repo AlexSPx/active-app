@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { YStack, XStack, Text, Button, Input, H2 } from 'tamagui'
-import { Eye, EyeOff, Apple } from '@tamagui/lucide-icons'
+import { Eye, EyeOff } from '@tamagui/lucide-icons'
 import { useAuth } from '../../contexts/AuthContext'
-import { SafeAreaView } from 'react-native-safe-area-context'
 
 const LoginPage = () => {
   const { login, isLoading, error, clearError } = useAuth()
