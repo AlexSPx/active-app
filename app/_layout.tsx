@@ -10,6 +10,7 @@ import { Provider } from './Provider'
 import { Theme, useTheme, View } from 'tamagui'
 import { AuthProvider } from '../contexts/AuthContext'
 import { AuthGuard } from '../components/AuthGuard'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 export {
   // Catch any errors thrown by the Layout component.

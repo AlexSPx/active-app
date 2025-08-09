@@ -34,25 +34,10 @@ const LoginPage = () => {
     }
   }
 
-  const handleSkip = () => {
-    // For demo purposes, use demo credentials
-    login({ email: 'demo@example.com', password: 'demo123' }).catch(console.error)
-  }
-
   const isFormValid = email.length > 0 && password.length > 0
 
   return (
     <YStack flex={1} bg="$color1" px="$4">
-      {/* Header */}
-      <XStack justify="space-between" items="center" mb="$8">
-        <YStack />
-        <Button size="$3" bg="transparent" p="$2" onPress={handleSkip}>
-          <Text fontSize="$4" color="$color11">
-            Skip
-          </Text>
-        </Button>
-      </XStack>
-
       {/* Logo and Title */}
       <YStack gap="$2" mb="$8">
         <XStack items="center" gap="$3">
