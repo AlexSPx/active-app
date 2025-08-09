@@ -4,9 +4,12 @@ import { FlashList } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
 import { useWorkoutStore } from 'stores/createWorkoutStore'
 import { apiService } from 'services/apiService'
-import { LoadingSpinner } from 'components/ui/LoadingSpinner'
 import { convertToCreateWorkoutRequest, validateWorkoutData } from 'utils/workoutUtils'
 import ExerciseEditor from 'components/ExerciseEditor'
+import { LoadingSpinner } from 'components/ui'
+
+console.log('ExerciseEditor:', ExerciseEditor)
+console.log('LoadingSpinner:', LoadingSpinner)
 
 export default function NewWorkoutScreen() {
   const router = useRouter()
