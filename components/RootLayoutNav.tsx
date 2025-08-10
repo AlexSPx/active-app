@@ -9,11 +9,21 @@ export function RootLayoutNav() {
   const colorScheme = useColorScheme()
   const theme = useTheme()
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background.val }}>
-      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: theme.background.val }}>
         <View flex={1} bg="$background">
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
           <Stack>
+            <Stack.Screen
+              name="welcome"
+              options={{
+                headerShown: false,
+                contentStyle: {
+                  backgroundColor: theme.background.val,
+                },
+              }}
+            />
+
             <Stack.Screen
               name="(tabs)"
               options={{
@@ -79,7 +89,7 @@ export function RootLayoutNav() {
             />
           </Stack>
         </View>
-      </ThemeProvider>
-    </SafeAreaView>
+      </SafeAreaView>
+    </ThemeProvider>
   )
 }

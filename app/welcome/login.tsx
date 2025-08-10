@@ -1,42 +1,44 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { YStack, XStack, Text, Button, Input, H2 } from 'tamagui'
 import { Eye, EyeOff } from '@tamagui/lucide-icons'
 import { useAuth } from '../../contexts/AuthContext'
+import { useToastController } from '@tamagui/toast'
 
 const LoginPage = () => {
   const { login, isLoading, error, clearError } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const toast = useToastController()
 
   const handleLogin = async () => {
     if (!email || !password) {
+      toast.show('Missing credentials', { message: 'Enter your email and password.' })
       return
     }
 
     try {
       clearError()
       await login({ email, password })
-      console.log('Login successful')
-    } catch (error) {
-      console.error('Login failed:', error)
+      // success handled upstream (AuthGuard)
+    } catch (err) {
+      console.error('Login failed:', err)
+      const msg = err instanceof Error ? err.message : 'Please try again.'
+      toast.show('Login failed', { message: msg })
     }
   }
 
-  const handleSocialLogin = (provider: string) => {
-    console.log(`${provider} login attempted`)
-    // For demo purposes, use demo credentials
-    if (provider === 'Demo') {
-      setEmail('alex@mail.com')
-      setPassword('password123')
-      login({ email: 'alex@mail.com', password: 'password123' }).catch(console.error)
+  // Surface auth context errors via toast
+  useEffect(() => {
+    if (error) {
+      toast.show('Login error', { message: error })
     }
-  }
+  }, [error])
 
   const isFormValid = email.length > 0 && password.length > 0
 
   return (
-    <YStack flex={1} bg="$color1" px="$4">
+    <YStack flex={1} bg="$background" px="$4">
       {/* Logo and Title */}
       <YStack gap="$2" mb="$8">
         <XStack items="center" gap="$3">
@@ -62,15 +64,6 @@ const LoginPage = () => {
 
       {/* Form */}
       <YStack gap="$3" flex={1}>
-        {/* Error Display */}
-        {error && (
-          <XStack bg="$red3" borderColor="$red7" borderWidth="$0.5" rounded="$4" p="$3" mb="$2">
-            <Text fontSize="$3" color="$red11">
-              {error}
-            </Text>
-          </XStack>
-        )}
-
         {/* Email Input */}
         <YStack gap="$2">
           <Text fontSize="$3" fontWeight="500" color="$color12">

@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react'
 import { useAuthStore, initializeAuth } from '../stores/authStore'
 import type { User, LoginRequest } from '../services/apiService'
+import type { RegisterRequest } from '../types/api'
 
 interface AuthContextType {
   isAuthenticated: boolean
   login: (credentials: LoginRequest) => Promise<void>
+  register: (payload: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
   user: User | null
   isLoading: boolean
@@ -19,7 +21,8 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const { isAuthenticated, user, isLoading, error, login, logout, clearError } = useAuthStore()
+  const { isAuthenticated, user, isLoading, error, login, register, logout, clearError } =
+    useAuthStore()
 
   // Initialize auth state on mount
   useEffect(() => {
@@ -33,6 +36,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       value={{
         isAuthenticated,
         login,
+        register,
         logout,
         user,
         isLoading,

@@ -10,6 +10,7 @@ import type {
   CreateWorkoutRequest,
   WorkoutRecordRequest,
   WorkoutRecord,
+  RegisterRequest,
 } from '../types/api'
 
 // Re-export types for backward compatibility
@@ -169,6 +170,19 @@ class ApiService {
     })
 
     return this.handleResponse<WorkoutRecord[]>(response)
+  }
+
+  async signup(payload: RegisterRequest): Promise<LoginResponse> {
+    const url = getApiUrl(config.API_ENDPOINTS.AUTH.SIGNUP)
+    console.log(`API Request: POST ${url}`, { email: payload.email })
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: await this.getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+
+    return this.handleResponse<LoginResponse>(response)
   }
 }
 

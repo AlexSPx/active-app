@@ -41,6 +41,14 @@ export interface LoginRequest {
   password: string
 }
 
+export interface RegisterRequest {
+  email: string
+  username: string
+  firstName: string
+  lastName: string
+  password: string
+}
+
 export interface LoginResponse {
   token: string
 }

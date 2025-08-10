@@ -17,8 +17,9 @@ export function CurrentToast() {
       theme="accent"
       rounded="$6"
       animation="quick"
+      width="$19"
     >
-      <YStack items="center" p="$2" gap="$2">
+      <YStack items="center" p="$2" gap="$1">
         <Toast.Title fontWeight="bold">{currentToast.title}</Toast.Title>
         {!!currentToast.message && <Toast.Description>{currentToast.message}</Toast.Description>}
       </YStack>

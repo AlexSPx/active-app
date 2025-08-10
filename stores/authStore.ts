@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiService } from '../services/apiService'
-import type { User, LoginRequest, ApiError } from '../types/api'
+import type { User, LoginRequest, ApiError, RegisterRequest } from '../types/api'
 
 interface AuthState {
   // State
@@ -13,6 +13,7 @@ interface AuthState {
 
   // Actions
   login: (credentials: LoginRequest) => Promise<void>
+  register: (payload: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
   fetchUser: () => Promise<void>
   clearError: () => void
@@ -59,6 +60,29 @@ export const useAuthStore = create<AuthState>()(
           set({
             isLoading: false,
             error: apiError.message || 'Login failed',
+            isAuthenticated: false,
+            token: null,
+            user: null,
+          })
+          throw error
+        }
+      },
+
+      register: async (payload) => {
+        try {
+          set({ isLoading: true, error: null })
+
+          const response = await apiService.signup(payload)
+          await apiService.setToken(response.token)
+
+          set({ token: response.token, isAuthenticated: true, isLoading: false })
+
+          await get().fetchUser()
+        } catch (error) {
+          const apiError = error as ApiError
+          set({
+            isLoading: false,
+            error: apiError.message || 'Registration failed',
             isAuthenticated: false,
             token: null,
             user: null,

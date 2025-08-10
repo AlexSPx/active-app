@@ -7,6 +7,7 @@ export const config = {
   API_ENDPOINTS: {
     AUTH: {
       LOGIN: '/api/auth/login',
+      SIGNUP: '/api/auth/signup',
     },
     USER: {
       ME: '/api/user/me',
