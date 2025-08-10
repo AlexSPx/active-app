@@ -263,11 +263,17 @@ const RegisterPage = () => {
         </Button>
 
         {/* Sign In Link */}
-        <XStack justify="center" mt="$4" gap="$2">
+        <XStack justify="center" mt="$4" gap="$2" items="center">
           <Text fontSize="$4" color="$color10">
             Already have an account?
           </Text>
-          <Button size="$3" bg="transparent" p="$0" onPress={() => router.push('/welcome/login')}>
+          <Button
+            size="$3"
+            bg="transparent"
+            justify="center"
+            p="$0"
+            onPress={() => router.push('/welcome/login')}
+          >
             <Text fontSize="$4" color="$blue9" fontWeight="600">
               Sign In
             </Text>
