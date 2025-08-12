@@ -1,4 +1,4 @@
-import { YStack, XStack, Text, Button, H1, H2 } from 'tamagui'
+import { YStack, XStack, Text, Button, H1 } from 'tamagui'
 import { useRouter } from 'expo-router'
 import { Dumbbell, Zap, Target } from '@tamagui/lucide-icons'
 
