@@ -88,30 +88,27 @@ export default function RunningWorkoutFloat() {
               <Text fontSize="$4" fontWeight="600" color="$green12">
                 {runningWorkout.name} • In Progress
               </Text>
-              <XStack items="center" gap="$3">
+              <XStack items="center" justify="space-between" gap="$3">
                 <XStack items="center" gap="$1">
                   <Clock size={14} color="$green11" />
                   <Text fontSize="$3" color="$green11">
                     {formatElapsedTime(elapsedTime)}
                   </Text>
                 </XStack>
-                <Text fontSize="$3" color="$green10">
-                  •
-                </Text>
                 <Text fontSize="$3" color="$green11">
                   {runningWorkout.completedExercises}/{runningWorkout.exercises.length} exercises
                 </Text>
               </XStack>
+              <XStack flex={1} items="center" justify="space-between">
+                <Text fontSize="$3" color="$green10" mb="$1">
+                  Current:
+                </Text>
+                <Text fontSize="$2" fontWeight="500" color="$green11">
+                  {currentExercise?.name || 'Finished'}
+                </Text>
+              </XStack>
             </YStack>
           </XStack>
-          <YStack items="flex-end">
-            <Text fontSize="$2" color="$green10" mb="$1">
-              Current
-            </Text>
-            <Text fontSize="$3" fontWeight="500" color="$green11">
-              {currentExercise?.name || 'Finished'}
-            </Text>
-          </YStack>
         </XStack>
       </Button>
       {/* </Animated.View> */}
