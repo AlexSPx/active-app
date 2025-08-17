@@ -2,14 +2,14 @@ import { YStack, XStack, Text, Card } from 'tamagui'
 import { View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback, memo } from 'react'
-import type { WorkoutTemplate } from '../../types/workout'
 import { StartWorkoutButton } from '../ui/StartWorkoutButton'
+import { ApiWorkout } from 'types/api'
 
 export interface WorkoutCardProps {
-  workout: WorkoutTemplate
-  onStartWorkout: (workout: WorkoutTemplate) => void
+  workout: ApiWorkout
+  onStartWorkout: (workout: ApiWorkout) => void
   isWorkoutRunning: boolean
-  onEdit?: (workout: WorkoutTemplate) => void
+  onEdit?: (workout: ApiWorkout) => void
   onDelete?: (workoutId: string) => void
 }
 
@@ -22,9 +22,9 @@ export const WorkoutCard = memo(
     onDelete,
   }: WorkoutCardProps) {
     const renderExercisePreview = useCallback(
-      ({ item: ex }: { item: any }) => (
+      ({ item: exercise }: { item: { exerciseId: string; reps: number[]; weight: number[] } }) => (
         <Text fontSize="$4" color="$colorSubtle">
-          - {ex.name} ({ex.sets}x{ex.reps})
+          - {exercise.exerciseId.replace(/_/g, ' ')} ({exercise.reps.length} sets)
         </Text>
       ),
       []
@@ -56,7 +56,7 @@ export const WorkoutCard = memo(
         <YStack gap="$3">
           <XStack justify="space-between" verticalAlign="center">
             <Text fontSize="$6" fontWeight="600" color="$color">
-              {workout.name}
+              {workout.title}
             </Text>
             <XStack gap="$2">
               {onEdit && (
@@ -83,30 +83,30 @@ export const WorkoutCard = memo(
           </XStack>
 
           <Text fontSize="$4" color="$colorSubtle">
-            🏷️ {workout.tag}
+            🏷️ Workout
           </Text>
 
           <Text fontSize="$4" color="$colorSubtle">
-            🏋️ {workout.exercises.length} exercises · ⏱️ {workout.duration}
+            🏋️ {workout.workoutTemplate.exercises.length} exercises
           </Text>
 
           <YStack gap="$1">
             <Text fontWeight="500" color="$color">
               Exercises:
             </Text>
-            <View style={{ height: Math.min(workout.exercises.length, 3) * 24 }}>
+            <View style={{ height: Math.min(workout.workoutTemplate.exercises.length, 3) * 24 }}>
               <FlashList
-                data={workout.exercises.slice(0, 3)}
+                data={workout.workoutTemplate.exercises.slice(0, 3)}
                 renderItem={renderExercisePreview}
-                keyExtractor={(item, index) => `${item.name}-${index}`}
+                keyExtractor={(item, index) => `${item.exerciseId}-${index}`}
                 estimatedItemSize={24}
                 showsVerticalScrollIndicator={false}
                 scrollEnabled={false}
               />
             </View>
-            {workout.exercises.length > 3 && (
+            {workout.workoutTemplate.exercises.length > 3 && (
               <Text fontSize="$4" color="$colorSubtle">
-                ... and {workout.exercises.length - 3} more
+                ... and {workout.workoutTemplate.exercises.length - 3} more
               </Text>
             )}
           </YStack>
@@ -120,8 +120,8 @@ export const WorkoutCard = memo(
     // Only re-render if relevant props have changed
     return (
       prevProps.workout.id === nextProps.workout.id &&
-      prevProps.workout.name === nextProps.workout.name &&
-      prevProps.workout.exercises.length === nextProps.workout.exercises.length &&
+      prevProps.workout.title === nextProps.workout.title &&
+      prevProps.workout.workoutTemplate.exercises.length === nextProps.workout.workoutTemplate.exercises.length &&
       prevProps.isWorkoutRunning === nextProps.isWorkoutRunning
     )
   }
