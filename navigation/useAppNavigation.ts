@@ -1,16 +1,14 @@
 import { useRouter } from 'expo-router'
 import type { NavigationHelpers, WorkoutSessionParams } from './types'
-import type { WorkoutTemplate } from '../types/workout'
+import type { ApiWorkout } from '../types/api'
 
 export function useAppNavigation(): NavigationHelpers {
   const router = useRouter()
 
-  const navigateToWorkoutSession = (workoutTemplate: WorkoutTemplate) => {
+  const navigateToWorkoutSession = (workout: ApiWorkout) => {
     const params: WorkoutSessionParams = {
-      name: workoutTemplate.name,
-      tag: workoutTemplate.tag || 'Workout',
-      duration: workoutTemplate.duration || '30 min',
-      exercises: JSON.stringify(workoutTemplate.exercises),
+      name: workout.title || 'Untitled Workout',
+      exercises: JSON.stringify(workout.workoutTemplate.exercises),
     }
 
     router.push({

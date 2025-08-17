@@ -1,6 +1,5 @@
 import { FlashList } from '@shopify/flash-list'
 import { memo } from 'react'
-import type { WorkoutTemplate } from '../../types/workout'
 import type { ApiWorkout } from '../../types/api'
 import { WorkoutCard } from './WorkoutCard'
 import { View } from 'tamagui'
@@ -13,21 +12,6 @@ export interface WorkoutListProps {
   onDeleteWorkout?: (workoutId: string) => void
 }
 
-// Convert API Workout to WorkoutTemplate for display
-function convertApiWorkoutToTemplate(workout: ApiWorkout): WorkoutTemplate {
-  return {
-    id: workout.id,
-    name: workout.title || 'Untitled Workout',
-    tag: 'Workout',
-    duration: '30 min', // Default duration - could be calculated from exercises
-    exercises: workout.workoutTemplate.exercises.map((exercise) => ({
-      name: exercise.exerciseId.replace(/_/g, ' '), // Convert exercise ID to readable name
-      sets: exercise.reps.length,
-      reps: exercise.reps[0] || 10,
-    })),
-  }
-}
-
 export const WorkoutList = memo(
   function WorkoutList({
     workouts,
@@ -37,11 +21,9 @@ export const WorkoutList = memo(
     onDeleteWorkout,
   }: WorkoutListProps) {
     const renderWorkout = ({ item: workout }: { item: ApiWorkout }) => {
-      const workoutTemplate = convertApiWorkoutToTemplate(workout)
-
       return (
         <WorkoutCard
-          workout={workoutTemplate}
+          workout={workout}
           onStartWorkout={() => onStartWorkout(workout)}
           isWorkoutRunning={isWorkoutRunning}
           onEdit={onEditWorkout ? () => onEditWorkout(workout) : undefined}

@@ -1,11 +1,9 @@
-import type { WorkoutTemplate } from '../types/workout'
+import type { ApiWorkout } from '../types/api'
 
 export type RootStackParamList = {
   '(tabs)': undefined
   'workouts/session': {
     name: string
-    tag: string
-    duration: string
     exercises: string
   }
   'workouts/new': undefined
@@ -21,13 +19,11 @@ export type TabsParamList = {
 
 export type WorkoutSessionParams = {
   name: string
-  tag: string
-  duration: string
   exercises: string
 }
 
 export interface NavigationHelpers {
-  navigateToWorkoutSession: (workoutTemplate: WorkoutTemplate) => void
+  navigateToWorkoutSession: (workout: ApiWorkout) => void
   navigateToNewWorkout: () => void
   navigateToExerciseSearch: () => void
   goBack: () => void

@@ -79,7 +79,7 @@ export interface ApiWorkoutTemplate {
 
 export interface ApiWorkout {
   id: string
-  title?: string | null
+  title: string
   notes?: string | null
   createdAt: string
   updatedAt: string

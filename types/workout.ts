@@ -47,16 +47,3 @@ export interface WorkoutStore {
   isLoading: boolean
   error: string | null
 }
-
-// Workout template types for UI
-export interface WorkoutTemplate {
-  id: string
-  name: string
-  tag?: string
-  duration?: string
-  exercises: Array<{
-    name: string
-    sets: number
-    reps: number
-  }>
-}
