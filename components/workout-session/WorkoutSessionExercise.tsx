@@ -111,7 +111,6 @@ export const WorkoutSessionExercise = memo(
               data={exercise.sets}
               renderItem={renderSetRow}
               keyExtractor={(item) => item.id}
-              estimatedItemSize={68}
               ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}

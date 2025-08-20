@@ -38,7 +38,6 @@ export const WorkoutList = memo(
           data={workouts}
           renderItem={renderWorkout}
           keyExtractor={(item) => item.id}
-          estimatedItemSize={140}
           ItemSeparatorComponent={() => <View height="$4" />}
           showsVerticalScrollIndicator={false}
         />

@@ -97,7 +97,6 @@ export default function WorkoutHistoryScreen() {
         data={workoutHistory}
         renderItem={renderWorkout}
         keyExtractor={(item) => item.id}
-        estimatedItemSize={120}
         ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
         ListHeaderComponent={ListHeaderComponent}
         ListHeaderComponentStyle={{ marginBottom: 16 }}

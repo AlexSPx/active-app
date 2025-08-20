@@ -99,7 +99,6 @@ export const WorkoutCard = memo(
                 data={workout.workoutTemplate.exercises.slice(0, 3)}
                 renderItem={renderExercisePreview}
                 keyExtractor={(item, index) => `${item.exerciseId}-${index}`}
-                estimatedItemSize={24}
                 showsVerticalScrollIndicator={false}
                 scrollEnabled={false}
               />

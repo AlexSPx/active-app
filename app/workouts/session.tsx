@@ -59,7 +59,6 @@ export default function WorkoutSessionScreen() {
         data={exercises}
         renderItem={renderExercise}
         keyExtractor={(item) => item.id}
-        estimatedItemSize={200}
         ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
         ListHeaderComponent={ListHeaderComponent}
         ListHeaderComponentStyle={{ marginBottom: 16 }}

@@ -138,7 +138,6 @@ export default function NewWorkoutScreen() {
           data={selectedExercises}
           renderItem={renderExerciseEditor}
           keyExtractor={(item) => item.id}
-          estimatedItemSize={180}
           ItemSeparatorComponent={() => <View height="$4" />}
           ListHeaderComponent={ListHeaderComponent}
           ListHeaderComponentStyle={{ marginBottom: 16 }}

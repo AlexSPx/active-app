@@ -61,7 +61,6 @@ export const ExerciseList = memo(function ExerciseList({
         data={exercises}
         renderItem={renderExercise}
         keyExtractor={keyExtractor}
-        estimatedItemSize={80}
         showsVerticalScrollIndicator={false}
         getItemType={() => 'exercise'}
         extraData={selectedExerciseIds}

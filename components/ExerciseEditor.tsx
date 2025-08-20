@@ -87,7 +87,6 @@ export default function ExerciseEditor({
             data={exercise.sets}
             renderItem={renderSetRow}
             keyExtractor={(_, index) => index.toString()}
-            estimatedItemSize={72}
             ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
             showsVerticalScrollIndicator={false}
             scrollEnabled={false}
