@@ -1,13 +1,9 @@
-import '../tamagui-web.css'
-
 import { useEffect } from 'react'
 import { useFonts } from 'expo-font'
 import { SplashScreen } from 'expo-router'
-import { Provider } from './Provider'
+import Provider from './Provider'
 import { AuthProvider } from '../contexts/AuthContext'
 import { AuthGuard } from '../components/AuthGuard'
-import { SafeAreaView } from 'react-native-safe-area-context'
-import { PortalProvider } from 'tamagui'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -40,13 +36,11 @@ export default function RootLayout() {
   }
 
   return (
-    <PortalProvider>
     <Providers>
       <AuthProvider>
         <AuthGuard />
       </AuthProvider>
     </Providers>
-    </PortalProvider>
   )
 }
 
