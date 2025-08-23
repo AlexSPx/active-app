@@ -9,7 +9,7 @@ module.exports = (api) => {
           components: ['tamagui', '@tamagui/lucide-icons'],
           config: './tamagui.config.ts',
           logTimings: true,
-          disableExtraction: true,
+          disableExtraction: process.env.NODE_ENV === 'development',
         },
       ],
 
