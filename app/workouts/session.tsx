@@ -24,6 +24,7 @@ export default function WorkoutSessionScreen() {
     removeSet,
     startRestTimer,
     finishWorkout,
+    cancelWorkout,
   } = useWorkoutSession()
 
   const theme = useTheme()
@@ -49,7 +50,11 @@ export default function WorkoutSessionScreen() {
 
   const ListFooterComponent = () => (
     <View pb="$6">
-      <WorkoutActions onFinishWorkout={finishWorkout} onGoBack={goBack} />
+      <WorkoutActions
+        onFinishWorkout={finishWorkout}
+        onCancelWorkout={cancelWorkout}
+        onGoBack={goBack}
+      />
     </View>
   )
 

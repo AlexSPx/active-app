@@ -4,10 +4,16 @@ import { Plus } from '@tamagui/lucide-icons'
 export interface WorkoutActionsProps {
   onAddExercise?: () => void
   onFinishWorkout: (notes?: string) => Promise<void>
+  onCancelWorkout?: () => void
   onGoBack: () => void
 }
 
-export function WorkoutActions({ onAddExercise, onFinishWorkout, onGoBack }: WorkoutActionsProps) {
+export function WorkoutActions({
+  onAddExercise,
+  onFinishWorkout,
+  onCancelWorkout,
+  onGoBack,
+}: WorkoutActionsProps) {
   const handleFinishWorkout = async () => {
     await onFinishWorkout()
     onGoBack()
@@ -26,6 +32,22 @@ export function WorkoutActions({ onAddExercise, onFinishWorkout, onGoBack }: Wor
           Finish Workout
         </Text>
       </Button>
+
+      {onCancelWorkout && (
+        <Button
+          size="$4"
+          bg="$red9"
+          mt="$2"
+          onPress={() => {
+            onCancelWorkout()
+            onGoBack()
+          }}
+        >
+          <Text color="$onPrimary" fontSize="$4" fontWeight="600">
+            Cancel Workout
+          </Text>
+        </Button>
+      )}
     </YStack>
   )
 }

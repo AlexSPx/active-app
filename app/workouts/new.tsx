@@ -23,6 +23,13 @@ export default function NewWorkoutScreen() {
     removeSetFromExercise,
   } = useWorkoutStore()
 
+  const handleCancel = () => {
+    clearExercises()
+    setName('')
+    setNotes('')
+    router.back()
+  }
+
   const handleSave = async () => {
     // Validate the workout data
     const validationError = validateWorkoutData(name, selectedExercises)
@@ -125,6 +132,9 @@ export default function NewWorkoutScreen() {
               Save Workout
             </Text>
           )}
+        </Button>
+        <Button variant="outlined" size="$4" onPress={handleCancel}>
+          <Text>Cancel</Text>
         </Button>
       </YStack>
     ),

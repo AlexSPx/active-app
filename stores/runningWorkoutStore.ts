@@ -32,6 +32,7 @@ interface RunningWorkoutStore {
     workout: Omit<RunningWorkout, 'startTime' | 'currentExerciseIndex' | 'completedExercises'>
   ) => void
   stopWorkout: (notes?: string) => Promise<void>
+  cancelWorkout: () => void
   updateCurrentExercise: (index: number) => void
   completeExercise: () => void
   updateExerciseSet: (
@@ -123,6 +124,11 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           // User can try to manually save later or we can add retry logic
           set({ runningWorkout: null })
         }
+      },
+
+      // Discard the current running workout without recording
+      cancelWorkout: () => {
+        set({ runningWorkout: null, isRecording: false, recordingError: null })
       },
 
       updateCurrentExercise: (index) => {

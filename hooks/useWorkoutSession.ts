@@ -24,6 +24,7 @@ export interface WorkoutSessionActions {
   removeSet: (exerciseId: string, setIndex: number) => void
   startRestTimer: (setId: string) => void
   finishWorkout: (notes?: string) => Promise<void>
+  cancelWorkout: () => void
 }
 
 export function useWorkoutSession(
@@ -36,6 +37,7 @@ export function useWorkoutSession(
     removeExerciseSet,
     addExerciseSet,
     stopWorkout,
+    cancelWorkout: cancelInStore,
     getElapsedTime,
   } = useRunningWorkoutStore()
 
@@ -213,6 +215,10 @@ export function useWorkoutSession(
     await stopWorkout(notes)
   }
 
+  const cancelWorkout = () => {
+    cancelInStore()
+  }
+
   return {
     // State
     exercises,
@@ -228,5 +234,6 @@ export function useWorkoutSession(
     removeSet,
     startRestTimer,
     finishWorkout,
+    cancelWorkout,
   }
 }
