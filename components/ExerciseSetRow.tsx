@@ -13,9 +13,9 @@ const SWIPE_THRESHOLD = -80
 
 type SetRowProps = {
   index: number
-  weight: number | undefined
-  reps: number | undefined
-  onChange: (key: 'weight' | 'reps', value: number) => void
+  weight: number | null | undefined
+  reps: number | null | undefined
+  onChange: (key: 'weight' | 'reps', value: number | null) => void
   onDelete: () => void
 }
 
@@ -84,10 +84,16 @@ export const ExerciseSetRow = memo(
                   py="$0"
                   px="$3"
                   keyboardType="numeric"
-                  value={weight?.toString() || ''}
+                  value={weight === null || typeof weight === 'undefined' ? '' : String(weight)}
                   onChangeText={(text) => {
+                    if (text.trim() === '') {
+                      onChange('weight', null)
+                      return
+                    }
                     const weightValue = Number.parseFloat(text)
-                    if (!isNaN(weightValue)) onChange('weight', weightValue)
+                    if (!Number.isNaN(weightValue)) {
+                      onChange('weight', weightValue)
+                    }
                   }}
                   bg="$backgroundPress"
                   borderColor="$borderColor"
@@ -101,10 +107,16 @@ export const ExerciseSetRow = memo(
                   px="$3"
                   placeholder="reps"
                   keyboardType="numeric"
-                  value={reps?.toString() || ''}
+                  value={reps === null || typeof reps === 'undefined' ? '' : String(reps)}
                   onChangeText={(text) => {
+                    if (text.trim() === '') {
+                      onChange('reps', null)
+                      return
+                    }
                     const repsValue = Number.parseInt(text)
-                    if (!isNaN(repsValue)) onChange('reps', repsValue)
+                    if (!Number.isNaN(repsValue)) {
+                      onChange('reps', repsValue)
+                    }
                   }}
                   bg="$backgroundPress"
                   borderColor="$borderColor"

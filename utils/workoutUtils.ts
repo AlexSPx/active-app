@@ -31,8 +31,8 @@ export const formatVolume = (volume: number, unit: 'lbs' | 'kg' = 'kg'): string 
 export const convertToTemplateExercise = (exercise: CreateWorkoutExercise): TemplateExercise => {
   return {
     exerciseId: exercise.id,
-    reps: exercise.sets.map((set) => set.reps),
-    weight: exercise.sets.map((set) => set.weight),
+    reps: exercise.sets.map((set) => set.reps).filter((v): v is number => v != null),
+    weight: exercise.sets.map((set) => set.weight).filter((v): v is number => v != null),
     notes: exercise.notes,
   }
 }
@@ -120,6 +120,9 @@ export const validateWorkoutData = (
     }
 
     for (const set of exercise.sets) {
+      if (set.reps == null || set.weight == null) {
+        return `All sets must have reps and weight in "${exercise.name}"`
+      }
       if (set.reps <= 0) {
         return `All sets must have positive reps in "${exercise.name}"`
       }

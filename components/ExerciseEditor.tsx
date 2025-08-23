@@ -19,7 +19,7 @@ export default function ExerciseEditor({
   onAddSet,
   onRemoveSet,
 }: ExerciseEditorProps) {
-  const updateSet = (setIndex: number, key: 'weight' | 'reps', value: number) => {
+  const updateSet = (setIndex: number, key: 'weight' | 'reps', value: number | null) => {
     const newSets = [...exercise.sets]
     newSets[setIndex] = { ...newSets[setIndex], [key]: value }
     onUpdateSets(exercise.id, newSets)
@@ -39,15 +39,7 @@ export default function ExerciseEditor({
   )
 
   return (
-    <Card
-      key={exercise.id}
-      elevate
-      size="$4"
-      mb="$3"
-      p="$3"
-      bg="$surface"
-      borderColor="$borderColor"
-    >
+    <Card key={exercise.id} size="$4" mb="$3" p="$3" bg="$surface">
       <YStack gap="$2">
         {/* Exercise Header */}
         <XStack justify="space-between" items="center">
@@ -59,7 +51,6 @@ export default function ExerciseEditor({
           </YStack>
           <Button size="$3" circular icon={MoreHorizontal} />
         </XStack>
-
         {/* Sets Header */}
         <XStack justify="space-between" px="$1">
           <YStack flex={1} items="center">
@@ -78,20 +69,15 @@ export default function ExerciseEditor({
             </Text>
           </YStack>
         </XStack>
-
         <Separator />
-
         {/* Sets */}
-        <View style={{ height: exercise.sets.length * 72 }}>
-          <FlashList
-            data={exercise.sets}
-            renderItem={renderSetRow}
-            keyExtractor={(_, index) => index.toString()}
-            ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
-            showsVerticalScrollIndicator={false}
-            scrollEnabled={false}
-          />
-        </View>
+        <FlashList
+          data={exercise.sets}
+          renderItem={renderSetRow}
+          keyExtractor={(_, index) => index.toString()}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={false}
+        />
 
         {/* Add Set Button */}
         <Button

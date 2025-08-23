@@ -187,7 +187,17 @@ export default function EditWorkoutScreen() {
           ListFooterComponent={() => (
             <YStack gap="$4" pt="$4">
               <Separator />
-              <Button bg="$primary" size="$5" onPress={handleSave} disabled={isSaving}>
+              <Button
+                bg="$primary"
+                size="$5"
+                onPress={handleSave}
+                disabled={
+                  isSaving ||
+                  selectedExercises.some((ex) =>
+                    ex.sets.some((s) => s.reps == null || s.weight == null)
+                  )
+                }
+              >
                 {isSaving ? (
                   <LoadingSpinner size="small" color="$onPrimary" />
                 ) : (
@@ -204,7 +214,17 @@ export default function EditWorkoutScreen() {
         <YStack gap="$4">
           {Header}
           <Separator />
-          <Button bg="$primary" size="$5" onPress={handleSave} disabled={isSaving}>
+          <Button
+            bg="$primary"
+            size="$5"
+            onPress={handleSave}
+            disabled={
+              isSaving ||
+              selectedExercises.some((ex) =>
+                ex.sets.some((s) => s.reps == null || s.weight == null)
+              )
+            }
+          >
             {isSaving ? (
               <LoadingSpinner size="small" color="$onPrimary" />
             ) : (

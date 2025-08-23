@@ -47,7 +47,7 @@ export default function SearchExerciseScreen() {
       // Convert Exercise to WorkoutExercise with default empty sets
       const workoutExercise = {
         ...exercise,
-        sets: [{ reps: 0, weight: 0 }],
+        sets: [{ reps: null, weight: null }],
       }
       addExercise(workoutExercise)
     }

@@ -7,7 +7,10 @@ type EditWorkoutState = {
   addExercise: (e: WorkoutExercise) => void
   removeExercise: (id: string) => void
   clearExercises: () => void
-  updateExerciseSets: (exerciseId: string, sets: { reps: number; weight: number }[]) => void
+  updateExerciseSets: (
+    exerciseId: string,
+    sets: { reps: number | null; weight: number | null }[]
+  ) => void
   addSetToExercise: (exerciseId: string) => void
   removeSetFromExercise: (exerciseId: string, setIndex: number) => void
 }
@@ -33,7 +36,7 @@ export const useEditWorkoutStore = create<EditWorkoutState>((set) => ({
   addSetToExercise: (exerciseId) =>
     set((state) => ({
       selectedExercises: state.selectedExercises.map((ex) =>
-        ex.id === exerciseId ? { ...ex, sets: [...ex.sets, { reps: 0, weight: 0 }] } : ex
+        ex.id === exerciseId ? { ...ex, sets: [...ex.sets, { reps: null, weight: null }] } : ex
       ),
     })),
   removeSetFromExercise: (exerciseId, setIndex) =>

@@ -115,12 +115,14 @@ export default function NewWorkoutScreen() {
     [name, notes, error, selectedExercises.length, router]
   )
 
+  const hasNulls = selectedExercises.some((ex) => ex.sets.some((s) => s.reps == null || s.weight == null))
+
   const ListFooterComponent = useCallback(
     () => (
       <YStack gap="$4" pt="$4">
         <Separator />
         <Button
-          disabled={!name || selectedExercises.length === 0 || isCreating}
+          disabled={!name || selectedExercises.length === 0 || hasNulls || isCreating}
           bg="$primary"
           size="$5"
           onPress={handleSave}
@@ -138,7 +140,7 @@ export default function NewWorkoutScreen() {
         </Button>
       </YStack>
     ),
-    [name, selectedExercises.length, isCreating, handleSave]
+  [name, selectedExercises.length, hasNulls, isCreating, handleSave]
   )
 
   return (
@@ -188,7 +190,7 @@ export default function NewWorkoutScreen() {
           <Separator />
 
           <Button
-            disabled={!name || selectedExercises.length === 0 || isCreating}
+            disabled={!name || selectedExercises.length === 0 || hasNulls || isCreating}
             bg="$primary"
             size="$5"
             onPress={handleSave}

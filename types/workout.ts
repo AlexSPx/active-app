@@ -18,8 +18,8 @@ export type {
 // Core workout types for the UI
 export interface WorkoutSet {
   id?: string
-  reps: number
-  weight: number
+  reps: number | null
+  weight: number | null
   completed?: boolean
   restTime?: number
 }
