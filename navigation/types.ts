@@ -7,6 +7,7 @@ export type RootStackParamList = {
     exercises: string
   }
   'workouts/new': undefined
+  'workouts/edit': { id: string }
   'exercises/search': undefined
   modal: undefined
 }
@@ -25,6 +26,7 @@ export type WorkoutSessionParams = {
 export interface NavigationHelpers {
   navigateToWorkoutSession: (workout: ApiWorkout) => void
   navigateToNewWorkout: () => void
+  navigateToEditWorkout: (id: string) => void
   navigateToExerciseSearch: () => void
   goBack: () => void
 }

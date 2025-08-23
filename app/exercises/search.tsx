@@ -1,14 +1,19 @@
 import { useState, useEffect, useMemo } from 'react'
 import { YStack, Text, Input, Button, ScrollView } from 'tamagui'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useWorkoutStore } from 'stores/createWorkoutStore'
+import { useEditWorkoutStore } from 'stores/editWorkoutStore'
 import { useExerciseSearch } from 'hooks/useExerciseSearch'
 import { ExerciseList } from 'components/exercise/ExerciseList'
 import type { Exercise } from 'types/workout'
 
 export default function SearchExerciseScreen() {
   const router = useRouter()
-  const { selectedExercises, addExercise, removeExercise } = useWorkoutStore()
+  const params = useLocalSearchParams<{ ctx?: string }>()
+  const isEdit = params.ctx === 'edit'
+  const createStore = useWorkoutStore()
+  const editStore = useEditWorkoutStore()
+  const { selectedExercises, addExercise, removeExercise } = isEdit ? editStore : createStore
   const { exercises, loading, error, hasSearched, searchExercises, clearSearch } =
     useExerciseSearch()
 
@@ -79,11 +84,11 @@ export default function SearchExerciseScreen() {
         borderBottomColor="$borderColor"
       >
         <Text fontSize="$7" fontWeight="800" color="$color">
-          Add Exercises
+          {isEdit ? 'Edit Exercises' : 'Add Exercises'}
         </Text>
 
         <Input
-          placeholder="Search exercises..."
+          placeholder={isEdit ? 'Search to edit template...' : 'Search exercises...'}
           value={search}
           onChangeText={setSearch}
           size="$4"

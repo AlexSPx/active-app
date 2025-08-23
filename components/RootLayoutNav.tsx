@@ -75,6 +75,19 @@ export function RootLayoutNav() {
             />
 
             <Stack.Screen
+              name="workouts/edit"
+              options={{
+                title: 'Edit Workout',
+                headerStyle: {
+                  backgroundColor: theme.background.val,
+                },
+                headerTintColor: theme.color.val,
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+
+            <Stack.Screen
               name="modal"
               options={{
                 title: 'Tamagui + Expo',

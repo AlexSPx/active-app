@@ -21,6 +21,10 @@ export function useAppNavigation(): NavigationHelpers {
     router.push('/workouts/new')
   }
 
+  const navigateToEditWorkout = (workoutId: string) => {
+    router.push(`/workouts/edit?id=${encodeURIComponent(workoutId)}` as any)
+  }
+
   const navigateToExerciseSearch = () => {
     router.push('/exercises/search')
   }
@@ -32,6 +36,7 @@ export function useAppNavigation(): NavigationHelpers {
   return {
     navigateToWorkoutSession,
     navigateToNewWorkout,
+    navigateToEditWorkout,
     navigateToExerciseSearch,
     goBack,
   }

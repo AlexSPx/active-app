@@ -108,8 +108,11 @@ export interface CreateWorkoutRequest {
   template: CreateWorkoutTemplateRequest
 }
 
-export interface UpdateWorkoutRequest extends Partial<CreateWorkoutRequest> {
-  id: string
+export interface UpdateWorkoutRequest {
+  title?: string
+  notes?: string
+  // If template is provided, it must be complete
+  template?: CreateWorkoutTemplateRequest
 }
 
 // Workout Record Types (Completed Workouts)

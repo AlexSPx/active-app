@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { WorkoutExercise } from '../types/workout'
 
-type WorkoutState = {
+type EditWorkoutState = {
   selectedExercises: WorkoutExercise[]
   setExercises: (exercises: WorkoutExercise[]) => void
   addExercise: (e: WorkoutExercise) => void
@@ -12,21 +12,17 @@ type WorkoutState = {
   removeSetFromExercise: (exerciseId: string, setIndex: number) => void
 }
 
-export const useWorkoutStore = create<WorkoutState>((set) => ({
+export const useEditWorkoutStore = create<EditWorkoutState>((set) => ({
   selectedExercises: [],
   setExercises: (exercises) => set({ selectedExercises: exercises }),
-  addExercise: (e) => {
-    console.log('Adding exercise:', e.name)
+  addExercise: (e) =>
     set((state) => ({
       selectedExercises: [...state.selectedExercises, e],
-    }))
-  },
-  removeExercise: (id) => {
-    console.log('Removing exercise:', id)
+    })),
+  removeExercise: (id) =>
     set((state) => ({
       selectedExercises: state.selectedExercises.filter((e) => e.id !== id),
-    }))
-  },
+    })),
   clearExercises: () => set({ selectedExercises: [] }),
   updateExerciseSets: (exerciseId, sets) =>
     set((state) => ({

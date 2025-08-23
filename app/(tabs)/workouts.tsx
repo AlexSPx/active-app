@@ -10,13 +10,10 @@ import { useAppNavigation } from '../../navigation/useAppNavigation'
 
 export default function WorkoutsScreen() {
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
-  const { navigateToNewWorkout } = useAppNavigation()
+  const { navigateToNewWorkout, navigateToEditWorkout } = useAppNavigation()
   const { workouts, loading, error, refetch } = useWorkouts()
 
-  const handleEditWorkout = (workout: any) => {
-    // TODO: Implement edit functionality
-    console.log('Edit workout:', workout.id)
-  }
+  const handleEditWorkout = (workout: any) => navigateToEditWorkout(workout.id)
 
   const handleDeleteWorkout = (workoutId: string) => {
     // TODO: Implement delete functionality
@@ -77,6 +74,7 @@ export default function WorkoutsScreen() {
             workouts={workouts}
             onStartWorkout={startWorkout}
             isWorkoutRunning={isWorkoutRunning()}
+            onEditWorkout={handleEditWorkout}
           />
         )}
       </YStack>

@@ -160,6 +160,28 @@ class ApiService {
     return this.handleResponse<{ id: string }>(response)
   }
 
+  async updateWorkout(
+    workoutId: string,
+    payload: Partial<CreateWorkoutRequest> & {
+      title?: string
+      notes?: string
+      template?: CreateWorkoutRequest['template']
+    }
+  ): Promise<void> {
+    const base = config.API_ENDPOINTS.WORKOUTS.UPDATE
+    const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
+    console.log(`API Request: PUT ${url}`, payload)
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: await this.getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+
+    // Many PUT endpoints return no body; handleResponse will return {} in that case
+    await this.handleResponse<unknown>(response)
+  }
+
   async getWorkoutRecords(): Promise<WorkoutRecord[]> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.RECORD)
     console.log(`API Request: GET ${url}`)
