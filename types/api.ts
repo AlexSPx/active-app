@@ -103,7 +103,7 @@ export interface CreateWorkoutTemplateRequest {
 }
 
 export interface CreateWorkoutRequest {
-  name: string
+  title: string
   notes?: string
   template: CreateWorkoutTemplateRequest
 }

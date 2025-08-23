@@ -14,7 +14,7 @@ export function useWorkoutMutations() {
       // Note: API returns { id: string }, so we need to create a Workout object
       const newWorkout: Workout = {
         id: result.id,
-        name: workout.name,
+        name: workout.title,
         notes: workout.notes,
         exercises: [], // Would need to convert from template
         date: new Date(),

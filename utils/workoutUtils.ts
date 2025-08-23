@@ -45,7 +45,7 @@ export const convertToCreateWorkoutRequest = (
   notes?: string
 ): CreateWorkoutRequest => {
   return {
-    name,
+    title: name,
     notes: notes?.trim() || undefined,
     template: {
       exercises: exercises.map(convertToTemplateExercise),
