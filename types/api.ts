@@ -128,6 +128,8 @@ export interface WorkoutRecordRequest {
   notes?: string
   workoutId: string
   exerciseRecords: ExerciseRecord[]
+  // LocalDateTime without timezone, e.g., '2025-08-25T14:30:00'
+  startTime: string
 }
 
 export interface WorkoutRecordExercise {
@@ -143,6 +145,8 @@ export interface WorkoutRecord {
   workoutId: string
   notes?: string | null
   createdAt: string
+  // LocalDateTime string if provided when recording
+  startTime?: string
   exerciseRecords: WorkoutRecordExercise[]
 }
 

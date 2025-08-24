@@ -76,11 +76,25 @@ export default function HistoryPage() {
         return total + ex.reps.reduce((acc, reps, i) => acc + reps * (ex.weight[i] || 0), 0)
       }, 0)
       const title = titleByWorkoutId.get(record.workoutId) || record.notes || 'Workout Session'
+      // duration minutes based on LocalDateTime difference if startTime provided
+      let durationMinutes = 0
+      try {
+        if (record.startTime) {
+          const created = new Date(record.createdAt)
+          // Parse LocalDateTime (no timezone) as local time
+          const [dPart, tPart] = record.startTime.split('T')
+          const [y, m, d] = dPart.split('-').map((v) => parseInt(v, 10))
+          const [hh, mm, ss] = tPart.split(':').map((v) => parseInt(v, 10))
+          const start = new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, ss || 0)
+          const diffMs = Math.max(0, created.getTime() - start.getTime())
+          durationMinutes = Math.round(diffMs / 60000)
+        }
+      } catch {}
       return {
         id: record.id || `${record.workoutId}-${record.createdAt}`,
         name: title,
         date: new Date(record.createdAt),
-        duration: 45,
+        duration: durationMinutes || 0,
         totalSets,
         totalVolume,
       }

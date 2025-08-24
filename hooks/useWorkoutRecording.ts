@@ -48,8 +48,15 @@ export function convertRunningWorkoutToRecord(
       }>
     }>
   },
+  startTimeIso: string,
   notes?: string
 ): WorkoutRecordRequest {
+  const toLocalDateTime = (date: Date) => {
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+      date.getHours()
+    )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+  }
   const exerciseRecords: ExerciseRecord[] = runningWorkout.exercises.map((exercise) => {
     const completedSets = exercise.sessionSets.filter((set) => set.completed)
 
@@ -65,5 +72,6 @@ export function convertRunningWorkoutToRecord(
     workoutId: runningWorkout.id,
     exerciseRecords,
     notes,
+    startTime: toLocalDateTime(new Date(startTimeIso)),
   }
 }

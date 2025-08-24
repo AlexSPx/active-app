@@ -80,6 +80,17 @@ export default function RecordDetailScreen() {
     const ds = ex.durationSeconds?.reduce((a, b) => a + (b || 0), 0) ?? 0
     return sum + ds
   }, 0)
+  // If per-exercise duration is not available, compute from startTime -> createdAt
+  let computedDurationSecs = totalDurationSeconds
+  if (!computedDurationSecs && record.startTime) {
+    try {
+      const [dPart, tPart] = record.startTime.split('T')
+      const [y, m, d] = dPart.split('-').map((v) => parseInt(v, 10))
+      const [hh, mm, ss] = tPart.split(':').map((v) => parseInt(v, 10))
+      const start = new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, ss || 0)
+      computedDurationSecs = Math.max(0, Math.floor((date.getTime() - start.getTime()) / 1000))
+    } catch {}
+  }
   const formatDuration = (secs: number) => {
     if (!secs || secs <= 0) return null
     const h = Math.floor(secs / 3600)
@@ -88,7 +99,7 @@ export default function RecordDetailScreen() {
     if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
     return `${m}:${String(s).padStart(2, '0')}`
   }
-  const durationLabel = formatDuration(totalDurationSeconds) ?? '—'
+  const durationLabel = formatDuration(computedDurationSecs) ?? '—'
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 12 }}>

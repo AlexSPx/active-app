@@ -100,10 +100,18 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
             })
             .filter((record) => record.reps.length > 0) // Only include exercises with completed sets
 
+          const toLocalDateTime = (date: Date) => {
+            const pad = (n: number) => String(n).padStart(2, '0')
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+              date.getHours()
+            )}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`
+          }
+
           const workoutRecord: WorkoutRecordRequest = {
             workoutId: state.runningWorkout.id,
             exerciseRecords,
             notes,
+            startTime: toLocalDateTime(new Date(state.runningWorkout.startTime)),
           }
 
           // Record the workout to the server
