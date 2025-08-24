@@ -138,7 +138,7 @@ export function HistoryCalendar({
                             b={0}
                             rounded="$4"
                             bg="$primary"
-                            opacity={isToday ? 1 : 0.18}
+                            opacity={isToday ? 1 : 0.3}
                             pointerEvents="none"
                           />
                         )}
