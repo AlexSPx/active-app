@@ -1,7 +1,6 @@
-import { YStack, ScrollView, Button, Text } from 'tamagui'
+import { YStack, Button, Text, Separator } from 'tamagui'
 import { useLayoutEffect } from 'react'
 import { useNavigation } from 'expo-router'
-import { RefreshControl } from 'react-native'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { useWorkoutManagement } from '../../hooks/useWorkoutManagement'
@@ -17,13 +16,8 @@ export default function WorkoutsScreen() {
   useLayoutEffect(() => {
     navigation.setOptions({
       title: 'Workouts',
-      headerRight: () => (
-        <Button bg="$primary" onPress={navigateToNewWorkout}>
-          + Add Workout
-        </Button>
-      ),
     })
-  }, [navigation, navigateToNewWorkout])
+  }, [navigation])
 
   const handleEditWorkout = (workout: any) => navigateToEditWorkout(workout.id)
 
@@ -55,32 +49,26 @@ export default function WorkoutsScreen() {
   }
 
   return (
-    <ScrollView
-      bg="$background"
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={refetch} />}
-    >
-      <YStack p="$4" gap="$4">
-        {workouts.length === 0 ? (
-          <YStack items="center" justify="center" py="$8">
-            <Text fontSize="$6" color="$color11">
-              No workouts yet
-            </Text>
-            <Text fontSize="$4" color="$color10" mt="$2">
-              Create your first workout to get started
-            </Text>
-            <Button mt="$4" onPress={navigateToNewWorkout}>
-              Create Workout
-            </Button>
-          </YStack>
-        ) : (
-          <WorkoutList
-            workouts={workouts}
-            onStartWorkout={startWorkout}
-            isWorkoutRunning={isWorkoutRunning()}
-            onEditWorkout={handleEditWorkout}
-          />
-        )}
+    <YStack flex={1} bg="$background">
+      <YStack flex={1} px="$4" pt="$3">
+        <WorkoutList
+          workouts={workouts}
+          onStartWorkout={startWorkout}
+          isWorkoutRunning={isWorkoutRunning()}
+          onEditWorkout={handleEditWorkout}
+          listHeader={
+            <YStack gap="$3" pb="$3">
+              <Button bg="$primary" width="100%" onPress={navigateToNewWorkout}>
+                Create Workout
+              </Button>
+              <Separator />
+            </YStack>
+          }
+          refreshing={loading}
+          onRefresh={refetch}
+          onCreateWorkout={navigateToNewWorkout}
+        />
       </YStack>
-    </ScrollView>
+    </YStack>
   )
 }

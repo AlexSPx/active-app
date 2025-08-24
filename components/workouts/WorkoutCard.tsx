@@ -1,4 +1,4 @@
-import { YStack, XStack, Text, Card } from 'tamagui'
+import { YStack, XStack, Text, Card, Separator } from 'tamagui'
 import { View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback, memo } from 'react'
@@ -45,70 +45,57 @@ export const WorkoutCard = memo(
     return (
       <Card
         key={workout.id}
-        bordered
-        padded
-        elevate
-        size="$5"
         bg="$surface"
         borderColor="$borderColor"
-        pressStyle={{ scale: 0.98, opacity: 0.8 }}
+        borderWidth="$0.5"
+        p="$4"
+        rounded="$6"
+        elevate
+        pressStyle={{ scale: 0.98, opacity: 0.9 }}
       >
         <YStack gap="$3">
-          <XStack justify="space-between" verticalAlign="center">
-            <Text fontSize="$6" fontWeight="600" color="$color">
+          <XStack justify="space-between" items="center">
+            <Text fontSize="$6" fontWeight="700" color="$color">
               {workout.title}
             </Text>
             <XStack gap="$2">
               {onEdit && (
-                <Text
-                  color="$colorSubtle"
-                  fontSize="$3"
-                  onPress={() => onEdit(workout)}
-                  pressStyle={{ opacity: 0.7 }}
-                >
+                <Text color="$colorSubtle" fontSize="$3" onPress={() => onEdit(workout)}>
                   Edit
                 </Text>
               )}
               {onDelete && (
-                <Text
-                  color="$primary"
-                  fontSize="$3"
-                  onPress={() => onDelete(workout.id)}
-                  pressStyle={{ opacity: 0.7 }}
-                >
+                <Text color="$primary" fontSize="$3" onPress={() => onDelete(workout.id)}>
                   Delete
                 </Text>
               )}
             </XStack>
           </XStack>
 
-          <Text fontSize="$4" color="$colorSubtle">
-            🏷️ Workout
+          {/* Description preview */}
+          <Text fontSize="$3" color="$colorSubtle" numberOfLines={2}>
+            {workout.workoutTemplate.exercises
+              .map((e) => e.exerciseId.replace(/_/g, ' '))
+              .slice(0, 5)
+              .join(', ')}
           </Text>
 
-          <Text fontSize="$4" color="$colorSubtle">
-            🏋️ {workout.workoutTemplate.exercises.length} exercises
-          </Text>
-
-          <YStack gap="$1">
-            <Text fontWeight="500" color="$color">
-              Exercises:
+          {/* Stats row */}
+          <XStack gap="$6" items="center">
+            <Text fontSize="$3" color="$colorSubtle">
+              {workout.workoutTemplate.exercises.reduce((s, e) => s + (e.reps?.length || 0), 0)}{' '}
+              Sets Logged
             </Text>
-            <View style={{ height: Math.min(workout.workoutTemplate.exercises.length, 3) * 24 }}>
-              <FlashList
-                data={workout.workoutTemplate.exercises.slice(0, 3)}
-                renderItem={renderExercisePreview}
-                keyExtractor={(item, index) => `${item.exerciseId}-${index}`}
-                showsVerticalScrollIndicator={false}
-                scrollEnabled={false}
-              />
-            </View>
-            {workout.workoutTemplate.exercises.length > 3 && (
-              <Text fontSize="$4" color="$colorSubtle">
-                ... and {workout.workoutTemplate.exercises.length - 3} more
-              </Text>
-            )}
-          </YStack>
+            <Text fontSize="$3" color="$colorSubtle">
+              {/* Estimated duration placeholder */}
+              1:04:43 Duration
+            </Text>
+            <Text fontSize="$3" color="$colorSubtle">
+              356 Est Calories
+            </Text>
+          </XStack>
+
+          <Separator my="$2" />
 
           <StartWorkoutButton onPress={handleStartWorkout} isWorkoutRunning={isWorkoutRunning} />
         </YStack>
@@ -120,7 +107,8 @@ export const WorkoutCard = memo(
     return (
       prevProps.workout.id === nextProps.workout.id &&
       prevProps.workout.title === nextProps.workout.title &&
-      prevProps.workout.workoutTemplate.exercises.length === nextProps.workout.workoutTemplate.exercises.length &&
+      prevProps.workout.workoutTemplate.exercises.length ===
+        nextProps.workout.workoutTemplate.exercises.length &&
       prevProps.isWorkoutRunning === nextProps.isWorkoutRunning
     )
   }

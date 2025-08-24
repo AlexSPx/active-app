@@ -2,7 +2,7 @@ import { FlashList } from '@shopify/flash-list'
 import { memo } from 'react'
 import type { ApiWorkout } from '../../types/api'
 import { WorkoutCard } from './WorkoutCard'
-import { View } from 'tamagui'
+import { View, YStack, Text, Button } from 'tamagui'
 
 export interface WorkoutListProps {
   workouts: ApiWorkout[]
@@ -10,6 +10,10 @@ export interface WorkoutListProps {
   isWorkoutRunning: boolean
   onEditWorkout?: (workout: ApiWorkout) => void
   onDeleteWorkout?: (workoutId: string) => void
+  listHeader?: React.ReactElement
+  refreshing?: boolean
+  onRefresh?: () => void
+  onCreateWorkout?: () => void
 }
 
 export const WorkoutList = memo(
@@ -19,6 +23,10 @@ export const WorkoutList = memo(
     isWorkoutRunning,
     onEditWorkout,
     onDeleteWorkout,
+    listHeader,
+    refreshing,
+    onRefresh,
+    onCreateWorkout,
   }: WorkoutListProps) {
     const renderWorkout = ({ item: workout }: { item: ApiWorkout }) => {
       return (
@@ -33,11 +41,31 @@ export const WorkoutList = memo(
     }
 
     return (
-      <View flex={1} mt="$3" mb="$8">
+      <View flex={1}>
         <FlashList
           data={workouts}
           renderItem={renderWorkout}
           keyExtractor={(item) => item.id}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ paddingBottom: 48 }}
+          ListHeaderComponent={listHeader}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          ListEmptyComponent={
+            <YStack items="center" justify="center" py="$8">
+              <Text fontSize="$6" color="$color11">
+                No workouts yet
+              </Text>
+              <Text fontSize="$4" color="$color10" mt="$2">
+                Create your first workout to get started
+              </Text>
+              {onCreateWorkout && (
+                <Button mt="$4" onPress={onCreateWorkout}>
+                  Create Workout
+                </Button>
+              )}
+            </YStack>
+          }
           ItemSeparatorComponent={() => <View height="$4" />}
           showsVerticalScrollIndicator={false}
         />
