@@ -3,6 +3,7 @@ import { YStack, Text, View } from 'tamagui'
 import type { FlashListRef } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
 import { useWorkoutRecords } from '../../../hooks/useWorkoutRecords'
+import { useWorkouts } from '../../../hooks/useWorkouts'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
 import type { WorkoutRecord } from '../../../types/api'
@@ -17,28 +18,37 @@ import {
   toISODate,
 } from '../../../components/history'
 
-function convertRecord(record: WorkoutRecord) {
-  const totalSets = record.exerciseRecords.reduce((total, ex) => total + ex.reps.length, 0)
-  const totalVolume = record.exerciseRecords.reduce((total, ex) => {
-    return total + ex.reps.reduce((acc, reps, i) => acc + reps * (ex.weight[i] || 0), 0)
-  }, 0)
-  return {
-    id: record.id || `${record.workoutId}-${record.createdAt}`,
-    name: record.notes || 'Workout Session',
-    date: new Date(record.createdAt),
-    duration: 45,
-    totalSets,
-    totalVolume,
-  }
-}
+// Conversion performed inside component to include workout titles
 
 export default function HistoryPage() {
   const router = useRouter()
-  const { workoutRecords, loading, error, refetch } = useWorkoutRecords()
+  const {
+    workoutRecords,
+    loading: recordsLoading,
+    error: recordsError,
+    refetch,
+  } = useWorkoutRecords()
+  const {
+    workouts,
+    loading: workoutsLoading,
+    error: workoutsError,
+    refetch: refetchWorkouts,
+  } = useWorkouts()
   const records = workoutRecords
-  const loadingState = loading
-  const errorState = error
-  const refetchFn = refetch
+  const loadingState = recordsLoading || workoutsLoading
+  const errorState = recordsError || workoutsError
+  const refetchFn = async () => {
+    await Promise.all([refetch(), refetchWorkouts()])
+  }
+  const [refreshing, setRefreshing] = useState(false)
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true)
+      await refetchFn()
+    } finally {
+      setRefreshing(false)
+    }
+  }
 
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [monthDate, setMonthDate] = useState<Date>(new Date())
@@ -53,7 +63,29 @@ export default function HistoryPage() {
     return idx >= 0 ? Math.floor(idx / 7) : 0
   }, [calendarDays, selectedDate])
 
-  const converted = useMemo(() => records.map(convertRecord), [records])
+  const titleByWorkoutId = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const w of workouts) map.set(w.id, w.title)
+    return map
+  }, [workouts])
+
+  const converted = useMemo(() => {
+    return records.map((record) => {
+      const totalSets = record.exerciseRecords.reduce((total, ex) => total + ex.reps.length, 0)
+      const totalVolume = record.exerciseRecords.reduce((total, ex) => {
+        return total + ex.reps.reduce((acc, reps, i) => acc + reps * (ex.weight[i] || 0), 0)
+      }, 0)
+      const title = titleByWorkoutId.get(record.workoutId) || record.notes || 'Workout Session'
+      return {
+        id: record.id || `${record.workoutId}-${record.createdAt}`,
+        name: title,
+        date: new Date(record.createdAt),
+        duration: 45,
+        totalSets,
+        totalVolume,
+      }
+    })
+  }, [records, titleByWorkoutId])
   const allWorkoutsSorted = useMemo(
     () => converted.slice().sort((a, b) => b.date.getTime() - a.date.getTime()),
     [converted]
@@ -97,7 +129,7 @@ export default function HistoryPage() {
     }
   }
 
-  if (loadingState && records.length === 0) {
+  if (loadingState) {
     return (
       <View flex={1} justify="center" items="center" bg="$background">
         <LoadingSpinner />
@@ -118,28 +150,32 @@ export default function HistoryPage() {
 
   return (
     <YStack flex={1} bg="$background">
-      <HistoryCalendar
-        monthDate={monthDate}
-        selectedDate={selectedDate}
-        collapsed={collapsed}
-        onMonthChange={setMonthDate}
-        onToggleCollapsed={() => setCollapsed((c) => !c)}
-        onSelectDate={setSelectedDate}
-        workoutDays={workoutDays}
-        weekStart={weekStart}
-        weekEnd={weekEnd}
-        selectedWeekIndex={selectedWeekIndex}
-        scrollToWeek={scrollToWeek}
-      />
-
-      {/* Week summary removed; week labels are shown inline as list dividers */}
-
       <YStack flex={1} px="$4" pt="$0">
         <HistoryList
           ref={listRef}
           data={allWorkoutsSorted}
           onViewableItemsChanged={onViewableItemsChangedRef.current}
           viewabilityConfig={viewabilityConfigRef.current}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          listHeader={
+            <HistoryCalendar
+              monthDate={monthDate}
+              selectedDate={selectedDate}
+              collapsed={collapsed}
+              onMonthChange={setMonthDate}
+              onToggleCollapsed={() => setCollapsed((c) => !c)}
+              onSelectDate={setSelectedDate}
+              workoutDays={workoutDays}
+              weekStart={weekStart}
+              weekEnd={weekEnd}
+              selectedWeekIndex={selectedWeekIndex}
+              scrollToWeek={scrollToWeek}
+            />
+          }
+          onPressItem={(item) =>
+            router.push({ pathname: '/(tabs)/(history)/record/[id]', params: { id: item.id } })
+          }
         />
       </YStack>
     </YStack>

@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { Card, Separator, Text, View, XStack, YStack } from 'tamagui'
+import { Button, Card, Separator, Text, View, XStack, YStack } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 import type { FlashListRef } from '@shopify/flash-list'
 import { formatWeekRange, startOfWeek } from './date'
@@ -17,10 +17,25 @@ type Props = {
   data: HistoryListItem[]
   onViewableItemsChanged: any
   viewabilityConfig: any
+  onPressItem?: (item: HistoryListItem) => void
+  refreshing?: boolean
+  onRefresh?: () => void
+  listHeader?: React.ReactElement
 }
 
 const HistoryList = forwardRef<FlashListRef<any>, Props>(
-  ({ data, onViewableItemsChanged, viewabilityConfig }, ref) => {
+  (
+    {
+      data,
+      onViewableItemsChanged,
+      viewabilityConfig,
+      onPressItem,
+      refreshing,
+      onRefresh,
+      listHeader,
+    },
+    ref
+  ) => {
     if (data.length === 0) {
       return (
         <YStack flex={1} items="center" justify="center" gap="$2">
@@ -41,6 +56,9 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
         keyExtractor={(item) => item.id}
         onViewableItemsChanged={onViewableItemsChanged}
         viewabilityConfig={viewabilityConfig}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListHeaderComponent={listHeader}
         ItemSeparatorComponent={() => <View height={8} />}
         renderItem={({ item, index }) => {
           const isNewWeek =
@@ -58,39 +76,47 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
                   <Separator flex={1} />
                 </XStack>
               )}
-              <Card p="$3" bg="$surface" borderColor="$borderColor" borderWidth="$0.5">
-                <YStack gap="$2">
-                  <XStack justify="space-between" items="center">
-                    <Text fontSize="$5" fontWeight="700" color="$color">
-                      {item.name}
-                    </Text>
-                    <Text fontSize="$3" color="$colorSubtle">
-                      {item.date.toLocaleDateString([], { month: 'short', day: '2-digit' })}{' '}
-                      {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </Text>
-                  </XStack>
-                  <XStack gap="$4">
-                    <XStack gap="$1">
-                      <Text fontWeight="700" color="$color">
-                        {item.duration}
+              <Button unstyled onPress={() => onPressItem?.(item)}>
+                <Card
+                  p="$3"
+                  bg="$surface"
+                  borderColor="$borderColor"
+                  borderWidth="$0.5"
+                  width="100%"
+                >
+                  <YStack gap="$2">
+                    <XStack justify="space-between" items="center">
+                      <Text fontSize="$5" fontWeight="700" color="$color">
+                        {item.name}
                       </Text>
-                      <Text color="$colorSubtle">m</Text>
-                    </XStack>
-                    <XStack gap="$1">
-                      <Text fontWeight="700" color="$color">
-                        {item.totalSets}
+                      <Text fontSize="$3" color="$colorSubtle">
+                        {item.date.toLocaleDateString([], { month: 'short', day: '2-digit' })}{' '}
+                        {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </Text>
-                      <Text color="$colorSubtle">sets</Text>
                     </XStack>
-                    <XStack gap="$1">
-                      <Text fontWeight="700" color="$color">
-                        {item.totalVolume.toLocaleString()}
-                      </Text>
-                      <Text color="$colorSubtle">kg</Text>
+                    <XStack gap="$4">
+                      <XStack gap="$1">
+                        <Text fontWeight="700" color="$color">
+                          {item.duration}
+                        </Text>
+                        <Text color="$colorSubtle">m</Text>
+                      </XStack>
+                      <XStack gap="$1">
+                        <Text fontWeight="700" color="$color">
+                          {item.totalSets}
+                        </Text>
+                        <Text color="$colorSubtle">sets</Text>
+                      </XStack>
+                      <XStack gap="$1">
+                        <Text fontWeight="700" color="$color">
+                          {item.totalVolume.toLocaleString()}
+                        </Text>
+                        <Text color="$colorSubtle">kg</Text>
+                      </XStack>
                     </XStack>
-                  </XStack>
-                </YStack>
-              </Card>
+                  </YStack>
+                </Card>
+              </Button>
             </YStack>
           )
         }}

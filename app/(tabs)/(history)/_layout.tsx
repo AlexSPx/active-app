@@ -14,7 +14,7 @@ export default function HistoryStackLayout() {
       }}
     >
       <Stack.Screen name="index" options={{ title: 'History' }} />
-      {/* Add detail screens here later, e.g., record/[id].tsx */}
+      <Stack.Screen name="record/[id]" options={{ title: 'Record' }} />
     </Stack>
   )
 }
