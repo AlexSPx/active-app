@@ -15,7 +15,15 @@ export default function TabLayout() {
             backgroundColor: theme.background.val,
             borderTopColor: theme.borderColor.val,
           },
-          headerShown: false,
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: theme.background.val,
+          },
+          headerTintColor: theme.color.val,
+          headerTitleStyle: {
+            color: theme.color.val,
+            fontWeight: '700',
+          },
         }}
       >
         <Tabs.Screen
@@ -26,10 +34,12 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="history"
+          name="(history)"
           options={{
             title: 'History',
             tabBarIcon: ({ color }) => <History color={color as any} />,
+            // Use the nested stack header for History screens
+            headerShown: false,
           }}
         />
         <Tabs.Screen

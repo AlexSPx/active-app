@@ -1,6 +1,7 @@
 import { YStack, ScrollView, Button, Text } from 'tamagui'
+import { useLayoutEffect } from 'react'
+import { useNavigation } from 'expo-router'
 import { RefreshControl } from 'react-native'
-import { PageHeader } from '../../components/ui/PageHeader'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { useWorkoutManagement } from '../../hooks/useWorkoutManagement'
@@ -9,9 +10,20 @@ import { WorkoutList } from '../../components/workouts/WorkoutList'
 import { useAppNavigation } from '../../navigation/useAppNavigation'
 
 export default function WorkoutsScreen() {
+  const navigation = useNavigation()
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
   const { navigateToNewWorkout, navigateToEditWorkout } = useAppNavigation()
   const { workouts, loading, error, refetch } = useWorkouts()
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: 'Workouts',
+      headerRight: () => (
+        <Button bg="$primary" onPress={navigateToNewWorkout}>
+          + Add Workout
+        </Button>
+      ),
+    })
+  }, [navigation, navigateToNewWorkout])
 
   const handleEditWorkout = (workout: any) => navigateToEditWorkout(workout.id)
 
@@ -48,15 +60,6 @@ export default function WorkoutsScreen() {
       refreshControl={<RefreshControl refreshing={loading} onRefresh={refetch} />}
     >
       <YStack p="$4" gap="$4">
-        <PageHeader
-          title="💪 My Workouts"
-          action={{
-            label: '+ Add Workout',
-            onPress: navigateToNewWorkout,
-            variant: 'secondary',
-          }}
-        />
-
         {workouts.length === 0 ? (
           <YStack items="center" justify="center" py="$8">
             <Text fontSize="$6" color="$color11">

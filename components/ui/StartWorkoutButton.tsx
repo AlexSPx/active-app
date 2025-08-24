@@ -17,13 +17,13 @@ export function StartWorkoutButton({
   return (
     <Button
       size={size}
-      bg="$primary"
+      bg="$secondary"
       disabled={disabled || isWorkoutRunning}
       onPress={onPress}
       icon={Play}
       opacity={disabled || isWorkoutRunning ? 0.5 : 1}
     >
-      <Text color="white">{isWorkoutRunning ? 'Workout in Progress' : 'Start Workout'}</Text>
+      <Text>{isWorkoutRunning ? 'Workout in Progress' : 'Start Workout'}</Text>
     </Button>
   )
 }

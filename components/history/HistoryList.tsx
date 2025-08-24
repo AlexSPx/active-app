@@ -1,0 +1,102 @@
+import { forwardRef } from 'react'
+import { Card, Separator, Text, View, XStack, YStack } from 'tamagui'
+import { FlashList } from '@shopify/flash-list'
+import type { FlashListRef } from '@shopify/flash-list'
+import { formatWeekRange, startOfWeek } from './date'
+
+export type HistoryListItem = {
+  id: string
+  name: string
+  date: Date
+  duration: number
+  totalSets: number
+  totalVolume: number
+}
+
+type Props = {
+  data: HistoryListItem[]
+  onViewableItemsChanged: any
+  viewabilityConfig: any
+}
+
+const HistoryList = forwardRef<FlashListRef<any>, Props>(
+  ({ data, onViewableItemsChanged, viewabilityConfig }, ref) => {
+    if (data.length === 0) {
+      return (
+        <YStack flex={1} items="center" justify="center" gap="$2">
+          <Text fontSize="$5" color="$color11">
+            No workouts yet
+          </Text>
+          <Text fontSize="$3" color="$color10">
+            Start recording workouts to see them here
+          </Text>
+        </YStack>
+      )
+    }
+
+    return (
+      <FlashList
+        ref={ref}
+        data={data}
+        keyExtractor={(item) => item.id}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
+        ItemSeparatorComponent={() => <View height={8} />}
+        renderItem={({ item, index }) => {
+          const isNewWeek =
+            index > 0 &&
+            startOfWeek(item.date).getTime() !== startOfWeek(data[index - 1].date).getTime()
+          const showHeader = index === 0 || isNewWeek
+          return (
+            <YStack>
+              {showHeader && (
+                <XStack items="center" my="$2" gap="$2">
+                  <Separator flex={1} />
+                  <Text fontSize="$2" color="$color10">
+                    {formatWeekRange(item.date)}
+                  </Text>
+                  <Separator flex={1} />
+                </XStack>
+              )}
+              <Card p="$3" bg="$surface" borderColor="$borderColor" borderWidth="$0.5">
+                <YStack gap="$2">
+                  <XStack justify="space-between" items="center">
+                    <Text fontSize="$5" fontWeight="700" color="$color">
+                      {item.name}
+                    </Text>
+                    <Text fontSize="$3" color="$colorSubtle">
+                      {item.date.toLocaleDateString([], { month: 'short', day: '2-digit' })}{' '}
+                      {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </Text>
+                  </XStack>
+                  <XStack gap="$4">
+                    <XStack gap="$1">
+                      <Text fontWeight="700" color="$color">
+                        {item.duration}
+                      </Text>
+                      <Text color="$colorSubtle">m</Text>
+                    </XStack>
+                    <XStack gap="$1">
+                      <Text fontWeight="700" color="$color">
+                        {item.totalSets}
+                      </Text>
+                      <Text color="$colorSubtle">sets</Text>
+                    </XStack>
+                    <XStack gap="$1">
+                      <Text fontWeight="700" color="$color">
+                        {item.totalVolume.toLocaleString()}
+                      </Text>
+                      <Text color="$colorSubtle">kg</Text>
+                    </XStack>
+                  </XStack>
+                </YStack>
+              </Card>
+            </YStack>
+          )
+        }}
+      />
+    )
+  }
+)
+
+export default HistoryList

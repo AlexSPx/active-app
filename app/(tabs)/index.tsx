@@ -1,38 +1,29 @@
-import { YStack, XStack, Text, Button, Card } from 'tamagui'
-import { useRouter } from 'expo-router'
+import { YStack, Text, Button } from 'tamagui'
+import { useRouter, useNavigation } from 'expo-router'
+import { useLayoutEffect } from 'react'
 import { useAuth } from '../../contexts/AuthContext'
 import { WeeklyView } from '../../components/WeeklyView'
 import { TodayView } from '../../components/TodayView'
 
 export default function HomeScreen() {
   const router = useRouter()
+  const navigation = useNavigation()
   const { logout, user } = useAuth()
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: 'Home',
+      headerRight: () => (
+        <Button size="$2" onPress={logout} bg="$red9" pressStyle={{ bg: '$red10' }}>
+          <Text color="white">Logout</Text>
+        </Button>
+      ),
+    })
+  }, [navigation, logout])
 
   return (
     <YStack flex={1} bg="$background">
-      {/* Header Section */}
-      <YStack p="$4" gap="$2">
-        <XStack justify="space-between" items="center">
-          <YStack>
-            <Text fontSize="$8" fontWeight="900" color="$color">
-              Good morning
-            </Text>
-            <Text fontSize="$5" color="$colorSubtle">
-              Ready to crush your goals?
-            </Text>
-            {user && (
-              <Text fontSize="$3" color="$colorSubtle" mt="$1">
-                Welcome back, {user.firstName || user.username}!
-              </Text>
-            )}
-          </YStack>
-          <Button size="$3" bg="$red9" onPress={logout} pressStyle={{ bg: '$red10' }}>
-            <Text color="white" fontSize="$3">
-              Logout
-            </Text>
-          </Button>
-        </XStack>
-      </YStack>
+      {/* Content starts below native header */}
 
       {/* Weekly View */}
       <YStack p="$4" pt="$0">
