@@ -3,7 +3,6 @@ import { YStack, Text, View } from 'tamagui'
 import type { FlashListRef } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
 import { useWorkoutRecords } from '../../../hooks/useWorkoutRecords'
-import { useWorkouts } from '../../../hooks/useWorkouts'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
 import type { WorkoutRecord } from '../../../types/api'
@@ -23,23 +22,11 @@ import {
 export default function HistoryPage() {
   const router = useRouter()
   const {
-    workoutRecords,
-    loading: recordsLoading,
-    error: recordsError,
-    refetch,
+    workoutRecords: records,
+    loading: loadingState,
+    error: errorState,
+    refetch: refetchFn,
   } = useWorkoutRecords()
-  const {
-    workouts,
-    loading: workoutsLoading,
-    error: workoutsError,
-    refetch: refetchWorkouts,
-  } = useWorkouts()
-  const records = workoutRecords
-  const loadingState = recordsLoading || workoutsLoading
-  const errorState = recordsError || workoutsError
-  const refetchFn = async () => {
-    await Promise.all([refetch(), refetchWorkouts()])
-  }
   const [refreshing, setRefreshing] = useState(false)
   const onRefresh = async () => {
     try {
@@ -63,43 +50,65 @@ export default function HistoryPage() {
     return idx >= 0 ? Math.floor(idx / 7) : 0
   }, [calendarDays, selectedDate])
 
-  const titleByWorkoutId = useMemo(() => {
-    const map = new Map<string, string>()
-    for (const w of workouts) map.set(w.id, w.title)
-    return map
-  }, [workouts])
-
   const converted = useMemo(() => {
     return records.map((record) => {
       const totalSets = record.exerciseRecords.reduce((total, ex) => total + ex.reps.length, 0)
       const totalVolume = record.exerciseRecords.reduce((total, ex) => {
         return total + ex.reps.reduce((acc, reps, i) => acc + reps * (ex.weight[i] || 0), 0)
       }, 0)
-      const title = titleByWorkoutId.get(record.workoutId) || record.notes || 'Workout Session'
-      // duration minutes based on LocalDateTime difference if startTime provided
-      let durationMinutes = 0
+
+      // duration seconds based on LocalDateTime difference if startTime provided
+      let durationSeconds = 0
       try {
         if (record.startTime) {
-          const created = new Date(record.createdAt)
-          // Parse LocalDateTime (no timezone) as local time
+          // Parse startTime as local date-time (no timezone)
           const [dPart, tPart] = record.startTime.split('T')
           const [y, m, d] = dPart.split('-').map((v) => parseInt(v, 10))
-          const [hh, mm, ss] = tPart.split(':').map((v) => parseInt(v, 10))
-          const start = new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, ss || 0)
-          const diffMs = Math.max(0, created.getTime() - start.getTime())
-          durationMinutes = Math.round(diffMs / 60000)
+          const [hhRaw, mmRaw, ssMsRaw] = tPart.split(':')
+          const hh = parseInt(hhRaw, 10) || 0
+          const mm = parseInt(mmRaw, 10) || 0
+          const [ssRaw, msRaw] = (ssMsRaw || '0').split('.')
+          const ss = parseInt(ssRaw, 10) || 0
+          const ms = parseInt(msRaw || '0', 10) || 0
+          const start = new Date(y, (m || 1) - 1, d || 1, hh, mm, ss, ms)
+
+          // createdAt may be UTC without timezone or local; try both
+          const hasTz = /Z$/i.test(record.createdAt) || /[+-]\d{2}:?\d{2}$/.test(record.createdAt)
+          const createdUtc = new Date(hasTz ? record.createdAt : `${record.createdAt}Z`)
+
+          // Also try parsing as local if no timezone provided
+          let createdLocal = createdUtc
+          if (!hasTz) {
+            const [cd, ct] = record.createdAt.split('T')
+            const [cy, cm, cdn] = cd.split('-').map((v) => parseInt(v, 10))
+            const [chhRaw, cmmRaw, cssMsRaw] = ct.split(':')
+            const chh = parseInt(chhRaw, 10) || 0
+            const cmm = parseInt(cmmRaw, 10) || 0
+            const [cssRaw, cmsRaw] = (cssMsRaw || '0').split('.')
+            const css = parseInt(cssRaw, 10) || 0
+            const cms = parseInt(cmsRaw || '0', 10) || 0
+            createdLocal = new Date(cy, (cm || 1) - 1, cdn || 1, chh, cmm, css, cms)
+          }
+
+          const diffs = [
+            createdUtc.getTime() - start.getTime(),
+            createdLocal.getTime() - start.getTime(),
+          ]
+          const positives = diffs.filter((d) => d >= 0)
+          const chosen = positives.length > 0 ? Math.min(...positives) : Math.max(...diffs)
+          durationSeconds = Math.max(0, Math.floor(chosen / 1000))
         }
       } catch {}
       return {
         id: record.id || `${record.workoutId}-${record.createdAt}`,
-        name: title,
+        name: record.workoutTitle,
         date: new Date(record.createdAt),
-        duration: durationMinutes || 0,
+        duration: durationSeconds || 0,
         totalSets,
         totalVolume,
       }
     })
-  }, [records, titleByWorkoutId])
+  }, [records])
   const allWorkoutsSorted = useMemo(
     () => converted.slice().sort((a, b) => b.date.getTime() - a.date.getTime()),
     [converted]

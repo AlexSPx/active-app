@@ -1,5 +1,6 @@
 import { forwardRef } from 'react'
 import { Button, Card, Separator, Text, View, XStack, YStack } from 'tamagui'
+import { Timer as TimerIcon, Dumbbell } from '@tamagui/lucide-icons'
 import { FlashList } from '@shopify/flash-list'
 import type { FlashListRef } from '@shopify/flash-list'
 import { formatWeekRange, startOfWeek } from './date'
@@ -49,6 +50,15 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
       )
     }
 
+    const formatDuration = (secs: number) => {
+      const s = Math.max(0, Math.floor(secs || 0))
+      const h = Math.floor(s / 3600)
+      const m = Math.floor((s % 3600) / 60)
+      const ss = s % 60
+      if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+      return `${m}:${String(ss).padStart(2, '0')}`
+    }
+
     return (
       <FlashList
         ref={ref}
@@ -94,24 +104,27 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
                         {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </Text>
                     </XStack>
-                    <XStack gap="$4">
-                      <XStack gap="$1">
+                    <XStack items="center">
+                      <XStack flex={1} items="center" justify="center" gap="$1">
+                        <TimerIcon size={14} color="$colorSubtle" />
                         <Text fontWeight="700" color="$color">
-                          {item.duration}
+                          {formatDuration(item.duration)}
                         </Text>
-                        <Text color="$colorSubtle">m</Text>
                       </XStack>
-                      <XStack gap="$1">
-                        <Text fontWeight="700" color="$color">
-                          {item.totalSets}
-                        </Text>
-                        <Text color="$colorSubtle">sets</Text>
-                      </XStack>
-                      <XStack gap="$1">
+                      <View width={1} height={18} bg="$borderColor" mx="$3" />
+                      <XStack flex={1} items="center" justify="center" gap="$1">
+                        <Dumbbell size={14} color="$colorSubtle" />
                         <Text fontWeight="700" color="$color">
                           {item.totalVolume.toLocaleString()}
                         </Text>
                         <Text color="$colorSubtle">kg</Text>
+                      </XStack>
+                      <View width={1} height={18} bg="$borderColor" mx="$3" />
+                      <XStack flex={1} items="center" justify="center" gap="$1">
+                        <Text fontWeight="700" color="$color">
+                          {item.totalSets}
+                        </Text>
+                        <Text color="$colorSubtle">sets</Text>
                       </XStack>
                     </XStack>
                   </YStack>

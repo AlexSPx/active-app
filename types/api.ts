@@ -143,6 +143,7 @@ export interface WorkoutRecordExercise {
 export interface WorkoutRecord {
   id: string | null
   workoutId: string
+  workoutTitle: string
   notes?: string | null
   createdAt: string
   // LocalDateTime string if provided when recording

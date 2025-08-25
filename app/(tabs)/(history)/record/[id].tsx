@@ -4,42 +4,17 @@ import { Text, YStack, XStack, Separator, View } from 'tamagui'
 import { Calendar as CalendarIcon, Timer as TimerIcon, Dumbbell } from '@tamagui/lucide-icons'
 import { useMemo } from 'react'
 import { useWorkoutRecords } from '../../../../hooks/useWorkoutRecords'
-import { useWorkouts } from '../../../../hooks/useWorkouts'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../../components/ui/ErrorDisplay'
 
 export default function RecordDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
-  const {
-    workoutRecords,
-    loading: recordsLoading,
-    error: recordsError,
-    refetch: refetchRecords,
-  } = useWorkoutRecords()
-  const {
-    workouts,
-    loading: workoutsLoading,
-    error: workoutsError,
-    refetch: refetchWorkouts,
-  } = useWorkouts()
+  const { workoutRecords, loading, error, refetch } = useWorkoutRecords()
 
   const record = useMemo(
     () => workoutRecords.find((r) => (r.id ?? `${r.workoutId}-${r.createdAt}`) === id),
     [workoutRecords, id]
   )
-
-  const loading = recordsLoading || workoutsLoading
-  const error = recordsError || workoutsError
-  const refetch = async () => {
-    await Promise.all([refetchRecords(), refetchWorkouts()])
-  }
-
-  // Compute title unconditionally to keep hooks order stable across renders
-  const workoutTitle = useMemo(() => {
-    if (!record) return undefined
-    const w = workouts.find((w) => w.id === record.workoutId)
-    return w?.title
-  }, [workouts, record?.workoutId])
 
   if (loading) {
     return (
@@ -84,11 +59,41 @@ export default function RecordDetailScreen() {
   let computedDurationSecs = totalDurationSeconds
   if (!computedDurationSecs && record.startTime) {
     try {
+      // Parse startTime as LocalDateTime (no timezone), including optional milliseconds
       const [dPart, tPart] = record.startTime.split('T')
       const [y, m, d] = dPart.split('-').map((v) => parseInt(v, 10))
-      const [hh, mm, ss] = tPart.split(':').map((v) => parseInt(v, 10))
-      const start = new Date(y, (m || 1) - 1, d || 1, hh || 0, mm || 0, ss || 0)
-      computedDurationSecs = Math.max(0, Math.floor((date.getTime() - start.getTime()) / 1000))
+      const [hhRaw, mmRaw, ssMsRaw] = tPart.split(':')
+      const hh = parseInt(hhRaw, 10) || 0
+      const mm = parseInt(mmRaw, 10) || 0
+      const [ssRaw, msRaw] = (ssMsRaw || '0').split('.')
+      const ss = parseInt(ssRaw, 10) || 0
+      const ms = parseInt(msRaw || '0', 10) || 0
+      const start = new Date(y, (m || 1) - 1, d || 1, hh, mm, ss, ms)
+
+      // createdAt may lack timezone; try UTC and local
+      const createdAtStr = record.createdAt
+      const hasTz = /Z$/i.test(createdAtStr) || /[+-]\d{2}:?\d{2}$/.test(createdAtStr)
+      const createdUtc = new Date(hasTz ? createdAtStr : `${createdAtStr}Z`)
+      let createdLocal = createdUtc
+      if (!hasTz) {
+        const [cd, ct] = createdAtStr.split('T')
+        const [cy, cm, cdn] = cd.split('-').map((v) => parseInt(v, 10))
+        const [chhRaw, cmmRaw, cssMsRaw] = ct.split(':')
+        const chh = parseInt(chhRaw, 10) || 0
+        const cmm = parseInt(cmmRaw, 10) || 0
+        const [cssRaw, cmsRaw] = (cssMsRaw || '0').split('.')
+        const css = parseInt(cssRaw, 10) || 0
+        const cms = parseInt(cmsRaw || '0', 10) || 0
+        createdLocal = new Date(cy, (cm || 1) - 1, cdn || 1, chh, cmm, css, cms)
+      }
+
+      const diffs = [
+        createdUtc.getTime() - start.getTime(),
+        createdLocal.getTime() - start.getTime(),
+      ]
+      const positives = diffs.filter((d) => d >= 0)
+      const chosen = positives.length > 0 ? Math.min(...positives) : Math.max(...diffs)
+      computedDurationSecs = Math.max(0, Math.floor(chosen / 1000))
     } catch {}
   }
   const formatDuration = (secs: number) => {
@@ -107,7 +112,7 @@ export default function RecordDetailScreen() {
         {/* Header Title */}
         <YStack gap="$1">
           <Text fontSize="$7" fontWeight="700" color="$color">
-            {workoutTitle || record.notes || 'Workout Session'}
+            {record.workoutTitle}
           </Text>
           <XStack items="center" gap="$2">
             <CalendarIcon size={16} color="$colorSubtle" />
@@ -116,7 +121,7 @@ export default function RecordDetailScreen() {
               {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </Text>
           </XStack>
-          {record.notes && workoutTitle ? (
+          {record.notes ? (
             <Text color="$color10" numberOfLines={2}>
               {record.notes}
             </Text>
@@ -124,16 +129,18 @@ export default function RecordDetailScreen() {
         </YStack>
 
         {/* Stats Row */}
-        <XStack gap="$4" py="$2">
-          <XStack flex={1} items="center" gap="$2">
+        <XStack items="center" py="$2">
+          <XStack flex={1} items="center" justify="center" gap="$2">
             <TimerIcon size={16} color="$colorSubtle" />
-            <Text color="$colorSubtle">{durationLabel} Duration</Text>
+            <Text color="$colorSubtle">{durationLabel}</Text>
           </XStack>
-          <XStack flex={1} items="center" gap="$2">
+          <View width={1} height="100%" bg="$borderColor" mx="$3" />
+          <XStack flex={1} items="center" justify="center" gap="$2">
             <Dumbbell size={16} color="$colorSubtle" />
             <Text color="$colorSubtle">{totalVolume.toLocaleString()} kg</Text>
           </XStack>
-          <XStack flex={1} items="center" justify="flex-end">
+          <View width={1} height="100%" bg="$borderColor" mx="$3" />
+          <XStack flex={1} items="center" justify="center">
             <Text color="$colorSubtle">{totalSets} sets</Text>
           </XStack>
         </XStack>
