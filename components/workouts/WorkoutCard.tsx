@@ -1,7 +1,8 @@
-import { YStack, XStack, Text, Card, Separator } from 'tamagui'
-import { View } from 'react-native'
-import { FlashList } from '@shopify/flash-list'
-import { useCallback, memo } from 'react'
+import { YStack, XStack, Text, Card, Separator, Button, Portal } from 'tamagui'
+import { MoreHorizontal, Edit3, Trash2 } from '@tamagui/lucide-icons'
+import { Popover } from '@tamagui/popover'
+import { useCallback, memo, useState } from 'react'
+import { Pressable, StyleSheet } from 'react-native'
 import { StartWorkoutButton } from '../ui/StartWorkoutButton'
 import { ApiWorkout } from 'types/api'
 
@@ -21,6 +22,7 @@ export const WorkoutCard = memo(
     onEdit,
     onDelete,
   }: WorkoutCardProps) {
+    const [menuOpen, setMenuOpen] = useState(false)
     const renderExercisePreview = useCallback(
       ({ item: exercise }: { item: { exerciseId: string; reps: number[]; weight: number[] } }) => (
         <Text fontSize="$4" color="$colorSubtle">
@@ -58,18 +60,58 @@ export const WorkoutCard = memo(
             <Text fontSize="$6" fontWeight="700" color="$color">
               {workout.title}
             </Text>
-            <XStack gap="$2">
-              {onEdit && (
-                <Text color="$colorSubtle" fontSize="$3" onPress={() => onEdit(workout)}>
-                  Edit
-                </Text>
-              )}
-              {onDelete && (
-                <Text color="$primary" fontSize="$3" onPress={() => onDelete(workout.id)}>
-                  Delete
-                </Text>
-              )}
-            </XStack>
+            {(onEdit || onDelete) && (
+              <>
+                {menuOpen && (
+                  <Portal>
+                    <Pressable
+                      style={[StyleSheet.absoluteFillObject, { zIndex: 1 }]}
+                      onPress={() => setMenuOpen(false)}
+                    />
+                  </Portal>
+                )}
+                <Popover
+                  open={menuOpen}
+                  onOpenChange={setMenuOpen}
+                  size="$2"
+                  placement="bottom-end"
+                >
+                  <Popover.Trigger asChild>
+                    <Button size="$3" circular icon={MoreHorizontal} />
+                  </Popover.Trigger>
+                  <Popover.Content
+                    p="$2"
+                    bg="$surface"
+                    borderColor="$borderColor"
+                    borderWidth="$0.5"
+                    elevate
+                  >
+                    <YStack width={150} gap="$1">
+                      {onEdit && (
+                        <Popover.Close asChild>
+                          <Button size="$3" chromeless onPress={() => onEdit?.(workout)}>
+                            <XStack items="center" gap="$2">
+                              <Edit3 size={14} />
+                              <Text>Edit</Text>
+                            </XStack>
+                          </Button>
+                        </Popover.Close>
+                      )}
+                      {onDelete && (
+                        <Popover.Close asChild>
+                          <Button size="$3" chromeless onPress={() => onDelete?.(workout.id)}>
+                            <XStack items="center" gap="$2">
+                              <Trash2 size={14} color="red" />
+                              <Text color="$red10">Delete</Text>
+                            </XStack>
+                          </Button>
+                        </Popover.Close>
+                      )}
+                    </YStack>
+                  </Popover.Content>
+                </Popover>
+              </>
+            )}
           </XStack>
 
           {/* Description preview */}
@@ -85,13 +127,6 @@ export const WorkoutCard = memo(
             <Text fontSize="$3" color="$colorSubtle">
               {workout.workoutTemplate.exercises.reduce((s, e) => s + (e.reps?.length || 0), 0)}{' '}
               Sets Logged
-            </Text>
-            <Text fontSize="$3" color="$colorSubtle">
-              {/* Estimated duration placeholder */}
-              1:04:43 Duration
-            </Text>
-            <Text fontSize="$3" color="$colorSubtle">
-              356 Est Calories
             </Text>
           </XStack>
 

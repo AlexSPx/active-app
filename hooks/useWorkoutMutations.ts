@@ -32,10 +32,8 @@ export function useWorkoutMutations() {
     try {
       setLoading(true)
       setError(null)
-      // Note: We don't have a delete workout API endpoint yet
-      // This would need to be implemented in the API service
-      console.warn('Delete workout not implemented in API yet')
-      return false
+      await apiService.deleteWorkout(id)
+      return true
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete workout')
       return false

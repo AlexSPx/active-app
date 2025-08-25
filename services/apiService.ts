@@ -194,6 +194,20 @@ class ApiService {
     return this.handleResponse<WorkoutRecord[]>(response)
   }
 
+  async deleteWorkout(workoutId: string): Promise<void> {
+    const base = config.API_ENDPOINTS.WORKOUTS.DELETE
+    const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
+    console.log(`API Request: DELETE ${url}`)
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: await this.getAuthHeaders(),
+    })
+
+    // Many DELETE endpoints return no body; handleResponse will return {}
+    await this.handleResponse<unknown>(response)
+  }
+
   async signup(payload: RegisterRequest): Promise<LoginResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.AUTH.SIGNUP)
     console.log(`API Request: POST ${url}`, { email: payload.email })
