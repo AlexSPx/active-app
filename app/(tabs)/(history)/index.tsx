@@ -5,7 +5,6 @@ import { useRouter } from 'expo-router'
 import { useWorkoutRecords } from '../../../hooks/useWorkoutRecords'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
-import type { WorkoutRecord } from '../../../types/api'
 import type { ViewToken } from 'react-native'
 import {
   HistoryCalendar,
@@ -16,6 +15,7 @@ import {
   startOfWeek,
   toISODate,
 } from '../../../components/history'
+import { parseServerUtcDate } from '../../../utils/date'
 
 // Conversion performed inside component to include workout titles
 
@@ -57,48 +57,13 @@ export default function HistoryPage() {
         return total + ex.reps.reduce((acc, reps, i) => acc + reps * (ex.weight[i] || 0), 0)
       }, 0)
 
-      // duration seconds based on LocalDateTime difference if startTime provided
-      let durationSeconds = 0
-      try {
-        if (record.startTime) {
-          // Parse startTime as local date-time (no timezone)
-          const [dPart, tPart] = record.startTime.split('T')
-          const [y, m, d] = dPart.split('-').map((v) => parseInt(v, 10))
-          const [hhRaw, mmRaw, ssMsRaw] = tPart.split(':')
-          const hh = parseInt(hhRaw, 10) || 0
-          const mm = parseInt(mmRaw, 10) || 0
-          const [ssRaw, msRaw] = (ssMsRaw || '0').split('.')
-          const ss = parseInt(ssRaw, 10) || 0
-          const ms = parseInt(msRaw || '0', 10) || 0
-          const start = new Date(y, (m || 1) - 1, d || 1, hh, mm, ss, ms)
-
-          // createdAt may be UTC without timezone or local; try both
-          const hasTz = /Z$/i.test(record.createdAt) || /[+-]\d{2}:?\d{2}$/.test(record.createdAt)
-          const createdUtc = new Date(hasTz ? record.createdAt : `${record.createdAt}Z`)
-
-          // Also try parsing as local if no timezone provided
-          let createdLocal = createdUtc
-          if (!hasTz) {
-            const [cd, ct] = record.createdAt.split('T')
-            const [cy, cm, cdn] = cd.split('-').map((v) => parseInt(v, 10))
-            const [chhRaw, cmmRaw, cssMsRaw] = ct.split(':')
-            const chh = parseInt(chhRaw, 10) || 0
-            const cmm = parseInt(cmmRaw, 10) || 0
-            const [cssRaw, cmsRaw] = (cssMsRaw || '0').split('.')
-            const css = parseInt(cssRaw, 10) || 0
-            const cms = parseInt(cmsRaw || '0', 10) || 0
-            createdLocal = new Date(cy, (cm || 1) - 1, cdn || 1, chh, cmm, css, cms)
-          }
-
-          const diffs = [
-            createdUtc.getTime() - start.getTime(),
-            createdLocal.getTime() - start.getTime(),
-          ]
-          const positives = diffs.filter((d) => d >= 0)
-          const chosen = positives.length > 0 ? Math.min(...positives) : Math.max(...diffs)
-          durationSeconds = Math.max(0, Math.floor(chosen / 1000))
-        }
-      } catch {}
+      // createdAt and startTime come from server as UTC(+00:00); parse as UTC and
+      // convert to local Date for display. For duration, use the timestamp delta.
+      const createdAtDate = parseServerUtcDate(record.createdAt)
+      const startDate = record.startTime ? parseServerUtcDate(record.startTime) : undefined
+      const durationSeconds = startDate
+        ? Math.max(0, Math.floor((createdAtDate.getTime() - startDate.getTime()) / 1000))
+        : 0
       // PR flags: 1RM and/or Total Volume
       const prOneRm = record.exerciseRecords.some(
         (ex) => !!ex.achievedOneRmValue && ex.achievedOneRmValue > 0
@@ -110,7 +75,7 @@ export default function HistoryPage() {
       return {
         id: record.id || `${record.workoutId}-${record.createdAt}`,
         name: record.workoutTitle,
-        date: new Date(record.createdAt),
+        date: createdAtDate,
         duration: durationSeconds || 0,
         totalSets,
         totalVolume,
