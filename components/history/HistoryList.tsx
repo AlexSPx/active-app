@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { Button, Card, Separator, Text, View, XStack, YStack } from 'tamagui'
-import { Timer as TimerIcon, Dumbbell } from '@tamagui/lucide-icons'
+import { Timer as TimerIcon, Dumbbell, Trophy, BarChart2 } from '@tamagui/lucide-icons'
 import { FlashList } from '@shopify/flash-list'
 import type { FlashListRef } from '@shopify/flash-list'
 import { formatWeekRange, startOfWeek } from './date'
@@ -12,6 +12,8 @@ export type HistoryListItem = {
   duration: number
   totalSets: number
   totalVolume: number
+  prOneRm?: boolean
+  prVolume?: boolean
 }
 
 type Props = {
@@ -96,9 +98,38 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
                 >
                   <YStack gap="$2">
                     <XStack justify="space-between" items="center">
-                      <Text fontSize="$5" fontWeight="700" color="$color">
-                        {item.name}
-                      </Text>
+                      <XStack gap="$2">
+                        <Text fontSize="$5" fontWeight="700" color="$color">
+                          {item.name}
+                        </Text>
+                        <XStack gap="$2" justify="flex-end">
+                          {item.prOneRm && (
+                            <XStack
+                              width={24}
+                              height={24}
+                              bg="$primary"
+                              rounded="$2"
+                              items="center"
+                              justify="center"
+                            >
+                              <Trophy size={14} color="$color" strokeWidth={2.5} />
+                            </XStack>
+                          )}
+                          {item.prVolume && (
+                            <XStack
+                              width={24}
+                              height={24}
+                              bg="$primary"
+                              rounded="$2"
+                              items="center"
+                              justify="center"
+                            >
+                              <BarChart2 size={14} color="$color" strokeWidth={2.5} />
+                            </XStack>
+                          )}
+                        </XStack>
+                      </XStack>
+
                       <Text fontSize="$3" color="$colorSubtle">
                         {item.date.toLocaleDateString([], { month: 'short', day: '2-digit' })}{' '}
                         {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

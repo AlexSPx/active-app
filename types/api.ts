@@ -138,6 +138,10 @@ export interface WorkoutRecordExercise {
   weight: number[]
   durationSeconds?: number[] | null
   notes?: string | null
+  // Achievement fields (populated when a new PR is achieved for this exercise)
+  achievedOneRmValue?: number | null // estimated 1RM in kg
+  achievedOneRmSetIndex?: number | null // zero-based set index that achieved 1RM
+  achievedTotalVolumeValue?: number | null // total volume PR in kg across all sets
 }
 
 export interface WorkoutRecord {

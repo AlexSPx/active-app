@@ -99,6 +99,14 @@ export default function HistoryPage() {
           durationSeconds = Math.max(0, Math.floor(chosen / 1000))
         }
       } catch {}
+      // PR flags: 1RM and/or Total Volume
+      const prOneRm = record.exerciseRecords.some(
+        (ex) => !!ex.achievedOneRmValue && ex.achievedOneRmValue > 0
+      )
+      const prVolume = record.exerciseRecords.some(
+        (ex) => !!ex.achievedTotalVolumeValue && ex.achievedTotalVolumeValue > 0
+      )
+
       return {
         id: record.id || `${record.workoutId}-${record.createdAt}`,
         name: record.workoutTitle,
@@ -106,6 +114,8 @@ export default function HistoryPage() {
         duration: durationSeconds || 0,
         totalSets,
         totalVolume,
+        prOneRm,
+        prVolume,
       }
     })
   }, [records])

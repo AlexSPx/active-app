@@ -1,7 +1,13 @@
 import { useLocalSearchParams } from 'expo-router'
 import { ScrollView } from 'react-native'
 import { Text, YStack, XStack, Separator, View } from 'tamagui'
-import { Calendar as CalendarIcon, Timer as TimerIcon, Dumbbell } from '@tamagui/lucide-icons'
+import {
+  Calendar as CalendarIcon,
+  Timer as TimerIcon,
+  Dumbbell,
+  Trophy,
+  BarChart2,
+} from '@tamagui/lucide-icons'
 import { useMemo } from 'react'
 import { useWorkoutRecords } from '../../../../hooks/useWorkoutRecords'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner'
@@ -151,13 +157,49 @@ export default function RecordDetailScreen() {
         <YStack>
           {record.exerciseRecords.map((ex, idx) => (
             <YStack key={`${ex.exerciseName}-${idx}`} py="$3">
-              <Text fontSize="$5" fontWeight="700" color="$color" mb="$2">
-                {ex.exerciseName}
-              </Text>
+              <XStack items="center" gap="$2" mb="$2" flexWrap="wrap">
+                <Text fontSize="$5" fontWeight="700" color="$color">
+                  {ex.exerciseName}
+                </Text>
+                {ex.achievedTotalVolumeValue && ex.achievedTotalVolumeValue > 0 && (
+                  <XStack
+                    items="center"
+                    gap={6}
+                    px={8}
+                    py={2}
+                    bg="$primary"
+                    style={{ borderRadius: 8 }}
+                  >
+                    <BarChart2 size={12} color="$color" />
+                    <Text color="$color" fontSize="$2" fontWeight="700">
+                      {ex.achievedTotalVolumeValue.toLocaleString()} kg
+                    </Text>
+                  </XStack>
+                )}
+              </XStack>
               <YStack gap="$1">
                 {ex.reps.map((r, i) => (
-                  <XStack key={i} justify="space-between">
-                    <Text color="$colorSubtle">Set {i + 1}</Text>
+                  <XStack key={i} justify="space-between" items="center">
+                    <XStack items="center" gap={6}>
+                      <Text color="$colorSubtle">Set {i + 1}</Text>
+                      {typeof ex.achievedOneRmSetIndex === 'number' &&
+                        ex.achievedOneRmSetIndex === i &&
+                        (ex.achievedOneRmValue ?? 0) > 0 && (
+                          <XStack
+                            items="center"
+                            gap={6}
+                            px={8}
+                            py={2}
+                            bg="$primary"
+                            style={{ borderRadius: 8 }}
+                          >
+                            <Trophy size={12} color="$color" />
+                            <Text color="$color" fontSize="$2" fontWeight="700">
+                              {Number(ex.achievedOneRmValue).toLocaleString()} kg
+                            </Text>
+                          </XStack>
+                        )}
+                    </XStack>
                     <Text color="$color">
                       {r} reps @ {(ex.weight[i] ?? 0).toLocaleString()} kg
                     </Text>
