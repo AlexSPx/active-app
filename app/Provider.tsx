@@ -4,9 +4,15 @@ import { ToastProvider, ToastViewport } from '@tamagui/toast'
 import { CurrentToast } from './CurrentToast'
 import { config } from '../tamagui.config'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { useUiStore } from '../stores/uiStore'
+import FinishedWorkoutCongrats from '../components/FinishedWorkoutCongrats'
 
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   const colorScheme = useColorScheme()
+  const finishedCongrats = useUiStore((s) => s.finishedCongrats)
+  const hideFinishedCongrats = useUiStore((s) => s.hideFinishedCongrats)
+  const congratsVisible = finishedCongrats.visible && !!finishedCongrats.payload
+  const payload = finishedCongrats.payload
 
   return (
     <SafeAreaProvider>
@@ -29,6 +35,13 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
             {children}
             <CurrentToast />
             <ToastViewport top="$8" left={0} right={0} />
+            {congratsVisible && payload && (
+              <FinishedWorkoutCongrats
+                data={payload}
+                visible={congratsVisible}
+                onClose={hideFinishedCongrats}
+              />
+            )}
           </ToastProvider>
         </TamaguiProvider>
       </PortalProvider>

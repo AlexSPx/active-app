@@ -8,6 +8,7 @@ import { getCurrentDate } from '../../utils/dateUtils'
 import { useWorkoutSession } from '../../hooks/useWorkoutSession'
 import { useAppNavigation } from '../../navigation/useAppNavigation'
 import type { Exercise } from '../../types/workout-session'
+import { useUiStore } from '../../stores/uiStore'
 
 export default function WorkoutSessionScreen() {
   const { goBack } = useAppNavigation()
@@ -28,6 +29,7 @@ export default function WorkoutSessionScreen() {
   } = useWorkoutSession()
 
   const theme = useTheme()
+  const showFinishedCongrats = useUiStore((s) => s.showFinishedCongrats)
 
   const renderExercise = ({ item: exercise }: { item: Exercise }) => (
     <WorkoutSessionExercise
@@ -51,7 +53,10 @@ export default function WorkoutSessionScreen() {
   const ListFooterComponent = () => (
     <View pb="$6">
       <WorkoutActions
-        onFinishWorkout={finishWorkout}
+        onFinishWorkout={async () => {
+          const record = await finishWorkout()
+          if (record) showFinishedCongrats(record)
+        }}
         onCancelWorkout={cancelWorkout}
         onGoBack={goBack}
       />

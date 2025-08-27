@@ -3,6 +3,7 @@ import type { Exercise } from '../types/workout-session'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
 import { apiService } from '../services/apiService'
+import type { WorkoutRecord } from '../types/api'
 
 export interface UseWorkoutSessionOptions {
   fallbackExercises?: Exercise[]
@@ -23,7 +24,7 @@ export interface WorkoutSessionActions {
   addSet: (exerciseId: string) => void
   removeSet: (exerciseId: string, setIndex: number) => void
   startRestTimer: (setId: string) => void
-  finishWorkout: (notes?: string) => Promise<void>
+  finishWorkout: (notes?: string) => Promise<WorkoutRecord | void>
   cancelWorkout: () => void
 }
 
@@ -212,7 +213,7 @@ export function useWorkoutSession(
   }
 
   const finishWorkout = async (notes?: string) => {
-    await stopWorkout(notes)
+    return await stopWorkout(notes)
   }
 
   const cancelWorkout = () => {

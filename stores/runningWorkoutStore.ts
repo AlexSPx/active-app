@@ -2,7 +2,8 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ApiExercise } from '../types/api'
 import { apiService } from '../services/apiService'
-import type { WorkoutRecordRequest, ExerciseRecord } from '../types/api'
+import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecord } from '../types/api'
+import type { FinishedCongratsPayload } from '../types/congrats'
 
 export interface RunningWorkoutExercise extends ApiExercise {
   sets: number
@@ -31,7 +32,7 @@ interface RunningWorkoutStore {
   startWorkout: (
     workout: Omit<RunningWorkout, 'startTime' | 'currentExerciseIndex' | 'completedExercises'>
   ) => void
-  stopWorkout: (notes?: string) => Promise<void>
+  stopWorkout: (notes?: string) => Promise<WorkoutRecord | void>
   cancelWorkout: () => void
   updateCurrentExercise: (index: number) => void
   completeExercise: () => void
@@ -117,12 +118,9 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           // Record the workout to the server
           const result = await apiService.recordWorkout(workoutRecord)
 
-          if (result) {
-            console.log('Workout recorded successfully with ID:', result.id)
-          }
-
           // Clear the running workout after successful recording
           set({ runningWorkout: null, isRecording: false })
+          return result
         } catch (error) {
           console.error('Failed to record workout:', error)
           const errorMessage = error instanceof Error ? error.message : 'Failed to record workout'

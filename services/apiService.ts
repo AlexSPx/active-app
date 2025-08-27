@@ -147,7 +147,7 @@ class ApiService {
     return this.handleResponse<ApiWorkout[]>(response)
   }
 
-  async recordWorkout(workoutRecord: WorkoutRecordRequest): Promise<{ id: string }> {
+  async recordWorkout(workoutRecord: WorkoutRecordRequest): Promise<WorkoutRecord> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.RECORD)
     console.log(`API Request: POST ${url}`, workoutRecord)
 
@@ -157,7 +157,7 @@ class ApiService {
       body: JSON.stringify(workoutRecord),
     })
 
-    return this.handleResponse<{ id: string }>(response)
+    return this.handleResponse<WorkoutRecord>(response)
   }
 
   async updateWorkout(
