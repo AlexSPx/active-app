@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, ReactNode } from 'react'
 import { useAuthStore, initializeAuth } from '../stores/authStore'
 import type { User, LoginRequest } from '../services/apiService'
 import type { RegisterRequest } from '../types/api'
+import { apiService } from '../services/apiService'
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -26,6 +27,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Initialize auth state on mount
   useEffect(() => {
+    // Attach global 401 handler -> triggers logout
+    apiService.setUnauthorizedHandler(() => {
+      // fire and forget; store handles clearing
+      useAuthStore.getState().logout()
+    })
+
     initializeAuth().catch((error) => {
       console.error('Failed to initialize auth:', error)
     })

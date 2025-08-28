@@ -27,6 +27,12 @@ export type {
 } from '../types/api'
 
 class ApiService {
+  private unauthorizedHandler?: () => void
+
+  setUnauthorizedHandler(handler: () => void) {
+    this.unauthorizedHandler = handler
+  }
+
   private async getAuthHeaders(): Promise<HeadersInit> {
     const token = await AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN)
     const headers: HeadersInit = {
@@ -45,6 +51,15 @@ class ApiService {
     console.log(`API Response: ${response.status} ${response.url}`)
 
     if (!response.ok) {
+      // On unauthorized globally signal handler
+      if (response.status === 401 && this.unauthorizedHandler) {
+        try {
+          this.unauthorizedHandler()
+        } catch (e) {
+          console.error('Unauthorized handler error:', e)
+        }
+      }
+
       const error: ApiError = new Error(`API Error: ${response.status}`)
       error.status = response.status
 

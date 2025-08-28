@@ -1,14 +1,18 @@
 import { useAuth } from '../contexts/AuthContext'
 import { RootLayoutNav } from '../components/RootLayoutNav'
 import { useEffect } from 'react'
-import { useRouter, useSegments } from 'expo-router'
+import { useRouter, useSegments, useRootNavigationState } from 'expo-router'
 
 export function AuthGuard() {
   const { isAuthenticated } = useAuth()
   const router = useRouter()
   const segments = useSegments()
+  const navigationState = useRootNavigationState()
 
   useEffect(() => {
+    // Wait until the root navigation is mounted to avoid navigating before mount
+    if (!navigationState?.key) return
+
     const inAuthGroup = segments[0] === 'welcome'
 
     if (!isAuthenticated && !inAuthGroup) {
@@ -18,7 +22,7 @@ export function AuthGuard() {
       // Redirect to main app if authenticated
       router.replace('/(tabs)' as any)
     }
-  }, [isAuthenticated, segments])
+  }, [isAuthenticated, segments, navigationState?.key])
 
   return <RootLayoutNav />
 }
