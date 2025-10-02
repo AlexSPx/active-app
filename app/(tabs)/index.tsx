@@ -17,7 +17,7 @@ export default function HomeScreen() {
   const [showWidgetManager, setShowWidgetManager] = useState(false)
 
   const { widgets, removeWidget } = useWidgetStore()
-  const visibleWidgets = widgets.filter((w) => w.isVisible).sort((a, b) => a.position - b.position)
+  const sortedWidgets = widgets.sort((a, b) => a.position - b.position)
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -64,9 +64,9 @@ export default function HomeScreen() {
           </Button>
         </XStack>
 
-        {visibleWidgets.length > 0 ? (
+        {sortedWidgets.length > 0 ? (
           <YStack>
-            {visibleWidgets.map((widget) => (
+            {sortedWidgets.map((widget) => (
               <ProgressionWidget key={widget.id} config={widget} onRemove={removeWidget} />
             ))}
           </YStack>

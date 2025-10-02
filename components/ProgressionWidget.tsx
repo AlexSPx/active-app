@@ -8,7 +8,7 @@ import { getMetricLabel, getMetricUnit } from '../stores/widgetStore'
 
 interface ProgressionWidgetProps {
   config: WidgetConfig
-  onRemove?: (widgetId: string) => void
+  onRemove: (widgetId: string) => void
 }
 
 const MetricIcon = ({ metric }: { metric: ProgressionMetric }) => {
@@ -28,9 +28,9 @@ export function ProgressionWidget({ config, onRemove }: ProgressionWidgetProps) 
   const { data, isLoading, error } = useExerciseProgression(config.exerciseId)
   const theme = useTheme()
 
-  const primaryColor = theme.blue9?.val ?? '#6366f1'
-  const mutedColor = theme.color11?.val ?? '#64748b'
-  const prColor = theme.green10?.val ?? '#22c55e'
+  const primaryColor = theme.blue9.val
+  const mutedColor = theme.color11.val
+  const prColor = theme.green10.val
 
   const progressionData = useMemo(() => {
     if (!data) return []
@@ -74,8 +74,6 @@ export function ProgressionWidget({ config, onRemove }: ProgressionWidgetProps) 
     onRemove?.(config.id)
   }
 
-  if (!config.isVisible) return null
-
   return (
     <Card p="$4" mb="$3" bg="$background" borderColor="$borderColor" borderWidth={1}>
       <XStack items="center" justify="space-between" mb="$3">
@@ -91,11 +89,9 @@ export function ProgressionWidget({ config, onRemove }: ProgressionWidgetProps) 
           </YStack>
         </XStack>
 
-        {onRemove && (
-          <Button size="$2" onPress={handleRemove} p="$2" chromeless>
-            <Trash2 size={16} />
-          </Button>
-        )}
+        <Button size="$2" onPress={handleRemove} p="$2" chromeless>
+          <Trash2 size={16} />
+        </Button>
       </XStack>
 
       {isLoading && (
@@ -147,7 +143,6 @@ export function ProgressionWidget({ config, onRemove }: ProgressionWidgetProps) 
               showYAxisIndices={false}
               hideRules
               backgroundColor="transparent"
-              curved
               animateOnDataChange
               animationDuration={800}
               initialSpacing={10}

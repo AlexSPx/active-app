@@ -37,6 +37,8 @@ export function WidgetManager({ isVisible, onClose }: WidgetManagerProps) {
 
   const handleExerciseSelect = (exercise: { id: string; name: string }) => {
     setSelectedExercise(exercise)
+    clearSearch()
+    setSearchQuery('')
   }
 
   return (
@@ -46,7 +48,7 @@ export function WidgetManager({ isVisible, onClose }: WidgetManagerProps) {
       open={isVisible}
       onOpenChange={(open) => !open && onClose()}
     >
-      <Sheet.Overlay animation="quick" />
+      <Sheet.Overlay animation="quick" style={{ backgroundColor: 'transparent' }} />
       <Sheet.Handle />
       <Sheet.Frame bg="$background" borderTopLeftRadius={20} borderTopRightRadius={20} p="$4">
         <YStack gap="$4" flex={1}>
@@ -175,7 +177,7 @@ export function WidgetManager({ isVisible, onClose }: WidgetManagerProps) {
             </XStack>
             <Text fontSize="$2" color="$color11" mt="$1">
               {selectedMetric === 'oneRm' && 'Track estimated 1-rep max progress'}
-              {selectedMetric === 'volume' && 'Track total weight × reps progress'}
+              {selectedMetric === 'volume' && 'Track total (weight * reps) progress'}
               {selectedMetric === 'maxWeight' && 'Track maximum weight lifted progress'}
             </Text>
           </YStack>
