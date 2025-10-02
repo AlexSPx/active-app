@@ -14,6 +14,7 @@ export const config = {
     },
     EXERCISES: {
       SEARCH: '/api/exercises/search',
+      LOGS: '/api/exercises',
     },
     WORKOUTS: {
       CREATE: '/api/workouts',

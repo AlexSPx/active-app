@@ -11,6 +11,7 @@ import type {
   WorkoutRecordRequest,
   WorkoutRecord,
   RegisterRequest,
+  ExerciseLogResponse,
 } from '../types/api'
 
 // Re-export types for backward compatibility
@@ -234,6 +235,18 @@ class ApiService {
     })
 
     return this.handleResponse<LoginResponse>(response)
+  }
+
+  async getExerciseLogs(exerciseId: string): Promise<ExerciseLogResponse[]> {
+    const url = getApiUrl(`${config.API_ENDPOINTS.EXERCISES.LOGS}/${encodeURIComponent(exerciseId)}/logs`)
+    console.log(`API Request: GET ${url}`)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: await this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<ExerciseLogResponse[]>(response)
   }
 }
 

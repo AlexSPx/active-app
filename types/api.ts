@@ -155,6 +155,30 @@ export interface WorkoutRecord {
   exerciseRecords: WorkoutRecordExercise[]
 }
 
+// TODO: Harmonize with WorkoutRecordExercise
+// Exercise Log Types
+export interface ExerciseLogResponse {
+  exerciseRecordId: string
+  exerciseId: string
+  exerciseName: string
+  createdAt: string // ISO string format
+  
+  // Strength training fields
+  reps: number[]
+  weight: number[]
+  
+  // Cardio/Time-based fields
+  durationSeconds?: number[]
+  
+  // Common fields
+  notes?: string
+  
+  // Achievement fields (only present when this record set a new PR)
+  achievedOneRmValue?: number // estimated 1RM in kg
+  achievedOneRmSetIndex?: number // zero-based set index that achieved 1RM
+  achievedTotalVolumeValue?: number // total volume in kg across all sets
+}
+
 // Error Types
 export interface ApiError extends Error {
   status?: number
