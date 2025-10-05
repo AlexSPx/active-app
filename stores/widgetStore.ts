@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export type ProgressionMetric = 'oneRm' | 'volume' | 'maxWeight'
 
@@ -127,6 +128,7 @@ export const useWidgetStore = create<WidgetStore>()(
     }),
     {
       name: 'widget-storage',
+      storage: createJSONStorage(() => AsyncStorage),
       partialize: (state) => ({
         widgets: state.widgets,
       }),
