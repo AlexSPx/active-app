@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import type { Exercise } from '../types/workout-session'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
@@ -16,6 +16,7 @@ export interface WorkoutSessionState {
   workoutDuration: string
   activeTimer: string | null
   restTime: number
+  remainingRest: number
 }
 
 export interface WorkoutSessionActions {
@@ -24,6 +25,8 @@ export interface WorkoutSessionActions {
   addSet: (exerciseId: string) => void
   removeSet: (exerciseId: string, setIndex: number) => void
   startRestTimer: (setId: string) => void
+  extendRestTimer: () => void
+  skipRestTimer: () => void
   finishWorkout: (notes?: string) => Promise<WorkoutRecord | void>
   cancelWorkout: () => void
 }
@@ -43,8 +46,15 @@ export function useWorkoutSession(
   } = useRunningWorkoutStore()
 
   const [exercises, setExercises] = useState<Exercise[]>([])
+  // Active rest timer references a completed set ID while counting down, otherwise null
   const [activeTimer, setActiveTimer] = useState<string | null>(null)
-  const [restTime] = useState(90)
+  // Default rest time (seconds) – future configurable
+  const DEFAULT_REST_TIME = 90
+  const [restTime] = useState(DEFAULT_REST_TIME)
+  const [remainingRest, setRemainingRest] = useState<number>(0)
+  // Use ReturnType for cross-platform timer id compatibility (number in browsers, NodeJS.Timeout in RN env types)
+  const restTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [workoutDuration, setWorkoutDuration] = useState('0:00')
 
   // Get workout data from running workout store
@@ -207,10 +217,87 @@ export function useWorkoutSession(
     }
   }
 
-  const startRestTimer = (setId: string) => {
-    setActiveTimer(setId)
-    setTimeout(() => setActiveTimer(null), restTime * 1000)
-  }
+  const clearRestTimer = useCallback(() => {
+    if (restTimeoutRef.current) clearTimeout(restTimeoutRef.current)
+    if (restIntervalRef.current) clearInterval(restIntervalRef.current)
+    restTimeoutRef.current = null
+    restIntervalRef.current = null
+  }, [])
+
+  const finishRestTimer = useCallback(() => {
+    setActiveTimer(null)
+    setRemainingRest(0)
+    clearRestTimer()
+    // Vibration API (react-native) – guarded so web build doesn't break
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const RN: any = (globalThis as any).navigator?.vibrate ? globalThis : null
+      if (RN?.navigator?.vibrate) {
+        RN.navigator.vibrate(400)
+      }
+      // Fallback using react-native module if available
+      // Dynamic require to avoid web bundling issues
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const { Vibration } = require('react-native')
+      Vibration.vibrate(400)
+    } catch {
+      // ignore vibration errors (e.g., web)
+    }
+  }, [clearRestTimer])
+
+  const startRestTimer = useCallback(
+    (setId: string) => {
+      // If already running, restart
+      clearRestTimer()
+      setActiveTimer(setId)
+      setRemainingRest(restTime)
+
+      restIntervalRef.current = setInterval(() => {
+        setRemainingRest((prev) => {
+          if (prev <= 1) {
+            finishRestTimer()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+
+      restTimeoutRef.current = setTimeout(() => {
+        finishRestTimer()
+      }, restTime * 1000)
+    },
+    [clearRestTimer, finishRestTimer, restTime]
+  )
+
+  const extendRestTimer = useCallback(() => {
+    if (!activeTimer || remainingRest <= 0) return
+    // Add 15s extension
+    const EXT = 15
+    // Recalculate remaining time by clearing existing timers and starting new ones with updated total
+    clearRestTimer()
+    const newRemainingTotal = remainingRest + EXT
+    setRemainingRest(newRemainingTotal)
+    restIntervalRef.current = setInterval(() => {
+      setRemainingRest((prev) => {
+        if (prev <= 1) {
+          finishRestTimer()
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+    restTimeoutRef.current = setTimeout(() => {
+      finishRestTimer()
+    }, newRemainingTotal * 1000)
+  }, [activeTimer, remainingRest, finishRestTimer, clearRestTimer])
+
+  const skipRestTimer = useCallback(() => {
+    if (!activeTimer) return
+    finishRestTimer()
+  }, [activeTimer, finishRestTimer])
+
+  // Cleanup on unmount
+  useEffect(() => () => clearRestTimer(), [clearRestTimer])
 
   const finishWorkout = async (notes?: string) => {
     return await stopWorkout(notes)
@@ -228,6 +315,7 @@ export function useWorkoutSession(
     workoutDuration,
     activeTimer,
     restTime,
+    remainingRest,
     // Actions
     updateSet,
     toggleSetComplete,
@@ -236,5 +324,8 @@ export function useWorkoutSession(
     startRestTimer,
     finishWorkout,
     cancelWorkout,
+    // Rest timer controls (potentially used by UI layer)
+    extendRestTimer,
+    skipRestTimer,
   }
 }

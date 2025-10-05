@@ -6,6 +6,7 @@ import { WorkoutSessionHeader } from '../../components/workout-session/WorkoutSe
 import { WorkoutActions } from '../../components/workout-session/WorkoutActions'
 import { getCurrentDate } from '../../utils/date'
 import { useWorkoutSession } from '../../hooks/useWorkoutSession'
+import { RestTimerOverlay } from '../../components/workout-session/RestTimerOverlay'
 import { useAppNavigation } from '../../navigation/useAppNavigation'
 import type { Exercise } from '../../types/workout-session'
 import { useUiStore } from '../../stores/uiStore'
@@ -24,8 +25,14 @@ export default function WorkoutSessionScreen() {
     addSet,
     removeSet,
     startRestTimer,
+    extendRestTimer,
+    skipRestTimer,
     finishWorkout,
     cancelWorkout,
+    // Timer state
+    activeTimer,
+    restTime,
+    remainingRest,
   } = useWorkoutSession()
 
   const theme = useTheme()
@@ -74,6 +81,13 @@ export default function WorkoutSessionScreen() {
         ListHeaderComponentStyle={{ marginBottom: 16 }}
         ListFooterComponent={ListFooterComponent}
         showsVerticalScrollIndicator={false}
+      />
+      <RestTimerOverlay
+        active={!!activeTimer}
+        remaining={remainingRest}
+        total={restTime}
+        onExtend={extendRestTimer}
+        onSkip={skipRestTimer}
       />
     </View>
   )
