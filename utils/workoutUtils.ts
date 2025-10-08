@@ -5,6 +5,7 @@ import type {
   CreateWorkoutRequest,
 } from '../types/workout'
 import type { ApiWorkout, UpdateWorkoutRequest } from '../types/api'
+import type { WorkoutRecord, WorkoutRecordExercise } from '../types/api'
 
 export const calculateSetVolume = (set: WorkoutSet): number => {
   return set.reps * set.weight
@@ -23,6 +24,47 @@ export const formatVolume = (volume: number, unit: 'lbs' | 'kg' = 'kg'): string 
     return `${(volume / 1000).toFixed(1)}k ${unit}`
   }
   return `${volume.toLocaleString()} ${unit}`
+}
+
+/** Determine if an exercise record is cardio/time-based (no reps but has durationSeconds). */
+export const isCardioExerciseRecord = (ex: WorkoutRecordExercise): boolean => {
+  return (!ex.reps || ex.reps.length === 0) && !!ex.durationSeconds && ex.durationSeconds.length > 0
+}
+
+/** Total sets counting strength sets OR cardio intervals. */
+export const countSetsForRecord = (record: WorkoutRecord): number => {
+  return record.exerciseRecords.reduce((total, ex) => {
+    const strengthSets = ex.reps?.length || 0
+    if (strengthSets > 0) return total + strengthSets
+    if (isCardioExerciseRecord(ex)) return total + (ex.durationSeconds?.length || 0)
+    return total
+  }, 0)
+}
+
+/** Compute total volume (only strength exercises). */
+export const computeVolumeForRecord = (record: WorkoutRecord): number => {
+  return record.exerciseRecords.reduce((total, ex) => {
+    if (!ex.reps || !ex.weight || ex.reps.length === 0) return total
+    return total + ex.reps.reduce((acc, reps, i) => acc + reps * (ex.weight[i] || 0), 0)
+  }, 0)
+}
+
+/** Sum of all cardio/time durations across exercises (in seconds). */
+export const computeCardioDurationForRecord = (record: WorkoutRecord): number => {
+  return record.exerciseRecords.reduce((sum, ex) => {
+    if (!isCardioExerciseRecord(ex)) return sum
+    return sum + (ex.durationSeconds?.reduce((a, b) => a + (b || 0), 0) || 0)
+  }, 0)
+}
+
+/** Format seconds to H:MM:SS or M:SS. */
+export const formatSeconds = (secs?: number): string => {
+  const s = Math.max(0, Math.floor(secs || 0))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  const ss = s % 60
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
+  return `${m}:${String(ss).padStart(2, '0')}`
 }
 
 /**

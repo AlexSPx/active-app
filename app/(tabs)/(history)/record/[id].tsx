@@ -12,6 +12,12 @@ import { useMemo } from 'react'
 import { useWorkoutRecords } from '../../../../hooks/useWorkoutRecords'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../../components/ui/ErrorDisplay'
+import {
+  countSetsForRecord,
+  computeVolumeForRecord,
+  isCardioExerciseRecord,
+  formatSeconds,
+} from '../../../../utils/workoutUtils'
 
 export default function RecordDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -53,10 +59,8 @@ export default function RecordDetailScreen() {
   }
 
   const date = new Date(record.createdAt)
-  const totalSets = record.exerciseRecords.reduce((total, ex) => total + ex.reps.length, 0)
-  const totalVolume = record.exerciseRecords.reduce((total, ex) => {
-    return total + ex.reps.reduce((acc, reps, i) => acc + reps * (ex.weight[i] || 0), 0)
-  }, 0)
+  const totalSets = countSetsForRecord(record)
+  const totalVolume = computeVolumeForRecord(record)
   const totalDurationSeconds = record.exerciseRecords.reduce((sum, ex) => {
     const ds = ex.durationSeconds?.reduce((a, b) => a + (b || 0), 0) ?? 0
     return sum + ds
@@ -102,15 +106,7 @@ export default function RecordDetailScreen() {
       computedDurationSecs = Math.max(0, Math.floor(chosen / 1000))
     } catch {}
   }
-  const formatDuration = (secs: number) => {
-    if (!secs || secs <= 0) return null
-    const h = Math.floor(secs / 3600)
-    const m = Math.floor((secs % 3600) / 60)
-    const s = secs % 60
-    if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
-    return `${m}:${String(s).padStart(2, '0')}`
-  }
-  const durationLabel = formatDuration(computedDurationSecs) ?? '—'
+  const durationLabel = computedDurationSecs > 0 ? formatSeconds(computedDurationSecs) : '—'
 
   return (
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 12 }}>
@@ -178,33 +174,44 @@ export default function RecordDetailScreen() {
                 )}
               </XStack>
               <YStack gap="$1">
-                {ex.reps.map((r, i) => (
-                  <XStack key={i} justify="space-between" items="center">
-                    <XStack items="center" gap={6}>
-                      <Text color="$colorSubtle">Set {i + 1}</Text>
-                      {typeof ex.achievedOneRmSetIndex === 'number' &&
-                        ex.achievedOneRmSetIndex === i &&
-                        (ex.achievedOneRmValue ?? 0) > 0 && (
-                          <XStack
-                            items="center"
-                            gap={6}
-                            px={8}
-                            py={2}
-                            bg="$primary"
-                            style={{ borderRadius: 8 }}
-                          >
-                            <Trophy size={12} color="$color" />
-                            <Text color="$color" fontSize="$2" fontWeight="700">
-                              {Number(ex.achievedOneRmValue).toLocaleString()} kg
-                            </Text>
-                          </XStack>
-                        )}
+                {/* Strength sets */}
+                {ex.reps && ex.reps.length > 0
+                  ? ex.reps.map((r, i) => (
+                      <XStack key={i} justify="space-between" items="center">
+                        <XStack items="center" gap={6}>
+                          <Text color="$colorSubtle">Set {i + 1}</Text>
+                          {typeof ex.achievedOneRmSetIndex === 'number' &&
+                            ex.achievedOneRmSetIndex === i &&
+                            (ex.achievedOneRmValue ?? 0) > 0 && (
+                              <XStack
+                                items="center"
+                                gap={6}
+                                px={8}
+                                py={2}
+                                bg="$primary"
+                                style={{ borderRadius: 8 }}
+                              >
+                                <Trophy size={12} color="$color" />
+                                <Text color="$color" fontSize="$2" fontWeight="700">
+                                  {Number(ex.achievedOneRmValue).toLocaleString()} kg
+                                </Text>
+                              </XStack>
+                            )}
+                        </XStack>
+                        <Text color="$color">
+                          {r} reps @ {(ex.weight?.[i] ?? 0).toLocaleString()} kg
+                        </Text>
+                      </XStack>
+                    ))
+                  : null}
+                {/* Cardio/time intervals (only show if cardio) */}
+                {isCardioExerciseRecord(ex) &&
+                  ex.durationSeconds?.map((ds, i) => (
+                    <XStack key={i} justify="space-between" items="center">
+                      <Text color="$colorSubtle">Interval {i + 1}</Text>
+                      <Text color="$color">{formatSeconds(ds)}</Text>
                     </XStack>
-                    <Text color="$color">
-                      {r} reps @ {(ex.weight[i] ?? 0).toLocaleString()} kg
-                    </Text>
-                  </XStack>
-                ))}
+                  ))}
               </YStack>
               {ex.notes ? (
                 <Text mt="$2" color="$color10">

@@ -3,6 +3,7 @@ import { YStack, Text, View } from 'tamagui'
 import type { FlashListRef } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
 import { useWorkoutRecords } from '../../../hooks/useWorkoutRecords'
+import { countSetsForRecord, computeVolumeForRecord } from '../../../utils/workoutUtils'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
 import type { ViewToken } from 'react-native'
@@ -52,10 +53,8 @@ export default function HistoryPage() {
 
   const converted = useMemo(() => {
     return records.map((record) => {
-      const totalSets = record.exerciseRecords.reduce((total, ex) => total + ex.reps.length, 0)
-      const totalVolume = record.exerciseRecords.reduce((total, ex) => {
-        return total + ex.reps.reduce((acc, reps, i) => acc + reps * (ex.weight[i] || 0), 0)
-      }, 0)
+      const totalSets = countSetsForRecord(record)
+      const totalVolume = computeVolumeForRecord(record)
 
       // createdAt and startTime come from server as UTC(+00:00); parse as UTC and
       // convert to local Date for display. For duration, use the timestamp delta.

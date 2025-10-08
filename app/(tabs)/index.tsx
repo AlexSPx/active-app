@@ -8,7 +8,6 @@ import { TodayView } from '../../components/TodayView'
 import { ProgressionWidget } from '../../components/ProgressionWidget'
 import { WidgetManager } from '../../components/WidgetManager'
 import { useWidgetStore } from '../../stores/widgetStore'
-// removed unused LineChart import
 
 export default function HomeScreen() {
   const router = useRouter()
