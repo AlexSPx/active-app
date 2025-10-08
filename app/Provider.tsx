@@ -6,6 +6,21 @@ import { config } from '../tamagui.config'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useUiStore } from '../stores/uiStore'
 import FinishedWorkoutCongrats from '../components/FinishedWorkoutCongrats'
+import { FloatingDevTools, InstalledApp } from '@react-buoy/core'
+import { NetworkModal } from '@react-buoy/network'
+import { Globe } from '@react-buoy/shared-ui'
+
+const TOOLS: InstalledApp[] = [
+  {
+    id: 'network',
+    name: 'NETWORK',
+    description: 'Network request logger',
+    slot: 'both',
+    icon: ({ size }) => <Globe size={size} color="#38bdf8" />,
+    component: NetworkModal,
+    props: {},
+  },
+]
 
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   const colorScheme = useColorScheme()
@@ -22,6 +37,8 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
           defaultTheme={colorScheme === 'dark' ? 'dark' : 'light'}
           {...rest}
         >
+          <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" />
+
           <ToastProvider
             swipeDirection="horizontal"
             duration={6000}

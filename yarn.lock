@@ -1781,6 +1781,35 @@
   resolved "https://registry.yarnpkg.com/@radix-ui/react-use-layout-effect/-/react-use-layout-effect-1.1.1.tgz#0c4230a9eed49d4589c967e2d9c0d9d60a23971e"
   integrity sha512-RbJRS4UWQFkzHTTwVymMTUv8EqYhOp8dOOviLj2ugtTiXRaRQS7GLGxZTLL1jWhMeoSCf5zmcZkqTl9IiYfXcQ==
 
+"@react-buoy/core@^0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@react-buoy/core/-/core-0.1.12.tgz#19498a043b114f5b14ddef4478b6583ce8e63d24"
+  integrity sha512-WspgcZiuXHfXl9BT8KT2r9FEsy4wrxHS5AtuRAj/z27miijKmgCVfJAO3MlNYDIM1HMz8GghnySjGn/pOcik6g==
+  dependencies:
+    "@react-buoy/shared-ui" "0.1.12"
+
+"@react-buoy/network@^0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@react-buoy/network/-/network-0.1.12.tgz#0c6c008e5df6fe2061c53b4ce195de5b07e705aa"
+  integrity sha512-sNwc4h+FasGR/NWBImp1o6TdOcuEbSnAblco9uBlqVyPw5wEuiNsejFHKn2B0M1NqoAmJvA9vQI3KnU9hmPzZw==
+  dependencies:
+    "@react-buoy/react-query" "0.1.12"
+    "@react-buoy/shared-ui" "0.1.12"
+
+"@react-buoy/react-query@0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@react-buoy/react-query/-/react-query-0.1.12.tgz#c2009910eb8bbba6bfc16f5db69ef3752833b2a7"
+  integrity sha512-kWB/NDLPWtwgHeQH1XJBCeGt6UKgyHBXrZwY3GjirITWicFMErKl3DFqt4FiCnj3kiPm+iSm1VQGXYGd3ZAYAw==
+  dependencies:
+    "@react-buoy/shared-ui" "0.1.12"
+
+"@react-buoy/shared-ui@0.1.12":
+  version "0.1.12"
+  resolved "https://registry.yarnpkg.com/@react-buoy/shared-ui/-/shared-ui-0.1.12.tgz#504218cee4ab771d82d1a1feae2e0908b19ba1e5"
+  integrity sha512-zSXb41OEEBquqe8RROxVc6YjN5uqSstR20lE5PtK3JK0RbTD6GG/uonFzqEd+xEwe5b+o7nbXUaoBj80dfULzw==
+  dependencies:
+    superjson "^2.2.2"
+
 "@react-native-async-storage/async-storage@2.2.0":
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/@react-native-async-storage/async-storage/-/async-storage-2.2.0.tgz#a3aa565253e46286655560172f4e366e8969f5ad"
@@ -4155,6 +4184,13 @@ cookie@0.7.1:
   resolved "https://registry.yarnpkg.com/cookie/-/cookie-0.7.1.tgz#2f73c42142d5d5cf71310a74fc4ae61670e5dbc9"
   integrity sha512-6DnInpx7SJ2AK3+CTUE/ZM0vWTUboZCegxhC2xiIydHR9jNuTAASBrfEpHhiGOZw/nX51bHt6YQl8jsGo4y/0w==
 
+copy-anything@^3.0.2:
+  version "3.0.5"
+  resolved "https://registry.yarnpkg.com/copy-anything/-/copy-anything-3.0.5.tgz#2d92dce8c498f790fa7ad16b01a1ae5a45b020a0"
+  integrity sha512-yCEafptTtb4bk7GLEQoM8KVJpxAfdBJYaXyzQEgQQQgYrZiDp8SJmGKlYza6CYjEDNstAdNdKA3UuoULlEbS6w==
+  dependencies:
+    is-what "^4.1.8"
+
 core-js-compat@^3.43.0:
   version "3.45.1"
   resolved "https://registry.yarnpkg.com/core-js-compat/-/core-js-compat-3.45.1.tgz#424f3f4af30bf676fd1b67a579465104f64e9c7a"
@@ -5366,6 +5402,11 @@ is-primitive@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/is-primitive/-/is-primitive-3.0.1.tgz#98c4db1abff185485a657fc2905052b940524d05"
   integrity sha512-GljRxhWvlCNRfZyORiH77FwdFwGcMO620o37EOYC0ORWdq+WYNVqW0w2Juzew4M+L81l6/QS3t5gkkihyRqv9w==
+
+is-what@^4.1.8:
+  version "4.1.16"
+  resolved "https://registry.yarnpkg.com/is-what/-/is-what-4.1.16.tgz#1ad860a19da8b4895ad5495da3182ce2acdd7a6f"
+  integrity sha512-ZhMwEosbFJkA0YhFnNDgTM4ZxDRsS6HqTo7qsZM08fehyRYIYa0yHu5R6mgo1n/8MgaPBXiPimPD77baVFYg+A==
 
 is-wsl@^2.1.1, is-wsl@^2.2.0:
   version "2.2.0"
@@ -7617,6 +7658,13 @@ sucrase@3.35.0:
     mz "^2.7.0"
     pirates "^4.0.1"
     ts-interface-checker "^0.1.9"
+
+superjson@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/superjson/-/superjson-2.2.2.tgz#9d52bf0bf6b5751a3c3472f1292e714782ba3173"
+  integrity sha512-5JRxVqC8I8NuOUjzBbvVJAKNM8qoVuH0O77h4WInc/qC2q5IreqKxYwgkga3PfA22OayK2ikceb/B26dztPl+Q==
+  dependencies:
+    copy-anything "^3.0.2"
 
 supports-color@^5.3.0:
   version "5.5.0"
