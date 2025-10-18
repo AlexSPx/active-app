@@ -40,7 +40,7 @@ export function useWorkoutManagement(): UseWorkoutManagementActions {
           exercise.category === 'CARDIO'
             ? exercise.durationSeconds!.length
             : Math.max(1, exercise.reps.length || 0),
-        reps: exercise.reps[0] || 10,
+        reps: exercise.category === 'CARDIO' ? 0 : exercise.reps[0] || 10,
         sessionSets: Array.from(
           {
             length:
