@@ -1,4 +1,4 @@
-import type { WorkoutSet, WorkoutExercise } from '../types/history'
+import type { WorkoutSet, WorkoutExercise } from '../types/workout'
 import type {
   WorkoutExercise as CreateWorkoutExercise,
   TemplateExercise,
@@ -8,7 +8,9 @@ import type { ApiWorkout, UpdateWorkoutRequest } from '../types/api'
 import type { WorkoutRecord, WorkoutRecordExercise } from '../types/api'
 
 export const calculateSetVolume = (set: WorkoutSet): number => {
-  return set.reps * set.weight
+  const reps = set.reps ?? 0
+  const weight = set.weight ?? 0
+  return reps * weight
 }
 
 export const calculateExerciseVolume = (sets: WorkoutSet[]): number => {
@@ -71,6 +73,18 @@ export const formatSeconds = (secs?: number): string => {
  * Converts internal WorkoutExercise format to server TemplateExercise format
  */
 export const convertToTemplateExercise = (exercise: CreateWorkoutExercise): TemplateExercise => {
+  if (exercise.category === 'CARDIO') {
+    // For cardio, send durationSeconds (per-interval values). If multiple, server may accept array via TemplateExercise type.
+    // Our Api type defines durationSeconds?: number[] for TemplateExercise; build from per-set durationSeconds.
+    const durations = exercise.sets
+      .map((s) => (typeof s.durationSeconds === 'number' ? s.durationSeconds : null))
+      .filter((v): v is number => v != null)
+    return {
+      exerciseId: exercise.id,
+      durationSeconds: durations,
+      notes: exercise.notes,
+    } as unknown as TemplateExercise
+  }
   return {
     exerciseId: exercise.id,
     reps: exercise.sets.map((set) => set.reps).filter((v): v is number => v != null),
@@ -134,10 +148,17 @@ export const apiWorkoutToEditableExercises = (workout: ApiWorkout): CreateWorkou
     primaryMuscles: ['OTHER'],
     secondaryMuscles: [],
     instructions: [],
-    category: 'STRENGTH',
-    sets: (ex.reps && ex.weight
-      ? ex.reps.map((r, i) => ({ reps: r, weight: ex.weight[i] ?? 0 }))
-      : []) as any,
+    category: ex.category,
+    sets:
+      ex.category === 'CARDIO'
+        ? ((ex.durationSeconds
+            ? Array.isArray(ex.durationSeconds)
+              ? ex.durationSeconds.map((d) => ({ reps: null, weight: null, durationSeconds: d }))
+              : [{ reps: null, weight: null, durationSeconds: ex.durationSeconds as any }]
+            : [{ reps: null, weight: null, durationSeconds: 0 }]) as any)
+        : ((ex.reps && ex.weight
+            ? ex.reps.map((r, i) => ({ reps: r, weight: ex.weight[i] ?? 0 }))
+            : [{ reps: null, weight: null }]) as any),
   })) as unknown as CreateWorkoutExercise[]
 }
 
@@ -160,15 +181,22 @@ export const validateWorkoutData = (
     if (exercise.sets.length === 0) {
       return `Exercise "${exercise.name}" must have at least one set`
     }
-
+    if (exercise.category === 'CARDIO') {
+      for (const set of exercise.sets) {
+        if (set.durationSeconds == null || set.durationSeconds <= 0) {
+          return `All cardio intervals must have a positive duration in "${exercise.name}"`
+        }
+      }
+      continue
+    }
     for (const set of exercise.sets) {
       if (set.reps == null || set.weight == null) {
         return `All sets must have reps and weight in "${exercise.name}"`
       }
-      if (set.reps <= 0) {
+      if ((set.reps ?? 0) <= 0) {
         return `All sets must have positive reps in "${exercise.name}"`
       }
-      if (set.weight < 0) {
+      if ((set.weight ?? 0) < 0) {
         return `Weight cannot be negative in "${exercise.name}"`
       }
     }

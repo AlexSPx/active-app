@@ -116,7 +116,9 @@ export default function NewWorkoutScreen() {
   )
 
   const hasNulls = selectedExercises.some((ex) =>
-    ex.sets.some((s) => s.reps == null || s.weight == null)
+    ex.sets.some((s) =>
+      ex.category === 'CARDIO' ? s.durationSeconds == null : s.reps == null || s.weight == null
+    )
   )
 
   const ListFooterComponent = useCallback(

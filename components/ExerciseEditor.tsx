@@ -4,6 +4,7 @@ import { View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback } from 'react'
 import { ExerciseSetRow } from './ExerciseSetRow'
+import CardioEditorSetRow from './CardioEditorSetRow'
 import type { WorkoutExercise, WorkoutSet } from '../types/workout'
 
 interface ExerciseEditorProps {
@@ -19,23 +20,39 @@ export default function ExerciseEditor({
   onAddSet,
   onRemoveSet,
 }: ExerciseEditorProps) {
-  const updateSet = (setIndex: number, key: 'weight' | 'reps', value: number | null) => {
+  const updateSet = (
+    setIndex: number,
+    key: 'weight' | 'reps' | 'durationSeconds',
+    value: number | null
+  ) => {
     const newSets = [...exercise.sets]
     newSets[setIndex] = { ...newSets[setIndex], [key]: value }
     onUpdateSets(exercise.id, newSets)
   }
 
   const renderSetRow = useCallback(
-    ({ item: set, index: setIndex }: { item: WorkoutSet; index: number }) => (
-      <ExerciseSetRow
-        index={setIndex}
-        weight={set.weight}
-        reps={set.reps}
-        onChange={(key, value) => updateSet(setIndex, key, value)}
-        onDelete={() => onRemoveSet(exercise.id, setIndex)}
-      />
-    ),
-    [exercise.id, onRemoveSet, updateSet]
+    ({ item: set, index: setIndex }: { item: WorkoutSet; index: number }) => {
+      if (exercise.category === 'CARDIO') {
+        return (
+          <CardioEditorSetRow
+            index={setIndex}
+            durationSeconds={set.durationSeconds}
+            onChange={(secs) => updateSet(setIndex, 'durationSeconds', secs)}
+            onDelete={() => onRemoveSet(exercise.id, setIndex)}
+          />
+        )
+      }
+      return (
+        <ExerciseSetRow
+          index={setIndex}
+          weight={set.weight}
+          reps={set.reps}
+          onChange={(key, value) => updateSet(setIndex, key, value)}
+          onDelete={() => onRemoveSet(exercise.id, setIndex)}
+        />
+      )
+    },
+    [exercise.id, exercise.category, onRemoveSet, updateSet]
   )
 
   return (
@@ -52,23 +69,38 @@ export default function ExerciseEditor({
           <Button size="$3" circular icon={MoreHorizontal} />
         </XStack>
         {/* Sets Header */}
-        <XStack justify="space-between" px="$1">
-          <YStack flex={1} items="center">
-            <Text fontSize="$3" fontWeight="600" color="$color">
-              SET
-            </Text>
-          </YStack>
-          <YStack flex={1} items="center">
-            <Text fontSize="$3" fontWeight="600" color="$color">
-              WEIGHT
-            </Text>
-          </YStack>
-          <YStack flex={1} items="center">
-            <Text fontSize="$3" fontWeight="600" color="$color">
-              REPS
-            </Text>
-          </YStack>
-        </XStack>
+        {exercise.category === 'CARDIO' ? (
+          <XStack justify="space-between" px="$1">
+            <YStack flex={1} items="center">
+              <Text fontSize="$3" fontWeight="600" color="$color">
+                SET
+              </Text>
+            </YStack>
+            <YStack flex={2} items="center">
+              <Text fontSize="$3" fontWeight="600" color="$color">
+                DURATION
+              </Text>
+            </YStack>
+          </XStack>
+        ) : (
+          <XStack justify="space-between" px="$1">
+            <YStack flex={1} items="center">
+              <Text fontSize="$3" fontWeight="600" color="$color">
+                SET
+              </Text>
+            </YStack>
+            <YStack flex={1} items="center">
+              <Text fontSize="$3" fontWeight="600" color="$color">
+                WEIGHT
+              </Text>
+            </YStack>
+            <YStack flex={1} items="center">
+              <Text fontSize="$3" fontWeight="600" color="$color">
+                REPS
+              </Text>
+            </YStack>
+          </XStack>
+        )}
         <Separator />
         {/* Sets */}
         <FlashList
@@ -88,7 +120,7 @@ export default function ExerciseEditor({
           borderColor="$primary"
           color="$primary"
         >
-          <Text color="$primary">Add Set</Text>
+          <Text color="$primary">Add {exercise.category === 'CARDIO' ? 'Interval' : 'Set'}</Text>
         </Button>
       </YStack>
     </Card>

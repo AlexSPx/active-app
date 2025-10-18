@@ -20,6 +20,7 @@ export interface WorkoutSet {
   id?: string
   reps: number | null
   weight: number | null
+  durationSeconds?: number | null
   completed?: boolean
   restTime?: number
 }

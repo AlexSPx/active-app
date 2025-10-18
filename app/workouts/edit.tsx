@@ -176,65 +176,41 @@ export default function EditWorkoutScreen() {
 
   return (
     <View flex={1} bg="$background" p="$4">
-      {selectedExercises.length > 0 ? (
-        <FlashList
-          data={selectedExercises}
-          renderItem={renderExerciseEditor}
-          keyExtractor={(item) => item.id}
-          ItemSeparatorComponent={() => <View height="$4" />}
-          ListHeaderComponent={Header}
-          ListHeaderComponentStyle={{ marginBottom: 16 }}
-          ListFooterComponent={() => (
-            <YStack gap="$4" pt="$4">
-              <Separator />
-              <Button
-                bg="$primary"
-                size="$5"
-                onPress={handleSave}
-                disabled={
-                  isSaving ||
-                  selectedExercises.some((ex) =>
-                    ex.sets.some((s) => s.reps == null || s.weight == null)
-                  )
-                }
-              >
-                {isSaving ? (
-                  <LoadingSpinner size="small" color="$onPrimary" />
-                ) : (
-                  <Text fontSize="$5" fontWeight="700" color="$onPrimary">
-                    Save Changes
-                  </Text>
-                )}
-              </Button>
-            </YStack>
-          )}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <YStack gap="$4">
-          {Header}
-          <Separator />
-          <Button
-            bg="$primary"
-            size="$5"
-            onPress={handleSave}
-            disabled={
-              isSaving ||
-              selectedExercises.some((ex) =>
-                ex.sets.some((s) => s.reps == null || s.weight == null)
-              )
-            }
-          >
-            {isSaving ? (
-              <LoadingSpinner size="small" color="$onPrimary" />
-            ) : (
-              <Text fontSize="$5" fontWeight="700" color="$onPrimary">
-                Save Changes
-              </Text>
-            )}
-          </Button>
-        </YStack>
-      )}
+      <FlashList
+        data={selectedExercises}
+        renderItem={renderExerciseEditor}
+        keyExtractor={(item) => item.id}
+        ItemSeparatorComponent={() => <View height="$4" />}
+        ListHeaderComponent={Header}
+        ListHeaderComponentStyle={{ marginBottom: 16 }}
+        ListFooterComponent={() => (
+          <YStack gap="$4" pt="$4">
+            <Separator />
+            <Button
+              bg="$primary"
+              size="$5"
+              onPress={handleSave}
+              disabled={
+                isSaving ||
+                selectedExercises.some((ex) =>
+                  ex.category === 'CARDIO'
+                    ? ex.sets.some((s) => s.durationSeconds == null)
+                    : ex.sets.some((s) => s.reps == null || s.weight == null)
+                )
+              }
+            >
+              {isSaving ? (
+                <LoadingSpinner size="small" color="$onPrimary" />
+              ) : (
+                <Text fontSize="$5" fontWeight="700" color="$onPrimary">
+                  Save Changes
+                </Text>
+              )}
+            </Button>
+          </YStack>
+        )}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   )
 }

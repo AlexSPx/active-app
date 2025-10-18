@@ -44,10 +44,13 @@ export default function SearchExerciseScreen() {
     if (isSelected) {
       removeExercise(exercise.id)
     } else {
-      // Convert Exercise to WorkoutExercise with default empty sets
+      // Convert Exercise to WorkoutExercise with default set
       const workoutExercise = {
         ...exercise,
-        sets: [{ reps: null, weight: null }],
+        sets:
+          exercise.category === 'CARDIO'
+            ? [{ reps: null, weight: null, durationSeconds: 0 }]
+            : [{ reps: null, weight: null }],
       }
       addExercise(workoutExercise)
     }
