@@ -1,7 +1,7 @@
 import { YStack, XStack, Text, Card, Separator, Button, Portal } from 'tamagui'
 import { MoreHorizontal, Edit3, Trash2 } from '@tamagui/lucide-icons'
 import { Popover } from '@tamagui/popover'
-import { useCallback, memo, useState } from 'react'
+import { useCallback, memo, useState, useMemo } from 'react'
 import { Pressable, StyleSheet } from 'react-native'
 import { StartWorkoutButton } from '../ui/StartWorkoutButton'
 import { ApiWorkout } from 'types/api'
@@ -43,6 +43,13 @@ export const WorkoutCard = memo(
     const handleDelete = useCallback(() => {
       onDelete?.(workout.id)
     }, [onDelete, workout.id])
+
+    const totalSets = useMemo(() => {
+      return workout.workoutTemplate.exercises.reduce((sum, e) => {
+        if (e.category === 'CARDIO') return sum + e.durationSeconds!.length
+        return sum + (e.reps?.length || 0)
+      }, 0)
+    }, [workout.workoutTemplate.exercises])
 
     return (
       <Card
@@ -125,8 +132,7 @@ export const WorkoutCard = memo(
           {/* Stats row */}
           <XStack gap="$6" items="center">
             <Text fontSize="$3" color="$colorSubtle">
-              {workout.workoutTemplate.exercises.reduce((s, e) => s + (e.reps?.length || 0), 0)}{' '}
-              Sets Logged
+              {totalSets} Sets Logged
             </Text>
           </XStack>
 
