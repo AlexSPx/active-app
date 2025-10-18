@@ -10,6 +10,7 @@ export interface Set {
   weight: number | null
   completed: boolean
   restTime?: number
+  durationSeconds?: number | null // cardio interval
 }
 
 export interface Exercise extends ApiExercise {

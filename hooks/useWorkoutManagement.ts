@@ -35,15 +35,28 @@ export function useWorkoutManagement(): UseWorkoutManagementActions {
         primaryMuscles: ['OTHER'],
         secondaryMuscles: [],
         instructions: [],
-        category: 'STRENGTH' as const,
-        sets: exercise.reps.length,
+        category: exercise.category,
+        sets:
+          exercise.category === 'CARDIO'
+            ? exercise.durationSeconds!.length
+            : Math.max(1, exercise.reps.length || 0),
         reps: exercise.reps[0] || 10,
-        sessionSets: Array.from({ length: exercise.reps.length }, (_, setIndex) => ({
-          id: `${workout.id}-ex-${index}-set-${setIndex}`,
-          reps: null,
-          weight: null,
-          completed: false,
-        })),
+        sessionSets: Array.from(
+          {
+            length:
+              exercise.category === 'CARDIO'
+                ? exercise.durationSeconds!.length
+                : Math.max(1, exercise.reps.length || 0),
+          },
+          (_, setIndex) => ({
+            id: `${workout.id}-ex-${index}-set-${setIndex}`,
+            reps: null,
+            weight: null,
+            // initialize durationSeconds for CARDIO so the session UI can render the input
+            durationSeconds: exercise.category === 'CARDIO' ? 0 : undefined,
+            completed: false,
+          })
+        ),
       })),
     })
 

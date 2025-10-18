@@ -20,7 +20,12 @@ export interface WorkoutSessionState {
 }
 
 export interface WorkoutSessionActions {
-  updateSet: (exerciseId: string, setId: string, field: 'reps' | 'weight', value: number) => void
+  updateSet: (
+    exerciseId: string,
+    setId: string,
+    field: 'reps' | 'weight' | 'duration',
+    value: number
+  ) => void
   toggleSetComplete: (exerciseId: string, setId: string) => void
   addSet: (exerciseId: string) => void
   removeSet: (exerciseId: string, setIndex: number) => void
@@ -119,7 +124,7 @@ export function useWorkoutSession(
   const updateSet = (
     exerciseId: string,
     setId: string,
-    field: 'reps' | 'weight',
+    field: 'reps' | 'weight' | 'duration',
     value: number
   ) => {
     // Update in the store if running workout exists
@@ -129,9 +134,13 @@ export function useWorkoutSession(
         ?.sessionSets.find((set) => set.id === setId)
 
       if (currentSet) {
-        const newReps = field === 'reps' ? value : currentSet.reps
-        const newWeight = field === 'weight' ? value : currentSet.weight
-        updateExerciseSet(exerciseId, setId, newReps, newWeight)
+        if (field === 'duration') {
+          updateExerciseSet(exerciseId, setId, currentSet.reps, currentSet.weight, value)
+        } else {
+          const newReps = field === 'reps' ? value : currentSet.reps
+          const newWeight = field === 'weight' ? value : currentSet.weight
+          updateExerciseSet(exerciseId, setId, newReps, newWeight, currentSet.durationSeconds)
+        }
       }
     } else {
       // Fallback to local state for non-running workouts
@@ -141,7 +150,11 @@ export function useWorkoutSession(
             ? {
                 ...exercise,
                 sets: exercise.sets.map((set) =>
-                  set.id === setId ? { ...set, [field]: value } : set
+                  set.id === setId
+                    ? field === 'duration'
+                      ? { ...set, durationSeconds: value }
+                      : { ...set, [field]: value }
+                    : set
                 ),
               }
             : exercise

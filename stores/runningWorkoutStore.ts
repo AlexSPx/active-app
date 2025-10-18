@@ -12,6 +12,7 @@ export interface RunningWorkoutExercise extends ApiExercise {
     id: string
     reps: number | null
     weight: number | null
+    durationSeconds?: number | null
     completed: boolean
   }>
 }
@@ -40,7 +41,8 @@ interface RunningWorkoutStore {
     exerciseId: string,
     setId: string,
     reps: number | null,
-    weight: number | null
+    weight: number | null,
+    durationSeconds?: number | null
   ) => void
   completeSet: (exerciseId: string, setId: string) => void
   removeExerciseSet: (exerciseId: string, setIndex: number) => void
@@ -64,6 +66,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
             id: `${exercise.id}-set-${index + 1}`,
             reps: null,
             weight: null,
+            durationSeconds: exercise.category === 'CARDIO' ? 0 : undefined,
             completed: false,
           })),
         }))
@@ -87,19 +90,38 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         try {
           set({ isRecording: true, recordingError: null })
 
-          // Convert running workout to workout record format
-          const exerciseRecords: ExerciseRecord[] = state.runningWorkout.exercises
-            .map((exercise) => {
-              const completedSets = exercise.sessionSets.filter((set) => set.completed)
-
+          // Convert running workout to workout record format (strength + cardio)
+          const rawRecords = state.runningWorkout.exercises.map((exercise) => {
+            const completedSets = exercise.sessionSets.filter((set) => set.completed)
+            const isCardio = exercise.category === 'CARDIO'
+            if (isCardio) {
+              const durations = completedSets
+                .map((s) => (typeof s.durationSeconds === 'number' ? s.durationSeconds : null))
+                .filter((v): v is number => v != null)
+              if (durations.length === 0) return null
               return {
-                exerciseId: exercise.name.replace(/\s+/g, '_'), // Convert back to API format
-                reps: completedSets.map((set) => set.reps || 0),
-                weight: completedSets.map((set) => set.weight || 0),
-                notes: undefined, // Can be extended later per exercise
+                exerciseId: exercise.name.replace(/\s+/g, '_'),
+                reps: [],
+                weight: [],
+                durationSeconds: durations,
+                notes: undefined as string | undefined,
               }
-            })
-            .filter((record) => record.reps.length > 0) // Only include exercises with completed sets
+            }
+            const repsArr = completedSets.map((set) => set.reps || 0)
+            const weightArr = completedSets.map((set) => set.weight || 0)
+            if (repsArr.length === 0) return null
+            return {
+              exerciseId: exercise.name.replace(/\s+/g, '_'),
+              reps: repsArr,
+              weight: weightArr,
+              notes: undefined as string | undefined,
+            }
+          })
+          const exerciseRecords: ExerciseRecord[] = rawRecords
+            .filter((r): r is NonNullable<typeof r> => r != null)
+            .filter(
+              (r) => r.reps.length > 0 || (r.durationSeconds && r.durationSeconds.length > 0)
+            ) as ExerciseRecord[]
 
           const toLocalDateTime = (date: Date) => {
             const pad = (n: number) => String(n).padStart(2, '0')
@@ -168,7 +190,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         }
       },
 
-      updateExerciseSet: (exerciseId, setId, reps, weight) => {
+      updateExerciseSet: (exerciseId, setId, reps, weight, durationSeconds) => {
         const state = get()
         if (state.runningWorkout) {
           const updatedExercises = state.runningWorkout.exercises.map((exercise) => {
@@ -177,7 +199,12 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
                 ...exercise,
                 sessionSets: exercise.sessionSets.map((set) => {
                   if (set.id === setId) {
-                    return { ...set, reps, weight }
+                    return {
+                      ...set,
+                      reps,
+                      weight,
+                      durationSeconds: durationSeconds ?? set.durationSeconds,
+                    }
                   }
                   return set
                 }),
@@ -258,6 +285,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
                     id: `${exerciseId}-set-${newSetIndex}`,
                     reps: null,
                     weight: null,
+                    durationSeconds: exercise.category === 'CARDIO' ? 0 : undefined,
                     completed: false,
                   },
                 ],

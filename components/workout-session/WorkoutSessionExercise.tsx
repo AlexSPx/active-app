@@ -5,10 +5,16 @@ import { FlashList } from '@shopify/flash-list'
 import { useCallback, memo } from 'react'
 import type { Exercise } from '../../types/workout-session'
 import { WorkoutSessionSetRow } from './WorkoutSessionSetRow'
+import { CardioSessionSetRow } from './CardioSessionSetRow'
 
 interface WorkoutSessionExerciseProps {
   exercise: Exercise
-  onUpdateSet: (exerciseId: string, setId: string, field: 'reps' | 'weight', value: number) => void
+  onUpdateSet: (
+    exerciseId: string,
+    setId: string,
+    field: 'reps' | 'weight' | 'duration',
+    value: number
+  ) => void
   onToggleSetComplete: (exerciseId: string, setId: string) => void
   onAddSet: (exerciseId: string) => void
   onRemoveSet: (exerciseId: string, setIndex: number) => void
@@ -24,23 +30,39 @@ export const WorkoutSessionExercise = memo(
     onRemoveSet,
     onStartRestTimer,
   }: WorkoutSessionExerciseProps) {
+    const isCardio = exercise.category === 'CARDIO'
     const renderSetRow = useCallback(
-      ({ item: set, index }: { item: any; index: number }) => (
-        <WorkoutSessionSetRow
-          set={set}
-          index={index}
-          previousSet={exercise.lastWorkout?.sets[index]}
-          onUpdateSet={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
-          onToggleComplete={() => {
-            onToggleSetComplete(exercise.id, set.id)
-            if (!set.completed && set.reps && set.weight) {
-              onStartRestTimer(set.id)
-            }
-          }}
-          onDelete={() => onRemoveSet(exercise.id, index)}
-        />
-      ),
+      ({ item: set, index }: { item: any; index: number }) => {
+        if (isCardio) {
+          return (
+            <CardioSessionSetRow
+              set={set}
+              index={index}
+              previousDuration={undefined}
+              onUpdateDuration={(secs) => onUpdateSet(exercise.id, set.id, 'duration', secs)}
+              onToggleComplete={() => onToggleSetComplete(exercise.id, set.id)}
+              onDelete={() => onRemoveSet(exercise.id, index)}
+            />
+          )
+        }
+        return (
+          <WorkoutSessionSetRow
+            set={set}
+            index={index}
+            previousSet={exercise.lastWorkout?.sets[index]}
+            onUpdateSet={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
+            onToggleComplete={() => {
+              onToggleSetComplete(exercise.id, set.id)
+              if (!set.completed && set.reps && set.weight) {
+                onStartRestTimer(set.id)
+              }
+            }}
+            onDelete={() => onRemoveSet(exercise.id, index)}
+          />
+        )
+      },
       [
+        isCardio,
         exercise.id,
         exercise.lastWorkout?.sets,
         onUpdateSet,
@@ -75,33 +97,58 @@ export const WorkoutSessionExercise = memo(
           )}
 
           {/* Sets Header */}
-          <XStack justify="space-between" px="$1">
-            <YStack flex={1} items="center">
-              <Text fontSize="$3" fontWeight="600" color="$color">
-                SET
-              </Text>
-            </YStack>
-            <YStack flex={1} items="center">
-              <Text fontSize="$3" fontWeight="600" color="$color">
-                PREVIOUS
-              </Text>
-            </YStack>
-            <YStack flex={1} items="center">
-              <Text fontSize="$3" fontWeight="600" color="$color">
-                WEIGHT
-              </Text>
-            </YStack>
-            <YStack flex={1} items="center">
-              <Text fontSize="$3" fontWeight="600" color="$color">
-                REPS
-              </Text>
-            </YStack>
-            <YStack width={40} items="center">
-              <Text fontSize="$3" fontWeight="600" color="$color">
-                ✓
-              </Text>
-            </YStack>
-          </XStack>
+          {isCardio ? (
+            <XStack justify="space-between" px="$1">
+              <YStack flex={1} items="center">
+                <Text fontSize="$3" fontWeight="600" color="$color">
+                  SET
+                </Text>
+              </YStack>
+              <YStack flex={1} items="center">
+                <Text fontSize="$3" fontWeight="600" color="$color">
+                  PREV
+                </Text>
+              </YStack>
+              <YStack flex={2} items="center">
+                <Text fontSize="$3" fontWeight="600" color="$color">
+                  DURATION
+                </Text>
+              </YStack>
+              <YStack width={40} items="center">
+                <Text fontSize="$3" fontWeight="600" color="$color">
+                  ✓
+                </Text>
+              </YStack>
+            </XStack>
+          ) : (
+            <XStack justify="space-between" px="$1">
+              <YStack flex={1} items="center">
+                <Text fontSize="$3" fontWeight="600" color="$color">
+                  SET
+                </Text>
+              </YStack>
+              <YStack flex={1} items="center">
+                <Text fontSize="$3" fontWeight="600" color="$color">
+                  PREVIOUS
+                </Text>
+              </YStack>
+              <YStack flex={1} items="center">
+                <Text fontSize="$3" fontWeight="600" color="$color">
+                  WEIGHT
+                </Text>
+              </YStack>
+              <YStack flex={1} items="center">
+                <Text fontSize="$3" fontWeight="600" color="$color">
+                  REPS
+                </Text>
+              </YStack>
+              <YStack width={40} items="center">
+                <Text fontSize="$3" fontWeight="600" color="$color">
+                  ✓
+                </Text>
+              </YStack>
+            </XStack>
+          )}
 
           <Separator />
 
@@ -126,7 +173,7 @@ export const WorkoutSessionExercise = memo(
             borderColor="$primary"
             color="$primary"
           >
-            <Text color="$primary">Add Set</Text>
+            <Text color="$primary">Add {isCardio ? 'Interval' : 'Set'}</Text>
           </Button>
         </YStack>
       </Card>
@@ -143,6 +190,7 @@ export const WorkoutSessionExercise = memo(
           set.id === nextSet.id &&
           set.weight === nextSet.weight &&
           set.reps === nextSet.reps &&
+          set.durationSeconds === nextSet.durationSeconds &&
           set.completed === nextSet.completed
         )
       })

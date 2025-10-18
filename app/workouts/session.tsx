@@ -35,7 +35,6 @@ export default function WorkoutSessionScreen() {
     remainingRest,
   } = useWorkoutSession()
 
-  const theme = useTheme()
   const showFinishedCongrats = useUiStore((s) => s.showFinishedCongrats)
 
   const renderExercise = ({ item: exercise }: { item: Exercise }) => (
