@@ -52,7 +52,7 @@ export default function NewWorkoutScreen() {
       clearExercises()
       setName('')
       setNotes('')
-      router.replace('/(tabs)/workouts')
+      router.replace('/(tabs)/(workouts)')
     } catch (err) {
       console.error('Failed to create workout:', err)
       setError(err instanceof Error ? err.message : 'Failed to create workout')

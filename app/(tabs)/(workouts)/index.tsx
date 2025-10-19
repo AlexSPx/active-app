@@ -3,16 +3,16 @@ import { Sheet } from '@tamagui/sheet'
 import { useLayoutEffect, useState, useCallback, useEffect } from 'react'
 import { useNavigation } from 'expo-router'
 import { BackHandler } from 'react-native'
-import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
-import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
-import { useWorkoutManagement } from '../../hooks/useWorkoutManagement'
-import { useWorkouts } from '../../hooks/useWorkouts'
-import { WorkoutList } from '../../components/workouts/WorkoutList'
-import { useAppNavigation } from '../../navigation/useAppNavigation'
-import { useWorkoutMutations } from '../../hooks/useWorkoutMutations'
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
+import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
+import { useWorkoutManagement } from '../../../hooks/useWorkoutManagement'
+import { useWorkouts } from '../../../hooks/useWorkouts'
+import { WorkoutList } from '../../../components/workouts/WorkoutList'
+import { useAppNavigation } from '../../../navigation/useAppNavigation'
+import { useWorkoutMutations } from '../../../hooks/useWorkoutMutations'
 import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 
-export default function WorkoutsScreen() {
+export default function WorkoutsInnerTab() {
   const navigation = useNavigation()
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
   const { navigateToNewWorkout, navigateToEditWorkout } = useAppNavigation()
@@ -65,11 +65,6 @@ export default function WorkoutsScreen() {
     setPendingDeleteId(null)
   }, [pendingDeleteId, deleteWorkout, refetch])
 
-  const cancelDelete = useCallback(() => {
-    setConfirmOpen(false)
-    setPendingDeleteId(null)
-  }, [])
-
   if (loading && workouts.length === 0) {
     return (
       <YStack flex={1} justify="center" items="center" bg="$background">
@@ -94,24 +89,21 @@ export default function WorkoutsScreen() {
 
   return (
     <YStack flex={1} bg="$background">
-      <YStack flex={1} px="$4" pt="$3">
+      <YStack flex={1} px="$4">
         <WorkoutList
           workouts={workouts}
           onStartWorkout={startWorkout}
           isWorkoutRunning={isWorkoutRunning()}
           onEditWorkout={handleEditWorkout}
-          onDeleteWorkout={handleDeleteWorkout}
           listHeader={
-            <YStack gap="$3" pb="$3">
-              <Button bg="$primary" width="100%" onPress={navigateToNewWorkout}>
-                Create Workout
-              </Button>
-              <Separator />
-            </YStack>
+            <Button bg="$primary" width="100%" my="$3" onPress={navigateToNewWorkout}>
+              <Text>Create Workout</Text>
+            </Button>
           }
+          onDeleteWorkout={handleDeleteWorkout}
           refreshing={loading}
           onRefresh={refetch}
-          onCreateWorkout={navigateToNewWorkout}
+          onCreateWorkout={() => {}}
         />
       </YStack>
 

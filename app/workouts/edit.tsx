@@ -94,14 +94,14 @@ export default function EditWorkoutScreen() {
         exercises: changedTemplate ? selectedExercises : undefined,
       })
       if (Object.keys(payload).length === 0) {
-        router.replace('/(tabs)/workouts')
+        router.replace('/(tabs)/(workouts)')
         return
       }
       await apiService.updateWorkout(workoutId, payload)
 
       // Clear editor state and go back to workouts list
       clearExercises()
-      router.replace('/(tabs)/workouts')
+      router.replace('/(tabs)/(workouts)')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Failed to update workout')
     } finally {
