@@ -37,7 +37,7 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
           defaultTheme={colorScheme === 'dark' ? 'dark' : 'light'}
           {...rest}
         >
-          <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" />
+          {/* <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" /> */}
 
           <ToastProvider
             swipeDirection="horizontal"
