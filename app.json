@@ -1,10 +1,9 @@
 {
   "expo": {
-    "name": "active-next",
+    "name": "Active Next",
     "slug": "active-next",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "splash": {
