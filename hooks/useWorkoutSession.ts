@@ -1,9 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { AppState } from 'react-native'
 import type { Exercise } from '../types/workout-session'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
-import { apiService } from '../services/apiService'
 import type { WorkoutRecord } from '../types/api'
+import {
+  initNotifications,
+  scheduleRestNotification,
+  cancelRestNotification,
+} from '../services/notificationService'
 
 export interface UseWorkoutSessionOptions {
   fallbackExercises?: Exercise[]
@@ -54,12 +59,11 @@ export function useWorkoutSession(
   // Active rest timer references a completed set ID while counting down, otherwise null
   const [activeTimer, setActiveTimer] = useState<string | null>(null)
   // Default rest time (seconds) – future configurable
-  const DEFAULT_REST_TIME = 90
+  const DEFAULT_REST_TIME = 10
   const [restTime] = useState(DEFAULT_REST_TIME)
   const [remainingRest, setRemainingRest] = useState<number>(0)
-  // Use ReturnType for cross-platform timer id compatibility (number in browsers, NodeJS.Timeout in RN env types)
-  const restTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const restDeadlineRef = useRef<number | null>(null)
   const [workoutDuration, setWorkoutDuration] = useState('0:00')
 
   // Get workout data from running workout store
@@ -231,16 +235,17 @@ export function useWorkoutSession(
   }
 
   const clearRestTimer = useCallback(() => {
-    if (restTimeoutRef.current) clearTimeout(restTimeoutRef.current)
     if (restIntervalRef.current) clearInterval(restIntervalRef.current)
-    restTimeoutRef.current = null
     restIntervalRef.current = null
+    restDeadlineRef.current = null
   }, [])
 
   const finishRestTimer = useCallback(() => {
     setActiveTimer(null)
     setRemainingRest(0)
     clearRestTimer()
+    // Cancel pending notification if any
+    cancelRestNotification().catch(() => {})
     // Vibration API (react-native) – guarded so web build doesn't break
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -263,54 +268,61 @@ export function useWorkoutSession(
       // If already running, restart
       clearRestTimer()
       setActiveTimer(setId)
-      setRemainingRest(restTime)
+      const deadline = Date.now() + restTime * 1000
+      restDeadlineRef.current = deadline
+      // Set initial remaining
+      setRemainingRest(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
 
+      // Background notification for when app is locked
+      initNotifications()
+        .then(() => scheduleRestNotification(deadline))
+        .catch(() => {})
+
+      // Tick based on absolute time so background pauses don't break it
       restIntervalRef.current = setInterval(() => {
-        setRemainingRest((prev) => {
-          if (prev <= 1) {
-            finishRestTimer()
-            return 0
-          }
-          return prev - 1
-        })
-      }, 1000)
-
-      restTimeoutRef.current = setTimeout(() => {
-        finishRestTimer()
-      }, restTime * 1000)
+        const dl = restDeadlineRef.current
+        if (!dl) return
+        const remain = Math.max(0, Math.ceil((dl - Date.now()) / 1000))
+        setRemainingRest(remain)
+        if (remain <= 0) {
+          finishRestTimer()
+        }
+      }, 500)
     },
     [clearRestTimer, finishRestTimer, restTime]
   )
 
   const extendRestTimer = useCallback(() => {
-    if (!activeTimer || remainingRest <= 0) return
-    // Add 15s extension
-    const EXT = 15
-    // Recalculate remaining time by clearing existing timers and starting new ones with updated total
-    clearRestTimer()
-    const newRemainingTotal = remainingRest + EXT
-    setRemainingRest(newRemainingTotal)
-    restIntervalRef.current = setInterval(() => {
-      setRemainingRest((prev) => {
-        if (prev <= 1) {
-          finishRestTimer()
-          return 0
-        }
-        return prev - 1
-      })
-    }, 1000)
-    restTimeoutRef.current = setTimeout(() => {
-      finishRestTimer()
-    }, newRemainingTotal * 1000)
-  }, [activeTimer, remainingRest, finishRestTimer, clearRestTimer])
+    if (!activeTimer) return
+    const EXT = 15 * 1000
+    if (restDeadlineRef.current == null) return
+    restDeadlineRef.current += EXT
+    const remain = Math.max(0, Math.ceil((restDeadlineRef.current - Date.now()) / 1000))
+    setRemainingRest(remain)
+    // Reschedule background notification to new deadline
+    scheduleRestNotification(restDeadlineRef.current).catch(() => {})
+  }, [activeTimer])
 
   const skipRestTimer = useCallback(() => {
     if (!activeTimer) return
     finishRestTimer()
+    cancelRestNotification().catch(() => {})
   }, [activeTimer, finishRestTimer])
 
   // Cleanup on unmount
   useEffect(() => () => clearRestTimer(), [clearRestTimer])
+
+  // Recompute remaining on app resume so timers 'catch up' after background/lock
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active' && restDeadlineRef.current && activeTimer) {
+        const remain = Math.max(0, Math.ceil((restDeadlineRef.current - Date.now()) / 1000))
+        setRemainingRest(remain)
+        if (remain <= 0) finishRestTimer()
+      }
+    })
+    return () => sub.remove()
+  }, [activeTimer, finishRestTimer])
 
   const finishWorkout = async (notes?: string) => {
     return await stopWorkout(notes)

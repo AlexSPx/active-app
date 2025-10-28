@@ -1,4 +1,5 @@
 import { useColorScheme } from 'react-native'
+import { useEffect } from 'react'
 import { TamaguiProvider, type TamaguiProviderProps, PortalProvider } from 'tamagui'
 import { ToastProvider, ToastViewport } from '@tamagui/toast'
 import { CurrentToast } from './CurrentToast'
@@ -9,6 +10,7 @@ import FinishedWorkoutCongrats from '../components/FinishedWorkoutCongrats'
 import { FloatingDevTools, InstalledApp } from '@react-buoy/core'
 import { NetworkModal } from '@react-buoy/network'
 import { Globe } from '@react-buoy/shared-ui'
+import { initNotifications } from '../services/notificationService'
 
 const TOOLS: InstalledApp[] = [
   {
@@ -28,6 +30,10 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
   const hideFinishedCongrats = useUiStore((s) => s.hideFinishedCongrats)
   const congratsVisible = finishedCongrats.visible && !!finishedCongrats.payload
   const payload = finishedCongrats.payload
+
+  useEffect(() => {
+    initNotifications().catch(() => {})
+  }, [])
 
   return (
     <SafeAreaProvider>
