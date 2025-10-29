@@ -26,7 +26,7 @@
         "monochromeImage": "./assets/icons/adaptive-icon.png",
         "backgroundColor": "#000000"
       },
-      "package": "com.alexspx.dev.activenext",
+      "package": "com.alexspx.activenext",
       "permissions": ["POST_NOTIFICATIONS", "VIBRATE"]
     },
     "web": {
