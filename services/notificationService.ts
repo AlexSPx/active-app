@@ -25,13 +25,13 @@ export async function initNotifications(): Promise<void> {
     return
   }
   try {
-    // Ensure foreground behavior is controlled: don't pop an alert when app is active
+    // Foreground behavior: show an alert/sound so scheduled notifications are visible during testing
     if (mod.setNotificationHandler) {
       mod.setNotificationHandler({
         handleNotification: async () => ({
-          shouldPlaySound: false,
+          shouldPlaySound: true,
           shouldSetBadge: false,
-          shouldShowAlert: false,
+          shouldShowAlert: true,
         }),
       })
     }
@@ -67,6 +67,10 @@ export async function scheduleRestNotification(deadlineMs: number): Promise<void
       } catch {}
       scheduledId = null
     }
+
+    console.log(new Date(Date.now()))
+    console.log(new Date(deadlineMs))
+
     const when = Math.max(Date.now() + 1000, deadlineMs) // at least 1s in future
     const id = await mod.scheduleNotificationAsync({
       content: {

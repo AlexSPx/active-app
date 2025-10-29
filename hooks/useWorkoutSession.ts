@@ -274,9 +274,7 @@ export function useWorkoutSession(
       setRemainingRest(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
 
       // Background notification for when app is locked
-      initNotifications()
-        .then(() => scheduleRestNotification(deadline))
-        .catch(() => {})
+      scheduleRestNotification(deadline).catch(() => {})
 
       // Tick based on absolute time so background pauses don't break it
       restIntervalRef.current = setInterval(() => {
