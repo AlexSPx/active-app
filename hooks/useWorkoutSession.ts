@@ -244,8 +244,6 @@ export function useWorkoutSession(
     setActiveTimer(null)
     setRemainingRest(0)
     clearRestTimer()
-    // Cancel pending notification if any
-    cancelRestNotification().catch(() => {})
     // Vibration API (react-native) – guarded so web build doesn't break
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
