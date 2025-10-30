@@ -1,4 +1,6 @@
-import { Platform } from 'react-native'
+import { Platform, Alert } from 'react-native'
+import * as Linking from 'expo-linking'
+import * as Application from 'expo-application'
 import type {
   NotificationHandler,
   NotificationChannelInput,
@@ -25,6 +27,13 @@ async function loadModule(): Promise<typeof import('expo-notifications') | null>
     console.warn('expo-notifications is not installed. Notifications will be disabled.')
     Notifications = null
     return null
+  }
+}
+async function openAlarmSettings() {
+  if (Platform.OS === 'android') {
+    const action = 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM'
+    const alarmSettingsUri = `package:${Application.applicationId ?? ''}`
+    await Linking.sendIntent(action, [{ key: 'data', value: alarmSettingsUri }])
   }
 }
 
@@ -67,7 +76,48 @@ export async function initNotifications(): Promise<void> {
 
     const perms: NotificationPermissionsStatus = await mod.getPermissionsAsync()
     if (!perms.granted) {
-      await mod.requestPermissionsAsync()
+      const { granted } = await mod.requestPermissionsAsync()
+      if (!granted) {
+        console.warn('General notification permissions were denied.')
+        initialized = true
+        return
+      }
+    }
+
+    // 5. Handle 'allowsScheduledNotifications' (This is the critical part)
+    if (
+      Platform.OS === 'android' &&
+      !(perms.android && (perms.android as any).allowsScheduledNotifications)
+    ) {
+      // This request will fail silently on Android 14+, so we check the response
+      const resp = await mod.requestPermissionsAsync({
+        android: {
+          allowsScheduledNotifications: true,
+        },
+      })
+
+      // The response may nest Android-specific flags under resp.android
+      // const updatedPerms = await mod.getPermissionsAsync()
+      // const isAllowed = (updatedPerms.android as any)?.allowsScheduledNotifications ?? false
+
+      // if (!isAllowed) {
+      //   // Permission is still denied. We must ask the user to enable it manually.
+      //   Alert.alert(
+      //     'Permission Required',
+      //     'To ensure rest timers are accurate, please grant the "Alarms & reminders" permission for this app in your phone\'s settings.',
+      //     [
+      //       {
+      //         text: 'Open Settings',
+      //         onPress: openAlarmSettings,
+      //       },
+      //       {
+      //         text: 'Cancel',
+      //         style: 'cancel',
+      //       },
+      //     ],
+      //     { cancelable: true }
+      //   )
+      // }
     }
   } catch (error: unknown) {
     console.error('Failed to initialize notifications:', error)
