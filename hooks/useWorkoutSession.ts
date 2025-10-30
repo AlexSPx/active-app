@@ -59,7 +59,7 @@ export function useWorkoutSession(
   // Active rest timer references a completed set ID while counting down, otherwise null
   const [activeTimer, setActiveTimer] = useState<string | null>(null)
   // Default rest time (seconds) – future configurable
-  const DEFAULT_REST_TIME = 10
+  const DEFAULT_REST_TIME = 90
   const [restTime] = useState(DEFAULT_REST_TIME)
   const [remainingRest, setRemainingRest] = useState<number>(0)
   const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)

@@ -88,20 +88,21 @@ export async function scheduleRestNotification(deadlineMs: number): Promise<void
     await cancelRestNotification()
 
     const now = Date.now()
-    const delayInSeconds = Math.max(1, Math.round((deadlineMs - now) / 1000))
-
-    console.log(`Scheduling notification in ${delayInSeconds} seconds.`)
+    let delayInSeconds = Math.ceil((deadlineMs - now) / 1000)
 
     const trigger: NotificationTriggerInput = {
       type: mod.SchedulableTriggerInputTypes.TIME_INTERVAL,
       seconds: delayInSeconds,
-      channelId: 'rest-timer', // Required for Android
+      channelId: 'rest-timer',
     }
 
     const content: NotificationContentInput = {
       title: 'Rest complete',
       body: 'Time to start your next set.',
       sound: 'default',
+
+      priority: mod.AndroidNotificationPriority.HIGH,
+      interruptionLevel: 'timeSensitive',
     }
 
     const id = await mod.scheduleNotificationAsync({

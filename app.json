@@ -27,7 +27,7 @@
         "backgroundColor": "#000000"
       },
       "package": "com.alexspx.activenext",
-      "permissions": ["POST_NOTIFICATIONS", "VIBRATE"]
+      "permissions": ["POST_NOTIFICATIONS", "VIBRATE", "android.permission.SCHEDULE_EXACT_ALARM"]
     },
     "web": {
       "bundler": "metro",
