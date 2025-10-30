@@ -37,7 +37,12 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-notifications",
+      [
+        "expo-notifications",
+        {
+          "useExactAlarm": true
+        }
+      ],
       [
         "expo-splash-screen",
         {
