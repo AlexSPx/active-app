@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router'
 import { useTheme, YStack } from 'tamagui'
-import { Dumbbell, History, Home } from '@tamagui/lucide-icons'
+import { Dumbbell, History, Home, Settings as SettingsIcon } from '@tamagui/lucide-icons'
 import RunningWorkoutFloat from '../../components/workout-session/RunningWorkoutFloat'
 
 export default function TabLayout() {
@@ -47,6 +47,13 @@ export default function TabLayout() {
           options={{
             title: 'Workouts',
             tabBarIcon: ({ color }) => <Dumbbell color={color as any} />,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: 'Settings',
+            tabBarIcon: ({ color }) => <SettingsIcon color={color as any} />,
           }}
         />
       </Tabs>

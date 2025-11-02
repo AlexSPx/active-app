@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppState } from 'react-native'
 import type { Exercise } from '../types/workout-session'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
 import type { WorkoutRecord } from '../types/api'
 import {
@@ -58,9 +59,10 @@ export function useWorkoutSession(
   const [exercises, setExercises] = useState<Exercise[]>([])
   // Active rest timer references a completed set ID while counting down, otherwise null
   const [activeTimer, setActiveTimer] = useState<string | null>(null)
-  // Default rest time (seconds) – future configurable
-  const DEFAULT_REST_TIME = 90
-  const [restTime] = useState(DEFAULT_REST_TIME)
+  // Rest timer configuration from settings
+  const restTimerEnabled = useSettingsStore((s) => s.restTimerEnabled)
+  const defaultRestSeconds = useSettingsStore((s) => s.restTimerDefaultSeconds)
+  const [restTime, setRestTime] = useState<number>(defaultRestSeconds)
   const [remainingRest, setRemainingRest] = useState<number>(0)
   const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const restDeadlineRef = useRef<number | null>(null)
@@ -263,10 +265,14 @@ export function useWorkoutSession(
 
   const startRestTimer = useCallback(
     (setId: string) => {
+      if (!restTimerEnabled) return
       // If already running, restart
       clearRestTimer()
       setActiveTimer(setId)
-      const deadline = Date.now() + restTime * 1000
+      // sync total with latest default from settings on start
+      setRestTime(defaultRestSeconds)
+      const total = defaultRestSeconds
+      const deadline = Date.now() + total * 1000
       restDeadlineRef.current = deadline
       // Set initial remaining
       setRemainingRest(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
@@ -285,7 +291,7 @@ export function useWorkoutSession(
         }
       }, 500)
     },
-    [clearRestTimer, finishRestTimer, restTime]
+    [clearRestTimer, finishRestTimer, restTimerEnabled, defaultRestSeconds]
   )
 
   const extendRestTimer = useCallback(() => {
@@ -304,6 +310,8 @@ export function useWorkoutSession(
     finishRestTimer()
     cancelRestNotification().catch(() => {})
   }, [activeTimer, finishRestTimer])
+
+  // Allow setting remaining/total seconds directly (for editing)
 
   // Cleanup on unmount
   useEffect(() => () => clearRestTimer(), [clearRestTimer])

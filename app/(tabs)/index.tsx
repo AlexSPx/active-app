@@ -1,8 +1,7 @@
 import { YStack, XStack, Text, Button, View, ScrollView } from 'tamagui'
-import { useRouter, useNavigation } from 'expo-router'
-import { useLayoutEffect, useState } from 'react'
+import { useRouter } from 'expo-router'
+import { useState } from 'react'
 import { Plus } from '@tamagui/lucide-icons'
-import { useAuth } from '../../contexts/AuthContext'
 import { WeeklyView } from '../../components/WeeklyView'
 import { TodayView } from '../../components/TodayView'
 import { ProgressionWidget } from '../../components/ProgressionWidget'
@@ -11,23 +10,10 @@ import { useWidgetStore } from '../../stores/widgetStore'
 
 export default function HomeScreen() {
   const router = useRouter()
-  const navigation = useNavigation()
-  const { logout, user } = useAuth()
   const [showWidgetManager, setShowWidgetManager] = useState(false)
 
   const { widgets, removeWidget } = useWidgetStore()
   const sortedWidgets = widgets.sort((a, b) => a.position - b.position)
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: 'Home',
-      headerRight: () => (
-        <Button size="$2" onPress={logout} bg="$red9" pressStyle={{ bg: '$red10' }}>
-          <Text color="white">Logout</Text>
-        </Button>
-      ),
-    })
-  }, [navigation, logout])
 
   return (
     <ScrollView flex={1} bg="$background" showsVerticalScrollIndicator={false}>
