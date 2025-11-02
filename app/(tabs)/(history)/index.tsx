@@ -148,6 +148,21 @@ export default function HistoryPage() {
   return (
     <YStack flex={1} bg="$background">
       <YStack flex={1} px="$4" pt="$0">
+        {/* Calendar pinned at the top (outside the list) */}
+        <HistoryCalendar
+          monthDate={monthDate}
+          selectedDate={selectedDate}
+          collapsed={collapsed}
+          onMonthChange={setMonthDate}
+          onToggleCollapsed={() => setCollapsed((c) => !c)}
+          onSelectDate={setSelectedDate}
+          workoutDays={workoutDays}
+          weekStart={weekStart}
+          weekEnd={weekEnd}
+          selectedWeekIndex={selectedWeekIndex}
+          scrollToWeek={scrollToWeek}
+        />
+
         <HistoryList
           ref={listRef}
           data={allWorkoutsSorted}
@@ -155,21 +170,6 @@ export default function HistoryPage() {
           viewabilityConfig={viewabilityConfigRef.current}
           refreshing={refreshing}
           onRefresh={onRefresh}
-          listHeader={
-            <HistoryCalendar
-              monthDate={monthDate}
-              selectedDate={selectedDate}
-              collapsed={collapsed}
-              onMonthChange={setMonthDate}
-              onToggleCollapsed={() => setCollapsed((c) => !c)}
-              onSelectDate={setSelectedDate}
-              workoutDays={workoutDays}
-              weekStart={weekStart}
-              weekEnd={weekEnd}
-              selectedWeekIndex={selectedWeekIndex}
-              scrollToWeek={scrollToWeek}
-            />
-          }
           onPressItem={(item) =>
             router.push({ pathname: '/(tabs)/(history)/record/[id]', params: { id: item.id } })
           }

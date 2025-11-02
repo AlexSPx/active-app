@@ -10,6 +10,13 @@ export function startOfWeek(date: Date): Date {
   return d
 }
 
+export type DayCell = {
+  date: Date
+  inCurrentMonth: boolean
+  isToday: boolean
+  isSelected: boolean
+}
+
 export function endOfWeek(date: Date): Date {
   const s = startOfWeek(date)
   const e = new Date(s)
@@ -66,13 +73,6 @@ export function toISODate(d: Date) {
   const m = (d.getMonth() + 1).toString().padStart(2, '0')
   const dd = d.getDate().toString().padStart(2, '0')
   return `${y}-${m}-${dd}`
-}
-
-export type DayCell = {
-  date: Date
-  inCurrentMonth: boolean
-  isToday: boolean
-  isSelected: boolean
 }
 
 export function generateCalendar(dateInMonth: Date, selected: Date): DayCell[] {

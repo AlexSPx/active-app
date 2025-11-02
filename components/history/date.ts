@@ -5,6 +5,7 @@ export {
   startOfMonth,
   endOfMonth,
   addMonths,
+  DayCell,
   sameDay,
   formatMonthYear,
   formatWeekRange,

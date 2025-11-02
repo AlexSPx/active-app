@@ -2,9 +2,9 @@ import { Button, Text, View, XStack, YStack } from 'tamagui'
 import { ChevronLeft, ChevronRight } from '@tamagui/lucide-icons'
 import {
   addMonths,
-  DayCell,
   endOfWeek,
   formatMonthYear,
+  DayCell,
   generateCalendar,
   sameDay,
   startOfWeek,
