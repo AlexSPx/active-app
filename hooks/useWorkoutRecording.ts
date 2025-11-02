@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
 import { apiService } from '../services/apiService'
-import type { WorkoutRecordRequest, ExerciseRecord } from '../types/api'
+import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecord } from '../types/api'
 
 export interface UseWorkoutRecordingReturn {
-  recordWorkout: (workoutRecord: WorkoutRecordRequest) => Promise<{ id: string } | null>
+  recordWorkout: (workoutRecord: WorkoutRecordRequest) => Promise<WorkoutRecord | null>
   isRecording: boolean
   error: string | null
 }

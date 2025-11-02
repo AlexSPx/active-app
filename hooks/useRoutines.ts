@@ -19,11 +19,7 @@ export function useRoutines(): UseRoutinesReturn {
       setLoading(true)
       setError(null)
       const data = await apiService.getRoutines()
-      // Defensive sort by createdAt desc
-      const sorted = [...data].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
-      setRoutines(sorted)
+      setRoutines(data)
     } catch (err) {
       console.error('Failed to fetch routines:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch routines')
