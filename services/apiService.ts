@@ -13,6 +13,7 @@ import type {
   RegisterRequest,
   ExerciseLogResponse,
 } from '../types/api'
+import type { Routine, CreateRoutineRequest, UpdateRoutineRequest } from '../types/routine'
 
 // Re-export types for backward compatibility
 export type {
@@ -238,7 +239,9 @@ class ApiService {
   }
 
   async getExerciseLogs(exerciseId: string): Promise<ExerciseLogResponse[]> {
-    const url = getApiUrl(`${config.API_ENDPOINTS.EXERCISES.LOGS}/${encodeURIComponent(exerciseId)}/logs`)
+    const url = getApiUrl(
+      `${config.API_ENDPOINTS.EXERCISES.LOGS}/${encodeURIComponent(exerciseId)}/logs`
+    )
     console.log(`API Request: GET ${url}`)
 
     const response = await fetch(url, {
@@ -247,6 +250,83 @@ class ApiService {
     })
 
     return this.handleResponse<ExerciseLogResponse[]>(response)
+  }
+
+  async getRoutines(): Promise<Routine[]> {
+    const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.LIST)
+    console.log(`API Request: GET ${url}`)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: await this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<Routine[]>(response)
+  }
+
+  async getRoutine(routineId: string): Promise<Routine> {
+    const base = config.API_ENDPOINTS.ROUTINES.UPDATE
+    const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
+    console.log(`API Request: GET ${url}`)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: await this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<Routine>(response)
+  }
+
+  async getActiveRoutine(): Promise<Routine> {
+    const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.ACTIVE)
+    console.log(`API Request: GET ${url}`)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: await this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<Routine>(response)
+  }
+
+  async createRoutine(payload: CreateRoutineRequest): Promise<Routine> {
+    const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.CREATE)
+    console.log(`API Request: POST ${url}`, payload)
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: await this.getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+
+    return this.handleResponse<Routine>(response)
+  }
+
+  async updateRoutine(routineId: string, payload: UpdateRoutineRequest): Promise<Routine> {
+    const base = config.API_ENDPOINTS.ROUTINES.UPDATE
+    const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
+    console.log(`API Request: PUT ${url}`, payload)
+
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: await this.getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+
+    return this.handleResponse<Routine>(response)
+  }
+
+  async deleteRoutine(routineId: string): Promise<void> {
+    const base = config.API_ENDPOINTS.ROUTINES.DELETE
+    const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
+    console.log(`API Request: DELETE ${url}`)
+
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: await this.getAuthHeaders(),
+    })
+
+    await this.handleResponse<unknown>(response)
   }
 }
 

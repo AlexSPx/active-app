@@ -23,6 +23,13 @@ export const config = {
       DELETE: '/api/workouts',
       RECORD: '/api/workouts/record',
     },
+    ROUTINES: {
+      CREATE: '/api/routines',
+      LIST: '/api/routines',
+      UPDATE: '/api/routines',
+      DELETE: '/api/routines',
+      ACTIVE: '/api/routines/active',
+    },
   },
 
   // Request configuration

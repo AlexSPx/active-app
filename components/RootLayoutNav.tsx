@@ -50,6 +50,32 @@ export function RootLayoutNav() {
             />
 
             <Stack.Screen
+              name="routines/new"
+              options={{
+                title: 'Create Routine',
+                headerStyle: {
+                  backgroundColor: theme.background.val,
+                },
+                headerTintColor: theme.color.val,
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+
+            <Stack.Screen
+              name="routines/edit"
+              options={{
+                title: 'Edit Routine',
+                headerStyle: {
+                  backgroundColor: theme.background.val,
+                },
+                headerTintColor: theme.color.val,
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+
+            <Stack.Screen
               name="workouts/new"
               options={{
                 title: 'Create Workout',
