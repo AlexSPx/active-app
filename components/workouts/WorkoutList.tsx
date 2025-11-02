@@ -1,5 +1,5 @@
 import { FlashList } from '@shopify/flash-list'
-import { memo } from 'react'
+import { memo, useEffect, useRef } from 'react'
 import type { ApiWorkout } from '../../types/api'
 import { WorkoutCard } from './WorkoutCard'
 import { View, YStack, Text, Button } from 'tamagui'
@@ -14,6 +14,7 @@ export interface WorkoutListProps {
   refreshing?: boolean
   onRefresh?: () => void
   onCreateWorkout?: () => void
+  focusId?: string
 }
 
 export const WorkoutList = memo(
@@ -27,7 +28,22 @@ export const WorkoutList = memo(
     refreshing,
     onRefresh,
     onCreateWorkout,
+    focusId,
   }: WorkoutListProps) {
+    const listRef = useRef<any>(null)
+
+    useEffect(() => {
+      if (!focusId || !workouts?.length) return
+      const index = workouts.findIndex((w) => w.id === focusId)
+      if (index >= 0) {
+        const t = setTimeout(() => {
+          try {
+            listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 })
+          } catch {}
+        }, 50)
+        return () => clearTimeout(t)
+      }
+    }, [focusId, workouts])
     const renderWorkout = ({ item: workout }: { item: ApiWorkout }) => {
       return (
         <WorkoutCard
@@ -43,6 +59,7 @@ export const WorkoutList = memo(
     return (
       <View flex={1}>
         <FlashList
+          ref={listRef}
           data={workouts}
           renderItem={renderWorkout}
           keyExtractor={(item) => item.id}

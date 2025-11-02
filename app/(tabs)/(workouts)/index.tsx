@@ -1,7 +1,7 @@
 import { YStack, XStack, Button, Text, Separator } from 'tamagui'
 import { Sheet } from '@tamagui/sheet'
 import { useLayoutEffect, useState, useCallback, useEffect } from 'react'
-import { useNavigation } from 'expo-router'
+import { useNavigation, useLocalSearchParams } from 'expo-router'
 import { BackHandler } from 'react-native'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
@@ -20,6 +20,7 @@ export default function WorkoutsInnerTab() {
   const { deleteWorkout, loading: deleting } = useWorkoutMutations()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  const params = useLocalSearchParams<{ focusId?: string }>()
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -95,6 +96,7 @@ export default function WorkoutsInnerTab() {
           onStartWorkout={startWorkout}
           isWorkoutRunning={isWorkoutRunning()}
           onEditWorkout={handleEditWorkout}
+          focusId={(params.focusId as string) || undefined}
           listHeader={
             <Button bg="$primary" width="100%" my="$3" onPress={navigateToNewWorkout}>
               <Text>Create Workout</Text>
