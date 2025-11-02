@@ -10,7 +10,7 @@ import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
 import { RoutineList } from '../../../components/routines/RoutineList'
 import { useRoutines } from '../../../hooks/useRoutines'
 import { useRoutineMutations } from '../../../hooks/useRoutineMutations'
-import { apiService } from '../../../services/apiService'
+import { useActiveRoutine } from '../../../hooks/useActiveRoutine'
 import type { Routine } from '../../../types/routine'
 
 export default function RoutinesTab() {
@@ -18,8 +18,7 @@ export default function RoutinesTab() {
 
   const { routines, loading, error, refetch } = useRoutines()
   const { deleteRoutine, activateRoutine, loading: mutating } = useRoutineMutations()
-
-  const [activeRoutineId, setActiveRoutineId] = useState<string | null>(null)
+  const { activeRoutine, refetch: refetchActive } = useActiveRoutine()
 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -28,31 +27,16 @@ export default function RoutinesTab() {
     navigation.setOptions({ title: 'Routines' })
   }, [navigation])
 
-  const fetchActive = useCallback(async () => {
-    try {
-      const active = await apiService.getActiveRoutine()
-      setActiveRoutineId(active.id)
-    } catch (e: any) {
-      // 404 means no active routine; others we ignore for now
-      if (!(e && typeof e === 'object' && 'status' in e && (e as any).status === 404)) {
-        console.warn('Failed to fetch active routine:', e)
-      }
-      setActiveRoutineId(null)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchActive()
-  }, [fetchActive])
+  // Refresh data when this screen gains focus
 
   // Refetch when screen gains focus (ensures newly created routines appear)
   useEffect(() => {
     const unsub = (navigation as any).addListener?.('focus', async () => {
       await refetch()
-      await fetchActive()
+      await refetchActive()
     })
     return () => unsub?.()
-  }, [fetchActive, navigation, refetch])
+  }, [navigation, refetch, refetchActive])
 
   const openCreate = useCallback(() => {
     router.push('/routines/new')
@@ -66,13 +50,10 @@ export default function RoutinesTab() {
     async (routineId: string) => {
       const updated = await activateRoutine(routineId)
       if (updated) {
-        setActiveRoutineId(updated.id)
-      } else {
-        // Fallback refetch
-        await fetchActive()
+        await refetchActive()
       }
     },
-    [activateRoutine, fetchActive]
+    [activateRoutine, refetchActive]
   )
 
   const handleDeleteRoutine = useCallback((routineId: string) => {
@@ -108,11 +89,10 @@ export default function RoutinesTab() {
     const ok = await deleteRoutine(pendingDeleteId)
     if (ok) {
       await refetch()
-      await fetchActive()
     }
     setConfirmOpen(false)
     setPendingDeleteId(null)
-  }, [deleteRoutine, fetchActive, pendingDeleteId, refetch])
+  }, [deleteRoutine, pendingDeleteId, refetch])
 
   if (loading && routines.length === 0) {
     return (
@@ -141,7 +121,7 @@ export default function RoutinesTab() {
       <YStack flex={1} px="$4">
         <RoutineList
           routines={routines}
-          activeRoutineId={activeRoutineId}
+          activeRoutineId={activeRoutine?.id ?? null}
           onActivate={handleActivate}
           onEditRoutine={openEdit}
           onDeleteRoutine={handleDeleteRoutine}
@@ -154,7 +134,7 @@ export default function RoutinesTab() {
           refreshing={loading}
           onRefresh={async () => {
             await refetch()
-            await fetchActive()
+            await refetchActive()
           }}
           onCreateRoutine={openCreate}
         />
