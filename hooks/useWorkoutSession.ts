@@ -4,7 +4,7 @@ import type { Exercise } from '../types/workout-session'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
-import type { WorkoutRecord } from '../types/api'
+import type { WorkoutRecordResponse } from '../types/api'
 import {
   initNotifications,
   scheduleRestNotification,
@@ -38,7 +38,7 @@ export interface WorkoutSessionActions {
   startRestTimer: (setId: string) => void
   extendRestTimer: () => void
   skipRestTimer: () => void
-  finishWorkout: (notes?: string) => Promise<WorkoutRecord | void>
+  finishWorkout: (notes?: string) => Promise<WorkoutRecordResponse | void>
   cancelWorkout: () => void
 }
 

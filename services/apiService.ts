@@ -13,6 +13,7 @@ import type {
   RegisterRequest,
   ExerciseLogResponse,
 } from '../types/api'
+import type { WorkoutRecordResponse } from '../types/api'
 import type { Routine, CreateRoutineRequest, UpdateRoutineRequest } from '../types/routine'
 
 // Re-export types for backward compatibility
@@ -164,7 +165,7 @@ class ApiService {
     return this.handleResponse<ApiWorkout[]>(response)
   }
 
-  async recordWorkout(workoutRecord: WorkoutRecordRequest): Promise<WorkoutRecord> {
+  async recordWorkout(workoutRecord: WorkoutRecordRequest): Promise<WorkoutRecordResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.RECORD)
     console.log(`API Request: POST ${url}`, workoutRecord)
 
@@ -174,7 +175,7 @@ class ApiService {
       body: JSON.stringify(workoutRecord),
     })
 
-    return this.handleResponse<WorkoutRecord>(response)
+    return this.handleResponse<WorkoutRecordResponse>(response)
   }
 
   async updateWorkout(

@@ -3,18 +3,20 @@ import { Vibration, Platform } from 'react-native'
 import { Portal } from '@tamagui/portal'
 import { YStack, XStack, Text, View, Separator, Button } from 'tamagui'
 import { Trophy, Timer as TimerIcon, Dumbbell, BarChart2 } from '@tamagui/lucide-icons'
-import type { WorkoutRecord } from '../types/api'
+import type { WorkoutRecord, StreakUpdateResponse, StreakUpdateStatus } from '../types/api'
 
 export type FinishedWorkoutCongratsProps = {
   data: WorkoutRecord
   visible?: boolean
   onClose?: () => void
+  streak?: StreakUpdateResponse
 }
 
 export function FinishedWorkoutCongrats({
   data,
   visible = true,
   onClose,
+  streak,
 }: FinishedWorkoutCongratsProps) {
   if (!visible) return null
 
@@ -124,6 +126,39 @@ export function FinishedWorkoutCongrats({
     return best.value > 0 ? best : null
   })()
 
+  // Decide celebration headline by streak status
+  const headline = (() => {
+    switch (streak?.status as StreakUpdateStatus | undefined) {
+      case 'CONTINUED':
+        return 'Streak Continued'
+      case 'STARTED':
+        return 'Streak Started'
+      case 'WRONG_WORKOUT':
+        return 'Workout Complete'
+      case 'BROKEN_RESET':
+        return 'Streak Reset'
+      default:
+        return 'Workout Complete'
+    }
+  })()
+
+  const subline = (() => {
+    switch (streak?.status as StreakUpdateStatus | undefined) {
+      case 'CONTINUED':
+        return `Nice! Your streak is now ${streak?.currentStreak} day${
+          (streak?.currentStreak || 0) === 1 ? '' : 's'
+        }.`
+      case 'STARTED':
+        return 'You just started a new streak. Keep it going!'
+      case 'WRONG_WORKOUT':
+        return 'This workout didn’t count toward your streak.'
+      case 'BROKEN_RESET':
+        return 'You missed the deadline. Your streak has reset.'
+      default:
+        return 'You finished your workout. Great job!'
+    }
+  })()
+
   return (
     <Portal>
       <YStack position="absolute" t={0} l={0} r={0} b={0}>
@@ -159,7 +194,7 @@ export function FinishedWorkoutCongrats({
             <XStack bg="$primary" items="center" justify="center" p="$4" gap="$2">
               <Trophy size={28} color="$color" />
               <Text fontSize="$8" fontWeight="800" color="$color">
-                Workout Complete
+                {headline}
               </Text>
             </XStack>
             {/* Body */}
@@ -170,7 +205,7 @@ export function FinishedWorkoutCongrats({
                 </Text>
               )}
               <Text color="$color10" style={{ textAlign: 'center' }}>
-                You finished your workout. Great job!
+                {subline}
               </Text>
 
               {/* Stats row */}

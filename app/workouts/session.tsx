@@ -60,8 +60,10 @@ export default function WorkoutSessionScreen() {
     <View pb="$6">
       <WorkoutActions
         onFinishWorkout={async () => {
-          const record = await finishWorkout()
-          if (record) showFinishedCongrats(record)
+          const resp = await finishWorkout()
+          if (resp) {
+            showFinishedCongrats(resp.workoutRecord, resp.streakUpdate)
+          }
         }}
         onCancelWorkout={cancelWorkout}
         onGoBack={goBack}

@@ -156,6 +156,25 @@ export interface WorkoutRecord {
   exerciseRecords: WorkoutRecordExercise[]
 }
 
+// Streak update types
+export type StreakUpdateStatus = 'CONTINUED' | 'STARTED' | 'WRONG_WORKOUT' | 'BROKEN_RESET'
+
+export interface StreakUpdateResponse {
+  status: StreakUpdateStatus
+  currentStreak: number
+  longestStreak: number
+  nextWorkoutId: string | null
+  // ISO date string (LocalDate on server); keep as string client-side
+  nextWorkoutDeadline: string | null
+  streakFreezeCount: number
+}
+
+// Response shape from recording a workout
+export interface WorkoutRecordResponse {
+  workoutRecord: WorkoutRecord
+  streakUpdate: StreakUpdateResponse
+}
+
 // TODO: Harmonize with WorkoutRecordExercise
 // Exercise Log Types
 export interface ExerciseLogResponse {

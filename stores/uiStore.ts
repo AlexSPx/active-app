@@ -1,17 +1,21 @@
 import { create } from 'zustand'
-import type { WorkoutRecord } from '../types/api'
+import type { WorkoutRecord, StreakUpdateResponse } from '../types/api'
 
 interface UiState {
   finishedCongrats: {
     visible: boolean
-    payload?: WorkoutRecord
+    payload?: {
+      record: WorkoutRecord
+      streak: StreakUpdateResponse
+    }
   }
-  showFinishedCongrats: (payload: WorkoutRecord) => void
+  showFinishedCongrats: (record: WorkoutRecord, streak: StreakUpdateResponse) => void
   hideFinishedCongrats: () => void
 }
 
 export const useUiStore = create<UiState>((set) => ({
   finishedCongrats: { visible: false, payload: undefined },
-  showFinishedCongrats: (payload) => set({ finishedCongrats: { visible: true, payload } }),
+  showFinishedCongrats: (record, streak) =>
+    set({ finishedCongrats: { visible: true, payload: { record, streak } } }),
   hideFinishedCongrats: () => set({ finishedCongrats: { visible: false, payload: undefined } }),
 }))

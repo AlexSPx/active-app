@@ -60,7 +60,8 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
             <ToastViewport top="$8" left={0} right={0} />
             {congratsVisible && payload && (
               <FinishedWorkoutCongrats
-                data={payload}
+                data={payload.record}
+                streak={payload.streak}
                 visible={congratsVisible}
                 onClose={hideFinishedCongrats}
               />

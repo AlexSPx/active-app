@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { ApiExercise } from '../types/api'
 import { apiService } from '../services/apiService'
-import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecord } from '../types/api'
+import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecordResponse } from '../types/api'
 import type { FinishedCongratsPayload } from '../types/congrats'
 
 export interface RunningWorkoutExercise extends ApiExercise {
@@ -33,7 +33,7 @@ interface RunningWorkoutStore {
   startWorkout: (
     workout: Omit<RunningWorkout, 'startTime' | 'currentExerciseIndex' | 'completedExercises'>
   ) => void
-  stopWorkout: (notes?: string) => Promise<WorkoutRecord | void>
+  stopWorkout: (notes?: string) => Promise<WorkoutRecordResponse | void>
   cancelWorkout: () => void
   updateCurrentExercise: (index: number) => void
   completeExercise: () => void
