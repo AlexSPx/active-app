@@ -1,6 +1,5 @@
 import { Text, YStack, XStack, Card, Button, H3, Separator } from 'tamagui'
 import { Plus, MoreHorizontal } from '@tamagui/lucide-icons'
-import { View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback } from 'react'
 import { ExerciseSetRow } from './ExerciseSetRow'
@@ -20,25 +19,25 @@ export default function ExerciseEditor({
   onAddSet,
   onRemoveSet,
 }: ExerciseEditorProps) {
-  const updateSet = (
-    setIndex: number,
-    key: 'weight' | 'reps' | 'durationSeconds',
-    value: number | null
-  ) => {
-    const newSets = [...exercise.sets]
-    newSets[setIndex] = { ...newSets[setIndex], [key]: value }
-    onUpdateSets(exercise.id, newSets)
-  }
-
   const renderSetRow = useCallback(
     ({ item: set, index: setIndex }: { item: WorkoutSet; index: number }) => {
+      const handleChange = (key: 'weight' | 'reps' | 'durationSeconds', value: number | null) => {
+        const newSets = [...exercise.sets]
+        newSets[setIndex] = { ...newSets[setIndex], [key]: value }
+        onUpdateSets(exercise.id, newSets)
+      }
+
+      const handleDelete = () => {
+        onRemoveSet(exercise.id, setIndex)
+      }
+
       if (exercise.category === 'CARDIO') {
         return (
           <CardioEditorSetRow
             index={setIndex}
             durationSeconds={set.durationSeconds}
-            onChange={(secs) => updateSet(setIndex, 'durationSeconds', secs)}
-            onDelete={() => onRemoveSet(exercise.id, setIndex)}
+            onChange={(secs) => handleChange('durationSeconds', secs)}
+            onDelete={handleDelete}
           />
         )
       }
@@ -47,12 +46,12 @@ export default function ExerciseEditor({
           index={setIndex}
           weight={set.weight}
           reps={set.reps}
-          onChange={(key, value) => updateSet(setIndex, key, value)}
-          onDelete={() => onRemoveSet(exercise.id, setIndex)}
+          onChange={(key, value) => handleChange(key, value)}
+          onDelete={handleDelete}
         />
       )
     },
-    [exercise.id, exercise.category, onRemoveSet, updateSet]
+    [exercise.sets, exercise.id, exercise.category, onUpdateSets, onRemoveSet]
   )
 
   return (
