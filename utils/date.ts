@@ -139,3 +139,26 @@ export function parseServerUtcDate(input: string | Date): Date {
   const utcMillis = Date.UTC(y || 0, (m || 1) - 1, d || 1, hh, mm, ss, ms)
   return new Date(utcMillis)
 }
+
+// Given a routine creation date (ISO string) and a target date, compute the
+// pattern index (0-based) for that date. This anchors pattern[0] to the
+// created date so routines don't always start on Sunday.
+export function routinePatternIndex(
+  createdAtIso: string | undefined,
+  patternLength: number,
+  targetDate: Date
+) {
+  if (!createdAtIso || !patternLength || patternLength <= 0) return 0
+  try {
+    const created = parseServerUtcDate(createdAtIso)
+    // Normalize both to local midnight to compute day difference
+    const a = new Date(created.getFullYear(), created.getMonth(), created.getDate())
+    const b = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate())
+    const msPerDay = 24 * 60 * 60 * 1000
+    const diff = Math.floor((b.getTime() - a.getTime()) / msPerDay)
+    const idx = ((diff % patternLength) + patternLength) % patternLength
+    return idx
+  } catch (e) {
+    return 0
+  }
+}

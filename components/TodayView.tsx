@@ -6,6 +6,7 @@ import { useWorkouts } from 'hooks/useWorkouts'
 import type { RoutinePatternItem } from 'types/routine'
 import type { ApiWorkout } from 'types/api'
 import { router } from 'expo-router'
+import { routinePatternIndex } from 'utils/date'
 
 export const TodayView: React.FC = () => {
   const currentDate = new Date()
@@ -23,8 +24,8 @@ export const TodayView: React.FC = () => {
       return { isWorkoutDay: false, workout: null as ApiWorkout | null }
     }
     const len = activeRoutine.pattern.length
-    const dow = currentDate.getDay() // 0=Sun..6=Sat
-    const idx = dow % len
+
+    const idx = routinePatternIndex(activeRoutine.createdAt, len, currentDate)
     const pat: RoutinePatternItem = activeRoutine.pattern[idx]
     if (pat.dayType !== 'WORKOUT' || !pat.workoutId) {
       return { isWorkoutDay: false, workout: null }

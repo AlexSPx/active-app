@@ -4,6 +4,7 @@ import type { RoutinePatternItem } from 'types/routine'
 import { useWorkouts } from 'hooks/useWorkouts'
 import { useActiveRoutine } from 'hooks/useActiveRoutine'
 import { router } from 'expo-router'
+import { routinePatternIndex } from '../utils/date'
 
 interface DayViewProps {
   day: string
@@ -98,9 +99,8 @@ export const WeeklyView: React.FC = () => {
       if (!activeRoutine || !activeRoutine.pattern || activeRoutine.pattern.length === 0)
         return null
       const len = activeRoutine.pattern.length
-      // Assumption: dayIndex 1 corresponds to Sunday in the cyclic pattern.
-      const dow = date.getDay() // 0..6 with 0=Sun
-      const idx = dow % len
+
+      const idx = routinePatternIndex(activeRoutine.createdAt, len, date)
       return activeRoutine.pattern[idx]
     },
     [activeRoutine]
