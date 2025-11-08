@@ -15,6 +15,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { LogOut, Timer as TimerIcon, Settings as SettingsIcon } from '@tamagui/lucide-icons'
 import { useSettingsStore } from '../../stores/settingsStore'
 import SmartTimeInput from '../../components/ui/SmartTimeInput'
+import TimeZoneSelector from '../../components/TimeZoneSelector'
 
 export default function SettingsScreen() {
   const { user, logout } = useAuth()
@@ -67,6 +68,21 @@ export default function SettingsScreen() {
                 </Paragraph>
               </YStack>
             </XStack>
+          </YStack>
+
+          <Separator />
+
+          <YStack gap="$3">
+            <XStack items="center" gap="$2">
+              <SettingsIcon size={18} color="$color" />
+              <Text fontSize="$6" fontWeight="700">
+                Time Zone
+              </Text>
+            </XStack>
+            <Paragraph color="$color11">
+              Choose how times are displayed relative to your location.
+            </Paragraph>
+            <TimeZoneSelector />
           </YStack>
 
           <Separator />

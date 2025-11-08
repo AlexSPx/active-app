@@ -7,9 +7,13 @@ interface SettingsState {
   restTimerEnabled: boolean
   restTimerDefaultSeconds: number
 
+  // Time zone
+  timeZone: string
+
   // Actions
   setRestTimerEnabled: (enabled: boolean) => void
   setRestTimerDefaultSeconds: (seconds: number) => void
+  setTimeZone: (tz: string) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -17,10 +21,12 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       restTimerEnabled: true,
       restTimerDefaultSeconds: 90,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
 
       setRestTimerEnabled: (enabled) => set({ restTimerEnabled: enabled }),
       setRestTimerDefaultSeconds: (seconds) =>
         set({ restTimerDefaultSeconds: Math.max(0, Math.floor(seconds || 0)) }),
+      setTimeZone: (tz) => set({ timeZone: tz || 'UTC' }),
     }),
     {
       name: 'settings-storage',
@@ -28,6 +34,7 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({
         restTimerEnabled: state.restTimerEnabled,
         restTimerDefaultSeconds: state.restTimerDefaultSeconds,
+        timeZone: state.timeZone,
       }),
     }
   )
