@@ -53,6 +53,14 @@ export interface LoginResponse {
   token: string
 }
 
+export interface UserStreak {
+  currentStreak: number
+  longestStreak: number
+  nextWorkoutId: string | null
+  nextWorkoutDeadline: string | null // ISO string (LocalDate on server)
+  streakFreezeCount: number
+}
+
 export interface User {
   id: string
   email: string
@@ -60,6 +68,17 @@ export interface User {
   firstName: string
   lastName: string
   createdAt: string
+  timezone: string | null
+  activeRoutineId?: string | null
+  streak?: UserStreak
+}
+
+export interface UpdateUserRequest {
+  username?: string
+  firstName?: string
+  lastName?: string
+  email?: string
+  timezone?: string
 }
 
 // Workout Template Types (Server Request/Response)

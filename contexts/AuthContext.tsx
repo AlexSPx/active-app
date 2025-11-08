@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react'
 import { useAuthStore, initializeAuth } from '../stores/authStore'
 import type { User, LoginRequest } from '../services/apiService'
-import type { RegisterRequest } from '../types/api'
+import type { RegisterRequest, UpdateUserRequest } from '../types/api'
 import { apiService } from '../services/apiService'
 
 interface AuthContextType {
@@ -9,6 +9,7 @@ interface AuthContextType {
   login: (credentials: LoginRequest) => Promise<void>
   register: (payload: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
+  updateUser: (payload: UpdateUserRequest) => Promise<User | null>
   user: User | null
   isLoading: boolean
   error: string | null
@@ -24,6 +25,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const { isAuthenticated, user, isLoading, error, login, register, logout, clearError } =
     useAuthStore()
+  const updateUser = useAuthStore((s) => s.updateUser)
 
   // Initialize auth state on mount
   useEffect(() => {
@@ -45,6 +47,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         register,
         logout,
+        updateUser,
         user,
         isLoading,
         error,

@@ -1,7 +1,8 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiService } from '../services/apiService'
-import type { User, LoginRequest, ApiError, RegisterRequest } from '../types/api'
+import { useSettingsStore } from './settingsStore'
+import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 
 interface AuthState {
   // State
@@ -16,6 +17,7 @@ interface AuthState {
   register: (payload: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
   fetchUser: () => Promise<void>
+  updateUser: (payload: UpdateUserRequest) => Promise<User | null>
   clearError: () => void
 
   // Internal actions
@@ -118,6 +120,16 @@ export const useAuthStore = create<AuthState>()(
             user,
             isLoading: false,
           })
+
+          // Sync timezone into settings store if provided
+          if (user.timezone) {
+            try {
+              useSettingsStore.getState().setTimeZone(user.timezone)
+            } catch (e) {
+              console.error('Failed to sync timezone to settings store', e)
+              useSettingsStore.getState().setTimeZone('UTC')
+            }
+          }
         } catch (error) {
           const apiError = error as ApiError
 
@@ -129,6 +141,37 @@ export const useAuthStore = create<AuthState>()(
               isLoading: false,
               error: apiError.message || 'Failed to fetch user data',
             })
+          }
+          throw error
+        }
+      },
+
+      updateUser: async (payload: UpdateUserRequest) => {
+        try {
+          set({ isLoading: true, error: null })
+          const updated = await apiService.updateCurrentUser(payload)
+          // Merge with existing state (server returns full user shape)
+          set({ user: updated, isLoading: false })
+
+          // Sync timezone if changed
+          if (updated.timezone) {
+            try {
+              useSettingsStore.getState().setTimeZone(updated.timezone)
+            } catch (e) {
+              console.error('Failed to sync updated timezone', e)
+            }
+          }
+          return updated
+        } catch (error) {
+          const apiError = error as ApiError
+          set({
+            isLoading: false,
+            error: apiError.message || 'Failed to update user',
+          })
+          // If unauthorized, force logout
+          if (apiError.status === 401) {
+            await get().logout()
+            return null
           }
           throw error
         }

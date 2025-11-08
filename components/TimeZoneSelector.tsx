@@ -2,6 +2,7 @@ import React from 'react'
 import { YStack, XStack, Text, Button, ScrollView, Sheet, Input } from 'tamagui'
 import { ChevronDown, Check } from '@tamagui/lucide-icons'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useUpdateUser } from '../hooks/useUpdateUser'
 import { LoadingSpinner } from './ui/LoadingSpinner'
 
 // Cache to avoid re-importing tzdb between openings
@@ -9,6 +10,7 @@ let cachedTimeZones: string[] | null = null
 
 export default function TimeZoneSelector() {
   const { timeZone, setTimeZone } = useSettingsStore()
+  const { updateUserProfile } = useUpdateUser()
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
   const [loading, setLoading] = React.useState(false)
@@ -38,8 +40,12 @@ export default function TimeZoneSelector() {
     return timeZones.filter((tz) => tz.toLowerCase().includes(q))
   }, [search, timeZones])
 
-  const handleSelect = (tz: string) => {
+  const handleSelect = async (tz: string) => {
     setTimeZone(tz)
+    // fire and forget profile update; ignore blanks handled in hook/api
+    try {
+      await updateUserProfile({ timezone: tz })
+    } catch {}
     setOpen(false)
     setSearch('')
   }

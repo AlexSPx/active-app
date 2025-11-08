@@ -5,6 +5,7 @@ import type {
   LoginRequest,
   LoginResponse,
   User,
+  UpdateUserRequest,
   ApiExercise,
   ApiWorkout,
   CreateWorkoutRequest,
@@ -22,6 +23,7 @@ export type {
   LoginRequest,
   LoginResponse,
   User,
+  UpdateUserRequest,
   ApiExercise,
   ApiWorkout,
   CreateWorkoutRequest,
@@ -110,6 +112,29 @@ class ApiService {
     const response = await fetch(url, {
       method: 'GET',
       headers: await this.getAuthHeaders(),
+    })
+
+    return this.handleResponse<User>(response)
+  }
+
+  async updateCurrentUser(payload: UpdateUserRequest): Promise<User> {
+    const url = getApiUrl(config.API_ENDPOINTS.USER.ME)
+
+    // Build body: include only defined and non-null fields; ignore blank timezone
+    const bodyEntries = Object.entries(payload).filter(([key, value]) => {
+      if (value === undefined || value === null) return false
+      if (key === 'timezone' && typeof value === 'string' && value.trim() === '') return false
+      return true
+    })
+
+    const body = Object.fromEntries(bodyEntries)
+
+    console.log(`API Request: PATCH ${url}`, body)
+
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: await this.getAuthHeaders(),
+      body: JSON.stringify(body),
     })
 
     return this.handleResponse<User>(response)

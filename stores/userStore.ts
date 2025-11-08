@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { apiService } from '../services/apiService'
-import type { User, ApiError } from '../types/api'
+import type { User, ApiError, UpdateUserRequest } from '../types/api'
 
 interface UserState {
   // State
@@ -12,6 +12,7 @@ interface UserState {
   // Actions
   fetchUser: () => Promise<void>
   updateUser: (updates: Partial<User>) => void
+  patchUser: (payload: UpdateUserRequest) => Promise<User | null>
   refreshUser: () => Promise<void>
   clearError: () => void
 
@@ -55,6 +56,31 @@ export const useUserStore = create<UserState>((set, get) => ({
         user: { ...currentUser, ...updates },
         lastUpdated: Date.now(),
       })
+    }
+  },
+
+  patchUser: async (payload: UpdateUserRequest) => {
+    try {
+      set({ isLoading: true, error: null })
+      const updated = await apiService.updateCurrentUser(payload)
+      // Merge into current user state
+      const currentUser = get().user
+      if (currentUser) {
+        set({
+          user: { ...currentUser, ...updated },
+          isLoading: false,
+          lastUpdated: Date.now(),
+        })
+      } else {
+        // If we had no user loaded yet, just set it
+        set({ user: updated, isLoading: false, lastUpdated: Date.now() })
+      }
+      return updated
+    } catch (error) {
+      const apiError = error as ApiError
+      set({ isLoading: false, error: apiError.message || 'Failed to update user' })
+      // Propagate error for caller handling
+      throw error
     }
   },
 
