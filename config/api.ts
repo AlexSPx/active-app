@@ -11,6 +11,7 @@ export const config = {
     },
     USER: {
       ME: '/api/user/me',
+      PUSH_TOKEN: '/api/user/me/push-token',
     },
     EXERCISES: {
       SEARCH: '/api/exercises/search',

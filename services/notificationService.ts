@@ -8,6 +8,8 @@ import type {
   NotificationContentInput,
   NotificationPermissionsStatus,
 } from 'expo-notifications'
+import { apiService } from './apiService'
+import { useAuthStore } from '../stores/authStore'
 
 let Notifications: typeof import('expo-notifications') | null = null
 let initialized = false
@@ -122,7 +124,47 @@ export async function initNotifications(): Promise<void> {
   } catch (error: unknown) {
     console.error('Failed to initialize notifications:', error)
   } finally {
+    // Attempt to register push notifications/token once init path completes
     initialized = true
+  }
+}
+
+export async function registerPushNotifications(): Promise<void> {
+  const mod = await loadModule()
+  if (!mod) return
+
+  if (Platform.OS === 'android') {
+    const channelInput: NotificationChannelInput = {
+      name: 'Streak Reminders',
+      importance: mod.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FF7A00',
+      sound: 'default',
+      lockscreenVisibility: mod.AndroidNotificationVisibility.PUBLIC,
+    }
+    await mod.setNotificationChannelAsync('streak-reminders', channelInput)
+  }
+
+  try {
+    const tokenResponse = await mod.getExpoPushTokenAsync({
+      projectId: '8dee9569-7b46-47df-b72f-21833f59e85c',
+    })
+
+    const expoPushToken = tokenResponse.data
+
+    console.log('Push token: ', expoPushToken)
+
+    if (expoPushToken && expoPushToken.trim() !== '') {
+      try {
+        const updated = await apiService.registerPushToken(expoPushToken)
+        // Update user in auth store to reflect any server-side changes
+        useAuthStore.getState().setUser(updated)
+      } catch (e) {
+        console.error('Failed to register push token with server:', e)
+      }
+    }
+  } catch (error) {
+    console.error('Failed to get push notification token:', error)
   }
 }
 

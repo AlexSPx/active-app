@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Vibration, Platform } from 'react-native'
+import { Vibration, Platform, Image } from 'react-native'
 import {
   Button,
   Text,
@@ -31,10 +31,13 @@ export function FinishedWorkoutCongrats({
   streak,
   userName = 'You',
 }: FinishedWorkoutCongratsProps) {
-  const [position, setPosition] = useState(0)
+  // Start the sheet at the middle snap point (50%)
+  const [position, setPosition] = useState(1)
 
   useEffect(() => {
     if (visible) {
+      // Reset to 50% whenever opened
+      setPosition(1)
       if (Platform.OS === 'android') {
         const pattern = [0, 550]
         Vibration.vibrate(pattern, false)
@@ -147,11 +150,25 @@ export function FinishedWorkoutCongrats({
         animation="medium"
       >
         <Sheet.Overlay
-          bg="$blue9"
+          bg="#0b659b"
           animation="lazy"
           enterStyle={{ opacity: 0 }}
           exitStyle={{ opacity: 0 }}
-        />
+        >
+          <YStack
+            pointerEvents="none"
+            items="center"
+            justify="flex-start"
+            pt="$6"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+          >
+            <Image
+              source={require('../assets/images/workout_finish.png')}
+              style={{ width: '110%', height: '60%', opacity: 0.95 }}
+              resizeMode="contain"
+            />
+          </YStack>
+        </Sheet.Overlay>
         <Sheet.Handle />
         <Sheet.Frame flex={1} p="$4" justify="flex-start" items="stretch" gap="$3" bg="$background">
           <YStack gap="$3" width="100%">
@@ -231,7 +248,6 @@ export function FinishedWorkoutCongrats({
               </XStack>
             </YStack>
 
-            {/* Achievements - only this scrolls */}
             {achievements.length > 0 && (
               <YStack height="$18" gap="$2" width="100%">
                 <Separator />

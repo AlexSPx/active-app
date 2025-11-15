@@ -10,7 +10,7 @@ import FinishedWorkoutCongrats from '../components/FinishedWorkoutCongrats'
 import { FloatingDevTools, InstalledApp } from '@react-buoy/core'
 import { NetworkModal } from '@react-buoy/network'
 import { Globe } from '@react-buoy/shared-ui'
-import { initNotifications } from '../services/notificationService'
+import { initNotifications, registerPushNotifications } from '../services/notificationService'
 
 const TOOLS: InstalledApp[] = [
   {
@@ -33,6 +33,7 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
 
   useEffect(() => {
     initNotifications().catch(() => {})
+    registerPushNotifications().catch(() => {})
   }, [])
 
   return (
