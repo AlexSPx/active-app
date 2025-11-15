@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { CreateWorkoutRequest, Workout } from '../types/workout'
 import { apiService } from '../services/apiService'
+import { invalidateTags } from '../utils/cache/invalidate'
 
 export function useWorkoutMutations() {
   const [loading, setLoading] = useState(false)
@@ -19,6 +20,8 @@ export function useWorkoutMutations() {
         exercises: [], // Would need to convert from template
         date: new Date(),
       }
+      // Invalidate workouts list to include the new one
+      invalidateTags(['workouts'])
       return newWorkout
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create workout')
@@ -33,6 +36,7 @@ export function useWorkoutMutations() {
       setLoading(true)
       setError(null)
       await apiService.deleteWorkout(id)
+      invalidateTags(['workouts', `workout:${id}`])
       return true
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete workout')

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { apiService } from '../services/apiService'
 import type { CreateRoutineRequest, UpdateRoutineRequest, Routine } from '../types/routine'
 import type { ApiError } from '../types/api'
+import { invalidateTags } from '../utils/cache/invalidate'
 
 function toFriendlyError(err: unknown, fallback: string): string {
   const defaultMsg = fallback
@@ -27,6 +28,8 @@ export function useRoutineMutations() {
       setLoading(true)
       setError(null)
       const routine = await apiService.createRoutine(payload)
+      // Invalidate routines list
+      invalidateTags(['routines'])
       return routine
     } catch (e) {
       console.error('Failed to create routine:', e)
@@ -45,6 +48,10 @@ export function useRoutineMutations() {
       setLoading(true)
       setError(null)
       const routine = await apiService.updateRoutine(routineId, payload)
+      // Invalidate specific routine and list; activeRoutine if it might be affected
+      const tags = ['routines', `routine:${routineId}`]
+      if ('active' in payload) tags.push('activeRoutine')
+      invalidateTags(tags)
       return routine
     } catch (e) {
       console.error('Failed to update routine:', e)
@@ -60,6 +67,7 @@ export function useRoutineMutations() {
       setLoading(true)
       setError(null)
       await apiService.deleteRoutine(routineId)
+      invalidateTags(['routines', `routine:${routineId}`, 'activeRoutine'])
       return true
     } catch (e) {
       console.error('Failed to delete routine:', e)
@@ -71,11 +79,15 @@ export function useRoutineMutations() {
   }
 
   const activateRoutine = async (routineId: string): Promise<Routine | null> => {
-    return updateRoutine(routineId, { active: true })
+    const result = await updateRoutine(routineId, { active: true })
+    invalidateTags(['activeRoutine'])
+    return result
   }
 
   const clearActiveRoutine = async (routineId: string): Promise<Routine | null> => {
-    return updateRoutine(routineId, { active: false })
+    const result = await updateRoutine(routineId, { active: false })
+    invalidateTags(['activeRoutine'])
+    return result
   }
 
   return {

@@ -140,6 +140,22 @@ class ApiService {
     return this.handleResponse<User>(response)
   }
 
+  async registerPushToken(token: string): Promise<User> {
+    if (!token || token.trim() === '') {
+      const err: ApiError = new Error('Token is required')
+      err.status = 400
+      throw err
+    }
+    const url = getApiUrl(config.API_ENDPOINTS.USER.PUSH_TOKEN)
+    console.log(`API Request: POST ${url}`, { hasToken: !!token })
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: await this.getAuthHeaders(),
+      body: JSON.stringify({ token }),
+    })
+    return this.handleResponse<User>(response)
+  }
+
   async setToken(token: string): Promise<void> {
     await AsyncStorage.setItem(config.STORAGE_KEYS.TOKEN, token)
   }

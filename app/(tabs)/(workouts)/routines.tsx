@@ -16,12 +16,14 @@ import type { Routine } from '../../../types/routine'
 export default function RoutinesTab() {
   const navigation = useNavigation()
 
-  const { routines, loading, error, refetch } = useRoutines()
+  const { routines, loading, error, refetch, isExpired: routinesExpired } = useRoutines()
   const { deleteRoutine, activateRoutine, loading: mutating } = useRoutineMutations()
-  const { activeRoutine, refetch: refetchActive } = useActiveRoutine()
+  const { activeRoutine, refetch: refetchActive, isExpired: activeExpired } = useActiveRoutine()
 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
+  // Separate state for FlashList UI refresh (pull-to-refresh)
+  const [refreshing, setRefreshing] = useState(false)
 
   useLayoutEffect(() => {
     navigation.setOptions({ title: 'Routines' })
@@ -30,13 +32,14 @@ export default function RoutinesTab() {
   // Refresh data when this screen gains focus
 
   // Refetch when screen gains focus (ensures newly created routines appear)
+  // On screen focus, only refetch if expired (to avoid unnecessary network requests)
   useEffect(() => {
     const unsub = (navigation as any).addListener?.('focus', async () => {
-      await refetch()
-      await refetchActive()
+      if (routinesExpired) await refetch()
+      if (activeExpired) await refetchActive()
     })
     return () => unsub?.()
-  }, [navigation, refetch, refetchActive])
+  }, [navigation, refetch, refetchActive, routinesExpired, activeExpired])
 
   const openCreate = useCallback(() => {
     router.push('/routines/new')
@@ -109,7 +112,7 @@ export default function RoutinesTab() {
     return (
       <YStack flex={1} justify="center" items="center" bg="$background" p="$4">
         <ErrorDisplay message={error} />
-        <Button mt="$4" onPress={refetch}>
+        <Button mt="$4" onPress={() => refetch()}>
           Try Again
         </Button>
       </YStack>
@@ -131,10 +134,14 @@ export default function RoutinesTab() {
               <Text>Create Routine</Text>
             </Button>
           }
-          refreshing={loading}
+          refreshing={refreshing}
           onRefresh={async () => {
-            await refetch()
-            await refetchActive()
+            setRefreshing(true)
+            try {
+              await Promise.all([refetch(), refetchActive()])
+            } finally {
+              setRefreshing(false)
+            }
           }}
           onCreateRoutine={openCreate}
         />

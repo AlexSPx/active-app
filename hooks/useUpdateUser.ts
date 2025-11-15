@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import type { UpdateUserRequest, User, ApiError } from '../types/api'
 import { timeZonesNames } from '@vvo/tzdb'
+import { invalidateTags } from '../utils/cache/invalidate'
 
 // Simple email regex (client-side validation aid; server performs authoritative validation)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -46,6 +47,12 @@ export function useUpdateUser(): UseUpdateUserResult {
       try {
         const user = await updateUser(updates)
         setIsUpdating(false)
+        // Invalidate cache domains depending on what changed
+        const tags = ['user']
+        if (typeof updates.timezone === 'string' && updates.timezone.trim() !== '') {
+          tags.push('history', 'progression')
+        }
+        invalidateTags(tags)
         return user
       } catch (e) {
         const apiError = e as ApiError

@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react'
 import { apiService } from '../services/apiService'
 import type { ApiWorkout } from '../types/api'
+import { useCachedQuery } from './useCachedQuery'
 
 export interface UseWorkoutsReturn {
   workouts: ApiWorkout[]
@@ -10,32 +10,18 @@ export interface UseWorkoutsReturn {
 }
 
 export function useWorkouts(): UseWorkoutsReturn {
-  const [workouts, setWorkouts] = useState<ApiWorkout[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchWorkouts = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const fetchedWorkouts = await apiService.getWorkouts()
-      setWorkouts(fetchedWorkouts)
-    } catch (err) {
-      console.error('Failed to fetch workouts:', err)
-      setError(err instanceof Error ? err.message : 'Failed to fetch workouts')
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchWorkouts()
-  }, [fetchWorkouts])
+  const { data, isLoading, error, refresh } = useCachedQuery<ApiWorkout[]>({
+    keyParts: ['workouts', 'all'],
+    tags: ['workouts'],
+    fetcher: () => apiService.getWorkouts(),
+    ttlMs: 6 * 60 * 60 * 1000, // 6h
+    staleAfterMs: 60 * 60 * 1000, // 1h
+  })
 
   return {
-    workouts,
-    loading,
-    error,
-    refetch: fetchWorkouts,
+    workouts: data || [],
+    loading: isLoading,
+    error: error?.message ?? null,
+    refetch: () => refresh({ force: true }),
   }
 }

@@ -1,12 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback } from 'react'
 import { apiService } from '../services/apiService'
 import type { Routine } from '../types/routine'
+import { useCachedQuery } from './useCachedQuery'
 
 export interface UseActiveRoutineReturn {
   activeRoutine: Routine | null
   loading: boolean
   error: string | null
   refetch: () => Promise<void>
+  isStale: boolean
+  isExpired: boolean
 }
 
 /**
@@ -17,32 +20,32 @@ export interface UseActiveRoutineReturn {
  * - Exposes a refetch function for manual refresh
  */
 export function useActiveRoutine(): UseActiveRoutineReturn {
-  const [activeRoutine, setActiveRoutine] = useState<Routine | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const fetchActive = useCallback(async () => {
+  const fetcher = useCallback(async (): Promise<Routine | null> => {
     try {
-      setLoading(true)
-      setError(null)
       const routine = await apiService.getActiveRoutine()
-      setActiveRoutine(routine)
+      return routine
     } catch (e: any) {
-      // Treat 404 as "no active routine"
       if (e && typeof e === 'object' && 'status' in e && (e as any).status === 404) {
-        setActiveRoutine(null)
-        setError(null)
-      } else {
-        setError('Failed to load active routine')
+        return null
       }
-    } finally {
-      setLoading(false)
+      throw e
     }
   }, [])
 
-  useEffect(() => {
-    fetchActive()
-  }, [fetchActive])
+  const { data, isLoading, error, refresh, isStale, isExpired } = useCachedQuery<Routine | null>({
+    keyParts: ['activeRoutine'],
+    tags: ['activeRoutine'],
+    fetcher,
+    ttlMs: 2 * 60 * 60 * 1000, // 2h
+    staleAfterMs: 30 * 60 * 1000, // 30m
+  })
 
-  return { activeRoutine, loading, error, refetch: fetchActive }
+  return {
+    activeRoutine: data ?? null,
+    loading: isLoading,
+    error: error?.message ?? null,
+    refetch: refresh,
+    isStale,
+    isExpired,
+  }
 }

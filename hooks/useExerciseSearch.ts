@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react'
 import { apiService } from '../services/apiService'
 import type { ApiExercise } from '../types/api'
+import { cachedFetch } from '../utils/cache/cachedFetch'
 
 export function useExerciseSearch() {
   const [exercises, setExercises] = useState<ApiExercise[]>([])
@@ -19,9 +20,15 @@ export function useExerciseSearch() {
       setLoading(true)
       setError(null)
       setHasSearched(true)
-
-      const apiExercises = await apiService.searchExercises(query.trim())
-      setExercises(apiExercises)
+      const keyParts = ['exerciseSearch', query.trim()]
+      const res = await cachedFetch<ApiExercise[]>({
+        keyParts,
+        tags: ['exercises', 'exerciseSearch'],
+        fetcher: () => apiService.searchExercises(query.trim()),
+        ttlMs: 12 * 60 * 60 * 1000, // 12h
+        staleAfterMs: 3 * 60 * 60 * 1000, // 3h
+      })
+      setExercises(res.data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to search exercises')
       setExercises([])
