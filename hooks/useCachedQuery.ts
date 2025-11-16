@@ -34,6 +34,8 @@ export function useCachedQuery<T>(opts: UseCachedQueryOptions<T>) {
         if (!status.isExpired && !status.isStale) {
           // Fresh entry: skip network and loading state churn
           cacheLog('query:skip-fresh', { key })
+          // Ensure we clear any prior loading state from a cancelled fetch cycle
+          if (!cancelled) setLoading(false)
           return
         }
       }

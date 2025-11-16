@@ -10,6 +10,7 @@ import {
   scheduleRestNotification,
   cancelRestNotification,
 } from '../services/notificationService'
+import { invalidateTags } from '../utils/cache/invalidate'
 
 export interface UseWorkoutSessionOptions {
   fallbackExercises?: Exercise[]
@@ -329,7 +330,11 @@ export function useWorkoutSession(
   }, [activeTimer, finishRestTimer])
 
   const finishWorkout = async (notes?: string) => {
-    return await stopWorkout(notes)
+    const result = await stopWorkout(notes)
+    if (result) {
+      invalidateTags(['history'])
+    }
+    return result
   }
 
   const cancelWorkout = () => {
