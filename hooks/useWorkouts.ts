@@ -22,6 +22,6 @@ export function useWorkouts(): UseWorkoutsReturn {
     workouts: data || [],
     loading: isLoading,
     error: error?.message ?? null,
-    refetch: () => refresh({ force: true }),
+    refetch: () => refresh(),
   }
 }
