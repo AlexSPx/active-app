@@ -71,6 +71,12 @@ export interface User {
   timezone: string | null
   activeRoutineId?: string | null
   streak?: UserStreak
+  measurements?: UserMeasurements | null
+}
+
+export interface UserMeasurements {
+  weightKg: number | null
+  heightCm: number | null
 }
 
 export interface UpdateUserRequest {
@@ -79,6 +85,7 @@ export interface UpdateUserRequest {
   lastName?: string
   email?: string
   timezone?: string
+  measurements?: UserMeasurements
 }
 
 // Workout Template Types (Server Request/Response)

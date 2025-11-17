@@ -130,6 +130,19 @@ export const useAuthStore = create<AuthState>()(
               useSettingsStore.getState().setTimeZone('UTC')
             }
           }
+
+          // Sync measurements (kg/cm) into settings store if present
+          if (user.measurements) {
+            try {
+              const { weightKg, heightCm } = user.measurements
+              useSettingsStore
+                .getState()
+                .setBodyWeight(typeof weightKg === 'number' ? weightKg : null)
+              useSettingsStore.getState().setHeight(typeof heightCm === 'number' ? heightCm : null)
+            } catch (e) {
+              console.error('Failed to sync measurements to settings store', e)
+            }
+          }
         } catch (error) {
           const apiError = error as ApiError
 
@@ -159,6 +172,19 @@ export const useAuthStore = create<AuthState>()(
               useSettingsStore.getState().setTimeZone(updated.timezone)
             } catch (e) {
               console.error('Failed to sync updated timezone', e)
+            }
+          }
+
+          // Sync measurements if present
+          if (updated.measurements) {
+            try {
+              const { weightKg, heightCm } = updated.measurements
+              useSettingsStore
+                .getState()
+                .setBodyWeight(typeof weightKg === 'number' ? weightKg : null)
+              useSettingsStore.getState().setHeight(typeof heightCm === 'number' ? heightCm : null)
+            } catch (e) {
+              console.error('Failed to sync updated measurements', e)
             }
           }
           return updated
