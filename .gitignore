@@ -40,9 +40,9 @@ node_modules
 .env
 # local env files
 .env.local
-.env.development.local
-.env.test.localp
-.env.production.local
+.env.development
+.env.test
+.env.production
 
 .expo
 ios
