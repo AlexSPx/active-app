@@ -3,6 +3,8 @@ import { memo, useEffect, useRef } from 'react'
 import type { ApiWorkout } from '../../types/api'
 import { WorkoutCard } from './WorkoutCard'
 import { View, YStack, Text, Button } from 'tamagui'
+import { EmptyState } from '../ui/EmptyState'
+import { Dumbbell } from '@tamagui/lucide-icons'
 
 export interface WorkoutListProps {
   workouts: ApiWorkout[]
@@ -69,19 +71,13 @@ export const WorkoutList = memo(
           refreshing={refreshing}
           onRefresh={onRefresh}
           ListEmptyComponent={
-            <YStack items="center" justify="center" py="$8">
-              <Text fontSize="$6" color="$color11">
-                No workouts yet
-              </Text>
-              <Text fontSize="$4" color="$color10" mt="$2">
-                Create your first workout to get started
-              </Text>
-              {onCreateWorkout && (
-                <Button mt="$4" onPress={onCreateWorkout}>
-                  Create Workout
-                </Button>
-              )}
-            </YStack>
+            <EmptyState
+              title="No workouts yet"
+              description="Start a new workout to track your progress."
+              icon={Dumbbell}
+              actionLabel={onCreateWorkout ? 'Create Workout' : undefined}
+              onAction={onCreateWorkout}
+            />
           }
           ItemSeparatorComponent={() => <View height="$4" />}
           showsVerticalScrollIndicator={false}

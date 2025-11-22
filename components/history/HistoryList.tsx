@@ -1,6 +1,7 @@
 import { forwardRef } from 'react'
 import { Button, Card, Separator, Text, View, XStack, YStack } from 'tamagui'
-import { Timer as TimerIcon, Dumbbell, Trophy, BarChart2 } from '@tamagui/lucide-icons'
+import { Timer as TimerIcon, Dumbbell, Trophy, BarChart2, History } from '@tamagui/lucide-icons'
+import { EmptyState } from '../ui/EmptyState'
 import { FlashList } from '@shopify/flash-list'
 import type { FlashListRef } from '@shopify/flash-list'
 import { formatWeekRange, startOfWeek } from './date'
@@ -41,14 +42,11 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
   ) => {
     if (data.length === 0) {
       return (
-        <YStack flex={1} items="center" justify="center" gap="$2">
-          <Text fontSize="$5" color="$color11">
-            No workouts yet
-          </Text>
-          <Text fontSize="$3" color="$color10">
-            Start recording workouts to see them here
-          </Text>
-        </YStack>
+        <EmptyState
+          title="No history yet"
+          description="Complete your first workout to see it here."
+          icon={History}
+        />
       )
     }
 

@@ -130,7 +130,14 @@ export default function RoutinesTab() {
           onDeleteRoutine={handleDeleteRoutine}
           disableActions={mutating}
           listHeader={
-            <Button bg="$primary" width="100%" my="$3" onPress={openCreate}>
+            <Button
+              bg="$primary"
+              width="100%"
+              my="$3"
+              onPress={openCreate}
+              animation="bouncy"
+              pressStyle={{ scale: 0.85, opacity: 0.7 }}
+            >
               <Text>Create Routine</Text>
             </Button>
           }

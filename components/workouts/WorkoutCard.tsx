@@ -5,6 +5,7 @@ import { useCallback, memo, useState, useMemo } from 'react'
 import { Pressable, StyleSheet } from 'react-native'
 import { StartWorkoutButton } from '../ui/StartWorkoutButton'
 import { ApiWorkout } from 'types/api'
+import { haptics } from '../../utils/haptics'
 
 export interface WorkoutCardProps {
   workout: ApiWorkout
@@ -33,6 +34,7 @@ export const WorkoutCard = memo(
     )
 
     const handleStartWorkout = useCallback(() => {
+      haptics.medium()
       onStartWorkout(workout)
     }, [onStartWorkout, workout])
 
@@ -79,7 +81,10 @@ export const WorkoutCard = memo(
                 )}
                 <Popover
                   open={menuOpen}
-                  onOpenChange={setMenuOpen}
+                  onOpenChange={(open) => {
+                    if (open) haptics.light()
+                    setMenuOpen(open)
+                  }}
                   size="$2"
                   placement="bottom-end"
                 >

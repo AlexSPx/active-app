@@ -98,14 +98,21 @@ export default function WorkoutsInnerTab() {
           onEditWorkout={handleEditWorkout}
           focusId={(params.focusId as string) || undefined}
           listHeader={
-            <Button bg="$primary" width="100%" my="$3" onPress={navigateToNewWorkout}>
+            <Button
+              bg="$primary"
+              width="100%"
+              my="$3"
+              onPress={navigateToNewWorkout}
+              animation="bouncy"
+              pressStyle={{ scale: 0.85, opacity: 0.7 }}
+            >
               <Text>Create Workout</Text>
             </Button>
           }
           onDeleteWorkout={handleDeleteWorkout}
           refreshing={loading}
           onRefresh={refetch}
-          onCreateWorkout={() => {}}
+          onCreateWorkout={navigateToNewWorkout}
         />
       </YStack>
 

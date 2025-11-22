@@ -3,7 +3,8 @@ import { memo } from 'react'
 import { View, YStack, Text, Button } from 'tamagui'
 import type { Routine } from '../../types/routine'
 import { RoutineCard } from './RoutineCard'
-
+import { EmptyState } from '../ui/EmptyState'
+import { ClipboardList } from '@tamagui/lucide-icons'
 export interface RoutineListProps {
   routines: Routine[]
   activeRoutineId?: string | null
@@ -54,19 +55,13 @@ export const RoutineList = memo(function RoutineList({
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListEmptyComponent={
-          <YStack items="center" justify="center" py="$8">
-            <Text fontSize="$6" color="$color11">
-              No routines yet
-            </Text>
-            <Text fontSize="$4" color="$color10" mt="$2">
-              Create your first routine to get started
-            </Text>
-            {onCreateRoutine && (
-              <Button mt="$4" onPress={onCreateRoutine}>
-                Create Routine
-              </Button>
-            )}
-          </YStack>
+          <EmptyState
+            title="No routines yet"
+            description="Create your first routine to get started with your training."
+            icon={ClipboardList}
+            actionLabel={onCreateRoutine ? 'Create Routine' : undefined}
+            onAction={onCreateRoutine}
+          />
         }
         ItemSeparatorComponent={() => <View height="$4" />}
         showsVerticalScrollIndicator={false}
