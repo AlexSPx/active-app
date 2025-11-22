@@ -73,7 +73,7 @@ export const WorkoutSessionExercise = memo(
     )
 
     return (
-      <Card elevate size="$4" mb="$3" p="$3" bg="$surface" borderColor="$borderColor">
+      <Card size="$4" mb="$3" p="$3" bg="$surface" borderColor="$borderColor">
         <YStack gap="$2">
           {/* Exercise Header */}
           <XStack justify="space-between" items="center">

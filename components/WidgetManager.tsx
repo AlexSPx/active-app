@@ -133,8 +133,8 @@ export function WidgetManager({ isVisible, onClose }: WidgetManagerProps) {
             {selectedExercise && (
               <XStack
                 items="center"
-                bg="$blue2"
-                borderColor="$blue6"
+                bg="$backgroundAccent"
+                borderColor="$borderAccent"
                 borderWidth={1}
                 rounded="$4"
                 px="$3"
@@ -160,14 +160,13 @@ export function WidgetManager({ isVisible, onClose }: WidgetManagerProps) {
               {METRICS.map((metric) => (
                 <Button
                   key={metric.key}
-                  variant="outlined"
                   onPress={() => setSelectedMetric(metric.key)}
-                  bg={selectedMetric === metric.key ? '$blue2' : 'transparent'}
-                  borderColor={selectedMetric === metric.key ? '$blue6' : '$borderColor'}
+                  bg={selectedMetric === metric.key ? '$backgroundAccent' : 'transparent'}
+                  borderColor={selectedMetric === metric.key ? '$borderAccent' : '$borderColor'}
                   size="$3"
                 >
                   <Text
-                    color={selectedMetric === metric.key ? '$blue11' : '$color11'}
+                    color={selectedMetric === metric.key ? '$primary' : '$color11'}
                     fontWeight={selectedMetric === metric.key ? '600' : '400'}
                   >
                     {metric.label}
@@ -186,13 +185,13 @@ export function WidgetManager({ isVisible, onClose }: WidgetManagerProps) {
           <View pt="$4">
             <Button
               size="$4"
-              bg="$blue9"
+              bg="$primary"
               onPress={handleAddWidget}
               disabled={!selectedExercise}
               opacity={selectedExercise ? 1 : 0.5}
             >
               <Plus size={20} />
-              <Text color="white" fontWeight="600" ml="$2">
+              <Text color="$onPrimary" fontWeight="600" ml="$2">
                 Add Widget
               </Text>
             </Button>

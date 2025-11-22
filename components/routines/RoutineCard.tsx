@@ -59,7 +59,6 @@ export const RoutineCard = memo(function RoutineCard({
         borderWidth={isActive ? 1.5 : 1}
         p="$4"
         rounded="$5"
-        elevate
         animation="quick"
         pressStyle={{ scale: 0.98, opacity: 0.9 }}
       >
@@ -139,7 +138,7 @@ export const RoutineCard = memo(function RoutineCard({
                         <Popover.Close asChild>
                           <Button size="$3" chromeless onPress={handleActivate} disabled={disabled} justify="flex-start">
                             <XStack gap="$2" items="center">
-                              <CheckCircle2 size={16} color="$blue10" />
+                              <CheckCircle2 size={16} color="$primary" />
                               <Text color="$color" numberOfLines={1}>Set as Active</Text>
                             </XStack>
                           </Button>
@@ -204,10 +203,11 @@ export const RoutineCard = memo(function RoutineCard({
           {onActivate && !isActive && (
             <Button 
               size="$3" 
-              themeInverse 
+              bg="$primary"
+              color="$onPrimary"
               disabled={disabled} 
               onPress={handleActivate}
-              icon={<CheckCircle2 size={16} />}
+              icon={<CheckCircle2 size={16} color="$onPrimary" />}
               mt="$1"
             >
               Set as Active Routine
@@ -215,9 +215,9 @@ export const RoutineCard = memo(function RoutineCard({
           )}
           
           {isActive && (
-             <XStack bg="$blue3" p="$2" rounded="$3" items="center" justify="center" gap="$2" mt="$1">
-                <CheckCircle2 size={14} color="$blue10" />
-                <Text color="$blue11" fontWeight="600" fontSize="$3">Currently Active</Text>
+             <XStack bg="$backgroundAccent" p="$2" rounded="$3" items="center" justify="center" gap="$2" mt="$1">
+                <CheckCircle2 size={14} color="$primary" />
+                <Text color="$primary" fontWeight="600" fontSize="$3">Currently Active</Text>
              </XStack>
           )}
         </YStack>

@@ -39,11 +39,12 @@ export default function HomeScreen() {
             size="$3"
             variant="outlined"
             onPress={() => setShowWidgetManager(true)}
-            bg="$blue2"
-            borderColor="$blue6"
+            bg="$backgroundAccent"
+            borderColor="$borderAccent"
+            pressStyle={{ bg: '$backgroundAccentPress' }}
           >
-            <Plus size={16} />
-            <Text color="$blue11" fontWeight="500">
+            <Plus size={16} color="$primary" />
+            <Text color="$primary" fontWeight="500">
               Add Widget
             </Text>
           </Button>
@@ -72,9 +73,9 @@ export default function HomeScreen() {
             <Text fontSize="$3" color="$color11" mb="$4">
               Add widgets to visualize your exercise progression
             </Text>
-            <Button size="$4" onPress={() => setShowWidgetManager(true)} bg="$blue9">
+            <Button size="$4" onPress={() => setShowWidgetManager(true)} bg="$primary">
               <Plus size={16} />
-              <Text color="white" fontWeight="600" ml="$2">
+              <Text color="$onPrimary" fontWeight="600" ml="$2">
                 Add Your First Widget
               </Text>
             </Button>

@@ -146,6 +146,12 @@ export default function SettingsMenuScreen() {
               description="Configure rest duration"
               href="/settings/rest-timer"
             />
+            <MenuRow
+              icon={<Globe size={18} color="$color" />}
+              title="Appearance"
+              description="Light, dark, or system theme"
+              href="/settings/theme"
+            />
           </YStack>
 
           <Separator />

@@ -7,6 +7,7 @@ export default function HistoryStackLayout() {
   return (
     <Stack
       screenOptions={{
+        headerShadowVisible: false,
         headerShown: true,
         headerStyle: { backgroundColor: theme.background.val },
         headerTintColor: theme.color.val,

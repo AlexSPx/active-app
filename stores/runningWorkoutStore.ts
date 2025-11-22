@@ -4,6 +4,7 @@ import type { ApiExercise } from '../types/api'
 import { apiService } from '../services/apiService'
 import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecordResponse } from '../types/api'
 import type { FinishedCongratsPayload } from '../types/congrats'
+import { haptics } from '../utils/haptics'
 
 export interface RunningWorkoutExercise extends ApiExercise {
   sets: number
@@ -142,6 +143,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
 
           // Clear the running workout after successful recording
           set({ runningWorkout: null, isRecording: false })
+          haptics.success()
           return result
         } catch (error) {
           console.error('Failed to record workout:', error)
@@ -231,7 +233,11 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
                 ...exercise,
                 sessionSets: exercise.sessionSets.map((set) => {
                   if (set.id === setId) {
-                    return { ...set, completed: !set.completed }
+                    const newCompleted = !set.completed
+                    if (newCompleted) {
+                      haptics.success()
+                    }
+                    return { ...set, completed: newCompleted }
                   }
                   return set
                 }),

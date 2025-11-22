@@ -91,7 +91,6 @@ const ExerciseCard = memo(function ExerciseCard({
       bg={isSelected ? '$backgroundAccent' : '$surface'}
       borderColor={isSelected ? '$primary' : '$borderColor'}
       borderWidth={isSelected ? 2 : 1}
-      elevate
       pressStyle={{
         scale: 0.98,
         backgroundColor: isSelected ? '$backgroundAccentHover' : '$surfaceHover',
@@ -100,7 +99,7 @@ const ExerciseCard = memo(function ExerciseCard({
     >
       <XStack justify="space-between" verticalAlign="center" gap="$3">
         <YStack flex={1} gap="$1">
-          <Text fontSize="$5" fontWeight="700" color={isSelected ? '$onPrimary' : '$color'}>
+          <Text fontSize="$5" fontWeight="700" color="$color">
             {exercise.name}
           </Text>
           <Text fontSize="$3" color={isSelected ? '$colorMuted' : '$colorSubtle'}>

@@ -61,7 +61,6 @@ export const WorkoutCard = memo(
         borderWidth="$0.5"
         p="$4"
         rounded="$6"
-        elevate
         pressStyle={{ scale: 0.98, opacity: 0.9 }}
       >
         <YStack gap="$3">

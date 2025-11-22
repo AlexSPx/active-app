@@ -122,7 +122,6 @@ export default function SearchExerciseScreen() {
         </YStack>
       </ScrollView>
 
-      {/* Fixed Bottom Button */}
       {selectedExercises.length > 0 && (
         <YStack p="$4" pt="$3" bg="$background" borderTopWidth={1} borderTopColor="$borderColor">
           <Button bg="$primary" size="$5" onPress={handleDone}>

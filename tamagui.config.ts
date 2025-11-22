@@ -118,12 +118,124 @@ const fitnessTheme = {
   green12: '#FFFFFF',
 }
 
+const lightTheme = {
+  ...fitnessTheme,
+  // Background colors
+  background: '#FFFFFF',
+  backgroundHover: '#F2F2F7',
+  backgroundPress: '#E5E5EA',
+  backgroundFocus: '#F2F2F7',
+  backgroundStrong: '#F2F2F7',
+  backgroundTransparent: 'transparent',
+
+  // Surface colors
+  surface: '#f6f6f6ff',
+  surfaceHover: '#F2F2F7',
+  surfacePress: '#E5E5EA',
+  surfaceFocus: '#F2F2F7',
+
+  // Accent colors
+  backgroundAccent: '#E1F0FF', // Light blue background
+  backgroundAccentHover: '#D0E6FF',
+  backgroundAccentPress: '#C0DCFF',
+  backgroundAccentFocus: '#D0E6FF',
+
+  // Text colors
+  color: '#000000',
+  colorHover: '#000000',
+  colorPress: '#000000',
+  colorFocus: '#000000',
+  colorSubtle: '#8E8E93',
+  colorMuted: '#AEAEB2',
+
+  // Border colors
+  borderColor: '#e1e1e1ff',
+  borderColorHover: '#D1D1D6',
+  borderColorPress: '#C7C7CC',
+  borderColorFocus: '#007AFF',
+  borderAccent: '#007AFF',
+
+  // Primary theme (Fitness Blue) - keep similar but adjust for light mode if needed
+  primary: '#007AFF',
+  primaryHover: '#0062CC',
+  primaryPress: '#004999',
+  primaryFocus: '#0062CC',
+  onPrimary: '#FFFFFF',
+
+  // Secondary theme (Orange/Amber)
+  secondary: '#FF9500',
+  secondaryHover: '#E68600',
+  secondaryPress: '#CC7700',
+  secondaryFocus: '#E68600',
+  onSecondary: '#FFFFFF',
+
+  // Success theme (Green)
+  success: '#34C759',
+  successHover: '#2DA84E',
+  successPress: '#248A3D',
+  successFocus: '#2DA84E',
+  onSuccess: '#FFFFFF',
+
+  // Legacy color scale (inverted for light)
+  color1: '#FFFFFF',
+  color2: '#F2F2F7',
+  color3: '#E5E5EA',
+  color4: '#D1D1D6',
+  color5: '#C7C7CC',
+  color6: '#AEAEB2',
+  color7: '#8E8E93',
+  color8: '#636366',
+  color9: '#48484A',
+  color10: '#3A3A3C',
+  color11: '#1C1C1E',
+  color12: '#000000',
+  // Themed color scales (Light Mode)
+  red1: '#FFFFFF',
+  red2: '#FFF5F5',
+  red3: '#FFE0E0',
+  red4: '#FFC7C7',
+  red5: '#FFADAD',
+  red6: '#FF9494',
+  red7: '#FF7A7A',
+  red8: '#FF6161',
+  red9: '#FF4747',
+  red10: '#FF2E2E',
+  red11: '#E60000',
+  red12: '#1A0505',
+
+  blue1: '#FFFFFF',
+  blue2: '#F0F7FF',
+  blue3: '#E0EFFF',
+  blue4: '#C7E0FF',
+  blue5: '#ADD2FF',
+  blue6: '#94C3FF',
+  blue7: '#7AB5FF',
+  blue8: '#61A6FF',
+  blue9: '#007AFF',
+  blue10: '#0062CC',
+  blue11: '#004999',
+  blue12: '#05101A',
+
+  green1: '#FFFFFF',
+  green2: '#F2FFF5',
+  green3: '#E0FFE7',
+  green4: '#C7FFD4',
+  green5: '#ADFFC2',
+  green6: '#94FFAF',
+  green7: '#7AFF9D',
+  green8: '#61FF8A',
+  green9: '#34C759',
+  green10: '#2DA84E',
+  green11: '#248A3D',
+  green12: '#051A0A',
+}
+
 export const config = createTamagui({
   ...defaultConfig,
   themes: {
     ...defaultConfig.themes,
     dark: fitnessTheme,
-    light: fitnessTheme, // Use dark theme for both
+    light: lightTheme,
   },
   defaultTheme: 'dark',
 })

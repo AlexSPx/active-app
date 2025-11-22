@@ -15,14 +15,15 @@ export default function TabLayout() {
             backgroundColor: theme.background.val,
             borderTopColor: theme.borderColor.val,
           },
-          headerShown: true,
           headerStyle: {
             backgroundColor: theme.background.val,
           },
           headerTintColor: theme.color.val,
+          headerShadowVisible: false,
           headerTitleStyle: {
             color: theme.color.val,
-            fontWeight: '700',
+            fontWeight: '600',
+            fontSize: 16,
           },
         }}
       >

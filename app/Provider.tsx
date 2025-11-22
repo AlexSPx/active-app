@@ -24,12 +24,17 @@ const TOOLS: InstalledApp[] = [
   },
 ]
 
+import { useSettingsStore } from '../stores/settingsStore'
+
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   const colorScheme = useColorScheme()
+  const theme = useSettingsStore((s) => s.theme)
   const finishedCongrats = useUiStore((s) => s.finishedCongrats)
   const hideFinishedCongrats = useUiStore((s) => s.hideFinishedCongrats)
   const congratsVisible = finishedCongrats.visible && !!finishedCongrats.payload
   const payload = finishedCongrats.payload
+
+  const activeTheme = theme === 'system' ? colorScheme : theme
 
   useEffect(() => {
     initNotifications().catch(() => {})
@@ -41,7 +46,7 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
       <PortalProvider>
         <TamaguiProvider
           config={config}
-          defaultTheme={colorScheme === 'dark' ? 'dark' : 'light'}
+          defaultTheme={activeTheme === 'dark' ? 'dark' : 'light'}
           {...rest}
         >
           {/* <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" /> */}

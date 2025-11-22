@@ -1,4 +1,4 @@
-import { useTheme, View } from 'tamagui'
+import { useTheme, View, YStack } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 
 import { WorkoutSessionExercise } from '../../components/workout-session/WorkoutSessionExercise'
@@ -72,7 +72,7 @@ export default function WorkoutSessionScreen() {
   )
 
   return (
-    <View style={{ flex: 1, paddingHorizontal: 16, paddingVertical: 16 }}>
+    <YStack flex={1} px="$4" bg="$background">
       <FlashList
         data={exercises}
         renderItem={renderExercise}
@@ -90,6 +90,6 @@ export default function WorkoutSessionScreen() {
         onExtend={extendRestTimer}
         onSkip={skipRestTimer}
       />
-    </View>
+    </YStack>
   )
 }

@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router'
-import { ScrollView } from 'react-native'
-import { Text, YStack, XStack, Separator, View } from 'tamagui'
+
+import { Text, YStack, XStack, Separator, View, ScrollView } from 'tamagui'
 import {
   Calendar as CalendarIcon,
   Timer as TimerIcon,
@@ -109,8 +109,8 @@ export default function RecordDetailScreen() {
   const durationLabel = computedDurationSecs > 0 ? formatSeconds(computedDurationSecs) : '—'
 
   return (
-    <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: 12 }}>
-      <YStack px="$4" gap="$3">
+    <ScrollView flex={1} bg="$background">
+      <YStack px="$4" py="$3" gap="$3">
         {/* Header Title */}
         <YStack gap="$1">
           <Text fontSize="$7" fontWeight="700" color="$color">

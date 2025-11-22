@@ -111,7 +111,7 @@ export default function BodySettingsScreen() {
   }
 
   return (
-    <>
+    <YStack flex={1} bg="$background">
       <Stack.Screen options={{ title: 'Body measurements' }} />
       <ScrollView flex={1} showsVerticalScrollIndicator={false} nestedScrollEnabled>
         <YStack bg="$background" p="$4" gap="$4">
@@ -225,6 +225,6 @@ export default function BodySettingsScreen() {
           {!!error && <Paragraph color="$red10">{error}</Paragraph>}
         </YStack>
       </ScrollView>
-    </>
+    </YStack>
   )
 }

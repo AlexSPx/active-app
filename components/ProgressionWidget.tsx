@@ -11,16 +11,16 @@ interface ProgressionWidgetProps {
   onRemove: (widgetId: string) => void
 }
 
-const MetricIcon = ({ metric }: { metric: ProgressionMetric }) => {
+const MetricIcon = ({ metric, color = '$color' }: { metric: ProgressionMetric; color?: string }) => {
   switch (metric) {
     case 'oneRm':
-      return <Target size={16} />
+      return <Target size={16} color={color as any} />
     case 'volume':
-      return <BarChart3 size={16} />
+      return <BarChart3 size={16} color={color as any} />
     case 'maxWeight':
-      return <TrendingUp size={16} />
+      return <TrendingUp size={16} color={color as any} />
     default:
-      return <TrendingUp size={16} />
+      return <TrendingUp size={16} color={color as any} />
   }
 }
 
@@ -78,7 +78,7 @@ export function ProgressionWidget({ config, onRemove }: ProgressionWidgetProps) 
     <Card p="$4" mb="$3" bg="$background" borderColor="$borderColor" borderWidth={1}>
       <XStack items="center" justify="space-between" mb="$3">
         <XStack items="center" flex={1} gap="$2">
-          <MetricIcon metric={config.metric} />
+          <MetricIcon metric={config.metric} color="$primary" />
           <YStack>
             <Text fontSize="$4" fontWeight="700">
               {getMetricLabel(config.metric)}

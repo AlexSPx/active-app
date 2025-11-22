@@ -121,7 +121,6 @@ function DayRow({
       borderColor={isWorkout ? '$primary' : isRest ? '$secondary' : '$borderColor'}
       gap="$3"
       width="100%"
-      elevation={2}
     >
       {/* Header */}
       <XStack justify="space-between" items="center">
