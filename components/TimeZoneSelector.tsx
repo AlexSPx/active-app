@@ -8,13 +8,21 @@ import { LoadingSpinner } from './ui/LoadingSpinner'
 // Cache to avoid re-importing tzdb between openings
 let cachedTimeZones: string[] | null = null
 
-export default function TimeZoneSelector() {
+interface TimeZoneSelectorProps {
+  value?: string
+  onValueChange?: (tz: string) => void
+}
+
+export default function TimeZoneSelector({ value, onValueChange }: TimeZoneSelectorProps) {
   const { timeZone, setTimeZone } = useSettingsStore()
   const { updateUserProfile } = useUpdateUser()
   const [open, setOpen] = React.useState(false)
   const [search, setSearch] = React.useState('')
   const [loading, setLoading] = React.useState(false)
   const [timeZones, setTimeZones] = React.useState<string[] | null>(cachedTimeZones)
+
+  // Determine current value: controlled (prop) or uncontrolled (store)
+  const currentTimeZone = value !== undefined ? value : timeZone
 
   // Lazy load tzdb when sheet opens
   React.useEffect(() => {
@@ -41,11 +49,15 @@ export default function TimeZoneSelector() {
   }, [search, timeZones])
 
   const handleSelect = async (tz: string) => {
-    setTimeZone(tz)
-    // fire and forget profile update; ignore blanks handled in hook/api
-    try {
-      await updateUserProfile({ timezone: tz })
-    } catch {}
+    if (onValueChange) {
+      onValueChange(tz)
+    } else {
+      setTimeZone(tz)
+      // fire and forget profile update; ignore blanks handled in hook/api
+      try {
+        await updateUserProfile({ timezone: tz })
+      } catch {}
+    }
     setOpen(false)
     setSearch('')
   }
@@ -54,11 +66,11 @@ export default function TimeZoneSelector() {
     <YStack gap="$3">
       <XStack gap="$2" items="center">
         <Text fontWeight="700">Current:</Text>
-        <Text>{timeZone}</Text>
+        <Text>{currentTimeZone}</Text>
       </XStack>
 
       <Button width="100%" iconAfter={ChevronDown} onPress={() => setOpen(true)}>
-        {timeZone}
+        {currentTimeZone}
       </Button>
 
       <Sheet
@@ -69,7 +81,7 @@ export default function TimeZoneSelector() {
         dismissOnSnapToBottom
         animation="medium"
       >
-        <Sheet.Overlay animation="lazy" enterStyle={{ opacity: 0 }} exitStyle={{ opacity: 0 }} />
+        <Sheet.Overlay animation="slow" enterStyle={{ opacity: 0 }} exitStyle={{ opacity: 0 }} />
         <Sheet.Frame p="$4" gap="$4">
           <Sheet.Handle />
           <YStack gap="$3" flex={1}>
@@ -102,8 +114,8 @@ export default function TimeZoneSelector() {
                       size="$4"
                       chromeless
                       onPress={() => handleSelect(tz)}
-                      bg={tz === timeZone ? '$backgroundPress' : 'transparent'}
-                      iconAfter={tz === timeZone ? <Check size={16} /> : undefined}
+                      bg={tz === currentTimeZone ? '$backgroundPress' : 'transparent'}
+                      iconAfter={tz === currentTimeZone ? <Check size={16} /> : undefined}
                     >
                       <Text>{tz}</Text>
                     </Button>
@@ -117,3 +129,4 @@ export default function TimeZoneSelector() {
     </YStack>
   )
 }
+

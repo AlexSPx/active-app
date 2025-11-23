@@ -19,6 +19,7 @@ interface SettingsState {
   bodyWeightUnit: 'kg' | 'lb'
   heightUnit: 'cm' | 'in'
 
+
   // Actions
   setRestTimerEnabled: (enabled: boolean) => void
   setRestTimerDefaultSeconds: (seconds: number) => void
@@ -28,6 +29,7 @@ interface SettingsState {
   setHeight: (height: number | null) => void
   setBodyWeightUnit: (unit: 'kg' | 'lb') => void
   setHeightUnit: (unit: 'cm' | 'in') => void
+
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -42,6 +44,7 @@ export const useSettingsStore = create<SettingsState>()(
       bodyWeightUnit: 'kg',
       heightUnit: 'cm',
 
+
       setRestTimerEnabled: (enabled) => set({ restTimerEnabled: enabled }),
       setRestTimerDefaultSeconds: (seconds) =>
         set({ restTimerDefaultSeconds: Math.max(0, Math.floor(seconds || 0)) }),
@@ -53,6 +56,7 @@ export const useSettingsStore = create<SettingsState>()(
         set({ height: height == null || isNaN(height as any) ? null : Math.max(0, height) }),
       setBodyWeightUnit: (unit) => set({ bodyWeightUnit: unit }),
       setHeightUnit: (unit) => set({ heightUnit: unit }),
+
     }),
     {
       name: 'settings-storage',
@@ -66,6 +70,7 @@ export const useSettingsStore = create<SettingsState>()(
         height: state.height,
         bodyWeightUnit: state.bodyWeightUnit,
         heightUnit: state.heightUnit,
+
       }),
     }
   )

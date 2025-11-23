@@ -14,6 +14,7 @@ interface AuthState {
 
   // Actions
   login: (credentials: LoginRequest) => Promise<void>
+  loginWithGoogle: (idToken: string) => Promise<void>
   register: (payload: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
   fetchUser: () => Promise<void>
@@ -85,6 +86,26 @@ export const useAuthStore = create<AuthState>()(
           set({
             isLoading: false,
             error: apiError.message || 'Registration failed',
+            isAuthenticated: false,
+            token: null,
+            user: null,
+          })
+          throw error
+        }
+      },
+
+      loginWithGoogle: async (idToken: string) => {
+        try {
+          set({ isLoading: true, error: null })
+          const response = await apiService.googleLogin(idToken)
+          await apiService.setToken(response.token)
+          set({ token: response.token, isAuthenticated: true, isLoading: false })
+          await get().fetchUser()
+        } catch (error) {
+          const apiError = error as ApiError
+          set({
+            isLoading: false,
+            error: apiError.message || 'Google login failed',
             isAuthenticated: false,
             token: null,
             user: null,

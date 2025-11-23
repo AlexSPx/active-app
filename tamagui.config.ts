@@ -230,8 +230,37 @@ const lightTheme = {
   green12: '#051A0A',
 }
 
+import { createAnimations } from '@tamagui/animations-react-native'
+
+const animations = createAnimations({
+  fast: {
+    type: 'timing',
+    duration: 100,
+  },
+  quick: {
+    type: 'timing',
+    duration: 200,
+  },
+  medium: {
+    type: 'timing',
+    duration: 350,
+  },
+  slow: {
+    type: 'spring',
+    damping: 20,
+    stiffness: 60,
+  },
+  bouncy: {
+    type: 'spring',
+    damping: 10,
+    mass: 0.9,
+    stiffness: 100,
+  },
+})
+
 export const config = createTamagui({
   ...defaultConfig,
+  animations,
   themes: {
     ...defaultConfig.themes,
     dark: fitnessTheme,

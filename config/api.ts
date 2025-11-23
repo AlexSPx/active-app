@@ -6,6 +6,7 @@ export const config = {
   // API endpoints
   API_ENDPOINTS: {
     AUTH: {
+      BASE: '/api/auth',
       LOGIN: '/api/auth/login',
       SIGNUP: '/api/auth/signup',
     },

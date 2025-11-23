@@ -76,51 +76,9 @@ export async function initNotifications(): Promise<void> {
       await mod.setNotificationChannelAsync('rest-timer', channelInput)
     }
 
-    const perms: NotificationPermissionsStatus = await mod.getPermissionsAsync()
-    if (!perms.granted) {
-      const { granted } = await mod.requestPermissionsAsync()
-      if (!granted) {
-        console.warn('General notification permissions were denied.')
-        initialized = true
-        return
-      }
-    }
-
     // 5. Handle 'allowsScheduledNotifications' (This is the critical part)
-    if (
-      Platform.OS === 'android' &&
-      !(perms.android && (perms.android as any).allowsScheduledNotifications)
-    ) {
-      // This request will fail silently on Android 14+, so we check the response
-      const resp = await mod.requestPermissionsAsync({
-        android: {
-          allowsScheduledNotifications: true,
-        },
-      })
-
-      // The response may nest Android-specific flags under resp.android
-      // const updatedPerms = await mod.getPermissionsAsync()
-      // const isAllowed = (updatedPerms.android as any)?.allowsScheduledNotifications ?? false
-
-      // if (!isAllowed) {
-      //   // Permission is still denied. We must ask the user to enable it manually.
-      //   Alert.alert(
-      //     'Permission Required',
-      //     'To ensure rest timers are accurate, please grant the "Alarms & reminders" permission for this app in your phone\'s settings.',
-      //     [
-      //       {
-      //         text: 'Open Settings',
-      //         onPress: openAlarmSettings,
-      //       },
-      //       {
-      //         text: 'Cancel',
-      //         style: 'cancel',
-      //       },
-      //     ],
-      //     { cancelable: true }
-      //   )
-      // }
-    }
+    // We do NOT request permissions here automatically anymore.
+    // Permissions are requested explicitly in the UI (e.g. Register screen or Settings).
   } catch (error: unknown) {
     console.error('Failed to initialize notifications:', error)
   } finally {

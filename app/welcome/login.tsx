@@ -3,6 +3,7 @@ import { YStack, XStack, Text, Button, Input, H2 } from 'tamagui'
 import { Eye, EyeOff } from '@tamagui/lucide-icons'
 import { useAuth } from '../../contexts/AuthContext'
 import { useToastController } from '@tamagui/toast'
+import { GoogleSignInButton } from '../../components/GoogleSignInButton'
 
 const LoginPage = () => {
   const { login, isLoading, error, clearError } = useAuth()
@@ -139,6 +140,14 @@ const LoginPage = () => {
             {isLoading ? 'Signing In...' : 'Sign In'}
           </Text>
         </Button>
+
+        <XStack items="center" gap="$3" my="$4">
+          <YStack height={1} flex={1} bg="$color6" />
+          <Text color="$color10" fontSize="$3">OR</Text>
+          <YStack height={1} flex={1} bg="$color6" />
+        </XStack>
+
+        <GoogleSignInButton />
       </YStack>
     </YStack>
   )

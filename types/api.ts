@@ -72,6 +72,7 @@ export interface User {
   activeRoutineId?: string | null
   streak?: UserStreak
   measurements?: UserMeasurements | null
+  registrationCompleted: boolean
 }
 
 export interface UserMeasurements {
@@ -86,6 +87,7 @@ export interface UpdateUserRequest {
   email?: string
   timezone?: string
   measurements?: UserMeasurements
+  registrationCompleted?: boolean
 }
 
 // Workout Template Types (Server Request/Response)

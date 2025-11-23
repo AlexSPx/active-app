@@ -1,8 +1,13 @@
-import React from 'react'
+import React, { useState, useCallback } from 'react'
 import { YStack, XStack, Text, Paragraph, ScrollView, Button, Separator } from 'tamagui'
-import { Link } from 'expo-router'
-import { Ruler, Timer as TimerIcon, LogOut, ChevronRight, Globe } from '@tamagui/lucide-icons'
+import { Link, useFocusEffect } from 'expo-router'
+import { Ruler, Timer as TimerIcon, LogOut, ChevronRight, Globe, AlertTriangle } from '@tamagui/lucide-icons'
 import { useAuth } from '../../../contexts/AuthContext'
+import * as Notifications from 'expo-notifications'
+import { Platform, NativeModules } from 'react-native'
+import * as Linking from 'expo-linking'
+import * as Application from 'expo-application'
+import * as Haptics from 'expo-haptics'
 
 function MenuRow({
   icon,
@@ -32,9 +37,9 @@ function MenuRow({
       <XStack gap="$3" flex={1} style={{ alignItems: 'center' }}>
         {icon}
         <YStack flex={1} gap="$1">
-          <Text fontWeight="700">{title}</Text>
+          <Text fontWeight="700" color={danger ? 'white' : '$color'}>{title}</Text>
           {description && (
-            <Paragraph size="$2" color="$color11">
+            <Paragraph size="$2" color={danger ? '$red2' : '$color11'}>
               {description}
             </Paragraph>
           )}
@@ -77,6 +82,40 @@ function MenuRow({
 
 export default function SettingsMenuScreen() {
   const { logout, user } = useAuth()
+  const [androidAlarmsAllowed, setAndroidAlarmsAllowed] = useState(true)
+
+  const checkAndroidPermissions = async () => {
+    if (Platform.OS !== 'android') return
+    
+    try {
+      const { ExactAlarm } = NativeModules
+      if (ExactAlarm) {
+        const allowed = await ExactAlarm.canScheduleExactAlarms()
+        setAndroidAlarmsAllowed(allowed)
+      } else {
+        // Fallback or dev client not rebuilt yet
+        console.warn('ExactAlarm module not found. Please rebuild the dev client.')
+        // Assume true to avoid blocking if module is missing in dev
+        setAndroidAlarmsAllowed(true)
+      }
+    } catch (error) {
+      console.error('Failed to check exact alarm permission:', error)
+      setAndroidAlarmsAllowed(false)
+    }
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      checkAndroidPermissions()
+    }, [])
+  )
+
+  const openAlarmSettings = () => {
+    Haptics.selectionAsync()
+    const action = 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM'
+    const alarmSettingsUri = `package:${Application.applicationId ?? ''}`
+    Linking.sendIntent(action, [{ key: 'data', value: alarmSettingsUri }])
+  }
 
   const fullName = user
     ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || user.email
@@ -124,6 +163,32 @@ export default function SettingsMenuScreen() {
             </XStack>
           </YStack>
 
+          {/* Android Alarms Warning */}
+          {!androidAlarmsAllowed && Platform.OS === 'android' && (
+            <Button
+              unstyled
+              onPress={openAlarmSettings}
+              bg="$surfaceHover"
+              p="$3"
+              style={{ borderRadius: 12 }}
+              pressStyle={{ opacity: 0.8 }}
+              animation="quick"
+            >
+              <XStack gap="$3" style={{ alignItems: 'center' }}>
+                <YStack bg="$surfacePress" p="$2" style={{ borderRadius: 8 }}>
+                   <AlertTriangle size={20} color="$secondary" />
+                </YStack>
+                <YStack flex={1} gap="$1">
+                  <Text fontWeight="700" color="$secondary">Permission Required</Text>
+                  <Paragraph size="$2" color="$color11">
+                    Allow "Alarms & Reminders" for precise notifications. Tap to fix.
+                  </Paragraph>
+                </YStack>
+                <ChevronRight size={18} color="$secondary" />
+              </XStack>
+            </Button>
+          )}
+
           <YStack gap="$2">
             <Text fontSize="$3" color="$color11" fontWeight="700">
               General
@@ -157,7 +222,7 @@ export default function SettingsMenuScreen() {
           <Separator />
 
           <MenuRow
-            icon={<LogOut size={18} />}
+            icon={<LogOut size={18} color="white" />}
             title="Sign out"
             description="Log out of your account"
             onPress={() => {

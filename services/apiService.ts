@@ -280,6 +280,21 @@ class ApiService {
     return this.handleResponse<LoginResponse>(response)
   }
 
+  async googleLogin(idToken: string): Promise<LoginResponse> {
+    const url = getApiUrl(`${config.API_ENDPOINTS.AUTH.BASE}/google`)
+    console.log(`API Request: POST ${url}`)
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ idToken }),
+    })
+
+    return this.handleResponse<LoginResponse>(response)
+  }
+
   async getExerciseLogs(exerciseId: string): Promise<ExerciseLogResponse[]> {
     const url = getApiUrl(
       `${config.API_ENDPOINTS.EXERCISES.LOGS}/${encodeURIComponent(exerciseId)}/logs`
