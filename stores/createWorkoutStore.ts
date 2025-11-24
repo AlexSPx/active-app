@@ -13,6 +13,7 @@ type WorkoutState = {
   ) => void
   addSetToExercise: (exerciseId: string) => void
   removeSetFromExercise: (exerciseId: string, setIndex: number) => void
+  reset: () => void
 }
 
 export const useWorkoutStore = create<WorkoutState>((set) => ({
@@ -59,4 +60,5 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
         ex.id === exerciseId ? { ...ex, sets: ex.sets.filter((_, i) => i !== setIndex) } : ex
       ),
     })),
+  reset: () => set({ selectedExercises: [] }),
 }))

@@ -15,6 +15,7 @@ interface UserState {
   patchUser: (payload: UpdateUserRequest) => Promise<User | null>
   refreshUser: () => Promise<void>
   clearError: () => void
+  reset: () => void
 
   // Helpers
   isDataStale: (maxAgeMs?: number) => boolean
@@ -90,6 +91,15 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   clearError: () => set({ error: null }),
+
+  reset: () => {
+    set({
+      user: null,
+      isLoading: false,
+      error: null,
+      lastUpdated: null,
+    })
+  },
 
   // Helper methods
   isDataStale: (maxAgeMs = 5 * 60 * 1000) => {

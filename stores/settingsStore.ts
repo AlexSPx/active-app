@@ -29,6 +29,7 @@ interface SettingsState {
   setHeight: (height: number | null) => void
   setBodyWeightUnit: (unit: 'kg' | 'lb') => void
   setHeightUnit: (unit: 'cm' | 'in') => void
+  reset: () => void
 
 }
 
@@ -56,6 +57,17 @@ export const useSettingsStore = create<SettingsState>()(
         set({ height: height == null || isNaN(height as any) ? null : Math.max(0, height) }),
       setBodyWeightUnit: (unit) => set({ bodyWeightUnit: unit }),
       setHeightUnit: (unit) => set({ heightUnit: unit }),
+      reset: () =>
+        set({
+          restTimerEnabled: true,
+          restTimerDefaultSeconds: 90,
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+          theme: 'system',
+          bodyWeight: null,
+          height: null,
+          bodyWeightUnit: 'kg',
+          heightUnit: 'cm',
+        }),
 
     }),
     {

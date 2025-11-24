@@ -25,6 +25,7 @@ interface WidgetStore {
   getWidget: (widgetId: string) => WidgetConfig | undefined
   getWidgetsByExercise: (exerciseId: string) => WidgetConfig[]
   clearAllWidgets: () => void
+  reset: () => void
 }
 
 export const useWidgetStore = create<WidgetStore>()(
@@ -123,6 +124,10 @@ export const useWidgetStore = create<WidgetStore>()(
       },
 
       clearAllWidgets: () => {
+        set({ widgets: [] })
+      },
+
+      reset: () => {
         set({ widgets: [] })
       },
     }),

@@ -11,6 +11,7 @@ interface UiState {
   }
   showFinishedCongrats: (record: WorkoutRecord, streak: StreakUpdateResponse) => void
   hideFinishedCongrats: () => void
+  reset: () => void
 }
 
 export const useUiStore = create<UiState>((set) => ({
@@ -18,4 +19,5 @@ export const useUiStore = create<UiState>((set) => ({
   showFinishedCongrats: (record, streak) =>
     set({ finishedCongrats: { visible: true, payload: { record, streak } } }),
   hideFinishedCongrats: () => set({ finishedCongrats: { visible: false, payload: undefined } }),
+  reset: () => set({ finishedCongrats: { visible: false, payload: undefined } }),
 }))

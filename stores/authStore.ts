@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { apiService } from '../services/apiService'
 import { useSettingsStore } from './settingsStore'
+import { resetAllStores } from '../utils/storeReset'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 
 interface AuthState {
@@ -116,10 +117,10 @@ export const useAuthStore = create<AuthState>()(
 
       logout: async () => {
         try {
-          // Clear token from storage
-          await apiService.removeToken()
+          // Clear all stores and caches first
+          await resetAllStores()
 
-          // Clear state
+          // Then clear auth state (this will be redundant for auth store but ensures consistency)
           set({
             isAuthenticated: false,
             user: null,

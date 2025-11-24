@@ -50,6 +50,7 @@ interface RunningWorkoutStore {
   addExerciseSet: (exerciseId: string) => void
   isWorkoutRunning: () => boolean
   getElapsedTime: () => number
+  reset: () => void
 }
 
 export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
@@ -319,6 +320,14 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           return Date.now() - new Date(state.runningWorkout.startTime).getTime()
         }
         return 0
+      },
+
+      reset: () => {
+        set({
+          runningWorkout: null,
+          isRecording: false,
+          recordingError: null,
+        })
       },
     }),
     {
