@@ -21,6 +21,7 @@ import { useSettingsStore } from 'stores/settingsStore'
 const STEPS = ['Account', 'Personal', 'Body', 'Time Zone', 'Notifications']
 
 import { InputField } from '../../components/ui/InputField'
+import { UpdateUserRequest } from 'types/api'
 
 const RegisterPage = () => {
   const router = useRouter()
@@ -201,24 +202,35 @@ const RegisterPage = () => {
     setIsLoading(true)
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     try {
-      if (!isGoogleAuth) {
+      if (!isGoogleAuth || (user && user.registrationCompleted)) {
         await register({
           email,
           username,
           firstName,
           lastName,
           password,
+          timezone: timeZone,
+          measurements: {
+            weightKg: weight,
+            heightCm: heightVal,
+          },
+          notificationFrequency: streakFreq,
+          registrationCompleted: true,
         })
+      } else {
+        const updateUserRequest: UpdateUserRequest = {
+          firstName,
+          lastName,
+          timezone: timeZone,
+          measurements: {
+            weightKg: weight,
+            heightCm: heightVal,
+          },
+          registrationCompleted: true,
+          notificationFrequency: streakFreq,
+        }        
+        await updateUserProfile(updateUserRequest) 
       }
-
-      await updateUserProfile({
-        timezone: timeZone,
-        measurements: {
-          weightKg: weight,
-          heightCm: heightVal,
-        },
-        registrationCompleted: true,
-      })
       router.replace('/(tabs)' as any)
       toast.show('Welcome!', { message: 'Account created successfully.', customData: { type: 'success' } })
     } catch (err: any) {
