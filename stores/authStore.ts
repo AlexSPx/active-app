@@ -10,6 +10,7 @@ interface AuthState {
   isAuthenticated: boolean
   user: User | null
   token: string | null
+  refreshToken: string | null
   isLoading: boolean
   error: string | null
 
@@ -27,6 +28,7 @@ interface AuthState {
   setError: (error: string | null) => void
   setUser: (user: User | null) => void
   setToken: (token: string | null) => void
+  setRefreshToken: (token: string | null) => void
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -36,6 +38,7 @@ export const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       user: null,
       token: null,
+      refreshToken: null,
       isLoading: false,
       error: null,
 
@@ -49,10 +52,12 @@ export const useAuthStore = create<AuthState>()(
 
           // Store token
           await apiService.setToken(response.token)
+          await apiService.setRefreshToken(response.refreshToken)
 
           // Update state
           set({
             token: response.token,
+            refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
           })
@@ -66,6 +71,7 @@ export const useAuthStore = create<AuthState>()(
             error: apiError.message || 'Login failed',
             isAuthenticated: false,
             token: null,
+            refreshToken: null,
             user: null,
           })
           throw error
@@ -78,8 +84,14 @@ export const useAuthStore = create<AuthState>()(
 
           const response = await apiService.signup(payload)
           await apiService.setToken(response.token)
+          await apiService.setRefreshToken(response.refreshToken)
 
-          set({ token: response.token, isAuthenticated: true, isLoading: false })
+          set({
+            token: response.token,
+            refreshToken: response.refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+          })
 
           await get().fetchUser()
         } catch (error) {
@@ -89,6 +101,7 @@ export const useAuthStore = create<AuthState>()(
             error: apiError.message || 'Registration failed',
             isAuthenticated: false,
             token: null,
+            refreshToken: null,
             user: null,
           })
           throw error
@@ -100,7 +113,13 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true, error: null })
           const response = await apiService.googleLogin(idToken)
           await apiService.setToken(response.token)
-          set({ token: response.token, isAuthenticated: true, isLoading: false })
+          await apiService.setRefreshToken(response.refreshToken)
+          set({
+            token: response.token,
+            refreshToken: response.refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+          })
           await get().fetchUser()
         } catch (error) {
           const apiError = error as ApiError
@@ -109,6 +128,7 @@ export const useAuthStore = create<AuthState>()(
             error: apiError.message || 'Google login failed',
             isAuthenticated: false,
             token: null,
+            refreshToken: null,
             user: null,
           })
           throw error
@@ -125,6 +145,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             user: null,
             token: null,
+            refreshToken: null,
             error: null,
           })
         } catch (error) {
@@ -232,12 +253,14 @@ export const useAuthStore = create<AuthState>()(
       setError: (error: string | null) => set({ error }),
       setUser: (user: User | null) => set({ user }),
       setToken: (token: string | null) => set({ token, isAuthenticated: !!token }),
+      setRefreshToken: (refreshToken: string | null) => set({ refreshToken }),
     }),
     {
       name: 'auth-storage',
       // Only persist essential data
       partialize: (state) => ({
         token: state.token,
+        refreshToken: state.refreshToken,
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
@@ -248,10 +271,14 @@ export const useAuthStore = create<AuthState>()(
 // Initialize auth state on app start
 export const initializeAuth = async () => {
   const token = await apiService.getToken()
-  const { setToken, fetchUser } = useAuthStore.getState()
+  const refreshToken = await apiService.getRefreshToken()
+  const { setToken, setRefreshToken, fetchUser } = useAuthStore.getState()
 
   if (token) {
     setToken(token)
+    if (refreshToken) {
+      setRefreshToken(refreshToken)
+    }
     try {
       await fetchUser()
     } catch (error) {

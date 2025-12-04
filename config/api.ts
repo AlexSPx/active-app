@@ -9,6 +9,7 @@ export const config = {
       BASE: '/api/auth',
       LOGIN: '/api/auth/login',
       SIGNUP: '/api/auth/signup',
+      REFRESH: '/api/auth/refresh',
     },
     USER: {
       ME: '/api/user/me',
@@ -32,6 +33,10 @@ export const config = {
       DELETE: '/api/routines',
       ACTIVE: '/api/routines/active',
     },
+    LEGAL: {
+      TERMS: '/api/legal/terms-of-service',
+      PRIVACY: '/api/legal/privacy-policy',
+    },
   },
 
   // Request configuration
@@ -40,6 +45,7 @@ export const config = {
   // Storage keys
   STORAGE_KEYS: {
     TOKEN: 'user_token',
+    REFRESH_TOKEN: 'user_refresh_token',
     USER: 'user_data',
   },
 }

@@ -33,6 +33,8 @@ export type {
 
 class ApiService {
   private unauthorizedHandler?: () => void
+  private isRefreshing = false
+  private refreshSubscribers: ((token: string) => void)[] = []
 
   setUnauthorizedHandler(handler: () => void) {
     this.unauthorizedHandler = handler
@@ -92,6 +94,49 @@ class ApiService {
     }
   }
 
+  private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+    const headers = (await this.getAuthHeaders()) as Record<string, string>
+    if (options.headers) {
+      Object.assign(headers, options.headers)
+    }
+
+    const response = await fetch(url, { ...options, headers })
+
+    if (response.status === 401) {
+      if (!this.isRefreshing) {
+        this.isRefreshing = true
+        try {
+          const { token, refreshToken } = await this.refreshToken()
+          await this.setToken(token)
+          await this.setRefreshToken(refreshToken)
+          this.onRefreshed(token)
+        } catch (error) {
+          this.isRefreshing = false
+          if (this.unauthorizedHandler) {
+            this.unauthorizedHandler()
+          }
+          throw error
+        } finally {
+          this.isRefreshing = false
+        }
+      }
+
+      return new Promise((resolve, reject) => {
+        this.addRefreshSubscriber(async (token) => {
+          try {
+            headers.Authorization = `Bearer ${token}`
+            const retryResponse = await fetch(url, { ...options, headers })
+            resolve(this.handleResponse<T>(retryResponse))
+          } catch (error) {
+            reject(error)
+          }
+        })
+      })
+    }
+
+    return this.handleResponse<T>(response)
+  }
+
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.AUTH.LOGIN)
     console.log(`API Request: POST ${url}`, { email: credentials.email })
@@ -109,12 +154,18 @@ class ApiService {
     const url = getApiUrl(config.API_ENDPOINTS.USER.ME)
     console.log(`API Request: GET ${url}`)
 
-    const response = await fetch(url, {
+    return this.request<User>(url, {
       method: 'GET',
-      headers: await this.getAuthHeaders(),
     })
+  }
 
-    return this.handleResponse<User>(response)
+  async deleteAccount(): Promise<void> {
+    const url = getApiUrl(config.API_ENDPOINTS.USER.ME)
+    console.log(`API Request: DELETE ${url}`)
+
+    return this.request<void>(url, {
+      method: 'DELETE',
+    })
   }
 
   async updateCurrentUser(payload: UpdateUserRequest): Promise<User> {
@@ -131,13 +182,10 @@ class ApiService {
 
     console.log(`API Request: PATCH ${url}`, body)
 
-    const response = await fetch(url, {
+    return this.request<User>(url, {
       method: 'PATCH',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify(body),
     })
-
-    return this.handleResponse<User>(response)
   }
 
   async registerPushToken(token: string): Promise<User> {
@@ -148,12 +196,10 @@ class ApiService {
     }
     const url = getApiUrl(config.API_ENDPOINTS.USER.PUSH_TOKEN)
     console.log(`API Request: POST ${url}`, { hasToken: !!token })
-    const response = await fetch(url, {
+    return this.request<User>(url, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify({ token }),
     })
-    return this.handleResponse<User>(response)
   }
 
   async setToken(token: string): Promise<void> {
@@ -168,55 +214,88 @@ class ApiService {
     await AsyncStorage.removeItem(config.STORAGE_KEYS.TOKEN)
   }
 
+  async setRefreshToken(token: string): Promise<void> {
+    await AsyncStorage.setItem(config.STORAGE_KEYS.REFRESH_TOKEN, token)
+  }
+
+  async getRefreshToken(): Promise<string | null> {
+    return AsyncStorage.getItem(config.STORAGE_KEYS.REFRESH_TOKEN)
+  }
+
+  async removeRefreshToken(): Promise<void> {
+    await AsyncStorage.removeItem(config.STORAGE_KEYS.REFRESH_TOKEN)
+  }
+
+  private onRefreshed(token: string) {
+    this.refreshSubscribers.forEach((callback) => callback(token))
+    this.refreshSubscribers = []
+  }
+
+  private addRefreshSubscriber(callback: (token: string) => void) {
+    this.refreshSubscribers.push(callback)
+  }
+
+  async refreshToken(): Promise<LoginResponse> {
+    const refreshToken = await this.getRefreshToken()
+    if (!refreshToken) {
+      throw new Error('No refresh token available')
+    }
+
+    const url = getApiUrl(config.API_ENDPOINTS.AUTH.REFRESH)
+    console.log(`API Request: POST ${url}`)
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ refreshToken }),
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to refresh token')
+    }
+
+    return response.json()
+  }
+
   async searchExercises(query: string): Promise<ApiExercise[]> {
     const url = new URL(getApiUrl(config.API_ENDPOINTS.EXERCISES.SEARCH))
     url.searchParams.append('name', query)
     console.log(`API Request: GET ${url.toString()}`)
 
-    const response = await fetch(url.toString(), {
+    return this.request<ApiExercise[]>(url.toString(), {
       method: 'GET',
-      headers: await this.getAuthHeaders(),
     })
-
-    return this.handleResponse<ApiExercise[]>(response)
   }
 
   async createWorkout(workoutData: CreateWorkoutRequest): Promise<{ id: string }> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.CREATE)
     console.log(`API Request: POST ${url}`, workoutData)
 
-    const response = await fetch(url, {
+    return this.request<{ id: string }>(url, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify(workoutData),
     })
-
-    return this.handleResponse<{ id: string }>(response)
   }
 
   async getWorkouts(): Promise<ApiWorkout[]> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.LIST)
     console.log(`API Request: GET ${url}`)
 
-    const response = await fetch(url, {
+    return this.request<ApiWorkout[]>(url, {
       method: 'GET',
-      headers: await this.getAuthHeaders(),
     })
-
-    return this.handleResponse<ApiWorkout[]>(response)
   }
 
   async recordWorkout(workoutRecord: WorkoutRecordRequest): Promise<WorkoutRecordResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.RECORD)
     console.log(`API Request: POST ${url}`, workoutRecord)
 
-    const response = await fetch(url, {
+    return this.request<WorkoutRecordResponse>(url, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify(workoutRecord),
     })
-
-    return this.handleResponse<WorkoutRecordResponse>(response)
   }
 
   async updateWorkout(
@@ -231,26 +310,19 @@ class ApiService {
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
     console.log(`API Request: PUT ${url}`, payload)
 
-    const response = await fetch(url, {
+    return this.request<void>(url, {
       method: 'PUT',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify(payload),
     })
-
-    // Many PUT endpoints return no body; handleResponse will return {} in that case
-    await this.handleResponse<unknown>(response)
   }
 
   async getWorkoutRecords(): Promise<WorkoutRecord[]> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.RECORD)
     console.log(`API Request: GET ${url}`)
 
-    const response = await fetch(url, {
+    return this.request<WorkoutRecord[]>(url, {
       method: 'GET',
-      headers: await this.getAuthHeaders(),
     })
-
-    return this.handleResponse<WorkoutRecord[]>(response)
   }
 
   async deleteWorkout(workoutId: string): Promise<void> {
@@ -258,13 +330,9 @@ class ApiService {
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
     console.log(`API Request: DELETE ${url}`)
 
-    const response = await fetch(url, {
+    return this.request<void>(url, {
       method: 'DELETE',
-      headers: await this.getAuthHeaders(),
     })
-
-    // Many DELETE endpoints return no body; handleResponse will return {}
-    await this.handleResponse<unknown>(response)
   }
 
   async signup(payload: RegisterRequest): Promise<LoginResponse> {
@@ -301,24 +369,18 @@ class ApiService {
     )
     console.log(`API Request: GET ${url}`)
 
-    const response = await fetch(url, {
+    return this.request<ExerciseLogResponse[]>(url, {
       method: 'GET',
-      headers: await this.getAuthHeaders(),
     })
-
-    return this.handleResponse<ExerciseLogResponse[]>(response)
   }
 
   async getRoutines(): Promise<Routine[]> {
     const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.LIST)
     console.log(`API Request: GET ${url}`)
 
-    const response = await fetch(url, {
+    return this.request<Routine[]>(url, {
       method: 'GET',
-      headers: await this.getAuthHeaders(),
     })
-
-    return this.handleResponse<Routine[]>(response)
   }
 
   async getRoutine(routineId: string): Promise<Routine> {
@@ -326,37 +388,28 @@ class ApiService {
     const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
     console.log(`API Request: GET ${url}`)
 
-    const response = await fetch(url, {
+    return this.request<Routine>(url, {
       method: 'GET',
-      headers: await this.getAuthHeaders(),
     })
-
-    return this.handleResponse<Routine>(response)
   }
 
   async getActiveRoutine(): Promise<Routine> {
     const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.ACTIVE)
     console.log(`API Request: GET ${url}`)
 
-    const response = await fetch(url, {
+    return this.request<Routine>(url, {
       method: 'GET',
-      headers: await this.getAuthHeaders(),
     })
-
-    return this.handleResponse<Routine>(response)
   }
 
   async createRoutine(payload: CreateRoutineRequest): Promise<Routine> {
     const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.CREATE)
     console.log(`API Request: POST ${url}`, payload)
 
-    const response = await fetch(url, {
+    return this.request<Routine>(url, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify(payload),
     })
-
-    return this.handleResponse<Routine>(response)
   }
 
   async updateRoutine(routineId: string, payload: UpdateRoutineRequest): Promise<Routine> {
@@ -364,13 +417,10 @@ class ApiService {
     const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
     console.log(`API Request: PUT ${url}`, payload)
 
-    const response = await fetch(url, {
+    return this.request<Routine>(url, {
       method: 'PUT',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify(payload),
     })
-
-    return this.handleResponse<Routine>(response)
   }
 
   async deleteRoutine(routineId: string): Promise<void> {
@@ -378,12 +428,44 @@ class ApiService {
     const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
     console.log(`API Request: DELETE ${url}`)
 
-    const response = await fetch(url, {
+    return this.request<void>(url, {
       method: 'DELETE',
-      headers: await this.getAuthHeaders(),
+    })
+  }
+  async getTermsOfService(): Promise<string> {
+    const url = getApiUrl(config.API_ENDPOINTS.LEGAL.TERMS)
+    console.log(`API Request: GET ${url}`)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'text/markdown',
+      },
     })
 
-    await this.handleResponse<unknown>(response)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch terms of service: ${response.status}`)
+    }
+
+    return response.text()
+  }
+
+  async getPrivacyPolicy(): Promise<string> {
+    const url = getApiUrl(config.API_ENDPOINTS.LEGAL.PRIVACY)
+    console.log(`API Request: GET ${url}`)
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'text/markdown',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch privacy policy: ${response.status}`)
+    }
+
+    return response.text()
   }
 }
 

@@ -47,10 +47,15 @@ export interface RegisterRequest {
   firstName: string
   lastName: string
   password: string
+  timezone?: string
+  notificationFrequency?: number
+  measurements?: UserMeasurements
+  registrationCompleted: boolean
 }
 
 export interface LoginResponse {
   token: string
+  refreshToken: string
 }
 
 export interface UserStreak {
@@ -87,6 +92,7 @@ export interface UpdateUserRequest {
   email?: string
   timezone?: string
   measurements?: UserMeasurements
+  notificationFrequency?: number
   registrationCompleted?: boolean
 }
 
