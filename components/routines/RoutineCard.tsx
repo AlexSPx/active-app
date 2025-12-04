@@ -210,14 +210,14 @@ export const RoutineCard = memo(function RoutineCard({
               icon={<CheckCircle2 size={16} color="$onPrimary" />}
               mt="$1"
             >
-              Set as Active Routine
+              <Text fontSize="$3" fontWeight="600">Set as Active Routine</Text>
             </Button>
           )}
           
           {isActive && (
              <XStack bg="$backgroundAccent" p="$2" rounded="$3" items="center" justify="center" gap="$2" mt="$1">
                 <CheckCircle2 size={14} color="$primary" />
-                <Text color="$primary" fontWeight="600" fontSize="$3">Currently Active</Text>
+                <Text color="$primary" fontWeight="700" fontSize="$3">Currently Active</Text>
              </XStack>
           )}
         </YStack>

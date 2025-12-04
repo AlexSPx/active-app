@@ -47,7 +47,7 @@ export default function WelcomeHome() {
           icon={<Zap size={24} color="orange" />}
           title="Stay Motivated"
           subtitle="Get personalized insights daily"
-          bg="$yellow2"
+          bg="$red2"
         />
         <FeatureRow
           icon={<Dumbbell size={24} color="$blue10" />}

@@ -52,7 +52,7 @@ export function EmptyState({
             animation="bouncy"
             pressStyle={{ scale: 0.85, opacity: 0.7 }}
           >
-            {actionLabel}
+            <Text>{actionLabel}</Text>
           </Button>
         </Theme>
       )}

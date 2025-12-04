@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { YStack, XStack, Text, Button, Input, H2, ScrollView, Label, AnimatePresence } from 'tamagui'
-import { Eye, EyeOff, Check, Bell, Clock, User, Mail, Lock, Ruler, Weight } from '@tamagui/lucide-icons'
-import { useRouter } from 'expo-router'
+import { Eye, EyeOff, Clock, User, Mail, Lock, Ruler, Weight } from '@tamagui/lucide-icons'
+import { useRouter, Link } from 'expo-router'
 import { useToastController } from '@tamagui/toast'
 import { useAuth } from '../../contexts/AuthContext'
 import { useAuthStore } from '../../stores/authStore'
@@ -9,14 +9,9 @@ import { useUpdateUser } from '../../hooks/useUpdateUser'
 import WheelSelector from '../../components/ui/WheelSelector'
 import TimeZoneSelector from '../../components/TimeZoneSelector'
 import NotificationPermissions from '../../components/NotificationPermissions'
-import * as Notifications from 'expo-notifications'
-import { Platform, Alert, KeyboardAvoidingView, NativeModules } from 'react-native'
-import { startActivityAsync, ActivityAction } from 'expo-intent-launcher';
-import * as Linking from 'expo-linking'
-import * as Application from 'expo-application'
+import { Platform, KeyboardAvoidingView } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { GoogleSignInButton } from '../../components/GoogleSignInButton'
-import { useSettingsStore } from 'stores/settingsStore'
 
 const STEPS = ['Account', 'Personal', 'Body', 'Time Zone', 'Notifications']
 
@@ -308,6 +303,18 @@ const RegisterPage = () => {
             </XStack>
 
             <GoogleSignInButton onSuccess={handleGoogleSuccess} />
+
+            <Text fontSize="$2" color="$color11" style={{ textAlign: 'center' }} mt="$4">
+              By creating an account, you agree to our{' '}
+              <Link href="/legal/terms-of-service" asChild>
+                <Text color="$blue9" textDecorationLine="underline">Terms of Service</Text>
+              </Link>
+              {' '}and{' '}
+              <Link href="/legal/privacy-policy" asChild>
+                <Text color="$blue9" textDecorationLine="underline">Privacy Policy</Text>
+              </Link>
+              .
+            </Text>
           </YStack >
         )
       case 1:
@@ -430,7 +437,7 @@ const RegisterPage = () => {
                     pressStyle={{ opacity: 0.8 }}
                     animation="fast"
                   >
-                    {`${n}`}
+                    <Text>{n}</Text>
                   </Button>
                 ))}
               </XStack>
@@ -449,7 +456,13 @@ const RegisterPage = () => {
     >
       <YStack flex={1} bg="$background" px="$4" pt="$8" pb="$4">
         {/* Header */}
-        <YStack mb="$6">
+        <YStack 
+          mb="$6"
+          animation="quick"
+          enterStyle={{ opacity: 0, y: -20 }}
+          opacity={1}
+          y={0}
+        >
           <H2 fontSize="$8" fontWeight="bold" mb="$4">Create Account</H2>
 
           {/* Step Indicator */}
@@ -498,7 +511,14 @@ const RegisterPage = () => {
         </ScrollView>
 
         {/* Footer Navigation */}
-        <XStack gap="$3" mt="$2">
+        <XStack 
+          gap="$3" 
+          mt="$2"
+          animation="quick"
+          enterStyle={{ opacity: 0, y: 20 }}
+          opacity={1}
+          y={0}
+        >
           <Button
             flex={1}
             variant="outlined"
@@ -507,7 +527,7 @@ const RegisterPage = () => {
             borderColor="$color5"
             color="$color11"
           >
-            {step === 0 || (isGoogleAuth && step === 1) ? 'Cancel' : 'Back'}
+            <Text>{step === 0 || (isGoogleAuth && step === 1) ? 'Cancel' : 'Back'}</Text>
           </Button>
           <Button
             flex={1}
@@ -518,7 +538,7 @@ const RegisterPage = () => {
             pressStyle={{ bg: '$blue10', scale: 0.98 }}
             animation="fast"
           >
-            {isLoading ? 'Creating...' : step === STEPS.length - 1 ? 'Finish' : 'Next'}
+            <Text>{isLoading ? 'Creating...' : step === STEPS.length - 1 ? 'Finish' : 'Next'}</Text>
           </Button>
         </XStack>
       </YStack>

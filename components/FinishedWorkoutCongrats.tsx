@@ -151,7 +151,7 @@ export function FinishedWorkoutCongrats({
       >
         <Sheet.Overlay
           bg="#0b659b"
-          animation="lazy"
+          animation="slow"
           enterStyle={{ opacity: 0 }}
           exitStyle={{ opacity: 0 }}
         >

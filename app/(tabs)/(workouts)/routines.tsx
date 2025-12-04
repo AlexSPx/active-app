@@ -162,7 +162,7 @@ export default function RoutinesTab() {
         dismissOnOverlayPress={!mutating}
         snapPointsMode="fit"
       >
-        <Sheet.Overlay animation="lazy" style={{ backgroundColor: 'transparent' }} />
+        <Sheet.Overlay animation="slow" style={{ backgroundColor: 'transparent' }} />
         <Sheet.Handle bg="$surface" />
         <Sheet.Frame bg="$surface" borderTopLeftRadius="$6" borderTopRightRadius="$6" p="$4">
           <YStack gap="$3" items="center">
@@ -182,10 +182,10 @@ export default function RoutinesTab() {
                 disabled={mutating}
                 onPress={confirmDelete}
               >
-                {mutating ? 'Deleting…' : 'Delete routine'}
+                <Text>{mutating ? 'Deleting…' : 'Delete routine'}</Text>
               </Button>
               <Button bg="$blue4" color="$blue12" size="$5" onPress={() => setConfirmOpen(false)}>
-                Cancel
+                <Text>Cancel</Text>
               </Button>
             </YStack>
           </YStack>

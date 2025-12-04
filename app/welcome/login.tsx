@@ -48,7 +48,14 @@ const LoginPage = () => {
     >
       <YStack flex={1} bg="$background" px="$4" pt="$8" pb="$4">
         {/* Header */}
-        <YStack gap="$2" mb="$8">
+        <YStack 
+          gap="$2" 
+          mb="$8"
+          animation="quick"
+          enterStyle={{ opacity: 0, y: -20 }}
+          opacity={1}
+          y={0}
+        >
           <XStack items="center" gap="$3">
             <XStack width={32} height={32} bg="$color12" rounded="$3" items="center" justify="center">
               <Text fontSize="$4" color="$color1" fontWeight="bold">
@@ -71,7 +78,14 @@ const LoginPage = () => {
         </YStack>
 
         {/* Form */}
-        <YStack gap="$4" flex={1}>
+        <YStack 
+          gap="$4" 
+          flex={1}
+          animation="quick"
+          enterStyle={{ opacity: 0, y: 20 }}
+          opacity={1}
+          y={0}
+        >
           {/* Email Input */}
           <YStack gap="$2">
             <Label color="$color11" fontSize="$3">Email</Label>

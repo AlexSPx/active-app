@@ -78,7 +78,7 @@ export function RoutinePatternEditor({ pattern, onChange }: RoutinePatternEditor
       ListFooterComponent={
         <XStack justify="center" width="100%">
           <Button mt="$2" width="90%" icon={Plus} onPress={addDay}>
-            Add day
+            <Text>Add day</Text>
           </Button>
         </XStack>
       }

@@ -216,10 +216,10 @@ export default function BodySettingsScreen() {
               disabled={!isDirty || isUpdating}
               onPress={handleSave}
             >
-              {isUpdating ? 'Saving…' : 'Save'}
+              <Text>{isUpdating ? 'Saving…' : 'Save'}</Text>
             </Button>
             <Button flex={1} variant="outlined" onPress={() => router.back()}>
-              Back
+              <Text>Back</Text>
             </Button>
           </XStack>
           {!!error && <Paragraph color="$red10">{error}</Paragraph>}

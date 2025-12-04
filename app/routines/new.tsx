@@ -71,7 +71,7 @@ export default function NewRoutinePage() {
 
       <XStack items="center" gap="$2" mt="$1">
         <Button size="$2" onPress={() => setActive((v) => !v)} variant="outlined">
-          {active ? 'Active: Yes' : 'Active: No'}
+          <Text>{active ? 'Active: Yes' : 'Active: No'}</Text>
         </Button>
         <Text color="$color10">Set as active routine</Text>
       </XStack>
@@ -93,7 +93,7 @@ export default function NewRoutinePage() {
           onPress={() => router.back()}
           disabled={loading}
         >
-          Cancel
+          <Text>Cancel</Text>
         </Button>
         <Button flex={1} bg="$primary" onPress={handleSave} disabled={!canSave || loading}>
           {loading ? (

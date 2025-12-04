@@ -83,7 +83,7 @@ export default function RestTimerSettingsScreen() {
           </YStack>
           <XStack gap="$2">
             <Button flex={1} variant="outlined" onPress={() => router.back()}>
-              Back
+              <Text>Back</Text>
             </Button>
           </XStack>
         </YStack>
