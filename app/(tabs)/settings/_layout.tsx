@@ -14,6 +14,7 @@ export default function SettingsStackLayout() {
       <Stack.Screen name="body" options={{ title: 'Body measurements' }} />
       <Stack.Screen name="time-zone" options={{ title: 'Time zone' }} />
       <Stack.Screen name="rest-timer" options={{ title: 'Rest timer' }} />
+      <Stack.Screen name="account" options={{ title: 'Account' }} />
     </Stack>
     </YStack>
   )

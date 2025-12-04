@@ -114,6 +114,15 @@ export function RootLayoutNav() {
             />
 
             <Stack.Screen
+              name="legal"
+              options={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                animationDuration: 300,
+              }}
+            />
+
+            <Stack.Screen
               name="modal"
               options={{
                 title: 'Tamagui + Expo',

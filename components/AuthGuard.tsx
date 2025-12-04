@@ -13,7 +13,7 @@ export function AuthGuard() {
     // Wait until the root navigation is mounted to avoid navigating before mount
     if (!navigationState?.key) return
 
-    const inAuthGroup = segments[0] === 'welcome'
+    const inAuthGroup = segments[0] === 'welcome' || segments[0] === 'legal'
     const isRegistering = segments[1] === 'register'
 
     if (!isAuthenticated && !inAuthGroup) {
