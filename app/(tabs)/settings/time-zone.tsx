@@ -26,7 +26,7 @@ export default function TimeZoneSettingsScreen() {
           <TimeZoneSelector />
           <XStack gap="$2">
             <Button flex={1} variant="outlined" onPress={() => router.back()}>
-              Back
+              <Text>Back</Text>
             </Button>
           </XStack>
         </YStack>
