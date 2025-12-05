@@ -7,8 +7,7 @@ import { useRouter } from 'expo-router'
 
 // Configure Google Sign-In
 GoogleSignin.configure({
-    // webClientId: '180615747649-mvn7o3i3b2ml2m4l2vepkpa2hrn217hb.apps.googleusercontent.com', Android
-    webClientId: '180615747649-ijl7gv52b3g1tdd2e5jshma9d4e8dam6.apps.googleusercontent.com',
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
     offlineAccess: true,
 })
 
