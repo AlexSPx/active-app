@@ -6,6 +6,7 @@
     },
     "preview-dev": {
       "developmentClient": true,
+      "credentialsSource": "local",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
@@ -13,10 +14,13 @@
     },
     "preview-internal": {
       "distribution": "internal",
+      "credentialsSource": "local",
       "android": {
         "buildType": "apk"
       }
     },
-    "production": {}
+    "production": {
+      "autoIncrement": true
+    }
   }
 }

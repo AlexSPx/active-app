@@ -70,10 +70,12 @@ build-*.apk
 Thumbs.db
 
 # Secrets
-google-services.json
 GoogleService-Info.plist
 
 # Env files
-.env.development
 .env.test
 .env.production
+google-services.json
+credentials.json
+keystore.jks
+.env.development
