@@ -79,3 +79,4 @@ google-services.json
 credentials.json
 keystore.jks
 .env.development
+.env.development
