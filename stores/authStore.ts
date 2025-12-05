@@ -4,6 +4,7 @@ import { apiService } from '../services/apiService'
 import { useSettingsStore } from './settingsStore'
 import { resetAllStores } from '../utils/storeReset'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
+import { posthog } from '../services/posthog'
 
 interface AuthState {
   // State
@@ -64,6 +65,8 @@ export const useAuthStore = create<AuthState>()(
 
           // Fetch user data
           await get().fetchUser()
+
+          posthog.capture('user_logged_in')
         } catch (error) {
           const apiError = error as ApiError
           set({
@@ -94,6 +97,9 @@ export const useAuthStore = create<AuthState>()(
           })
 
           await get().fetchUser()
+
+          posthog.capture('user_signed_up')
+          posthog.capture('user_logged_in')
         } catch (error) {
           const apiError = error as ApiError
           set({
@@ -121,6 +127,7 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           })
           await get().fetchUser()
+          posthog.capture('user_logged_in', { method: 'google' })
         } catch (error) {
           const apiError = error as ApiError
           set({
@@ -148,6 +155,7 @@ export const useAuthStore = create<AuthState>()(
             refreshToken: null,
             error: null,
           })
+          posthog.reset()
         } catch (error) {
           console.error('Logout error:', error)
         }

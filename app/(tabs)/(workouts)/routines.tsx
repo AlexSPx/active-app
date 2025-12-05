@@ -12,6 +12,7 @@ import { useRoutines } from '../../../hooks/useRoutines'
 import { useRoutineMutations } from '../../../hooks/useRoutineMutations'
 import { useActiveRoutine } from '../../../hooks/useActiveRoutine'
 import type { Routine } from '../../../types/routine'
+import { posthog } from '../../../services/posthog'
 
 export default function RoutinesTab() {
   const navigation = useNavigation()
@@ -53,6 +54,7 @@ export default function RoutinesTab() {
     async (routineId: string) => {
       const updated = await activateRoutine(routineId)
       if (updated) {
+        posthog.capture('routine_activated')
         await refetchActive()
       }
     },
@@ -91,6 +93,7 @@ export default function RoutinesTab() {
     if (!pendingDeleteId) return
     const ok = await deleteRoutine(pendingDeleteId)
     if (ok) {
+      posthog.capture('routine_deleted')
       await refetch()
     }
     setConfirmOpen(false)

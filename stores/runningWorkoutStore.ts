@@ -5,6 +5,7 @@ import { apiService } from '../services/apiService'
 import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecordResponse } from '../types/api'
 import type { FinishedCongratsPayload } from '../types/congrats'
 import { haptics } from '../utils/haptics'
+import { posthog } from '../services/posthog'
 
 export interface RunningWorkoutExercise extends ApiExercise {
   sets: number
@@ -145,6 +146,12 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           // Clear the running workout after successful recording
           set({ runningWorkout: null, isRecording: false })
           haptics.success()
+
+          posthog.capture('workout_completed', {
+            duration_seconds: (Date.now() - new Date(state.runningWorkout.startTime).getTime()) / 1000,
+            total_exercises: state.runningWorkout.exercises.length,
+          })
+
           return result
         } catch (error) {
           console.error('Failed to record workout:', error)
@@ -159,6 +166,13 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
 
       // Discard the current running workout without recording
       cancelWorkout: () => {
+        const state = get()
+        if (state.runningWorkout) {
+          posthog.capture('workout_cancelled', {
+            duration_seconds: (Date.now() - new Date(state.runningWorkout.startTime).getTime()) / 1000,
+            total_exercises: state.runningWorkout.exercises.length,
+          })
+        }
         set({ runningWorkout: null, isRecording: false, recordingError: null })
       },
 

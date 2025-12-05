@@ -6,6 +6,7 @@ import { RoutinePatternEditor } from '../../components/routines/RoutinePatternEd
 import { useRoutineMutations } from '../../hooks/useRoutineMutations'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { posthog } from '../../services/posthog'
 
 export default function NewRoutinePage() {
   const navigation = useNavigation()
@@ -42,6 +43,11 @@ export default function NewRoutinePage() {
     }
     const created = await createRoutine(payload)
     if (created) {
+      posthog.capture('routine_created', {
+        workoutDays: payload.pattern.filter((p) => p.dayType === 'WORKOUT').length,
+        restDays: payload.pattern.filter((p) => p.dayType === 'REST').length,
+        active: !!payload.active,
+      })
       // Go back to routines tab; focus listener there will refetch
       router.back()
     }

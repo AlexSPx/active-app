@@ -11,6 +11,7 @@ import { FloatingDevTools, InstalledApp } from '@react-buoy/core'
 import { NetworkModal } from '@react-buoy/network'
 import { Globe } from '@react-buoy/shared-ui'
 import { initNotifications, registerPushNotifications } from '../services/notificationService'
+import { PostHogProvider } from 'posthog-react-native'
 
 const TOOLS: InstalledApp[] = [
   {
@@ -25,6 +26,7 @@ const TOOLS: InstalledApp[] = [
 ]
 
 import { useSettingsStore } from '../stores/settingsStore'
+import { posthog } from '../services/posthog'
 
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   const colorScheme = useColorScheme()
@@ -43,38 +45,40 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
 
   return (
     <SafeAreaProvider>
-      <PortalProvider>
-        <TamaguiProvider
-          config={config}
-          defaultTheme={activeTheme === 'dark' ? 'dark' : 'light'}
-          {...rest}
-        >
-          {/* <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" /> */}
-
-          <ToastProvider
-            swipeDirection="horizontal"
-            duration={6000}
-            native={
-              [
-                // uncomment the next line to do native toasts on mobile. NOTE: it'll require you making a dev build and won't work with Expo Go
-                // 'mobile'
-              ]
-            }
+      <PostHogProvider client={posthog}>
+        <PortalProvider>
+          <TamaguiProvider
+            config={config}
+            defaultTheme={activeTheme === 'dark' ? 'dark' : 'light'}
+            {...rest}
           >
-            {children}
-            <CurrentToast />
-            <ToastViewport top="$8" left={0} right={0} />
-            {congratsVisible && payload && (
-              <FinishedWorkoutCongrats
-                data={payload.record}
-                streak={payload.streak}
-                visible={congratsVisible}
-                onClose={hideFinishedCongrats}
-              />
-            )}
-          </ToastProvider>
-        </TamaguiProvider>
-      </PortalProvider>
+            {/* <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" /> */}
+
+            <ToastProvider
+              swipeDirection="horizontal"
+              duration={6000}
+              native={
+                [
+                  // uncomment the next line to do native toasts on mobile. NOTE: it'll require you making a dev build and won't work with Expo Go
+                  // 'mobile'
+                ]
+              }
+            >
+              {children}
+              <CurrentToast />
+              <ToastViewport top="$8" left={0} right={0} />
+              {congratsVisible && payload && (
+                <FinishedWorkoutCongrats
+                  data={payload.record}
+                  streak={payload.streak}
+                  visible={congratsVisible}
+                  onClose={hideFinishedCongrats}
+                />
+              )}
+            </ToastProvider>
+          </TamaguiProvider>
+        </PortalProvider>
+      </PostHogProvider>
     </SafeAreaProvider>
   )
 }
