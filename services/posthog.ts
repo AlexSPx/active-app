@@ -2,7 +2,7 @@ import PostHog from 'posthog-react-native'
 import * as FileSystem from 'expo-file-system'
 
 const CONFIG = {
-  apiKey: process.env.POSTHOG_API_KEY || 'phc_eu_test_key',
+  apiKey: process.env.EXPO_PUBLIC_POSTHOG_API_KEY || 'phc_eu_test_key',
   host: 'https://eu.i.posthog.com',
 }
 

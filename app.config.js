@@ -26,7 +26,7 @@ export default {
       }
     },
     android: {
-      googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
+      googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "google-services.json",
       adaptiveIcon: {
         foregroundImage: "./assets/icons/adaptive-icon.png",
         monochromeImage: "./assets/icons/adaptive-icon.png",
