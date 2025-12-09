@@ -19,7 +19,12 @@ export default function RoutinesTab() {
 
   const { routines, loading, error, refetch, isExpired: routinesExpired } = useRoutines()
   const { deleteRoutine, activateRoutine, loading: mutating } = useRoutineMutations()
-  const { activeRoutine, refetch: refetchActive, isExpired: activeExpired } = useActiveRoutine()
+  const {
+    activeRoutine,
+    refetch: refetchActive,
+    isExpired: activeExpired,
+    loading: activeLoading,
+  } = useActiveRoutine()
 
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
@@ -144,7 +149,7 @@ export default function RoutinesTab() {
               <Text>Create Routine</Text>
             </Button>
           }
-          refreshing={refreshing}
+          refreshing={refreshing || activeLoading}
           onRefresh={async () => {
             setRefreshing(true)
             try {

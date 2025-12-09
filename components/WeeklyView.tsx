@@ -129,6 +129,31 @@ export const WeeklyView: React.FC = () => {
 
   const isInactive = !activeRoutine && !loading && !error
 
+  if (loading && !activeRoutine) {
+    return (
+      <YStack gap="$3" opacity={0.5}>
+        <XStack justify="space-between" items="center">
+          <Text fontSize="$5" fontWeight="700" color="$color">
+            This Week
+          </Text>
+        </XStack>
+        <XStack
+          bg="$surface"
+          borderColor="$borderColor"
+          borderWidth={1}
+          rounded="$4"
+          p="$4"
+          gap="$1"
+          height={100}
+          items="center"
+          justify="center"
+        >
+          <Text color="$color11">Loading schedule...</Text>
+        </XStack>
+      </YStack>
+    )
+  }
+
   return (
     <YStack gap="$3">
       <XStack justify="space-between" items="center">

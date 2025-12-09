@@ -22,7 +22,12 @@ export interface UseActiveRoutineReturn {
 export function useActiveRoutine(): UseActiveRoutineReturn {
   const fetcher = useCallback(async (): Promise<Routine | null> => {
     try {
-      const routine = await apiService.getActiveRoutine()
+      // Add timeout to prevent hanging
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error('Request timed out')), 10000)
+      })
+
+      const routine = await Promise.race([apiService.getActiveRoutine(), timeoutPromise])
       return routine
     } catch (e: any) {
       if (e && typeof e === 'object' && 'status' in e && (e as any).status === 404) {
