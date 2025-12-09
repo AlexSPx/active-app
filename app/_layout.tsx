@@ -4,6 +4,8 @@ import { SplashScreen } from 'expo-router'
 import Provider from './Provider'
 import { AuthProvider } from '../contexts/AuthContext'
 import { AuthGuard } from '../components/AuthGuard'
+import { usePathname } from 'expo-router'
+import { posthog } from '../services/posthog'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -23,6 +25,14 @@ export default function RootLayout() {
     Inter: require('@tamagui/font-inter/otf/Inter-Medium.otf'),
     InterBold: require('@tamagui/font-inter/otf/Inter-Bold.otf'),
   })
+
+  const pathname = usePathname()
+
+  useEffect(() => {
+    if (pathname) {
+      posthog.screen(pathname)
+    }
+  }, [pathname])
 
   useEffect(() => {
     if (interLoaded || interError) {

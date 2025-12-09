@@ -66,7 +66,7 @@ export const useAuthStore = create<AuthState>()(
           // Fetch user data
           await get().fetchUser()
 
-          posthog.capture('user_logged_in')
+          posthog.capture('user_logged_in', {method: "email"})
         } catch (error) {
           const apiError = error as ApiError
           set({
