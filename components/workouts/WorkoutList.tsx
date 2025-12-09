@@ -90,7 +90,9 @@ export const WorkoutList = memo(
     return (
       prevProps.workouts.length === nextProps.workouts.length &&
       prevProps.workouts.every((workout, index) => workout.id === nextProps.workouts[index]?.id) &&
-      prevProps.isWorkoutRunning === nextProps.isWorkoutRunning
+      prevProps.isWorkoutRunning === nextProps.isWorkoutRunning &&
+      prevProps.refreshing === nextProps.refreshing &&
+      prevProps.focusId === nextProps.focusId
     )
   }
 )
