@@ -9,7 +9,7 @@ import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
 import * as Haptics from 'expo-haptics'
 
-function MenuRow({
+export function MenuRow({
   icon,
   title,
   description,
@@ -39,7 +39,7 @@ function MenuRow({
         <YStack flex={1} gap="$1">
           <Text fontWeight="700" color={danger ? 'white' : '$color'}>{title}</Text>
           {description && (
-            <Paragraph size="$2" color={danger ? '$red2' : '$color11'}>
+            <Paragraph size="$2" color={danger ? 'white' : '$color11'}>
               {description}
             </Paragraph>
           )}

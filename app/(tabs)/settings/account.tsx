@@ -5,77 +5,7 @@ import { ChevronRight, Trash } from '@tamagui/lucide-icons'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Alert } from 'react-native'
 import { apiService } from '../../../services/apiService'
-
-function MenuRow({
-  icon,
-  title,
-  description,
-  href,
-  onPress,
-  danger = false,
-}: {
-  icon: React.ReactNode
-  title: string
-  description?: string
-  href?: string
-  onPress?: () => void
-  danger?: boolean
-}) {
-  const baseBg = danger ? '$red8' : '$surface'
-  const hoverBg = danger ? '$red9' : '$surfaceHover'
-  const pressBg = danger ? '$red9' : '$surfacePress'
-
-  const inner = (
-    <XStack
-      p="$3"
-      gap="$3"
-      style={{ alignItems: 'center', justifyContent: 'space-between', borderRadius: 12 }}
-    >
-      <XStack gap="$3" flex={1} style={{ alignItems: 'center' }}>
-        {icon}
-        <YStack flex={1} gap="$1">
-          <Text fontWeight="700" color={danger ? 'white' : '$color'}>{title}</Text>
-          {description && (
-            <Paragraph size="$2" color={danger ? '$red2' : '$color11'}>
-              {description}
-            </Paragraph>
-          )}
-        </YStack>
-      </XStack>
-      {href && <ChevronRight size={18} color="$color" />}
-    </XStack>
-  )
-
-  if (href) {
-    return (
-      <Link href={href as any} asChild>
-        <Button
-          unstyled
-          bg={baseBg}
-          hoverStyle={{ bg: hoverBg }}
-          pressStyle={{ bg: pressBg }}
-          animation="quick"
-          style={{ borderRadius: 12, padding: 0 }}
-        >
-          {inner}
-        </Button>
-      </Link>
-    )
-  }
-  return (
-    <Button
-      unstyled
-      onPress={onPress}
-      bg={baseBg}
-      hoverStyle={{ bg: hoverBg }}
-      pressStyle={{ bg: pressBg }}
-      animation="quick"
-      style={{ borderRadius: 12, padding: 0 }}
-    >
-      {inner}
-    </Button>
-  )
-}
+import { MenuRow } from '.'
 
 export default function AccountSettingsScreen() {
   const { logout } = useAuth()
