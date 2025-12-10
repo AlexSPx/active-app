@@ -1,9 +1,8 @@
 import React, { useState, useCallback } from 'react'
 import { YStack, XStack, Text, Paragraph, ScrollView, Button, Separator } from 'tamagui'
 import { Link, useFocusEffect } from 'expo-router'
-import { Ruler, Timer as TimerIcon, LogOut, ChevronRight, Globe, AlertTriangle, Settings, FileText, Shield } from '@tamagui/lucide-icons'
+import { Ruler, Timer as TimerIcon, LogOut, ChevronRight, Globe, AlertTriangle, Settings, FileText, Shield, Bell } from '@tamagui/lucide-icons'
 import { useAuth } from '../../../contexts/AuthContext'
-import * as Notifications from 'expo-notifications'
 import { Platform, NativeModules } from 'react-native'
 import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
@@ -223,6 +222,12 @@ export default function SettingsMenuScreen() {
               title="Appearance"
               description="Light, dark, or system theme"
               href="/settings/theme"
+            />
+            <MenuRow
+              icon={<Bell size={18} color="$color" />}
+              title="Permissions"
+              description="Manage notifications & access"
+              href="/settings/permissions"
             />
           </YStack>
 

@@ -78,6 +78,12 @@ export interface User {
   streak?: UserStreak
   measurements?: UserMeasurements | null
   registrationCompleted: boolean
+  notificationPreferences: UserNotifications
+}
+
+export interface UserNotifications {
+  emailNotificationsEnabled: boolean
+  schedule: string[]
 }
 
 export interface UserMeasurements {
