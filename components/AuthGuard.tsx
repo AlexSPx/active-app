@@ -13,10 +13,12 @@ export function AuthGuard() {
     // Wait until the root navigation is mounted to avoid navigating before mount
     if (!navigationState?.key) return
 
-    const inAuthGroup = segments[0] === 'welcome' || segments[0] === 'legal'
+    const inWelcomeGroup = segments[0] === 'welcome'
+    const inLegalGroup = segments[0] === 'legal'
+    const isPublicRoute = inWelcomeGroup || inLegalGroup
     const isRegistering = segments[1] === 'register'
 
-    if (!isAuthenticated && !inAuthGroup) {
+    if (!isAuthenticated && !isPublicRoute) {
       // Redirect to welcome screen if not authenticated
       router.replace('/welcome' as any)
     } else if (isAuthenticated) {
@@ -26,9 +28,9 @@ export function AuthGuard() {
       if (user && user.registrationCompleted === false && !isRegistering) {
         router.replace('/welcome/register' as any)
       }
-      // If authenticated AND registration completed (or legacy/undefined), and trying to access auth pages
-      // redirect to main app
-      else if (user && user.registrationCompleted !== false && inAuthGroup) {
+      // If authenticated AND registration completed (or legacy/undefined), and trying to access welcome pages
+      // redirect to main app. Allow legal pages.
+      else if (user && user.registrationCompleted !== false && inWelcomeGroup) {
         router.replace('/(tabs)' as any)
       }
     }
