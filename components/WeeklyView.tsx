@@ -70,10 +70,12 @@ export const WeeklyView: React.FC = () => {
   const today = new Date()
   const currentDate = today.getDate()
 
-  // Calculate the start of the current week (Sunday)
+  // Calculate the start of the current week (Monday)
   const startOfWeek = new Date(today)
   const dayOfWeek = today.getDay()
-  startOfWeek.setDate(today.getDate() - dayOfWeek)
+  // If today is Sunday (0), subtract 6 days. Otherwise subtract dayOfWeek - 1
+  const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+  startOfWeek.setDate(today.getDate() - diff)
 
   // Calculate end of week for display
   const endOfWeek = new Date(startOfWeek)
@@ -107,7 +109,7 @@ export const WeeklyView: React.FC = () => {
   )
 
   // Generate week days
-  const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
   const weekData = weekDays.map((day, index) => {
     const date = new Date(startOfWeek)
     date.setDate(startOfWeek.getDate() + index)
