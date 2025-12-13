@@ -102,7 +102,7 @@ export const WeeklyView: React.FC = () => {
         return null
       const len = activeRoutine.pattern.length
 
-      const idx = routinePatternIndex(activeRoutine.createdAt, len, date)
+      const idx = routinePatternIndex(activeRoutine.startDate, len, date)
       return activeRoutine.pattern[idx]
     },
     [activeRoutine]

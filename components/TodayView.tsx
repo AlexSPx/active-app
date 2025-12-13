@@ -25,9 +25,10 @@ export const TodayView: React.FC = () => {
     }
     const len = activeRoutine.pattern.length
 
-    const idx = routinePatternIndex(activeRoutine.createdAt, len, currentDate)
-    const pat: RoutinePatternItem = activeRoutine.pattern[idx]
-    if (pat.dayType !== 'WORKOUT' || !pat.workoutId) {
+    const idx = routinePatternIndex(activeRoutine.startDate, len, currentDate)
+    const pat: RoutinePatternItem | undefined = activeRoutine.pattern[idx]
+    
+    if (!pat || pat.dayType !== 'WORKOUT' || !pat.workoutId) {
       return { isWorkoutDay: false, workout: null }
     }
     const workout = workouts.find((w) => w.id === pat.workoutId) || null

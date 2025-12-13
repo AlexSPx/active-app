@@ -12,6 +12,7 @@ export interface RoutineCardProps {
   onActivate?: (routineId: string) => void
   onEdit?: (routine: Routine) => void
   onDelete?: (routineId: string) => void
+  onStartFromToday?: (routineId: string) => void
   disabled?: boolean
 }
 
@@ -21,6 +22,7 @@ export const RoutineCard = memo(function RoutineCard({
   onActivate,
   onEdit,
   onDelete,
+  onStartFromToday,
   disabled = false,
 }: RoutineCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -130,6 +132,16 @@ export const RoutineCard = memo(function RoutineCard({
                             <XStack gap="$2" items="center">
                               <Edit3 size={16} color="$color" />
                               <Text color="$color" numberOfLines={1}>Edit Routine</Text>
+                            </XStack>
+                          </Button>
+                        </Popover.Close>
+                      )}
+                      {onStartFromToday && (
+                        <Popover.Close asChild>
+                          <Button size="$3" chromeless onPress={() => onStartFromToday(routine.id)} disabled={disabled} justify="flex-start">
+                            <XStack gap="$2" items="center">
+                              <Calendar size={16} color="$color" />
+                              <Text color="$color" numberOfLines={1}>Start from today</Text>
                             </XStack>
                           </Button>
                         </Popover.Close>

@@ -7,6 +7,7 @@ import { useRoutineMutations } from '../../hooks/useRoutineMutations'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { posthog } from '../../services/posthog'
+import { DatePickerField } from '../../components/ui/DatePickerField'
 
 export default function NewRoutinePage() {
   const navigation = useNavigation()
@@ -15,6 +16,7 @@ export default function NewRoutinePage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [active, setActive] = useState(false)
+  const [startDate, setStartDate] = useState(new Date())
   const [pattern, setPattern] = useState<RoutinePatternItem[]>([
     { dayIndex: 1, dayType: 'WORKOUT', workoutId: null },
   ])
@@ -40,6 +42,7 @@ export default function NewRoutinePage() {
       description: description.trim() || undefined,
       pattern: pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
       active,
+      startDate: startDate.toISOString(),
     }
     const created = await createRoutine(payload)
     if (created) {
@@ -81,6 +84,12 @@ export default function NewRoutinePage() {
         </Button>
         <Text color="$color10">Set as active routine</Text>
       </XStack>
+
+      <DatePickerField
+        label="Start Date"
+        value={startDate}
+        onChange={setStartDate}
+      />
 
       <Separator my="$2" />
 

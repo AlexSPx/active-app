@@ -140,22 +140,32 @@ export function parseServerUtcDate(input: string | Date): Date {
   return new Date(utcMillis)
 }
 
+export function parseLocalDate(input: string): Date {
+  const [y, m, d] = input.split('-').map((v) => parseInt(v, 10))
+  return new Date(y, m - 1, d)
+}
+
 // Given a routine creation date (ISO string) and a target date, compute the
 // pattern index (0-based) for that date. This anchors pattern[0] to the
 // created date so routines don't always start on Sunday.
 export function routinePatternIndex(
-  createdAtIso: string | undefined,
+  startDateIso: string | undefined,
   patternLength: number,
   targetDate: Date
 ) {
-  if (!createdAtIso || !patternLength || patternLength <= 0) return 0
+  if (!startDateIso || !patternLength || patternLength <= 0) return 0
   try {
-    const created = parseServerUtcDate(createdAtIso)
-    // Normalize both to local midnight to compute day difference
-    const a = new Date(created.getFullYear(), created.getMonth(), created.getDate())
+    // Treat startDate as a local date (YYYY-MM-DD) regardless of time component
+    const datePart = startDateIso.split('T')[0]
+    const created = parseLocalDate(datePart)
+    
+    // Normalize target to local midnight
     const b = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate())
+    
+    if (b.getTime() < created.getTime()) return -1
+
     const msPerDay = 24 * 60 * 60 * 1000
-    const diff = Math.floor((b.getTime() - a.getTime()) / msPerDay)
+    const diff = Math.floor((b.getTime() - created.getTime()) / msPerDay)
     const idx = ((diff % patternLength) + patternLength) % patternLength
     return idx
   } catch (e) {

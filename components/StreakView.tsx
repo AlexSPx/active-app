@@ -2,6 +2,7 @@ import { Check, Dumbbell } from '@tamagui/lucide-icons'
 import { XStack, YStack, Text } from 'tamagui'
 import { StreakUpdateResponse } from '../types/api'
 import { useActiveRoutine } from '../hooks/useActiveRoutine'
+import { routinePatternIndex } from '../utils/date'
 
 type StreakViewProps = {
   streak: StreakUpdateResponse
@@ -85,23 +86,28 @@ export function StreakView({ streak }: StreakViewProps) {
 
   const routineDays = Array(7).fill(false)
   if (activeRoutine && Array.isArray(activeRoutine.pattern) && activeRoutine.pattern.length > 0) {
-    const pattern = [...activeRoutine.pattern].sort((a, b) => a.dayIndex - b.dayIndex)
-    const len = pattern.length
+    const len = activeRoutine.pattern.length
+    // We need to map each day of the current week (Mon-Sun) to the pattern
+    // The current week starts on Monday.
+    // Let's get the Monday of the current week.
+    const today = new Date()
+    const currentDayOfWeek = today.getDay() // 0=Sun, 1=Mon...
+    const diffToMon = currentDayOfWeek === 0 ? 6 : currentDayOfWeek - 1
+    const mondayDate = new Date(today)
+    mondayDate.setDate(today.getDate() - diffToMon)
 
-    if (len === 7) {
-      // Weekly schedule provided: map dayIndex safely to Monday-first 0..6
-      for (const item of pattern) {
-        // Try to detect if dayIndex is 0-based or 1-based; support overflow gracefully
-        let idx = item.dayIndex
-        if (idx >= 1 && idx <= 7) idx = idx - 1
-        idx = ((idx % 7) + 7) % 7
-        if (item.dayType === 'WORKOUT') routineDays[idx] = true
-      }
-    } else {
-      // Repeating pattern: repeat across the 7-day view starting from Monday
-      for (let i = 0; i < 7; i++) {
-        const it = pattern[i % len]
-        if (it.dayType === 'WORKOUT') routineDays[i] = true
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(mondayDate)
+      d.setDate(mondayDate.getDate() + i)
+      
+      // Use the shared helper to find the pattern item for this date
+      // This handles both 7-day patterns and repeating patterns correctly
+      // based on the routine's start date.
+      const idx = routinePatternIndex(activeRoutine.startDate, len, d)
+      const item = activeRoutine.pattern[idx]
+      
+      if (item && item.dayType === 'WORKOUT') {
+        routineDays[i] = true
       }
     }
   }

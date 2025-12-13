@@ -7,6 +7,7 @@ import { useRoutineMutations } from '../../hooks/useRoutineMutations'
 import { useRoutines } from '../../hooks/useRoutines'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
+import { DatePickerField } from '../../components/ui/DatePickerField'
 
 export default function EditRoutinePage() {
   const navigation = useNavigation()
@@ -21,6 +22,7 @@ export default function EditRoutinePage() {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [active, setActive] = useState(false)
+  const [startDate, setStartDate] = useState(new Date())
   const [pattern, setPattern] = useState<RoutinePatternItem[]>([
     { dayIndex: 1, dayType: 'WORKOUT', workoutId: null },
   ])
@@ -35,6 +37,9 @@ export default function EditRoutinePage() {
       setName(routine.name)
       setDescription(routine.description ?? '')
       setActive(false) // User must explicitly toggle if they want to change active status
+      if (routine.startDate) {
+        setStartDate(new Date(routine.startDate))
+      }
       setPattern(
         routine.pattern.map((p) => ({
           dayIndex: p.dayIndex,
@@ -61,6 +66,7 @@ export default function EditRoutinePage() {
       description: description.trim() || null,
       pattern: pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
       active: active || undefined,
+      startDate: startDate.toISOString(),
     }
     const updated = await updateRoutine(routineId, payload)
     if (updated) {
@@ -115,6 +121,12 @@ export default function EditRoutinePage() {
         </Button>
         <Text color="$color10">Set as active routine</Text>
       </XStack>
+
+      <DatePickerField
+        label="Start Date"
+        value={startDate}
+        onChange={setStartDate}
+      />
 
       <Separator my="$2" />
 

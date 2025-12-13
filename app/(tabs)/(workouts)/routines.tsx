@@ -18,7 +18,7 @@ export default function RoutinesTab() {
   const navigation = useNavigation()
 
   const { routines, loading, error, refetch, isExpired: routinesExpired } = useRoutines()
-  const { deleteRoutine, activateRoutine, loading: mutating } = useRoutineMutations()
+  const { deleteRoutine, activateRoutine, updateRoutine, loading: mutating } = useRoutineMutations()
   const {
     activeRoutine,
     refetch: refetchActive,
@@ -70,6 +70,19 @@ export default function RoutinesTab() {
     setPendingDeleteId(routineId)
     setConfirmOpen(true)
   }, [])
+
+  const handleStartFromToday = useCallback(
+    async (routineId: string) => {
+      const updated = await updateRoutine(routineId, {
+        startDate: new Date().toISOString(),
+      })
+      if (updated) {
+        posthog.capture('routine_start_date_updated')
+        await Promise.all([refetch(), refetchActive()])
+      }
+    },
+    [updateRoutine, refetch, refetchActive]
+  )
 
   useEffect(() => {
     if (!confirmOpen) return
@@ -136,6 +149,7 @@ export default function RoutinesTab() {
           onActivate={handleActivate}
           onEditRoutine={openEdit}
           onDeleteRoutine={handleDeleteRoutine}
+          onStartFromToday={handleStartFromToday}
           disableActions={mutating}
           listHeader={
             <Button
