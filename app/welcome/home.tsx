@@ -64,7 +64,7 @@ export default function WelcomeHome() {
           bg="$blue9"
           color="white"
           rounded="$8"
-          onPress={handleLogin}
+          onPress={handleSignup}
           pressStyle={{ opacity: 0.9, scale: 0.98 }}
           iconAfter={<ArrowRight size={20} />}
           animation="quick"
@@ -80,7 +80,7 @@ export default function WelcomeHome() {
           borderColor="$color5"
           color="$color11"
           rounded="$8"
-          onPress={handleSignup}
+          onPress={handleLogin}
           pressStyle={{ opacity: 0.8, scale: 0.98, borderColor: '$color7' }}
           animation="quick"
         >
