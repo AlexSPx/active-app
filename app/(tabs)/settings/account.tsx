@@ -1,12 +1,11 @@
 import React, { useState } from 'react'
 import { YStack, XStack, Text, Paragraph, ScrollView, Button, AlertDialog, Separator } from 'tamagui'
-import { Link, useRouter } from 'expo-router'
-import { ChevronRight, Trash, Link as LinkIcon, Settings } from '@tamagui/lucide-icons'
+import { useRouter } from 'expo-router'
+import { Trash, Link as LinkIcon, Settings } from '@tamagui/lucide-icons'
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Alert } from 'react-native'
 import { apiService } from '../../../services/apiService'
-import { MenuRow } from '.'
 
 export default function AccountSettingsScreen() {
   const router = useRouter()

@@ -31,7 +31,7 @@ const RegisterPage = () => {
 
   // Effect to pre-fill data if user is already authenticated (e.g. Google Sign-In or redirected)
   useEffect(() => {
-    if (user && !initialized) {
+    if (user && !initialized && !user.registrationCompleted) {
       if (user.email) setEmail(user.email)
       if (user.username) setUsername(user.username)
       if (user.firstName) setFirstName(user.firstName)
