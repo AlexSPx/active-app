@@ -363,6 +363,16 @@ class ApiService {
     return this.handleResponse<LoginResponse>(response)
   }
 
+  async linkGoogleAccount(idToken: string): Promise<void> {
+    const url = getApiUrl(`${config.API_ENDPOINTS.USER.ME}/link-google`)
+    console.log(`API Request: POST ${url}`)
+
+    return this.request<void>(url, {
+      method: 'POST',
+      body: JSON.stringify({ idToken }),
+    })
+  }
+
   async getExerciseLogs(exerciseId: string): Promise<ExerciseLogResponse[]> {
     const url = getApiUrl(
       `${config.API_ENDPOINTS.EXERCISES.LOGS}/${encodeURIComponent(exerciseId)}/logs`
