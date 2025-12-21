@@ -1,10 +1,10 @@
 export default {
   expo: {
-    name: "Active Next",
+    name: "Active Next Dev",
     slug: "active-next",
     version: "1.0.1",
     orientation: "portrait",
-    scheme: "myapp",
+    scheme: "activenext",
     userInterfaceStyle: "automatic",
     splash: {
       image: "./assets/icons/splash-icon-light.png",
@@ -32,7 +32,7 @@ export default {
         monochromeImage: "./assets/icons/adaptive-icon.png",
         backgroundColor: "#000000"
       },
-      package: "com.alexspx.activenext",
+      package: "com.alexspx.dev.activenext",
       permissions: [
         "POST_NOTIFICATIONS",
         "VIBRATE",

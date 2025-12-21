@@ -18,6 +18,7 @@ interface AuthState {
   // Actions
   login: (credentials: LoginRequest) => Promise<void>
   loginWithGoogle: (idToken: string) => Promise<void>
+  loginWithWorkOS: (code: string) => Promise<void>
   register: (payload: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
   fetchUser: () => Promise<void>
@@ -44,6 +45,36 @@ export const useAuthStore = create<AuthState>()(
       error: null,
 
       // Actions
+      loginWithWorkOS: async (code: string) => {
+        try {
+          set({ isLoading: true, error: null })
+
+          const response = await apiService.workosLogin(code)
+          await apiService.setToken(response.token)
+          await apiService.setRefreshToken(response.refreshToken)
+
+          set({
+            token: response.token,
+            refreshToken: response.refreshToken,
+            isAuthenticated: true,
+            isLoading: false,
+          })
+
+          await get().fetchUser()
+          posthog.capture('user_logged_in', { method: 'workos' })
+        } catch (error) {
+          const apiError = error as ApiError
+          set({
+            isLoading: false,
+            error: apiError.message || 'WorkOS login failed',
+            isAuthenticated: false,
+            token: null,
+            refreshToken: null,
+            user: null,
+          })
+          throw error
+        }
+      },
       login: async (credentials: LoginRequest) => {
         try {
           set({ isLoading: true, error: null })

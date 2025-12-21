@@ -34,7 +34,7 @@ export type {
 class ApiService {
   private unauthorizedHandler?: () => void
   private isRefreshing = false
-  private refreshSubscribers: ((token: string) => void)[] = []
+  private refreshSubscribers: ((token: string | null, error?: any) => void)[] = []
 
   setUnauthorizedHandler(handler: () => void) {
     this.unauthorizedHandler = handler
@@ -110,8 +110,13 @@ class ApiService {
           await this.setToken(token)
           await this.setRefreshToken(refreshToken)
           this.onRefreshed(token)
+
+          // Retry the original request immediately
+          headers.Authorization = `Bearer ${token}`
+          const retryResponse = await fetch(url, { ...options, headers })
+          return this.handleResponse<T>(retryResponse)
         } catch (error) {
-          this.isRefreshing = false
+          this.onRefreshFailed(error)
           if (this.unauthorizedHandler) {
             this.unauthorizedHandler()
           }
@@ -122,7 +127,15 @@ class ApiService {
       }
 
       return new Promise((resolve, reject) => {
-        this.addRefreshSubscriber(async (token) => {
+        this.addRefreshSubscriber(async (token, error) => {
+          if (error) {
+            reject(error)
+            return
+          }
+          if (!token) {
+            reject(new Error('Token refresh failed'))
+            return
+          }
           try {
             headers.Authorization = `Bearer ${token}`
             const retryResponse = await fetch(url, { ...options, headers })
@@ -231,7 +244,12 @@ class ApiService {
     this.refreshSubscribers = []
   }
 
-  private addRefreshSubscriber(callback: (token: string) => void) {
+  private onRefreshFailed(error: any) {
+    this.refreshSubscribers.forEach((callback) => callback(null, error))
+    this.refreshSubscribers = []
+  }
+
+  private addRefreshSubscriber(callback: (token: string | null, error?: any) => void) {
     this.refreshSubscribers.push(callback)
   }
 
@@ -358,6 +376,21 @@ class ApiService {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ idToken }),
+    })
+
+    return this.handleResponse<LoginResponse>(response)
+  }
+
+  async workosLogin(code: string): Promise<LoginResponse> {
+    const url = new URL(getApiUrl(config.API_ENDPOINTS.AUTH.WORKOS))
+    url.searchParams.append('code', code)
+    console.log(`API Request: POST ${url.toString()}`)
+
+    const response = await fetch(url.toString(), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
 
     return this.handleResponse<LoginResponse>(response)

@@ -10,6 +10,7 @@ export const config = {
       LOGIN: '/api/auth/login',
       SIGNUP: '/api/auth/signup',
       REFRESH: '/api/auth/refresh',
+      WORKOS: '/api/auth/workos/callback',
     },
     USER: {
       ME: '/api/user/me',

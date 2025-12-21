@@ -11,7 +11,8 @@ import TimeZoneSelector from '../../components/TimeZoneSelector'
 import NotificationPermissions from '../../components/NotificationPermissions'
 import { Platform, KeyboardAvoidingView } from 'react-native'
 import * as Haptics from 'expo-haptics'
-import { GoogleSignInButton } from '../../components/GoogleSignInButton'
+
+import { WorkOSSignInButton } from '../../components/WorkOSSignInButton'
 
 const STEPS = ['Account', 'Personal', 'Body', 'Time Zone', 'Notifications']
 
@@ -21,7 +22,7 @@ import { UpdateUserRequest } from 'types/api'
 const RegisterPage = () => {
   const router = useRouter()
   const toast = useToastController()
-  const { register, user } = useAuth()
+  const { user, logout } = useAuthStore()
   const { updateUserProfile } = useUpdateUser()
   
   const [step, setStep] = useState(0)
@@ -38,7 +39,7 @@ const RegisterPage = () => {
       if (user.lastName) setLastName(user.lastName)
 
       // If we have a user, we skip the account creation step
-      setIsGoogleAuth(true)
+      setIsWorkOSAuth(true)
       setStep(1)
       setInitialized(true)
       
@@ -52,11 +53,7 @@ const RegisterPage = () => {
   // Step 1: Account
   const [email, setEmail] = useState('')
   const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isGoogleAuth, setIsGoogleAuth] = useState(false)
+  const [isWorkOSAuth, setIsWorkOSAuth] = useState(false)
 
   // Step 2: Personal
   const [firstName, setFirstName] = useState('')
@@ -125,18 +122,11 @@ const RegisterPage = () => {
 
   // --- Validation ---
   const isStepValid = () => {
-    return true
-
     switch (step) {
       case 0: // Account
-        return (
-          email.length > 0 &&
-          username.length > 0 &&
-          password.length >= 6 &&
-          password === confirmPassword
-        )
+        return false // WorkOS button handles validation implicitly
       case 1: // Personal
-        return firstName.length > 0 && lastName.length > 0
+        return firstName.length > 0 && lastName.length > 0 && username.length > 0
       case 2: // Body
         return weight !== null && heightVal !== null
       case 3: // Time Zone
@@ -158,10 +148,10 @@ const RegisterPage = () => {
     }
   }
 
-  const handleBack = () => {
-    // If Google Auth, prevent going back to step 0 (Account)
-    if (isGoogleAuth && step === 1) {
-      router.back()
+  const handleBack = async () => {
+    if (isWorkOSAuth && step === 1) {
+      await logout()
+      router.replace("/")
       return
     }
 
@@ -174,14 +164,16 @@ const RegisterPage = () => {
     }
   }
 
-  const handleGoogleSuccess = async (idToken: string) => {
-    setIsGoogleAuth(true)
+  const handleWorkOSSuccess = async (code: string) => {
+    setIsWorkOSAuth(true)
     // Fetch user details to pre-fill form
     try {
       const { user } = useAuthStore.getState()
       if (user) {
         if (user.firstName) setFirstName(user.firstName)
         if (user.lastName) setLastName(user.lastName)
+        if (user.email) setEmail(user.email)
+        if (user.username) setUsername(user.username)
       }
 
       // Move to next step
@@ -189,7 +181,7 @@ const RegisterPage = () => {
       setStep(1)
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     } catch (error) {
-      console.error('Error fetching user details after Google Sign-In:', error)
+      console.error('Error fetching user details after WorkOS Sign-In:', error)
     }
   }
 
@@ -197,23 +189,12 @@ const RegisterPage = () => {
     setIsLoading(true)
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     try {
-      if (!isGoogleAuth || (user && user.registrationCompleted)) {
-        await register({
-          email,
-          username,
-          firstName,
-          lastName,
-          password,
-          timezone: timeZone,
-          measurements: {
-            weightKg: weight,
-            heightCm: heightVal,
-          },
-          notificationFrequency: streakFreq,
-          registrationCompleted: true,
-        })
+      if (!isWorkOSAuth || (user && user.registrationCompleted)) {
+        // Fallback or error if not WorkOS auth (shouldn't happen in new flow)
+        throw new Error("Please use WorkOS to sign up.")
       } else {
         const updateUserRequest: UpdateUserRequest = {
+          username: username || undefined, // Allow updating username if not set
           firstName,
           lastName,
           timezone: timeZone,
@@ -244,65 +225,11 @@ const RegisterPage = () => {
     switch (step) {
       case 0:
         return (
-          <YStack gap="$4">
-            <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">Email</Label>
-              <InputField icon={Mail} placeholder="hello@example.com" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-            </YStack>
-            <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">Username</Label>
-              <InputField icon={User} placeholder="username" value={username} onChangeText={setUsername} autoCapitalize="none" />
-            </YStack>
-            <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">Password</Label>
-              <XStack bg="$color3" borderColor="$color5" borderWidth={1} rounded="$4" items="center" px="$3">
-                <Lock size={20} color="$color9" />
-                <Input
-                  flex={1}
-                  unstyled
-                  py="$3"
-                  px="$3"
-                  placeholder="Min 6 characters"
-                  value={password}
-                  onChangeText={setPassword}
-                  secureTextEntry={!showPassword}
-                  color="$color12"
-                  placeholderTextColor="$color9"
-                />
-                <Button chromeless p="$2" onPress={() => setShowPassword(!showPassword)}>
-                  {showPassword ? <EyeOff size={20} color="$color9" /> : <Eye size={20} color="$color9" />}
-                </Button>
-              </XStack>
-            </YStack>
-            <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">Confirm Password</Label>
-              <XStack bg="$color3" borderColor="$color5" borderWidth={1} rounded="$4" items="center" px="$3">
-                <Lock size={20} color="$color9" />
-                <Input
-                  flex={1}
-                  unstyled
-                  py="$3"
-                  px="$3"
-                  placeholder="Re-enter password"
-                  value={confirmPassword}
-                  onChangeText={setConfirmPassword}
-                  secureTextEntry={!showConfirmPassword}
-                  color="$color12"
-                  placeholderTextColor="$color9"
-                />
-                <Button chromeless p="$2" onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-                  {showConfirmPassword ? <EyeOff size={20} color="$color9" /> : <Eye size={20} color="$color9" />}
-                </Button>
-              </XStack>
-            </YStack>
-
-            <XStack items="center" gap="$3" my="$2">
-              <YStack height={1} flex={1} bg="$color6" />
-              <Text color="$color10" fontSize="$3">OR</Text>
-              <YStack height={1} flex={1} bg="$color6" />
-            </XStack>
-
-            <GoogleSignInButton onSuccess={handleGoogleSuccess} />
+          <YStack gap="$4" items="center" justify="center" flex={1}>
+             <Text fontSize="$5" style={{ textAlign: 'center' }} color="$color11" mb="$4">
+               Create an account to track your workouts and progress.
+             </Text>
+            <WorkOSSignInButton onSuccess={handleWorkOSSuccess} label="Sign Up with WorkOS" />
 
             <Text fontSize="$2" color="$color11" style={{ textAlign: 'center' }} mt="$4">
               By creating an account, you agree to our{' '}
@@ -320,6 +247,10 @@ const RegisterPage = () => {
       case 1:
         return (
           <YStack gap="$4">
+            <YStack gap="$2">
+              <Label color="$color11" fontSize="$3">Username</Label>
+              <InputField placeholder="coolrunner123" value={username} onChangeText={setUsername} />
+            </YStack>
             <YStack gap="$2">
               <Label color="$color11" fontSize="$3">First Name</Label>
               <InputField placeholder="Jane" value={firstName} onChangeText={setFirstName} />
@@ -469,8 +400,8 @@ const RegisterPage = () => {
           <YStack>
             <XStack gap="$2" mb="$2">
               {STEPS.map((s, i) => {
-                // Special styling for locked step 0 during Google Auth
-                const isLockedStep = isGoogleAuth && i === 0
+                // Special styling for locked step 0 during WorkOS Auth
+                const isLockedStep = isWorkOSAuth && i === 0
                 const isActive = i <= step
                 
                 return (
@@ -527,7 +458,7 @@ const RegisterPage = () => {
             borderColor="$color5"
             color="$color11"
           >
-            <Text>{step === 0 || (isGoogleAuth && step === 1) ? 'Cancel' : 'Back'}</Text>
+            <Text>{step === 0 || (isWorkOSAuth && step === 1) ? 'Cancel' : 'Back'}</Text>
           </Button>
           <Button
             flex={1}
