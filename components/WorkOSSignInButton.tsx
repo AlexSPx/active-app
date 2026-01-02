@@ -17,6 +17,8 @@ interface WorkOSSignInButtonProps {
   label?: string
 }
 
+const redirectScheme = process.env.NODE_ENV === 'development' ? 'activenextdev' : 'activenext'
+
 export const WorkOSSignInButton = ({ onSuccess, label = 'Sign in with WorkOS' }: WorkOSSignInButtonProps) => {
   const { loginWithWorkOS } = useAuthStore()
   const router = useRouter()
@@ -25,7 +27,7 @@ export const WorkOSSignInButton = ({ onSuccess, label = 'Sign in with WorkOS' }:
     {
       clientId: process.env.EXPO_PUBLIC_WORKOS_CLIENT_ID || '',
       redirectUri: makeRedirectUri({
-        scheme: 'activenext',
+        scheme: redirectScheme,
         path: 'auth/callback',
       }),
       scopes: ['openid', 'profile', 'email'],
