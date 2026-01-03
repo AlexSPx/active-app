@@ -12,9 +12,10 @@ import { FlashList } from '@shopify/flash-list'
 export interface RoutinePatternEditorProps {
   pattern: RoutinePatternItem[]
   onChange: (pattern: RoutinePatternItem[]) => void
+  hideRestOption?: boolean
 }
 
-export function RoutinePatternEditor({ pattern, onChange }: RoutinePatternEditorProps) {
+export function RoutinePatternEditor({ pattern, onChange, hideRestOption }: RoutinePatternEditorProps) {
   const { workouts } = useWorkouts()
 
   const setDayType = useCallback(
@@ -72,6 +73,7 @@ export function RoutinePatternEditor({ pattern, onChange }: RoutinePatternEditor
             onRemove={removeDay}
             workouts={workouts}
             workoutTitle={workoutTitle}
+            hideRestOption={hideRestOption}
           />
         </XStack>
       )}
@@ -98,6 +100,7 @@ function DayRow({
   onRemove,
   workouts,
   workoutTitle,
+  hideRestOption,
 }: {
   index: number
   item: RoutinePatternItem
@@ -106,6 +109,7 @@ function DayRow({
   onRemove: (index: number) => void
   workouts: ApiWorkout[]
   workoutTitle: (id: string | null) => string
+  hideRestOption?: boolean
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -144,56 +148,58 @@ function DayRow({
       <Separator borderColor="$borderColor" />
 
       {/* Day Type Selection */}
-      <YStack gap="$2">
-        <Text fontSize="$3" fontWeight="500" color="$colorSubtle" textTransform="uppercase">
-          Type
-        </Text>
-        <XStack gap="$3" flex={1}>
-          <Button
-            flex={1}
-            size="$4"
-            icon={Dumbbell}
-            bg={isWorkout ? '$primary' : '$backgroundHover'}
-            borderWidth={isWorkout ? 0 : 1}
-            borderColor="$borderColor"
-            onPress={() => onSetDayType(index, 'WORKOUT')}
-            pressStyle={{
-              bg: isWorkout ? '$primaryPress' : '$surfacePress',
-              scale: 0.97,
-            }}
-            hoverStyle={{
-              bg: isWorkout ? '$primaryHover' : '$surfaceHover',
-            }}
-          >
-            <Text
-              color={isWorkout ? '$onPrimary' : '$color'}
-              fontWeight={isWorkout ? '600' : '500'}
+      {!hideRestOption && (
+        <YStack gap="$2">
+          <Text fontSize="$3" fontWeight="500" color="$colorSubtle" textTransform="uppercase">
+            Type
+          </Text>
+          <XStack gap="$3" flex={1}>
+            <Button
+              flex={1}
+              size="$4"
+              icon={Dumbbell}
+              bg={isWorkout ? '$primary' : '$backgroundHover'}
+              borderWidth={isWorkout ? 0 : 1}
+              borderColor="$borderColor"
+              onPress={() => onSetDayType(index, 'WORKOUT')}
+              pressStyle={{
+                bg: isWorkout ? '$primaryPress' : '$surfacePress',
+                scale: 0.97,
+              }}
+              hoverStyle={{
+                bg: isWorkout ? '$primaryHover' : '$surfaceHover',
+              }}
             >
-              Workout
-            </Text>
-          </Button>
-          <Button
-            flex={1}
-            size="$4"
-            icon={Moon}
-            bg={isRest ? '$secondary' : '$backgroundHover'}
-            borderWidth={isRest ? 0 : 1}
-            borderColor="$borderColor"
-            onPress={() => onSetDayType(index, 'REST')}
-            pressStyle={{
-              bg: isRest ? '$secondaryPress' : '$surfacePress',
-              scale: 0.97,
-            }}
-            hoverStyle={{
-              bg: isRest ? '$secondaryHover' : '$surfaceHover',
-            }}
-          >
-            <Text color={isRest ? '$onSecondary' : '$color'} fontWeight={isRest ? '600' : '500'}>
-              Rest
-            </Text>
-          </Button>
-        </XStack>
-      </YStack>
+              <Text
+                color={isWorkout ? '$onPrimary' : '$color'}
+                fontWeight={isWorkout ? '600' : '500'}
+              >
+                Workout
+              </Text>
+            </Button>
+            <Button
+              flex={1}
+              size="$4"
+              icon={Moon}
+              bg={isRest ? '$secondary' : '$backgroundHover'}
+              borderWidth={isRest ? 0 : 1}
+              borderColor="$borderColor"
+              onPress={() => onSetDayType(index, 'REST')}
+              pressStyle={{
+                bg: isRest ? '$secondaryPress' : '$surfacePress',
+                scale: 0.97,
+              }}
+              hoverStyle={{
+                bg: isRest ? '$secondaryHover' : '$surfaceHover',
+              }}
+            >
+              <Text color={isRest ? '$onSecondary' : '$color'} fontWeight={isRest ? '600' : '500'}>
+                Rest
+              </Text>
+            </Button>
+          </XStack>
+        </YStack>
+      )}
 
       {/* Workout Selection */}
       {isWorkout && (

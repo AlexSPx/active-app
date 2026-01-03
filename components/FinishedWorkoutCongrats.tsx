@@ -173,9 +173,15 @@ export function FinishedWorkoutCongrats({
         <Sheet.Frame flex={1} p="$4" justify="flex-start" items="stretch" gap="$3" bg="$background">
           <YStack gap="$3" width="100%">
             <YStack gap="$2" width="100%">
-              <H3 style={{ textAlign: 'center' }}>Keep Your Streak Going!</H3>
+              <H3 style={{ textAlign: 'center' }}>
+                {streak?.status === 'WEEKLY_PROGRESS'
+                  ? 'Great Progress This Week!'
+                  : 'Keep Your Streak Going!'}
+              </H3>
               <Paragraph color="$color10" style={{ textAlign: 'center' }} fontSize="$3">
-                {userName}, you've been doing an amazing job!
+                {streak?.status === 'WEEKLY_PROGRESS'
+                  ? `${userName}, you're on track to complete your weekly goal!`
+                  : `${userName}, you've been doing an amazing job!`}
               </Paragraph>
               {streak && <StreakView streak={streak} />}
             </YStack>

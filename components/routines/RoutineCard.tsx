@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo, useState } from 'react'
 import { Card, YStack, XStack, Text, Button, Separator, Portal, Theme } from 'tamagui'
 import { Popover } from '@tamagui/popover'
-import { MoreHorizontal, Edit3, Trash2, CheckCircle2, Calendar, Dumbbell, Coffee } from '@tamagui/lucide-icons'
+import { MoreHorizontal, Edit3, Trash2, CheckCircle2, Calendar, Dumbbell, Coffee, ListChecks } from '@tamagui/lucide-icons'
 import type { Routine } from '../../types/routine'
 import { Pressable, StyleSheet } from 'react-native'
 import { haptics } from '../../utils/haptics'
@@ -33,6 +33,8 @@ export const RoutineCard = memo(function RoutineCard({
     const workoutDays = totalDays - restDays
     return { totalDays, restDays, workoutDays }
   }, [routine.pattern])
+
+  const isWeeklyCompletion = routine.routineType === 'WEEKLY_COMPLETION'
 
   const handleActivate = useCallback(() => {
     if (disabled) return
@@ -68,10 +70,32 @@ export const RoutineCard = memo(function RoutineCard({
           {/* Header Section */}
           <XStack justify="space-between" items="flex-start">
             <YStack flex={1} gap="$1">
-              <XStack items="center" gap="$3" flexWrap="wrap">
+              <XStack items="center" gap="$2" flexWrap="wrap">
                 <Text fontSize="$6" fontWeight="800" color="$color">
                   {routine.name}
                 </Text>
+                <XStack
+                  bg={isWeeklyCompletion ? '$green3' : '$blue3'}
+                  px="$2"
+                  py="$1"
+                  rounded="$2"
+                  items="center"
+                  gap="$1"
+                >
+                  {isWeeklyCompletion ? (
+                    <ListChecks size={12} color="$green10" />
+                  ) : (
+                    <Calendar size={12} color="$blue10" />
+                  )}
+                  <Text
+                    fontSize="$1"
+                    fontWeight="600"
+                    color={isWeeklyCompletion ? '$green10' : '$blue10'}
+                    textTransform="uppercase"
+                  >
+                    {isWeeklyCompletion ? 'Weekly' : 'Sequential'}
+                  </Text>
+                </XStack>
               </XStack>
               {routine.description ? (
                 <Text fontSize="$3" color="$colorSubtle" numberOfLines={2}>

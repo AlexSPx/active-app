@@ -64,6 +64,9 @@ export interface UserStreak {
   nextWorkoutId: string | null
   nextWorkoutDeadline: string | null // ISO string (LocalDate on server)
   streakFreezeCount: number
+  lastWorkoutCountedDate: string | null // ISO string (LocalDate on server)
+  weeklyCompletedWorkoutIds: string[]
+  currentWeekStart: string | null // ISO string (LocalDate on server)
 }
 
 export interface User {
@@ -197,7 +200,12 @@ export interface WorkoutRecord {
 }
 
 // Streak update types
-export type StreakUpdateStatus = 'CONTINUED' | 'STARTED' | 'WRONG_WORKOUT' | 'BROKEN_RESET'
+export type StreakUpdateStatus =
+  | 'CONTINUED'
+  | 'STARTED'
+  | 'WRONG_WORKOUT'
+  | 'BROKEN_RESET'
+  | 'WEEKLY_PROGRESS' // Workout counted towards weekly goal, but week not yet complete
 
 export interface StreakUpdateResponse {
   status: StreakUpdateStatus
@@ -207,6 +215,9 @@ export interface StreakUpdateResponse {
   // ISO date string (LocalDate on server); keep as string client-side
   nextWorkoutDeadline: string | null
   streakFreezeCount: number
+  // Weekly completion fields (only present for WEEKLY_COMPLETION routines)
+  weeklyCompletedWorkoutIds?: string[] // Workout IDs completed this week
+  weeklyWorkoutsRequired?: number // Total workouts needed for the week
 }
 
 // Response shape from recording a workout

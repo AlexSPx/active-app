@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState, useCallback } from 'react'
 import { YStack, XStack, Text, Input, Button, Separator } from 'tamagui'
 import { useNavigation, router, useLocalSearchParams } from 'expo-router'
-import type { RoutinePatternItem, UpdateRoutineRequest } from '../../types/routine'
+import { Calendar, ListChecks } from '@tamagui/lucide-icons'
+import type { RoutinePatternItem, UpdateRoutineRequest, RoutineType } from '../../types/routine'
 import { RoutinePatternEditor } from '../../components/routines/RoutinePatternEditor'
 import { useRoutineMutations } from '../../hooks/useRoutineMutations'
 import { useRoutines } from '../../hooks/useRoutines'
@@ -23,6 +24,7 @@ export default function EditRoutinePage() {
   const [description, setDescription] = useState('')
   const [active, setActive] = useState(false)
   const [startDate, setStartDate] = useState(new Date())
+  const [routineType, setRoutineType] = useState<RoutineType>('SEQUENTIAL')
   const [pattern, setPattern] = useState<RoutinePatternItem[]>([
     { dayIndex: 1, dayType: 'WORKOUT', workoutId: null },
   ])
@@ -37,6 +39,7 @@ export default function EditRoutinePage() {
       setName(routine.name)
       setDescription(routine.description ?? '')
       setActive(false) // User must explicitly toggle if they want to change active status
+      setRoutineType(routine.routineType ?? 'SEQUENTIAL')
       if (routine.startDate) {
         setStartDate(new Date(routine.startDate))
       }
@@ -59,11 +62,25 @@ export default function EditRoutinePage() {
     return true
   }, [name, pattern])
 
+  const handleRoutineTypeChange = useCallback(
+    (newType: RoutineType) => {
+      setRoutineType(newType)
+      if (newType === 'WEEKLY_COMPLETION') {
+        const workoutOnly = pattern.filter((p) => p.dayType === 'WORKOUT')
+        if (workoutOnly.length > 0) {
+          setPattern(workoutOnly.map((p, idx) => ({ ...p, dayIndex: idx + 1 })))
+        }
+      }
+    },
+    [pattern]
+  )
+
   const handleSave = useCallback(async () => {
     if (!canSave || !routineId) return
     const payload: UpdateRoutineRequest = {
       name: name.trim(),
       description: description.trim() || null,
+      routineType,
       pattern: pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
       active: active || undefined,
       startDate: startDate.toISOString(),
@@ -72,7 +89,7 @@ export default function EditRoutinePage() {
     if (updated) {
       router.back()
     }
-  }, [active, canSave, description, name, pattern, routineId, updateRoutine])
+  }, [active, canSave, description, name, pattern, routineId, routineType, startDate, updateRoutine])
 
   if (loadingRoutines) {
     return (
@@ -115,6 +132,54 @@ export default function EditRoutinePage() {
         />
       </YStack>
 
+      {/* Routine Type Selector */}
+      <YStack gap="$2">
+        <Text fontSize="$3" color="$color10">
+          Type
+        </Text>
+        <XStack gap="$3">
+          <Button
+            flex={1}
+            size="$4"
+            icon={Calendar}
+            bg={routineType === 'SEQUENTIAL' ? '$primary' : '$backgroundHover'}
+            borderWidth={routineType === 'SEQUENTIAL' ? 0 : 1}
+            borderColor="$borderColor"
+            onPress={() => handleRoutineTypeChange('SEQUENTIAL')}
+            pressStyle={{ scale: 0.97 }}
+          >
+            <Text
+              color={routineType === 'SEQUENTIAL' ? '$onPrimary' : '$color'}
+              fontWeight={routineType === 'SEQUENTIAL' ? '600' : '500'}
+            >
+              Sequential
+            </Text>
+          </Button>
+          <Button
+            flex={1}
+            size="$4"
+            icon={ListChecks}
+            bg={routineType === 'WEEKLY_COMPLETION' ? '$primary' : '$backgroundHover'}
+            borderWidth={routineType === 'WEEKLY_COMPLETION' ? 0 : 1}
+            borderColor="$borderColor"
+            onPress={() => handleRoutineTypeChange('WEEKLY_COMPLETION')}
+            pressStyle={{ scale: 0.97 }}
+          >
+            <Text
+              color={routineType === 'WEEKLY_COMPLETION' ? '$onPrimary' : '$color'}
+              fontWeight={routineType === 'WEEKLY_COMPLETION' ? '600' : '500'}
+            >
+              Weekly
+            </Text>
+          </Button>
+        </XStack>
+        <Text fontSize="$2" color="$color11">
+          {routineType === 'SEQUENTIAL'
+            ? 'Workouts follow a specific day order in a repeating cycle'
+            : 'Complete all workouts within a week (Mon-Sun) in any order'}
+        </Text>
+      </YStack>
+
       <XStack items="center" gap="$2" mt="$1">
         <Button size="$2" onPress={() => setActive((v) => !v)} variant="outlined">
           {active ? 'Active: Yes' : 'Active: No'}
@@ -134,7 +199,11 @@ export default function EditRoutinePage() {
         <Text fontSize="$5" fontWeight="700">
           Pattern
         </Text>
-        <RoutinePatternEditor pattern={pattern} onChange={setPattern} />
+        <RoutinePatternEditor
+          pattern={pattern}
+          onChange={setPattern}
+          hideRestOption={routineType === 'WEEKLY_COMPLETION'}
+        />
       </YStack>
 
       <XStack gap="$3" mt="auto" pb="$3">
