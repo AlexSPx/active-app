@@ -1,10 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { Platform } from 'react-native'
 import { apiService } from '../services/apiService'
 import { useSettingsStore } from './settingsStore'
 import { resetAllStores } from '../utils/storeReset'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { posthog } from '../services/posthog'
+
+const isWeb = Platform.OS === 'web'
 
 interface AuthState {
   // State
@@ -50,12 +53,18 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true, error: null })
 
           const response = await apiService.workosLogin(code)
-          await apiService.setToken(response.token)
-          await apiService.setRefreshToken(response.refreshToken)
+          
+          // On native, store tokens locally; on web, httpOnly cookies are set by server
+          if (!isWeb) {
+            await apiService.setToken(response.token)
+            await apiService.setRefreshToken(response.refreshToken)
+            set({
+              token: response.token,
+              refreshToken: response.refreshToken,
+            })
+          }
 
           set({
-            token: response.token,
-            refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
           })
@@ -82,14 +91,18 @@ export const useAuthStore = create<AuthState>()(
           // Call login API
           const response = await apiService.login(credentials)
 
-          // Store token
-          await apiService.setToken(response.token)
-          await apiService.setRefreshToken(response.refreshToken)
+          // On native, store tokens locally; on web, httpOnly cookies are set by server
+          if (!isWeb) {
+            await apiService.setToken(response.token)
+            await apiService.setRefreshToken(response.refreshToken)
+            set({
+              token: response.token,
+              refreshToken: response.refreshToken,
+            })
+          }
 
           // Update state
           set({
-            token: response.token,
-            refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
           })
@@ -117,12 +130,18 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true, error: null })
 
           const response = await apiService.signup(payload)
-          await apiService.setToken(response.token)
-          await apiService.setRefreshToken(response.refreshToken)
+          
+          // On native, store tokens locally; on web, httpOnly cookies are set by server
+          if (!isWeb) {
+            await apiService.setToken(response.token)
+            await apiService.setRefreshToken(response.refreshToken)
+            set({
+              token: response.token,
+              refreshToken: response.refreshToken,
+            })
+          }
 
           set({
-            token: response.token,
-            refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
           })
@@ -149,11 +168,18 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null })
           const response = await apiService.googleLogin(idToken)
-          await apiService.setToken(response.token)
-          await apiService.setRefreshToken(response.refreshToken)
+          
+          // On native, store tokens locally; on web, httpOnly cookies are set by server
+          if (!isWeb) {
+            await apiService.setToken(response.token)
+            await apiService.setRefreshToken(response.refreshToken)
+            set({
+              token: response.token,
+              refreshToken: response.refreshToken,
+            })
+          }
+          
           set({
-            token: response.token,
-            refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
           })

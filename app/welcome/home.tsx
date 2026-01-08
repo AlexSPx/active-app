@@ -15,7 +15,7 @@ export default function WelcomeHome() {
       {/* Hero Section */}
       <YStack items="center" animation="bouncy" enterStyle={{ opacity: 0, y: -20, scale: 0.9 }} mt="$4">
         <Image
-          source={{ uri: require('../../assets/icons/splash-icon-light.png') }}
+          source={require('../../assets/icons/splash-icon-light.png')}
           width={100}
           height={100}
           resizeMode="contain"

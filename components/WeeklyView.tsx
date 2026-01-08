@@ -277,14 +277,14 @@ const WeeklyCompletionView: React.FC<WeeklyCompletionViewProps> = ({
         <YStack gap="$2">
           {weeklyWorkouts.map((workout) => (
             <WorkoutChecklistItem
-              key={workout.id}
-              workoutId={workout.id}
-              workoutTitle={workout.title}
-              isCompleted={workout.isCompleted}
+              key={workout?.id}
+              workoutId={workout?.id}
+              workoutTitle={workout?.title}
+              isCompleted={workout?.isCompleted}
               onPress={() =>
                 router.push({
                   pathname: '/(tabs)/(workouts)',
-                  params: { focusId: workout.id },
+                  params: { focusId: workout?.id },
                 })
               }
             />

@@ -335,13 +335,13 @@ const WeeklyCompletionTodayView: React.FC<WeeklyCompletionTodayViewProps> = ({
                 </Text>
                 {weeklyWorkouts.slice(0, 3).map((workout) => (
                   <WorkoutChecklistItem
-                    key={workout.id}
+                    key={workout?.id}
                     workout={workout}
                     isCompleted={false}
                     onPress={() =>
                       router.push({
                         pathname: '/(tabs)/(workouts)',
-                        params: { focusId: workout.id },
+                        params: { focusId: workout?.id },
                       })
                     }
                   />

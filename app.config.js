@@ -42,7 +42,12 @@ export default {
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/favicon.png"
+      favicon: "./assets/icons/adaptive-icon.png",
+      name: "Active Next",
+      shortName: "Active",
+      description: "Active Next - Your personal activity companion",
+      themeColor: "#000000",
+      backgroundColor: "#000000"
     },
     plugins: [
       "expo-router",
@@ -79,7 +84,8 @@ export default {
         }
       ],
       "expo-web-browser",
-      "expo-localization"
+      "expo-localization",
+      "@react-native-community/datetimepicker"
     ],
     experiments: {
       "typedRoutes": true

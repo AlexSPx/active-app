@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
-import { BackHandler } from 'react-native'
+import { BackHandler, Platform } from 'react-native'
 import { useNavigation, router } from 'expo-router'
-import { YStack, Button, Text, XStack } from 'tamagui'
+import { YStack, Button, Text, XStack, Dialog } from 'tamagui'
 import { Sheet } from '@tamagui/sheet'
 import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 
@@ -140,6 +140,34 @@ export default function RoutinesTab() {
     )
   }
 
+  // Delete confirmation content - shared between Sheet (native) and Dialog (web)
+  const DeleteConfirmContent = (
+    <YStack gap="$3" items="center">
+      <XStack items="center" gap="$2">
+        <AlertTriangle size="$1" color="$secondary" />
+        <Text fontSize="$6" fontWeight="700">
+          Delete routine
+        </Text>
+      </XStack>
+      <Text color="$color10">Are you sure? This will permanently delete this routine.</Text>
+      <YStack mt="$2" gap="$3" width="100%">
+        <Button
+          bg="$red4"
+          color="$red11"
+          size="$5"
+          iconAfter={Trash2}
+          disabled={mutating}
+          onPress={confirmDelete}
+        >
+          <Text>{mutating ? 'Deleting…' : 'Delete routine'}</Text>
+        </Button>
+        <Button bg="$blue4" color="$blue12" size="$5" onPress={() => setConfirmOpen(false)}>
+          <Text>Cancel</Text>
+        </Button>
+      </YStack>
+    </YStack>
+  )
+
   return (
     <YStack flex={1} bg="$background">
       <YStack flex={1} px="$4">
@@ -176,43 +204,47 @@ export default function RoutinesTab() {
         />
       </YStack>
 
-      {/* Delete confirm */}
-      <Sheet
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        modal
-        dismissOnOverlayPress={!mutating}
-        snapPointsMode="fit"
-      >
-        <Sheet.Overlay animation="slow" style={{ backgroundColor: 'transparent' }} />
-        <Sheet.Handle bg="$surface" />
-        <Sheet.Frame bg="$surface" borderTopLeftRadius="$6" borderTopRightRadius="$6" p="$4">
-          <YStack gap="$3" items="center">
-            <XStack items="center" gap="$2">
-              <AlertTriangle size="$1" color="$secondary" />
-              <Text fontSize="$6" fontWeight="700">
-                Delete routine
-              </Text>
-            </XStack>
-            <Text color="$color10">Are you sure? This will permanently delete this routine.</Text>
-            <YStack mt="$2" gap="$3" width="100%">
-              <Button
-                bg="$red4"
-                color="$red11"
-                size="$5"
-                iconAfter={Trash2}
-                disabled={mutating}
-                onPress={confirmDelete}
-              >
-                <Text>{mutating ? 'Deleting…' : 'Delete routine'}</Text>
-              </Button>
-              <Button bg="$blue4" color="$blue12" size="$5" onPress={() => setConfirmOpen(false)}>
-                <Text>Cancel</Text>
-              </Button>
-            </YStack>
-          </YStack>
-        </Sheet.Frame>
-      </Sheet>
+      {/* Use Dialog on web (Sheet has rendering issues), Sheet on native */}
+      {Platform.OS === 'web' ? (
+        <Dialog modal open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <Dialog.Portal>
+            <Dialog.Overlay
+              key="overlay"
+              animation="slow"
+              opacity={0.5}
+              enterStyle={{ opacity: 0 }}
+              exitStyle={{ opacity: 0 }}
+            />
+            <Dialog.Content
+              bordered
+              elevate
+              key="content"
+              animation={['quick', { opacity: { overshootClamping: true } }]}
+              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              bg="$surface"
+              p="$4"
+            >
+              {DeleteConfirmContent}
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog>
+      ) : (
+        <Sheet
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          modal
+          dismissOnOverlayPress={!mutating}
+          snapPointsMode="fit"
+        >
+          <Sheet.Overlay animation="slow" style={{ backgroundColor: 'transparent' }} />
+          <Sheet.Handle bg="$surface" />
+          <Sheet.Frame bg="$surface" borderTopLeftRadius="$6" borderTopRightRadius="$6" p="$4">
+            {DeleteConfirmContent}
+          </Sheet.Frame>
+        </Sheet>
+      )}
     </YStack>
   )
 }
+
