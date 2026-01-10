@@ -247,7 +247,7 @@ const WeeklyCompletionView: React.FC<WeeklyCompletionViewProps> = ({
       return {
         id,
         title: workout?.title ?? 'Unknown Workout',
-        isCompleted: user?.streak?.weeklyCompletedWorkoutIds.includes(id) ?? false,
+        isCompleted: user?.streak?.weeklyCompletedWorkoutIds?.includes(id) ?? false,
       }
     })
   }, [routine.pattern, workouts])

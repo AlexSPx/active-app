@@ -275,7 +275,7 @@ const WeeklyCompletionTodayView: React.FC<WeeklyCompletionTodayViewProps> = ({
     })
 
     return Array.from(workoutIds)
-      .filter((id) => !completedWorkoutIds.includes(id))
+      .filter((id) => !completedWorkoutIds?.includes(id))
       .map((id) => workouts.find((w) => w.id === id))
       .filter((w): w is ApiWorkout => w !== null)
   }, [routine.pattern, workouts, completedWorkoutIds])
