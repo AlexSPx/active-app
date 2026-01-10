@@ -185,15 +185,22 @@ export const workoutRecordResponseSchema = z.object({
 // ==========================================
 
 export const routineTypeSchema = z.enum(['SEQUENTIAL', 'WEEKLY_COMPLETION'])
+export const routineDayTypeSchema = z.enum(['WORKOUT', 'REST'])
+
+export const routinePatternItemSchema = z.object({
+  dayIndex: z.number(),
+  dayType: routineDayTypeSchema,
+  workoutId: z.string().nullable(),
+})
 
 export const routineSchema = z.object({
   id: z.string(),
   name: z.string(),
-  description: z.string().nullable().optional(),
-  type: routineTypeSchema,
-  workoutIds: z.array(z.string()),
-  weeklyWorkoutsRequired: z.number().nullable().optional(),
-  isActive: z.boolean(),
+  description: z.string().nullable(),
+  userId: z.string(),
+  routineType: routineTypeSchema.optional(),
+  pattern: z.array(routinePatternItemSchema),
+  startDate: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })

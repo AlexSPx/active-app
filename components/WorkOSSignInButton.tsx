@@ -17,7 +17,7 @@ interface WorkOSSignInButtonProps {
   label?: string
 }
 
-const redirectScheme = process.env.NODE_ENV === 'development' ? 'activenextdev' : 'activenext'
+const redirectScheme = process.env.NODE_ENV === 'development' ? 'activenextdev' : 'activenextdev'
 
 // Generate appropriate redirect URI based on platform
 const getRedirectUri = () => {

@@ -17,12 +17,12 @@ import { posthog } from '../../../services/posthog'
 export default function RoutinesTab() {
   const navigation = useNavigation()
 
-  const { routines, loading, error, refetch, isExpired: routinesExpired } = useRoutines()
+  const { routines, loading, error, refetch, isStale: routinesStale } = useRoutines()
   const { deleteRoutine, activateRoutine, updateRoutine, loading: mutating } = useRoutineMutations()
   const {
     activeRoutine,
     refetch: refetchActive,
-    isExpired: activeExpired,
+    isStale: activeStale,
     loading: activeLoading,
   } = useActiveRoutine()
 
@@ -37,15 +37,14 @@ export default function RoutinesTab() {
 
   // Refresh data when this screen gains focus
 
-  // Refetch when screen gains focus (ensures newly created routines appear)
-  // On screen focus, only refetch if expired (to avoid unnecessary network requests)
+  // Refetch when screen gains focus (only if data is stale to avoid unnecessary requests)
   useEffect(() => {
     const unsub = (navigation as any).addListener?.('focus', async () => {
-      if (routinesExpired) await refetch()
-      if (activeExpired) await refetchActive()
+      if (routinesStale) await refetch()
+      if (activeStale) await refetchActive()
     })
     return () => unsub?.()
-  }, [navigation, refetch, refetchActive, routinesExpired, activeExpired])
+  }, [navigation, refetch, refetchActive, routinesStale, activeStale])
 
   const openCreate = useCallback(() => {
     router.push('/routines/new')

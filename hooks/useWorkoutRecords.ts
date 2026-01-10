@@ -1,6 +1,8 @@
+import { useQuery } from '@tanstack/react-query'
 import { apiService } from '../services/apiService'
+import { queryKeys } from '../lib/queryKeys'
+import { workoutRecordsArraySchema } from '../lib/schemas/api'
 import type { WorkoutRecord } from '../types/api'
-import { useCachedQuery } from './useCachedQuery'
 
 export interface UseWorkoutRecordsReturn {
   workoutRecords: WorkoutRecord[]
@@ -10,18 +12,19 @@ export interface UseWorkoutRecordsReturn {
 }
 
 export function useWorkoutRecords(): UseWorkoutRecordsReturn {
-  const { data, isLoading, error, refresh } = useCachedQuery<WorkoutRecord[]>({
-    keyParts: ['workoutRecords', 'all'],
-    tags: ['history', 'workouts'],
-    fetcher: () => apiService.getWorkoutRecords(),
-    ttlMs: 48 * 60 * 60 * 1000, // 48h
-    staleAfterMs: 8 * 60 * 60 * 1000, // 8h
+  const { data, isLoading, error, refetch } = useQuery({
+    queryKey: queryKeys.records.list(),
+    queryFn: async () => {
+      const response = await apiService.getWorkoutRecords()
+      return workoutRecordsArraySchema.parse(response)
+    },
+    staleTime: 1000 * 60 * 60 * 8, // 8 hours
   })
 
   return {
-    workoutRecords: data || [],
+    workoutRecords: (data as WorkoutRecord[]) || [],
     loading: isLoading,
     error: error?.message ?? null,
-    refetch: () => refresh(),
+    refetch: async () => { await refetch() },
   }
 }
