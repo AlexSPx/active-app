@@ -2,7 +2,8 @@ import { useState, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import type { UpdateUserRequest, User, ApiError } from '../types/api'
 import { timeZonesNames } from '@vvo/tzdb'
-import { invalidateTags } from '../utils/cache/invalidate'
+import { queryClient } from '../lib/queryClient'
+import { queryKeys } from '../lib/queryKeys'
 
 // Simple email regex (client-side validation aid; server performs authoritative validation)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -47,12 +48,12 @@ export function useUpdateUser(): UseUpdateUserResult {
       try {
         const user = await updateUser(updates)
         setIsUpdating(false)
-        // Invalidate cache domains depending on what changed
-        const tags = ['user']
+        // Invalidate user query
+        queryClient.invalidateQueries({ queryKey: queryKeys.user.me })
+        // Also invalidate records if timezone changed (affects date display)
         if (typeof updates.timezone === 'string' && updates.timezone.trim() !== '') {
-          tags.push('history', 'progression')
+          queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
         }
-        invalidateTags(tags)
         return user
       } catch (e) {
         const apiError = e as ApiError

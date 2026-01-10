@@ -6,11 +6,11 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
 import type { WorkoutRecordResponse } from '../types/api'
 import {
-  initNotifications,
   scheduleRestNotification,
   cancelRestNotification,
 } from '../services/notificationService'
-import { invalidateTags } from '../utils/cache/invalidate'
+import { queryClient } from '../lib/queryClient'
+import { queryKeys } from '../lib/queryKeys'
 
 export interface UseWorkoutSessionOptions {
   fallbackExercises?: Exercise[]
@@ -332,7 +332,7 @@ export function useWorkoutSession(
   const finishWorkout = async (notes?: string) => {
     const result = await stopWorkout(notes)
     if (result) {
-      invalidateTags(['history'])
+      queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
     }
     return result
   }

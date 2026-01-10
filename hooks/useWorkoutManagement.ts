@@ -1,7 +1,8 @@
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 import { useAppNavigation } from '../navigation/useAppNavigation'
 import type { ApiWorkout } from '../types/api'
-import { invalidateTags } from '../utils/cache/invalidate'
+import { queryClient } from '../lib/queryClient'
+import { queryKeys } from '../lib/queryKeys'
 
 export interface UseWorkoutManagementActions {
   startWorkout: (workout: ApiWorkout) => void
@@ -67,8 +68,9 @@ export function useWorkoutManagement(): UseWorkoutManagementActions {
 
   const stopWorkout = async (notes?: string) => {
     await stopWorkoutInStore(notes)
-    // After a workout is stopped/saved, invalidate dependent domains
-    invalidateTags(['workouts', 'history', 'progression'])
+    // After a workout is stopped/saved, invalidate dependent queries
+    queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
+    queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
   }
 
   return {
