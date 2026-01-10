@@ -2,6 +2,7 @@ import { useColorScheme } from 'react-native'
 import { useEffect } from 'react'
 import { TamaguiProvider, type TamaguiProviderProps, PortalProvider, Theme } from 'tamagui'
 import { ToastProvider, ToastViewport } from '@tamagui/toast'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { CurrentToast } from './CurrentToast'
 import { config } from '../tamagui.config'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -15,6 +16,7 @@ import { PostHogProvider } from 'posthog-react-native'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useSettingsStore } from '../stores/settingsStore'
 import { posthog } from '../services/posthog'
+import { queryClient } from '../lib/queryClient'
 
 const TOOLS: InstalledApp[] = [
   {
@@ -45,46 +47,49 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
 
   return (
     <SafeAreaProvider>
-      <PostHogProvider client={posthog}>
-        <TamaguiProvider
-          config={config}
-          defaultTheme={activeTheme === 'dark' ? 'dark' : 'light'}
-          {...rest}
-        >
-          <Theme name={activeTheme === 'dark' ? 'dark' : 'light'}>
-          <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <PortalProvider>
-              {/* <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" /> */}
+      <QueryClientProvider client={queryClient}>
+        <PostHogProvider client={posthog}>
+          <TamaguiProvider
+            config={config}
+            defaultTheme={activeTheme === 'dark' ? 'dark' : 'light'}
+            {...rest}
+          >
+            <Theme name={activeTheme === 'dark' ? 'dark' : 'light'}>
+            <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <PortalProvider>
+                {/* <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" /> */}
 
-              <ToastProvider
-                swipeDirection="horizontal"
-                duration={6000}
-                native={
-                  [
-                    // uncomment the next line to do native toasts on mobile. NOTE: it'll require you making a dev build and won't work with Expo Go
-                    // 'mobile'
-                  ]
-                }
-              >
-                {children}
-                <CurrentToast />
-                <ToastViewport top="$8" left={0} right={0} />
-                {congratsVisible && payload && (
-                  <FinishedWorkoutCongrats
-                  data={payload.record}
-                    streak={payload.streak}
-                    visible={congratsVisible}
-                    onClose={hideFinishedCongrats}
-                  />
-                )}
-              </ToastProvider>
-            </PortalProvider>
-          </ThemeProvider>
-          </Theme>
-        </TamaguiProvider>
-      </PostHogProvider>
+                <ToastProvider
+                  swipeDirection="horizontal"
+                  duration={6000}
+                  native={
+                    [
+                      // uncomment the next line to do native toasts on mobile. NOTE: it'll require you making a dev build and won't work with Expo Go
+                      // 'mobile'
+                    ]
+                  }
+                >
+                  {children}
+                  <CurrentToast />
+                  <ToastViewport top="$8" left={0} right={0} />
+                  {congratsVisible && payload && (
+                    <FinishedWorkoutCongrats
+                    data={payload.record}
+                      streak={payload.streak}
+                      visible={congratsVisible}
+                      onClose={hideFinishedCongrats}
+                    />
+                  )}
+                </ToastProvider>
+              </PortalProvider>
+            </ThemeProvider>
+            </Theme>
+          </TamaguiProvider>
+        </PostHogProvider>
+      </QueryClientProvider>
     </SafeAreaProvider>
   )
 }
 
 export default Provider
+
