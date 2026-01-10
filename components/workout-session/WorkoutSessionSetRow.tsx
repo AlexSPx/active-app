@@ -120,8 +120,12 @@ export const WorkoutSessionSetRow = memo(
                     keyboardType="numeric"
                     value={set.weight?.toString() || ''}
                     onChangeText={(text) => {
+                      if (text.trim() === '') {
+                        onUpdateSet('weight', undefined as any)
+                        return
+                      }
                       const weight = Number.parseFloat(text)
-                      if (!isNaN(weight)) onUpdateSet('weight', weight)
+                      if (!Number.isNaN(weight)) onUpdateSet('weight', weight)
                     }}
                     bg={set.completed ? '$surface' : '$backgroundPress'}
                     borderColor={set.completed ? '$onPrimary' : '$borderColor'}
@@ -141,8 +145,12 @@ export const WorkoutSessionSetRow = memo(
                     keyboardType="numeric"
                     value={set.reps?.toString() || ''}
                     onChangeText={(text) => {
+                      if (text.trim() === '') {
+                        onUpdateSet('reps', undefined as any)
+                        return
+                      }
                       const reps = Number.parseInt(text)
-                      if (!isNaN(reps)) onUpdateSet('reps', reps)
+                      if (!Number.isNaN(reps)) onUpdateSet('reps', reps)
                     }}
                     bg={set.completed ? '$surface' : '$backgroundPress'}
                     borderColor={set.completed ? '$onPrimary' : '$borderColor'}
