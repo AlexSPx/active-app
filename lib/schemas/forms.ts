@@ -95,6 +95,29 @@ export const registrationSettingsSchema = z.object({
   notificationFrequency: z.number().min(0).max(3),
 })
 
+// Combined registration form schema
+export const registrationFormSchema = z.object({
+  // Account step
+  email: z.string().email('Valid email is required'),
+  isWorkOSAuth: z.boolean(),
+  
+  // Personal step
+  username: z.string().min(1, 'Username is required').max(50, 'Username must be 50 characters or less'),
+  firstName: z.string().min(1, 'First name is required').max(50),
+  lastName: z.string().min(1, 'Last name is required').max(50),
+  
+  // Body step (stored in kg/cm internally)
+  weight: z.number().min(20, 'Weight must be at least 20kg').max(300, 'Weight must be at most 300kg').nullable(),
+  height: z.number().min(100, 'Height must be at least 100cm').max(250, 'Height must be at most 250cm').nullable(),
+  weightUnit: z.enum(['kg', 'lb']),
+  heightUnit: z.enum(['cm', 'in']),
+  
+  // Settings step
+  timezone: z.string().min(1, 'Timezone is required'),
+  notificationFrequency: z.number().min(0).max(3),
+})
+
+export type RegistrationFormData = z.infer<typeof registrationFormSchema>
 export type RegistrationPersonalData = z.infer<typeof registrationPersonalSchema>
 export type RegistrationBodyData = z.infer<typeof registrationBodySchema>
 export type RegistrationSettingsData = z.infer<typeof registrationSettingsSchema>
