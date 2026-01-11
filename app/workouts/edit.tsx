@@ -5,7 +5,7 @@ import { FlashList } from '@shopify/flash-list'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToastController } from '@tamagui/toast'
-import { useEditWorkoutStore } from '../../features/workouts'
+import { useEditWorkoutStore, useWorkoutMutations } from '../../features/workouts'
 import { apiService } from 'services/apiService'
 import {
   apiWorkoutToEditableExercises,
@@ -49,6 +49,8 @@ export default function EditWorkoutScreen() {
   const [initialName, setInitialName] = useState('')
   const [initialNotes, setInitialNotes] = useState('')
   const [initialSig, setInitialSig] = useState('')
+
+  const { updateWorkout: updateWorkoutMutation } = useWorkoutMutations()
 
   const {
     selectedExercises,
@@ -153,12 +155,13 @@ export default function EditWorkoutScreen() {
         router.replace('/(tabs)/(workouts)')
         return
       }
-      await apiService.updateWorkout(workoutId, payload)
-
-      clearExercises()
-      router.replace('/(tabs)/(workouts)')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update workout')
+      const success = await updateWorkoutMutation(workoutId, payload)
+      if (success) {
+        clearExercises()
+        router.replace('/(tabs)/(workouts)')
+      } else {
+        setError('Failed to update workout')
+      }
     } finally {
       setIsSaving(false)
     }
