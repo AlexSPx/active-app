@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useCallback } from 'react'
 import { YStack, XStack, Text, Input, Button, Separator } from 'tamagui'
 import { useNavigation, router, useLocalSearchParams } from 'expo-router'
 import { Calendar, ListChecks } from '@tamagui/lucide-icons'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useToastController } from '@tamagui/toast'
 import type { RoutinePatternItem, UpdateRoutineRequest, RoutineType } from '../../types/routine'
 import { RoutinePatternEditor } from '../../components/routines/RoutinePatternEditor'
 import { useRoutineMutations } from '../../hooks/useRoutineMutations'
@@ -9,9 +12,11 @@ import { useRoutines } from '../../hooks/useRoutines'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { DatePickerField } from '../../components/ui/DatePickerField'
+import { createRoutineSchema, type CreateRoutineFormData } from '../../lib/schemas/forms'
 
 export default function EditRoutinePage() {
   const navigation = useNavigation()
+  const toast = useToastController()
   const params = useLocalSearchParams<{ id: string }>()
   const routineId = params.id
 
@@ -20,76 +25,111 @@ export default function EditRoutinePage() {
 
   const routine = useMemo(() => routines.find((r) => r.id === routineId), [routines, routineId])
 
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [active, setActive] = useState(false)
-  const [startDate, setStartDate] = useState(new Date())
-  const [routineType, setRoutineType] = useState<RoutineType>('SEQUENTIAL')
-  const [pattern, setPattern] = useState<RoutinePatternItem[]>([
-    { dayIndex: 1, dayType: 'WORKOUT', workoutId: null },
-  ])
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    reset,
+    trigger,
+    formState: { errors },
+  } = useForm<CreateRoutineFormData>({
+    resolver: zodResolver(createRoutineSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      routineType: 'SEQUENTIAL',
+      pattern: [{ dayIndex: 1, dayType: 'WORKOUT', workoutId: null }],
+      active: false,
+      startDate: new Date(),
+    },
+    mode: 'onChange',
+  })
+
+  const routineType = watch('routineType')
+  const pattern = watch('pattern')
+
+  // Get validation issues from Zod schema errors
+  const validationIssues = useMemo(() => {
+    const issues: string[] = []
+    if (errors.name?.message) issues.push(errors.name.message)
+    if (errors.pattern?.message) issues.push(errors.pattern.message)
+    if (errors.description?.message) issues.push(errors.description.message)
+    return issues
+  }, [errors])
 
   useEffect(() => {
     navigation.setOptions({ title: 'Edit Routine' })
     return () => clearError()
   }, [clearError, navigation])
 
+  // Populate form when routine loads
   useEffect(() => {
     if (routine) {
-      setName(routine.name)
-      setDescription(routine.description ?? '')
-      setActive(false) // User must explicitly toggle if they want to change active status
-      setRoutineType(routine.routineType ?? 'SEQUENTIAL')
-      if (routine.startDate) {
-        setStartDate(new Date(routine.startDate))
-      }
-      setPattern(
-        routine.pattern.map((p) => ({
+      reset({
+        name: routine.name,
+        description: routine.description ?? '',
+        routineType: routine.routineType ?? 'SEQUENTIAL',
+        pattern: routine.pattern.map((p) => ({
           dayIndex: p.dayIndex,
           dayType: p.dayType,
           workoutId: p.workoutId,
-        }))
-      )
+        })),
+        active: false, // User must explicitly toggle
+        startDate: routine.startDate ? new Date(routine.startDate) : new Date(),
+      })
     }
-  }, [routine])
-
-  const canSave = useMemo(() => {
-    if (!name.trim()) return false
-    if (pattern.length === 0) return false
-    for (const p of pattern) {
-      if (p.dayType === 'WORKOUT' && !p.workoutId) return false
-    }
-    return true
-  }, [name, pattern])
+  }, [routine, reset])
 
   const handleRoutineTypeChange = useCallback(
     (newType: RoutineType) => {
-      setRoutineType(newType)
+      setValue('routineType', newType)
       if (newType === 'WEEKLY_COMPLETION') {
         const workoutOnly = pattern.filter((p) => p.dayType === 'WORKOUT')
         if (workoutOnly.length > 0) {
-          setPattern(workoutOnly.map((p, idx) => ({ ...p, dayIndex: idx + 1 })))
+          setValue('pattern', workoutOnly.map((p, idx) => ({ ...p, dayIndex: idx + 1 })))
         }
       }
     },
-    [pattern]
+    [pattern, setValue]
   )
 
-  const handleSave = useCallback(async () => {
-    if (!canSave || !routineId) return
+  const onSubmit = useCallback(async (data: CreateRoutineFormData) => {
+    if (!routineId) return
     const payload: UpdateRoutineRequest = {
-      name: name.trim(),
-      description: description.trim() || null,
-      routineType,
-      pattern: pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
-      active: active || undefined,
-      startDate: startDate.toISOString(),
+      name: data.name.trim(),
+      description: data.description?.trim() || null,
+      routineType: data.routineType,
+      pattern: data.pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
+      active: data.active || undefined,
+      startDate: data.startDate.toISOString(),
     }
     const updated = await updateRoutine(routineId, payload)
     if (updated) {
       router.back()
     }
-  }, [active, canSave, description, name, pattern, routineId, routineType, startDate, updateRoutine])
+  }, [routineId, updateRoutine])
+
+  // Show validation toast on save attempt
+  const showValidationToast = useCallback(async () => {
+    const isFormValid = await trigger()
+    if (!isFormValid) {
+      const currentIssues: string[] = []
+      const currentErrors = control._formState.errors as typeof errors
+      if (currentErrors.name?.message) currentIssues.push(currentErrors.name.message)
+      if (currentErrors.pattern?.message) currentIssues.push(currentErrors.pattern.message)
+      if (currentErrors.description?.message) currentIssues.push(currentErrors.description.message)
+      
+      if (currentIssues.length > 0) {
+        toast.show('Please fix the following:', {
+          message: currentIssues.join('\n'),
+          duration: 4000,
+        })
+        return true
+      }
+    }
+    return false
+  }, [trigger, toast, control])
 
   if (loadingRoutines) {
     return (
@@ -118,17 +158,29 @@ export default function EditRoutinePage() {
         <Text fontSize="$3" color="$color10">
           Name
         </Text>
-        <Input value={name} onChangeText={setName} placeholder="Routine name" />
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, value } }) => (
+            <Input value={value} onChangeText={onChange} placeholder="Routine name" />
+          )}
+        />
       </YStack>
 
       <YStack gap="$2">
         <Text fontSize="$3" color="$color10">
           Description
         </Text>
-        <Input
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Optional description"
+        <Controller
+          control={control}
+          name="description"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              value={value || ''}
+              onChangeText={onChange}
+              placeholder="Optional description"
+            />
+          )}
         />
       </YStack>
 
@@ -180,17 +232,29 @@ export default function EditRoutinePage() {
         </Text>
       </YStack>
 
-      <XStack items="center" gap="$2" mt="$1">
-        <Button size="$2" onPress={() => setActive((v) => !v)} variant="outlined">
-          {active ? 'Active: Yes' : 'Active: No'}
-        </Button>
-        <Text color="$color10">Set as active routine</Text>
-      </XStack>
+      <Controller
+        control={control}
+        name="active"
+        render={({ field: { onChange, value } }) => (
+          <XStack items="center" gap="$2" mt="$1">
+            <Button size="$2" onPress={() => onChange(!value)} variant="outlined">
+              <Text>{value ? 'Active: Yes' : 'Active: No'}</Text>
+            </Button>
+            <Text color="$color10">Set as active routine</Text>
+          </XStack>
+        )}
+      />
 
-      <DatePickerField
-        label="Start Date"
-        value={startDate}
-        onChange={setStartDate}
+      <Controller
+        control={control}
+        name="startDate"
+        render={({ field: { onChange, value } }) => (
+          <DatePickerField
+            label="Start Date"
+            value={value}
+            onChange={onChange}
+          />
+        )}
       />
 
       <Separator my="$2" />
@@ -199,10 +263,16 @@ export default function EditRoutinePage() {
         <Text fontSize="$5" fontWeight="700">
           Pattern
         </Text>
-        <RoutinePatternEditor
-          pattern={pattern}
-          onChange={setPattern}
-          hideRestOption={routineType === 'WEEKLY_COMPLETION'}
+        <Controller
+          control={control}
+          name="pattern"
+          render={({ field: { onChange, value } }) => (
+            <RoutinePatternEditor
+              pattern={value}
+              onChange={onChange}
+              hideRestOption={routineType === 'WEEKLY_COMPLETION'}
+            />
+          )}
         />
       </YStack>
 
@@ -214,9 +284,12 @@ export default function EditRoutinePage() {
           onPress={() => router.back()}
           disabled={loading}
         >
-          Cancel
+          <Text>Cancel</Text>
         </Button>
-        <Button flex={1} bg="$primary" onPress={handleSave} disabled={!canSave || loading}>
+        <Button flex={1} bg="$primary" onPress={async () => {
+          if (await showValidationToast()) return
+          handleSubmit(onSubmit)()
+        }} disabled={loading}>
           {loading ? (
             <XStack items="center" gap="$2">
               <LoadingSpinner size="small" />
