@@ -5,8 +5,7 @@ import { useRouter } from 'expo-router'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToastController } from '@tamagui/toast'
-import { useWorkoutStore } from '../../features/workouts'
-import { apiService } from 'services/apiService'
+import { useWorkoutStore, useWorkoutMutations } from '../../features/workouts'
 import { convertToCreateWorkoutRequest, validateWorkoutData } from 'utils/workoutUtils'
 import { ExerciseEditor } from '../../features/exercises'
 import { LoadingSpinner } from 'components/ui'
@@ -47,6 +46,8 @@ export default function NewWorkoutScreen() {
     removeSetFromExercise,
   } = useWorkoutStore()
 
+  const { createWorkout } = useWorkoutMutations()
+
   const handleCancel = () => {
     clearExercises()
     reset()
@@ -68,20 +69,18 @@ export default function NewWorkoutScreen() {
     setIsCreating(true)
     setError(null)
 
-    try {
-      const createWorkoutRequest = convertToCreateWorkoutRequest(data.name, selectedExercises, data.notes)
-      const result = await apiService.createWorkout(createWorkoutRequest)
+    const createWorkoutRequest = convertToCreateWorkoutRequest(data.name, selectedExercises, data.notes)
+    const result = await createWorkout(createWorkoutRequest)
+    
+    if (result) {
       console.log('Workout created successfully:', result.id)
-
       clearExercises()
       reset()
       router.replace('/(tabs)/(workouts)')
-    } catch (err) {
-      console.error('Failed to create workout:', err)
-      setError(err instanceof Error ? err.message : 'Failed to create workout')
-    } finally {
-      setIsCreating(false)
+    } else {
+      setError('Failed to create workout')
     }
+    setIsCreating(false)
   }
 
   const renderExerciseEditor = useCallback(

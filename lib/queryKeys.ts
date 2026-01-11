@@ -41,6 +41,13 @@ export const queryKeys = {
     all: ['records'] as const,
     list: () => [...queryKeys.records.all, 'list'] as const,
   },
+
+  // Legal content
+  legal: {
+    all: ['legal'] as const,
+    privacy: ['legal', 'privacy'] as const,
+    terms: ['legal', 'terms'] as const,
+  },
 } as const
 
 // Type exports for use with useQuery
