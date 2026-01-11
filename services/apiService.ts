@@ -17,6 +17,8 @@ import type {
 } from '../types/api'
 import type { WorkoutRecordResponse } from '../types/api'
 import type { Routine, CreateRoutineRequest, UpdateRoutineRequest } from '../types/routine'
+import { queryClient } from '../lib/queryClient'
+import { queryKeys } from '../lib/queryKeys'
 
 // Re-export types for backward compatibility
 export type {
@@ -321,10 +323,14 @@ class ApiService {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.CREATE)
     console.log(`API Request: POST ${url}`, workoutData)
 
-    return this.request<{ id: string }>(url, {
+    const result = await this.request<{ id: string }>(url, {
       method: 'POST',
       body: JSON.stringify(workoutData),
     })
+    
+    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
+    
+    return result
   }
 
   async getWorkouts(): Promise<ApiWorkout[]> {
@@ -358,10 +364,12 @@ class ApiService {
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
     console.log(`API Request: PUT ${url}`, payload)
 
-    return this.request<void>(url, {
+    await this.request<void>(url, {
       method: 'PUT',
       body: JSON.stringify(payload),
     })
+    
+    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
   }
 
   async getWorkoutRecords(): Promise<WorkoutRecord[]> {
@@ -378,9 +386,11 @@ class ApiService {
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
     console.log(`API Request: DELETE ${url}`)
 
-    return this.request<void>(url, {
+    await this.request<void>(url, {
       method: 'DELETE',
     })
+    
+    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
   }
 
   async signup(payload: RegisterRequest): Promise<LoginResponse> {

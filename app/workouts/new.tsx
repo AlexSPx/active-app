@@ -11,8 +11,6 @@ import { convertToCreateWorkoutRequest, validateWorkoutData } from 'utils/workou
 import ExerciseEditor from 'components/ExerciseEditor'
 import { LoadingSpinner } from 'components/ui'
 import { createWorkoutSchema, type CreateWorkoutFormData } from '../../lib/schemas/forms'
-import { queryClient } from '../../lib/queryClient'
-import { queryKeys } from '../../lib/queryKeys'
 
 export default function NewWorkoutScreen() {
   const router = useRouter()
@@ -74,8 +72,6 @@ export default function NewWorkoutScreen() {
       const createWorkoutRequest = convertToCreateWorkoutRequest(data.name, selectedExercises, data.notes)
       const result = await apiService.createWorkout(createWorkoutRequest)
       console.log('Workout created successfully:', result.id)
-
-      queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
 
       clearExercises()
       reset()
