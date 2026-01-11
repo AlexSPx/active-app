@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiService } from '../services/apiService'
-import { queryKeys } from '../lib/queryKeys'
-import { workoutsArraySchema } from '../lib/schemas/api'
-import type { ApiWorkout } from '../types/api'
+import { apiService } from '../../../services/apiService'
+import { queryKeys } from '../../../lib/queryKeys'
+import { workoutsArraySchema } from '../../../lib/schemas/api'
+import type { ApiWorkout } from '../../../types/api'
 
 export interface UseWorkoutsReturn {
   workouts: ApiWorkout[]

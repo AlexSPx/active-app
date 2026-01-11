@@ -9,7 +9,7 @@ import {
   BarChart2,
 } from '@tamagui/lucide-icons'
 import { useMemo } from 'react'
-import { useWorkoutRecords } from '../../../../hooks/useWorkoutRecords'
+import { useWorkoutRecords } from '../../../../features/workouts'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../../components/ui/ErrorDisplay'
 import {

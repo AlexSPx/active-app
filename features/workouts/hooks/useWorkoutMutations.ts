@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import type { CreateWorkoutRequest, Workout } from '../types/workout'
-import { apiService } from '../services/apiService'
-import { queryClient } from '../lib/queryClient'
-import { queryKeys } from '../lib/queryKeys'
+import type { CreateWorkoutRequest, Workout } from '../../../types/workout'
+import { apiService } from '../../../services/apiService'
+import { queryClient } from '../../../lib/queryClient'
+import { queryKeys } from '../../../lib/queryKeys'
 
 export function useWorkoutMutations() {
   const [loading, setLoading] = useState(false)

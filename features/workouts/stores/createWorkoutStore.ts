@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { WorkoutExercise } from '../types/workout'
+import type { WorkoutExercise } from '../../../types/workout'
 
 type WorkoutState = {
   selectedExercises: WorkoutExercise[]

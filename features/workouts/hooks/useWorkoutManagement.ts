@@ -1,8 +1,8 @@
-import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
-import { useAppNavigation } from '../navigation/useAppNavigation'
-import type { ApiWorkout } from '../types/api'
-import { queryClient } from '../lib/queryClient'
-import { queryKeys } from '../lib/queryKeys'
+import { useRunningWorkoutStore } from '../../../stores/runningWorkoutStore'
+import { useAppNavigation } from '../../../navigation/useAppNavigation'
+import type { ApiWorkout } from '../../../types/api'
+import { queryClient } from '../../../lib/queryClient'
+import { queryKeys } from '../../../lib/queryKeys'
 
 export interface UseWorkoutManagementActions {
   startWorkout: (workout: ApiWorkout) => void

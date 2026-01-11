@@ -5,11 +5,8 @@ import { useNavigation, useLocalSearchParams } from 'expo-router'
 import { BackHandler, Platform } from 'react-native'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
-import { useWorkoutManagement } from '../../../hooks/useWorkoutManagement'
-import { useWorkouts } from '../../../hooks/useWorkouts'
-import { WorkoutList } from '../../../components/workouts/WorkoutList'
+import { useWorkoutManagement, useWorkouts, WorkoutList, useWorkoutMutations } from '../../../features/workouts'
 import { useAppNavigation } from '../../../navigation/useAppNavigation'
-import { useWorkoutMutations } from '../../../hooks/useWorkoutMutations'
 import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 
 export default function WorkoutsInnerTab() {

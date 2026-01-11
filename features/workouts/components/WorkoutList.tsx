@@ -1,9 +1,9 @@
 import { FlashList } from '@shopify/flash-list'
 import { memo, useEffect, useRef } from 'react'
-import type { ApiWorkout } from '../../types/api'
+import type { ApiWorkout } from '../../../types/api'
 import { WorkoutCard } from './WorkoutCard'
 import { View, YStack, Text, Button } from 'tamagui'
-import { EmptyState } from '../ui/EmptyState'
+import { EmptyState } from '../../../components/ui/EmptyState'
 import { Dumbbell } from '@tamagui/lucide-icons'
 
 export interface WorkoutListProps {

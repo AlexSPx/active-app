@@ -5,7 +5,7 @@ import { FlashList } from '@shopify/flash-list'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToastController } from '@tamagui/toast'
-import { useEditWorkoutStore } from 'stores/editWorkoutStore'
+import { useEditWorkoutStore } from '../../features/workouts'
 import { apiService } from 'services/apiService'
 import {
   apiWorkoutToEditableExercises,

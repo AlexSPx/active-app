@@ -3,9 +3,9 @@ import { MoreHorizontal, Edit3, Trash2 } from '@tamagui/lucide-icons'
 import { Popover } from '@tamagui/popover'
 import { useCallback, memo, useState, useMemo } from 'react'
 import { Pressable, StyleSheet } from 'react-native'
-import { StartWorkoutButton } from '../ui/StartWorkoutButton'
-import { ApiWorkout } from 'types/api'
-import { haptics } from '../../utils/haptics'
+import { StartWorkoutButton } from '../../../components/ui/StartWorkoutButton'
+import { ApiWorkout } from '../../../types/api'
+import { haptics } from '../../../utils/haptics'
 
 export interface WorkoutCardProps {
   workout: ApiWorkout

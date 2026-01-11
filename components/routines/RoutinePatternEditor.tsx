@@ -5,7 +5,7 @@ import type { RoutinePatternItem, RoutineDayType } from '../../types/routine'
 import { Popover } from '@tamagui/popover'
 import { Pressable, StyleSheet } from 'react-native'
 import { useState } from 'react'
-import { useWorkouts } from '../../hooks/useWorkouts'
+import { useWorkouts } from '../../features/workouts'
 import type { ApiWorkout } from '../../types/api'
 import { FlashList } from '@shopify/flash-list'
 
