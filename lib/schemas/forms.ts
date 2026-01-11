@@ -36,9 +36,41 @@ export type CreateRoutineFormData = z.infer<typeof createRoutineSchema>
 // Workout Form Schemas
 // ==========================================
 
+export const workoutSetSchema = z.object({
+  id: z.string().optional(),
+  reps: z.number().nullable(),
+  weight: z.number().nullable(),
+  durationSeconds: z.number().nullable().optional(),
+  completed: z.boolean().optional(),
+  restTime: z.number().optional(),
+}).passthrough() // Allow extra fields
+
+export const workoutExerciseSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  category: z.string(),
+  sets: z.array(workoutSetSchema).min(1, 'Each exercise must have at least one set'),
+  notes: z.string().optional(),
+}).passthrough()
+.superRefine((exercise, ctx) => {
+  const hasIncompleteSet = exercise.sets.some(set => {
+    if (exercise.category === 'CARDIO') {
+      return set.durationSeconds == null
+    }
+    return set.reps == null || set.weight == null
+  })
+  if (hasIncompleteSet) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'All sets must be completed (fill in reps/weight or duration)',
+    })
+  }
+})
+
 export const createWorkoutSchema = z.object({
   name: z.string().min(1, 'Workout name is required').max(100, 'Name must be 100 characters or less'),
   notes: z.string().max(1000, 'Notes must be 1000 characters or less').optional(),
+  exercises: z.array(workoutExerciseSchema).min(1, 'Add at least one exercise'),
 })
 
 export type CreateWorkoutFormData = z.infer<typeof createWorkoutSchema>

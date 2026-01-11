@@ -1,9 +1,10 @@
-import React, { useCallback, useState } from 'react'
-import { YStack, Text, Input, Button, Separator, View, TextArea } from 'tamagui'
+import React, { useCallback, useState, useMemo, useEffect } from 'react'
+import { YStack, Text, Input, Button, Separator, View, TextArea, XStack } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useToastController } from '@tamagui/toast'
 import { useWorkoutStore } from 'stores/createWorkoutStore'
 import { apiService } from 'services/apiService'
 import { convertToCreateWorkoutRequest, validateWorkoutData } from 'utils/workoutUtils'
@@ -15,18 +16,22 @@ import { queryKeys } from '../../lib/queryKeys'
 
 export default function NewWorkoutScreen() {
   const router = useRouter()
+  const toast = useToastController()
 
   const {
     control,
     handleSubmit,
     watch,
     reset,
+    setValue,
+    trigger,
     formState: { errors },
   } = useForm<CreateWorkoutFormData>({
     resolver: zodResolver(createWorkoutSchema),
     defaultValues: {
       name: '',
       notes: '',
+      exercises: [],
     },
     mode: 'onChange',
   })
@@ -49,6 +54,11 @@ export default function NewWorkoutScreen() {
     reset()
     router.back()
   }
+
+  // Sync store exercises to form for Zod validation (silent sync, validation on submit)
+  useEffect(() => {
+    setValue('exercises', selectedExercises as any, { shouldValidate: false })
+  }, [selectedExercises, setValue])
 
   const onSubmit = async (data: CreateWorkoutFormData) => {
     const validationError = validateWorkoutData(data.name, selectedExercises)
@@ -125,6 +135,57 @@ export default function NewWorkoutScreen() {
 
   const canSave = name && selectedExercises.length > 0 && !hasNulls && !isCreating
 
+  // Get validation issues from Zod schema errors
+  const validationIssues = useMemo(() => {
+    const issues: string[] = []
+    // Add errors from Zod schema validation
+    if (errors.name?.message) issues.push(errors.name.message)
+    if (errors.notes?.message) issues.push(errors.notes.message)
+    if (errors.exercises?.message) issues.push(errors.exercises.message)
+    if (errors.exercises?.root?.message) issues.push(errors.exercises.root.message)
+    if (Array.isArray(errors.exercises)) {
+      errors.exercises.forEach((exError, idx) => {
+        if (exError?.message) issues.push(`Exercise ${idx + 1}: ${exError.message}`)
+        if (exError?.sets?.message) issues.push(`Exercise ${idx + 1}: ${exError.sets.message}`)
+      })
+    }
+    return issues
+  }, [errors])
+
+  // Show validation toast and return true if there are issues
+  const showValidationToast = useCallback(async () => {
+    // Trigger validation for all fields
+    const isFormValid = await trigger()
+    if (!isFormValid) {
+      // Re-compute issues from current errors after validation
+      const currentIssues: string[] = []
+      const currentErrors = control._formState.errors as typeof errors
+      if (currentErrors.name?.message) currentIssues.push(currentErrors.name.message)
+      if (currentErrors.notes?.message) currentIssues.push(currentErrors.notes.message)
+      if (currentErrors.exercises?.message) currentIssues.push(currentErrors.exercises.message)
+      if ((currentErrors.exercises as any)?.root?.message) currentIssues.push((currentErrors.exercises as any).root.message)
+      
+      // Check individual exercise errors (array items)
+      const exercisesErrors = currentErrors.exercises as any
+      if (Array.isArray(exercisesErrors)) {
+        exercisesErrors.forEach((exError: any, idx: number) => {
+          if (exError?.message) currentIssues.push(exError.message)
+          if (exError?.root?.message) currentIssues.push(exError.root.message)
+          if (exError?.sets?.message) currentIssues.push(exError.sets.message)
+        })
+      }
+      
+      if (currentIssues.length > 0) {
+        toast.show('Please fix the following:', {
+          message: currentIssues.join('\n'),
+          duration: 4000,
+        })
+        return true
+      }
+    }
+    return false
+  }, [trigger, toast, control])
+
   const ListHeaderComponent = useCallback(
     () => (
       <YStack gap="$4">
@@ -163,10 +224,13 @@ export default function NewWorkoutScreen() {
       <YStack gap="$4" pt="$4">
         <Separator />
         <Button
-          disabled={!canSave}
+          disabled={isCreating}
           bg="$primary"
           size="$5"
-          onPress={handleSubmit(onSubmit)}
+          onPress={async () => {
+            if (await showValidationToast()) return
+            handleSubmit(onSubmit)()
+          }}
         >
           {isCreating ? (
             <LoadingSpinner size="small" color="$onPrimary" />
@@ -181,7 +245,7 @@ export default function NewWorkoutScreen() {
         </Button>
       </YStack>
     ),
-    [canSave, isCreating, handleSubmit, onSubmit, handleCancel]
+    [isCreating, handleSubmit, onSubmit, handleCancel, showValidationToast]
   )
 
   return (
@@ -222,10 +286,13 @@ export default function NewWorkoutScreen() {
           <Separator />
 
           <Button
-            disabled={!canSave}
+            disabled={isCreating}
             bg="$primary"
             size="$5"
-            onPress={handleSubmit(onSubmit)}
+            onPress={async () => {
+              if (await showValidationToast()) return
+              handleSubmit(onSubmit)()
+            }}
           >
             {isCreating ? (
               <LoadingSpinner size="small" color="$onPrimary" />

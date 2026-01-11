@@ -1,7 +1,8 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useMemo } from 'react'
 import { YStack, XStack, Text, Input, Button, Separator } from 'tamagui'
 import { useNavigation, router } from 'expo-router'
 import { Calendar, ListChecks } from '@tamagui/lucide-icons'
+import { useToastController } from '@tamagui/toast'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import type { RoutinePatternItem, CreateRoutineRequest, RoutineType } from '../../types/routine'
@@ -15,6 +16,7 @@ import { createRoutineSchema, type CreateRoutineFormData } from '../../lib/schem
 
 export default function NewRoutinePage() {
   const navigation = useNavigation()
+  const toast = useToastController()
   const { createRoutine, loading, error, clearError } = useRoutineMutations()
 
   const {
@@ -38,6 +40,16 @@ export default function NewRoutinePage() {
 
   const routineType = watch('routineType')
   const pattern = watch('pattern')
+
+  // Get validation issues from Zod schema errors + runtime checks
+  const validationIssues = useMemo(() => {
+    const issues: string[] = []
+    // Add errors from Zod schema validation
+    if (errors.name?.message) issues.push(errors.name.message)
+    if (errors.pattern?.message) issues.push(errors.pattern.message)
+    if (errors.description?.message) issues.push(errors.description.message)
+    return issues
+  }, [errors])
 
   useEffect(() => {
     navigation.setOptions({ title: 'Create Routine' })
@@ -215,7 +227,17 @@ export default function NewRoutinePage() {
         >
           <Text>Cancel</Text>
         </Button>
-        <Button flex={1} bg="$primary" onPress={handleSubmit(onSubmit)} disabled={!isValid || loading}>
+        <Button flex={1} bg="$primary" onPress={() => {
+          // Show validation toast if form is invalid
+          if (validationIssues.length > 0) {
+            toast.show('Please fix the following:', {
+              message: validationIssues.join('\n'),
+              duration: 4000,
+            })
+            return
+          }
+          handleSubmit(onSubmit)()
+        }} disabled={loading}>
           {loading ? (
             <XStack items="center" gap="$2">
               <LoadingSpinner size="small" />
@@ -226,6 +248,7 @@ export default function NewRoutinePage() {
           )}
         </Button>
       </XStack>
+
     </YStack>
   )
 }
