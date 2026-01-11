@@ -298,10 +298,7 @@ class ApiService {
       }
       body = JSON.stringify({ refreshToken })
     }
-
-    console.log("Refresh token request:", body)
     
-
     const response = await fetch(url, this.getFetchOptions({
       method: 'POST',
       headers: await this.getAuthHeaders(),
