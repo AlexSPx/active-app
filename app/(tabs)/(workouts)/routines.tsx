@@ -7,10 +7,7 @@ import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
-import { RoutineList } from '../../../components/routines/RoutineList'
-import { useRoutines } from '../../../hooks/useRoutines'
-import { useRoutineMutations } from '../../../hooks/useRoutineMutations'
-import { useActiveRoutine } from '../../../hooks/useActiveRoutine'
+import { RoutineList, useRoutines, useRoutineMutations, useActiveRoutine } from '../../../features/routines'
 import type { Routine } from '../../../types/routine'
 import { posthog } from '../../../services/posthog'
 

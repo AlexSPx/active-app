@@ -1,4 +1,4 @@
-import { useRunningWorkoutStore } from '../../../stores/runningWorkoutStore'
+import { useRunningWorkoutStore } from '../../workout-session'
 import { useAppNavigation } from '../../../navigation/useAppNavigation'
 import type { ApiWorkout } from '../../../types/api'
 import { queryClient } from '../../../lib/queryClient'

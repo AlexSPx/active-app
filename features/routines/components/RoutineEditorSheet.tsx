@@ -6,11 +6,11 @@ import type {
   RoutinePatternItem,
   CreateRoutineRequest,
   UpdateRoutineRequest,
-} from '../../types/routine'
+} from '../../../types/routine'
 import { RoutinePatternEditor } from './RoutinePatternEditor'
-import { useRoutineMutations } from '../../hooks/useRoutineMutations'
-import { ErrorDisplay } from '../ui/ErrorDisplay'
-import { LoadingSpinner } from '../ui/LoadingSpinner'
+import { useRoutineMutations } from '../hooks/useRoutineMutations'
+import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 
 export interface RoutineEditorSheetProps {
   open: boolean

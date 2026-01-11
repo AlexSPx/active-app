@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiService } from '../services/apiService'
-import { queryKeys } from '../lib/queryKeys'
-import { routineSchema } from '../lib/schemas/api'
-import type { Routine } from '../types/routine'
+import { apiService } from '../../../services/apiService'
+import { queryKeys } from '../../../lib/queryKeys'
+import { routineSchema } from '../../../lib/schemas/api'
+import type { Routine } from '../../../types/routine'
 
 export interface UseActiveRoutineReturn {
   activeRoutine: Routine | null

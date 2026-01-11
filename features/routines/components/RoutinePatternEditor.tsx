@@ -1,12 +1,12 @@
 import { useCallback, useMemo } from 'react'
 import { YStack, XStack, Text, Button, Separator } from 'tamagui'
 import { Plus, Trash2, ChevronDown, Dumbbell, Moon, Calendar } from '@tamagui/lucide-icons'
-import type { RoutinePatternItem, RoutineDayType } from '../../types/routine'
+import type { RoutinePatternItem, RoutineDayType } from '../../../types/routine'
 import { Popover } from '@tamagui/popover'
 import { Pressable, StyleSheet } from 'react-native'
 import { useState } from 'react'
-import { useWorkouts } from '../../features/workouts'
-import type { ApiWorkout } from '../../types/api'
+import { useWorkouts } from '../../workouts'
+import type { ApiWorkout } from '../../../types/api'
 import { FlashList } from '@shopify/flash-list'
 
 export interface RoutinePatternEditorProps {

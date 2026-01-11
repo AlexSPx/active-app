@@ -2,9 +2,9 @@ import { memo, useCallback, useMemo, useState } from 'react'
 import { Card, YStack, XStack, Text, Button, Separator, Portal, Theme } from 'tamagui'
 import { Popover } from '@tamagui/popover'
 import { MoreHorizontal, Edit3, Trash2, CheckCircle2, Calendar, Dumbbell, Coffee, ListChecks } from '@tamagui/lucide-icons'
-import type { Routine } from '../../types/routine'
+import type { Routine } from '../../../types/routine'
 import { Pressable, StyleSheet } from 'react-native'
-import { haptics } from '../../utils/haptics'
+import { haptics } from '../../../utils/haptics'
 
 export interface RoutineCardProps {
   routine: Routine

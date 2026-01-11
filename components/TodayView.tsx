@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react'
 import { YStack, XStack, Text, Card, Circle } from 'tamagui'
 import { Calendar, Clock, Zap, Check, Circle as CircleIcon } from '@tamagui/lucide-icons'
-import { useActiveRoutine } from 'hooks/useActiveRoutine'
+import { useActiveRoutine } from '../features/routines'
 import { useWorkouts } from '../features/workouts'
 import { useAuth } from 'contexts/AuthContext'
 import type { Routine, RoutinePatternItem } from 'types/routine'

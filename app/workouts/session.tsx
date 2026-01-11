@@ -1,12 +1,8 @@
 import { useTheme, View, YStack } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 
-import { WorkoutSessionExercise } from '../../components/workout-session/WorkoutSessionExercise'
-import { WorkoutSessionHeader } from '../../components/workout-session/WorkoutSessionHeader'
-import { WorkoutActions } from '../../components/workout-session/WorkoutActions'
+import { WorkoutSessionExercise, WorkoutSessionHeader, WorkoutActions, useWorkoutSession, RestTimerOverlay } from '../../features/workout-session'
 import { getCurrentDate } from '../../utils/date'
-import { useWorkoutSession } from '../../hooks/useWorkoutSession'
-import { RestTimerOverlay } from '../../components/workout-session/RestTimerOverlay'
 import { useAppNavigation } from '../../navigation/useAppNavigation'
 import type { Exercise } from '../../types/workout-session'
 import { useUiStore } from '../../stores/uiStore'

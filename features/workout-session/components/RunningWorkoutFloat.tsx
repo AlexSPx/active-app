@@ -2,7 +2,7 @@ import { Clock, Play } from '@tamagui/lucide-icons'
 import { Button, Text, XStack, YStack } from 'tamagui'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'expo-router'
-import { useRunningWorkoutStore } from '../../stores/runningWorkoutStore'
+import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 
 export default function RunningWorkoutFloat() {
   const router = useRouter()

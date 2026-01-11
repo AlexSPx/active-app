@@ -1,7 +1,7 @@
 import { Check, Dumbbell } from '@tamagui/lucide-icons'
 import { XStack, YStack, Text, Progress } from 'tamagui'
 import { StreakUpdateResponse } from '../types/api'
-import { useActiveRoutine } from '../hooks/useActiveRoutine'
+import { useActiveRoutine } from '../features/routines'
 import { routinePatternIndex } from '../utils/date'
 
 type StreakViewProps = {

@@ -1,11 +1,11 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { ApiExercise } from '../types/api'
-import { apiService } from '../services/apiService'
-import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecordResponse } from '../types/api'
-import type { FinishedCongratsPayload } from '../types/congrats'
-import { haptics } from '../utils/haptics'
-import { posthog } from '../services/posthog'
+import type { ApiExercise } from '../../../types/api'
+import { apiService } from '../../../services/apiService'
+import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecordResponse } from '../../../types/api'
+import type { FinishedCongratsPayload } from '../../../types/congrats'
+import { haptics } from '../../../utils/haptics'
+import { posthog } from '../../../services/posthog'
 
 export interface RunningWorkoutExercise extends ApiExercise {
   sets: number

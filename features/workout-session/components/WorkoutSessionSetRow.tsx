@@ -9,7 +9,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated'
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler'
-import type { Set } from '../../types/workout-session'
+import type { Set } from '../../../types/workout-session'
 
 const SWIPE_THRESHOLD = -80
 

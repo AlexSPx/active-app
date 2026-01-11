@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppState } from 'react-native'
-import type { Exercise } from '../types/workout-session'
+import type { Exercise } from '../../../types/workout-session'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
-import { useSettingsStore } from '../stores/settingsStore'
+import { useSettingsStore } from '../../../stores/settingsStore'
 import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
-import type { WorkoutRecordResponse } from '../types/api'
+import type { WorkoutRecordResponse } from '../../../types/api'
 import {
   scheduleRestNotification,
   cancelRestNotification,
-} from '../services/notificationService'
-import { queryClient } from '../lib/queryClient'
-import { queryKeys } from '../lib/queryKeys'
+} from '../../../services/notificationService'
+import { queryClient } from '../../../lib/queryClient'
+import { queryKeys } from '../../../lib/queryKeys'
 
 export interface UseWorkoutSessionOptions {
   fallbackExercises?: Exercise[]

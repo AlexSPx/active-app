@@ -3,7 +3,7 @@ import { Plus, MoreHorizontal, Timer, Target } from '@tamagui/lucide-icons'
 import { View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback, memo } from 'react'
-import type { Exercise } from '../../types/workout-session'
+import type { Exercise } from '../../../types/workout-session'
 import { WorkoutSessionSetRow } from './WorkoutSessionSetRow'
 import { CardioSessionSetRow } from './CardioSessionSetRow'
 

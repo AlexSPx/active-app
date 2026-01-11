@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { apiService } from '../services/apiService'
-import type { CreateRoutineRequest, UpdateRoutineRequest, Routine } from '../types/routine'
-import type { ApiError } from '../types/api'
-import { queryClient } from '../lib/queryClient'
-import { queryKeys } from '../lib/queryKeys'
+import { apiService } from '../../../services/apiService'
+import type { CreateRoutineRequest, UpdateRoutineRequest, Routine } from '../../../types/routine'
+import type { ApiError } from '../../../types/api'
+import { queryClient } from '../../../lib/queryClient'
+import { queryKeys } from '../../../lib/queryKeys'
 
 function toFriendlyError(err: unknown, fallback: string): string {
   const defaultMsg = fallback

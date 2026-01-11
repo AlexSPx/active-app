@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { useUserStore } from '../stores/userStore'
 import { useSettingsStore } from '../stores/settingsStore'
-import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
+import { useRunningWorkoutStore } from '../features/workout-session'
 import { useWorkoutStore, useEditWorkoutStore } from '../features/workouts'
 import { useWidgetStore } from '../stores/widgetStore'
 import { useUiStore } from '../stores/uiStore'

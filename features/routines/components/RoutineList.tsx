@@ -1,9 +1,9 @@
 import { FlashList } from '@shopify/flash-list'
 import { memo } from 'react'
 import { View, YStack, Text, Button } from 'tamagui'
-import type { Routine } from '../../types/routine'
+import type { Routine } from '../../../types/routine'
 import { RoutineCard } from './RoutineCard'
-import { EmptyState } from '../ui/EmptyState'
+import { EmptyState } from '../../../components/ui/EmptyState'
 import { ClipboardList } from '@tamagui/lucide-icons'
 export interface RoutineListProps {
   routines: Routine[]
