@@ -13,6 +13,7 @@ export interface WorkoutCardProps {
   isWorkoutRunning: boolean
   onEdit?: (workout: ApiWorkout) => void
   onDelete?: (workoutId: string) => void
+  onPress?: (workout: ApiWorkout) => void
 }
 
 export const WorkoutCard = memo(
@@ -22,6 +23,7 @@ export const WorkoutCard = memo(
     isWorkoutRunning,
     onEdit,
     onDelete,
+    onPress,
   }: WorkoutCardProps) {
     const [menuOpen, setMenuOpen] = useState(false)
     const renderExercisePreview = useCallback(
@@ -62,6 +64,7 @@ export const WorkoutCard = memo(
         p="$4"
         rounded="$6"
         pressStyle={{ scale: 0.98, opacity: 0.9 }}
+        onPress={() => onPress?.(workout)}
       >
         <YStack gap="$3">
           <XStack justify="space-between" items="center">

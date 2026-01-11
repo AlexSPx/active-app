@@ -105,6 +105,26 @@ export interface UpdateUserRequest {
   registrationCompleted?: boolean
 }
 
+// Muscle Group enum matching backend MuscleGroup
+export type MuscleGroup =
+  | 'ABDOMINALS'
+  | 'ABDUCTORS'
+  | 'ADDUCTORS'
+  | 'BICEPS'
+  | 'CALVES'
+  | 'CHEST'
+  | 'FOREARMS'
+  | 'GLUTES'
+  | 'HAMSTRINGS'
+  | 'LATS'
+  | 'LOWER_BACK'
+  | 'MIDDLE_BACK'
+  | 'NECK'
+  | 'QUADRICEPS'
+  | 'SHOULDERS'
+  | 'TRAPS'
+  | 'TRICEPS'
+
 // Workout Template Types (Server Request/Response)
 export interface ApiWorkoutExercise {
   exerciseId: string
@@ -112,6 +132,8 @@ export interface ApiWorkoutExercise {
   weight: number[]
   durationSeconds?: number[] | null
   category: ApiExercise['category']
+  primaryMuscles?: MuscleGroup[]
+  secondaryMuscles?: MuscleGroup[]
 }
 
 export interface ApiWorkoutTemplate {

@@ -1,16 +1,18 @@
 import { YStack, XStack, Button, Text, Separator, Dialog, Adapt } from 'tamagui'
 import { Sheet } from '@tamagui/sheet'
 import { useState, useCallback, useEffect, useLayoutEffect } from 'react'
-import { useNavigation, useLocalSearchParams } from 'expo-router'
+import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router'
 import { BackHandler, Platform } from 'react-native'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
 import { useWorkoutManagement, useWorkouts, WorkoutList, useWorkoutMutations } from '../../../features/workouts'
 import { useAppNavigation } from '../../../navigation/useAppNavigation'
 import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
+import { ApiWorkout } from '../../../types/api'
 
 export default function WorkoutsInnerTab() {
   const navigation = useNavigation()
+  const router = useRouter()
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
   const { navigateToNewWorkout, navigateToEditWorkout } = useAppNavigation()
   const { workouts, loading, error, refetch } = useWorkouts()
@@ -138,6 +140,7 @@ export default function WorkoutsInnerTab() {
           refreshing={loading}
           onRefresh={refetch}
           onCreateWorkout={navigateToNewWorkout}
+          onWorkoutPress={(workout) => router.push(`/workouts/${workout.id}`)}
         />
       </YStack>
 

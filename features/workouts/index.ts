@@ -12,3 +12,4 @@ export { useEditWorkoutStore } from './stores/editWorkoutStore'
 // Components
 export { WorkoutCard } from './components/WorkoutCard'
 export { WorkoutList } from './components/WorkoutList'
+export { MuscleHeatMap } from './components/MuscleHeatMap'

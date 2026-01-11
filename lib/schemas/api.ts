@@ -103,12 +103,34 @@ export const loginResponseSchema = z.object({
 // Workout Schemas
 // ==========================================
 
+export const muscleGroupSchema = z.enum([
+  'ABDOMINALS',
+  'ABDUCTORS',
+  'ADDUCTORS',
+  'BICEPS',
+  'CALVES',
+  'CHEST',
+  'FOREARMS',
+  'GLUTES',
+  'HAMSTRINGS',
+  'LATS',
+  'LOWER_BACK',
+  'MIDDLE_BACK',
+  'NECK',
+  'QUADRICEPS',
+  'SHOULDERS',
+  'TRAPS',
+  'TRICEPS',
+])
+
 export const workoutExerciseSchema = z.object({
   exerciseId: z.string(),
   reps: z.array(z.number()).nullable().optional().transform((v) => v ?? []),
   weight: z.array(z.number()).nullable().optional().transform((v) => v ?? []),
   durationSeconds: z.array(z.number()).nullable().optional().transform((v) => v ?? []),
   category: exerciseCategorySchema,
+  primaryMuscles: z.array(muscleGroupSchema).optional().default([]),
+  secondaryMuscles: z.array(muscleGroupSchema).optional().default([]),
 }).refine(
   (data) => {
     const hasRepsWeight = data.reps.length > 0 && data.weight.length > 0

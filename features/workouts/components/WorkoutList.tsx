@@ -12,6 +12,7 @@ export interface WorkoutListProps {
   isWorkoutRunning: boolean
   onEditWorkout?: (workout: ApiWorkout) => void
   onDeleteWorkout?: (workoutId: string) => void
+  onWorkoutPress?: (workout: ApiWorkout) => void
   listHeader?: React.ReactElement
   refreshing?: boolean
   onRefresh?: () => void
@@ -26,6 +27,7 @@ export const WorkoutList = memo(
     isWorkoutRunning,
     onEditWorkout,
     onDeleteWorkout,
+    onWorkoutPress,
     listHeader,
     refreshing,
     onRefresh,
@@ -54,6 +56,7 @@ export const WorkoutList = memo(
           isWorkoutRunning={isWorkoutRunning}
           onEdit={onEditWorkout ? () => onEditWorkout(workout) : undefined}
           onDelete={onDeleteWorkout ? () => onDeleteWorkout(workout.id) : undefined}
+          onPress={onWorkoutPress}
         />
       )
     }
