@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
-import { useAuth } from '../contexts/AuthContext'
-import type { UpdateUserRequest, User, ApiError } from '../types/api'
+import { useAuth } from '../../../contexts/AuthContext'
+import type { UpdateUserRequest, User, ApiError } from '../../../types/api'
 import { timeZonesNames } from '@vvo/tzdb'
-import { queryClient } from '../lib/queryClient'
-import { queryKeys } from '../lib/queryKeys'
+import { queryClient } from '../../../lib/queryClient'
+import { queryKeys } from '../../../lib/queryKeys'
 
 // Simple email regex (client-side validation aid; server performs authoritative validation)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/

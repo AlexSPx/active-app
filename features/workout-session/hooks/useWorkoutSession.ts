@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { AppState } from 'react-native'
 import type { Exercise } from '../../../types/workout-session'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
-import { useSettingsStore } from '../../../stores/settingsStore'
+import { useSettingsStore } from '../../settings'
 import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
 import type { WorkoutRecordResponse } from '../../../types/api'
 import {

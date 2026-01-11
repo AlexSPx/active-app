@@ -14,7 +14,7 @@ import { Globe } from '@react-buoy/shared-ui'
 import { initNotifications, registerPushNotifications } from '../services/notificationService'
 import { PostHogProvider } from 'posthog-react-native'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
-import { useSettingsStore } from '../stores/settingsStore'
+import { useSettingsStore } from '../features/settings'
 import { posthog } from '../services/posthog'
 import { queryClient } from '../lib/queryClient'
 

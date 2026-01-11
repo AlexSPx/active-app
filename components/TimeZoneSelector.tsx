@@ -1,8 +1,8 @@
 import React from 'react'
 import { YStack, XStack, Text, Button, ScrollView, Sheet, Input } from 'tamagui'
 import { ChevronDown, Check } from '@tamagui/lucide-icons'
-import { useSettingsStore } from '../stores/settingsStore'
-import { useUpdateUser } from '../hooks/useUpdateUser'
+import { useSettingsStore } from '../features/settings'
+import { useUpdateUser } from '../features/settings'
 import { LoadingSpinner } from './ui/LoadingSpinner'
 
 // Cache to avoid re-importing tzdb between openings

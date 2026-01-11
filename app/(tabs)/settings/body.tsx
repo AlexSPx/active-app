@@ -5,8 +5,7 @@ import { useRouter, Stack } from 'expo-router'
 import { YStack, XStack, Text, Paragraph, Label, Button, Separator, ScrollView } from 'tamagui'
 import { Ruler } from '@tamagui/lucide-icons'
 import WheelSelector from '../../../components/ui/WheelSelector'
-import { useSettingsStore } from '../../../stores/settingsStore'
-import { useUpdateUser } from '../../../hooks/useUpdateUser'
+import { useSettingsStore, useUpdateUser } from '../../../features/settings'
 
 function formatNumber(n: number | null | undefined, digits = 1) {
   if (n == null || isNaN(n)) return ''

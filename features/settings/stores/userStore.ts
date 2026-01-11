@@ -1,6 +1,6 @@
 import { create } from 'zustand'
-import { apiService } from '../services/apiService'
-import type { User, ApiError, UpdateUserRequest } from '../types/api'
+import { apiService } from '../../../services/apiService'
+import type { User, ApiError, UpdateUserRequest } from '../../../types/api'
 
 interface UserState {
   // State
