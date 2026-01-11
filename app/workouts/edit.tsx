@@ -11,7 +11,7 @@ import {
   apiWorkoutToEditableExercises,
   buildUpdateWorkoutRequest,
 } from 'utils/workoutUtils'
-import ExerciseEditor from 'components/ExerciseEditor'
+import { ExerciseEditor } from '../../features/exercises'
 import { LoadingSpinner } from 'components/ui'
 import { createWorkoutSchema, type CreateWorkoutFormData } from '../../lib/schemas/forms'
 

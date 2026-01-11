@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { YStack, Text, Input, Button, ScrollView } from 'tamagui'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useWorkoutStore, useEditWorkoutStore } from '../../features/workouts'
-import { useExerciseSearch } from 'hooks/useExerciseSearch'
-import { ExerciseList } from 'components/exercise/ExerciseList'
+import { useExerciseSearch, ExerciseList } from '../../features/exercises'
 import type { Exercise } from 'types/workout'
 
 export default function SearchExerciseScreen() {

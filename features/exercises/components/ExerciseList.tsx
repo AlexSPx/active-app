@@ -1,9 +1,9 @@
 import { YStack, Text, Card, XStack, View } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 import { memo, useCallback } from 'react'
-import type { Exercise } from '../../types/workout'
-import { LoadingSpinner } from '../ui/LoadingSpinner'
-import { ErrorDisplay } from '../ui/ErrorDisplay'
+import type { Exercise } from '../../../types/workout'
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
+import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
 
 interface ExerciseListProps {
   exercises: Exercise[]

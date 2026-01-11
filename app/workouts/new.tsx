@@ -8,7 +8,7 @@ import { useToastController } from '@tamagui/toast'
 import { useWorkoutStore } from '../../features/workouts'
 import { apiService } from 'services/apiService'
 import { convertToCreateWorkoutRequest, validateWorkoutData } from 'utils/workoutUtils'
-import ExerciseEditor from 'components/ExerciseEditor'
+import { ExerciseEditor } from '../../features/exercises'
 import { LoadingSpinner } from 'components/ui'
 import { createWorkoutSchema, type CreateWorkoutFormData } from '../../lib/schemas/forms'
 

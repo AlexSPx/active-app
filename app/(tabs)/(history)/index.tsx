@@ -15,7 +15,7 @@ import {
   sameDay,
   startOfWeek,
   toISODate,
-} from '../../../components/history'
+} from '../../../features/history'
 import { parseServerUtcDate } from '../../../utils/date'
 
 // Conversion performed inside component to include workout titles

@@ -8,7 +8,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated'
 import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler'
-import SmartTimeInput from './ui/SmartTimeInput'
+import SmartTimeInput from '../../../components/ui/SmartTimeInput'
 
 interface CardioEditorSetRowProps {
   index: number

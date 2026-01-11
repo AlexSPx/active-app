@@ -1,9 +1,9 @@
 import { useState, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiService } from '../services/apiService'
-import { queryKeys } from '../lib/queryKeys'
-import { exercisesArraySchema } from '../lib/schemas/api'
-import type { ApiExercise } from '../types/api'
+import { apiService } from '../../../services/apiService'
+import { queryKeys } from '../../../lib/queryKeys'
+import { exercisesArraySchema } from '../../../lib/schemas/api'
+import type { ApiExercise } from '../../../types/api'
 
 export function useExerciseSearch() {
   const [searchQuery, setSearchQuery] = useState('')

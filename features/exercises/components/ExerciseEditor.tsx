@@ -4,7 +4,7 @@ import { FlashList } from '@shopify/flash-list'
 import { useCallback } from 'react'
 import { ExerciseSetRow } from './ExerciseSetRow'
 import CardioEditorSetRow from './CardioEditorSetRow'
-import type { WorkoutExercise, WorkoutSet } from '../types/workout'
+import type { WorkoutExercise, WorkoutSet } from '../../../types/workout'
 
 interface ExerciseEditorProps {
   exercise: WorkoutExercise

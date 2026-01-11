@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiService } from '../services/apiService'
-import { queryKeys } from '../lib/queryKeys'
-import { exerciseLogsArraySchema } from '../lib/schemas/api'
-import type { ExerciseLogResponse } from '../types/api'
+import { apiService } from '../../../services/apiService'
+import { queryKeys } from '../../../lib/queryKeys'
+import { exerciseLogsArraySchema } from '../../../lib/schemas/api'
+import type { ExerciseLogResponse } from '../../../types/api'
 
 export interface ProgressionDataPoint {
   date: string
