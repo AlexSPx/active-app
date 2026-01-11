@@ -1,8 +1,7 @@
-import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { apiService } from '../../../services/apiService'
 import type { CreateRoutineRequest, UpdateRoutineRequest, Routine } from '../../../types/routine'
 import type { ApiError } from '../../../types/api'
-import { queryClient } from '../../../lib/queryClient'
 import { queryKeys } from '../../../lib/queryKeys'
 
 function toFriendlyError(err: unknown, fallback: string): string {
@@ -21,23 +20,36 @@ function toFriendlyError(err: unknown, fallback: string): string {
 }
 
 export function useRoutineMutations() {
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const queryClient = useQueryClient()
+
+  const createMutation = useMutation({
+    mutationFn: (payload: CreateRoutineRequest) => apiService.createRoutine(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ routineId, payload }: { routineId: string; payload: UpdateRoutineRequest }) =>
+      apiService.updateRoutine(routineId, payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (routineId: string) => apiService.deleteRoutine(routineId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
+    },
+  })
 
   const createRoutine = async (payload: CreateRoutineRequest): Promise<Routine | null> => {
     try {
-      setLoading(true)
-      setError(null)
-      const routine = await apiService.createRoutine(payload)
-      // Invalidate routines list
-      queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
-      return routine
+      return await createMutation.mutateAsync(payload)
     } catch (e) {
       console.error('Failed to create routine:', e)
-      setError(toFriendlyError(e, 'Failed to create routine'))
       return null
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -46,33 +58,20 @@ export function useRoutineMutations() {
     payload: UpdateRoutineRequest
   ): Promise<Routine | null> => {
     try {
-      setLoading(true)
-      setError(null)
-      const routine = await apiService.updateRoutine(routineId, payload)
-      queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
-      return routine
+      return await updateMutation.mutateAsync({ routineId, payload })
     } catch (e) {
       console.error('Failed to update routine:', e)
-      setError(toFriendlyError(e, 'Failed to update routine'))
       return null
-    } finally {
-      setLoading(false)
     }
   }
 
   const deleteRoutine = async (routineId: string): Promise<boolean> => {
     try {
-      setLoading(true)
-      setError(null)
-      await apiService.deleteRoutine(routineId)
-      queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
+      await deleteMutation.mutateAsync(routineId)
       return true
     } catch (e) {
       console.error('Failed to delete routine:', e)
-      setError(toFriendlyError(e, 'Failed to delete routine'))
       return false
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -88,14 +87,21 @@ export function useRoutineMutations() {
     return result
   }
 
+  const currentError =
+    createMutation.error ?? updateMutation.error ?? deleteMutation.error ?? null
+
   return {
     createRoutine,
     updateRoutine,
     deleteRoutine,
     activateRoutine,
     clearActiveRoutine,
-    loading,
-    error,
-    clearError: () => setError(null),
+    loading: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
+    error: currentError ? toFriendlyError(currentError, 'An error occurred') : null,
+    clearError: () => {
+      createMutation.reset()
+      updateMutation.reset()
+      deleteMutation.reset()
+    },
   }
 }
