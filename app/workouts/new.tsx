@@ -1,20 +1,41 @@
-import { useState, useCallback } from 'react'
+import React, { useCallback, useState } from 'react'
 import { YStack, Text, Input, Button, Separator, View, TextArea } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { useWorkoutStore } from 'stores/createWorkoutStore'
 import { apiService } from 'services/apiService'
 import { convertToCreateWorkoutRequest, validateWorkoutData } from 'utils/workoutUtils'
 import ExerciseEditor from 'components/ExerciseEditor'
 import { LoadingSpinner } from 'components/ui'
+import { createWorkoutSchema, type CreateWorkoutFormData } from '../../lib/schemas/forms'
+import { queryClient } from '../../lib/queryClient'
+import { queryKeys } from '../../lib/queryKeys'
 
 export default function NewWorkoutScreen() {
   const router = useRouter()
 
-  const [name, setName] = useState('')
-  const [notes, setNotes] = useState('')
+  const {
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<CreateWorkoutFormData>({
+    resolver: zodResolver(createWorkoutSchema),
+    defaultValues: {
+      name: '',
+      notes: '',
+    },
+    mode: 'onChange',
+  })
+
+  const name = watch('name')
+
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
   const {
     selectedExercises,
     clearExercises,
@@ -25,14 +46,12 @@ export default function NewWorkoutScreen() {
 
   const handleCancel = () => {
     clearExercises()
-    setName('')
-    setNotes('')
+    reset()
     router.back()
   }
 
-  const handleSave = async () => {
-    // Validate the workout data
-    const validationError = validateWorkoutData(name, selectedExercises)
+  const onSubmit = async (data: CreateWorkoutFormData) => {
+    const validationError = validateWorkoutData(data.name, selectedExercises)
     if (validationError) {
       setError(validationError)
       return
@@ -42,16 +61,14 @@ export default function NewWorkoutScreen() {
     setError(null)
 
     try {
-      // Convert to server format and create workout
-      const createWorkoutRequest = convertToCreateWorkoutRequest(name, selectedExercises, notes)
+      const createWorkoutRequest = convertToCreateWorkoutRequest(data.name, selectedExercises, data.notes)
       const result = await apiService.createWorkout(createWorkoutRequest)
-
       console.log('Workout created successfully:', result.id)
 
-      // Clear the form and navigate back
+      queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
+
       clearExercises()
-      setName('')
-      setNotes('')
+      reset()
       router.replace('/(tabs)/(workouts)')
     } catch (err) {
       console.error('Failed to create workout:', err)
@@ -73,6 +90,41 @@ export default function NewWorkoutScreen() {
     [updateExerciseSets, addSetToExercise, removeSetFromExercise]
   )
 
+  // Shared form fields component
+  const FormFields = useCallback(() => (
+    <YStack gap="$3">
+      <Controller
+        control={control}
+        name="name"
+        render={({ field: { onChange, value } }) => (
+          <Input placeholder="Workout name" value={value} onChangeText={onChange} size="$4" />
+        )}
+      />
+      {errors.name && <Text color="$red10" fontSize="$2">{errors.name.message}</Text>}
+      <Controller
+        control={control}
+        name="notes"
+        render={({ field: { onChange, value } }) => (
+          <TextArea
+            placeholder="Notes (optional)"
+            value={value || ''}
+            onChangeText={onChange}
+            size="$4"
+            height={80}
+          />
+        )}
+      />
+    </YStack>
+  ), [control, errors.name])
+
+  const hasNulls = selectedExercises.some((ex) =>
+    ex.sets.some((s) =>
+      ex.category === 'CARDIO' ? s.durationSeconds == null : s.reps == null || s.weight == null
+    )
+  )
+
+  const canSave = name && selectedExercises.length > 0 && !hasNulls && !isCreating
+
   const ListHeaderComponent = useCallback(
     () => (
       <YStack gap="$4">
@@ -80,16 +132,7 @@ export default function NewWorkoutScreen() {
           📝 Create Workout
         </Text>
 
-        <YStack gap="$3">
-          <Input placeholder="Workout name" value={name} onChangeText={setName} size="$4" />
-          <TextArea
-            placeholder="Notes (optional)"
-            value={notes}
-            onChangeText={setNotes}
-            size="$4"
-            height={80}
-          />
-        </YStack>
+        <FormFields />
 
         {error && (
           <YStack bg="$red3" borderColor="$red7" borderWidth="$0.5" rounded="$4" p="$3">
@@ -112,13 +155,7 @@ export default function NewWorkoutScreen() {
         )}
       </YStack>
     ),
-    [name, notes, error, selectedExercises.length, router]
-  )
-
-  const hasNulls = selectedExercises.some((ex) =>
-    ex.sets.some((s) =>
-      ex.category === 'CARDIO' ? s.durationSeconds == null : s.reps == null || s.weight == null
-    )
+    [FormFields, error, selectedExercises.length, router]
   )
 
   const ListFooterComponent = useCallback(
@@ -126,10 +163,10 @@ export default function NewWorkoutScreen() {
       <YStack gap="$4" pt="$4">
         <Separator />
         <Button
-          disabled={!name || selectedExercises.length === 0 || hasNulls || isCreating}
+          disabled={!canSave}
           bg="$primary"
           size="$5"
-          onPress={handleSave}
+          onPress={handleSubmit(onSubmit)}
         >
           {isCreating ? (
             <LoadingSpinner size="small" color="$onPrimary" />
@@ -144,7 +181,7 @@ export default function NewWorkoutScreen() {
         </Button>
       </YStack>
     ),
-    [name, selectedExercises.length, hasNulls, isCreating, handleSave]
+    [canSave, isCreating, handleSubmit, onSubmit, handleCancel]
   )
 
   return (
@@ -166,16 +203,7 @@ export default function NewWorkoutScreen() {
             📝 Create Workout
           </Text>
 
-          <YStack gap="$3">
-            <Input placeholder="Workout name" value={name} onChangeText={setName} size="$4" />
-            <TextArea
-              placeholder="Notes (optional)"
-              value={notes}
-              onChangeText={setNotes}
-              size="$4"
-              height={80}
-            />
-          </YStack>
+          <FormFields />
 
           {error && (
             <YStack bg="$red3" borderColor="$red7" borderWidth="$0.5" rounded="$4" p="$3">
@@ -194,10 +222,10 @@ export default function NewWorkoutScreen() {
           <Separator />
 
           <Button
-            disabled={!name || selectedExercises.length === 0 || hasNulls || isCreating}
+            disabled={!canSave}
             bg="$primary"
             size="$5"
-            onPress={handleSave}
+            onPress={handleSubmit(onSubmit)}
           >
             {isCreating ? (
               <LoadingSpinner size="small" color="$onPrimary" />

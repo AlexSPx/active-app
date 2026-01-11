@@ -1,77 +1,82 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useCallback } from 'react'
 import { YStack, XStack, Text, Input, Button, Separator } from 'tamagui'
 import { useNavigation, router } from 'expo-router'
 import { Calendar, ListChecks } from '@tamagui/lucide-icons'
-import type { RoutinePatternItem, CreateRoutineRequest, Routine, RoutineType } from '../../types/routine'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import type { RoutinePatternItem, CreateRoutineRequest, RoutineType } from '../../types/routine'
 import { RoutinePatternEditor } from '../../components/routines/RoutinePatternEditor'
 import { useRoutineMutations } from '../../hooks/useRoutineMutations'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { posthog } from '../../services/posthog'
 import { DatePickerField } from '../../components/ui/DatePickerField'
+import { createRoutineSchema, type CreateRoutineFormData } from '../../lib/schemas/forms'
 
 export default function NewRoutinePage() {
   const navigation = useNavigation()
   const { createRoutine, loading, error, clearError } = useRoutineMutations()
 
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [active, setActive] = useState(false)
-  const [startDate, setStartDate] = useState(new Date())
-  const [routineType, setRoutineType] = useState<RoutineType>('SEQUENTIAL')
-  const [pattern, setPattern] = useState<RoutinePatternItem[]>([
-    { dayIndex: 1, dayType: 'WORKOUT', workoutId: null },
-  ])
+  const {
+    control,
+    handleSubmit,
+    watch,
+    setValue,
+    formState: { errors, isValid },
+  } = useForm<CreateRoutineFormData>({
+    resolver: zodResolver(createRoutineSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      routineType: 'SEQUENTIAL',
+      pattern: [{ dayIndex: 1, dayType: 'WORKOUT', workoutId: null }],
+      active: false,
+      startDate: new Date(),
+    },
+    mode: 'onChange',
+  })
+
+  const routineType = watch('routineType')
+  const pattern = watch('pattern')
 
   useEffect(() => {
     navigation.setOptions({ title: 'Create Routine' })
     return () => clearError()
   }, [clearError, navigation])
 
-  const canSave = useMemo(() => {
-    if (!name.trim()) return false
-    if (pattern.length === 0) return false
-    for (const p of pattern) {
-      if (p.dayType === 'WORKOUT' && !p.workoutId) return false
-    }
-    return true
-  }, [name, pattern])
-
   const handleRoutineTypeChange = useCallback(
     (newType: RoutineType) => {
-      setRoutineType(newType)
+      setValue('routineType', newType)
       if (newType === 'WEEKLY_COMPLETION') {
         const workoutOnly = pattern.filter((p) => p.dayType === 'WORKOUT')
         if (workoutOnly.length > 0) {
-          setPattern(workoutOnly.map((p, idx) => ({ ...p, dayIndex: idx + 1 })))
+          setValue('pattern', workoutOnly.map((p, idx) => ({ ...p, dayIndex: idx + 1 })))
         }
       }
     },
-    [pattern]
+    [pattern, setValue]
   )
 
-  const handleSave = useCallback(async () => {
-    if (!canSave) return
+  const onSubmit = useCallback(async (data: CreateRoutineFormData) => {
     const payload: CreateRoutineRequest = {
-      name: name.trim(),
-      description: description.trim() || undefined,
-      routineType,
-      pattern: pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
-      active,
-      startDate: startDate.toISOString(),
+      name: data.name.trim(),
+      description: data.description?.trim() || undefined,
+      routineType: data.routineType,
+      pattern: data.pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
+      active: data.active,
+      startDate: data.startDate.toISOString(),
     }
     const created = await createRoutine(payload)
     if (created) {
       posthog.capture('routine_created', {
-        routineType,
+        routineType: data.routineType,
         workoutDays: payload.pattern.filter((p) => p.dayType === 'WORKOUT').length,
         restDays: payload.pattern.filter((p) => p.dayType === 'REST').length,
         active: !!payload.active,
       })
-      // Go back to routines tab; focus listener there will refetch
       router.back()
     }
-  }, [active, canSave, createRoutine, description, name, pattern, routineType, startDate])
+  }, [createRoutine])
 
   return (
     <YStack flex={1} bg="$background" px="$4" py="$3" gap="$3">
@@ -81,17 +86,30 @@ export default function NewRoutinePage() {
         <Text fontSize="$3" color="$color10">
           Name
         </Text>
-        <Input value={name} onChangeText={setName} placeholder="Routine name" />
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, value } }) => (
+            <Input value={value} onChangeText={onChange} placeholder="Routine name" />
+          )}
+        />
+        {errors.name && <Text color="$red10" fontSize="$2">{errors.name.message}</Text>}
       </YStack>
 
       <YStack gap="$2">
         <Text fontSize="$3" color="$color10">
           Description
         </Text>
-        <Input
-          value={description}
-          onChangeText={setDescription}
-          placeholder="Optional description"
+        <Controller
+          control={control}
+          name="description"
+          render={({ field: { onChange, value } }) => (
+            <Input
+              value={value || ''}
+              onChangeText={onChange}
+              placeholder="Optional description"
+            />
+          )}
         />
       </YStack>
 
@@ -142,17 +160,29 @@ export default function NewRoutinePage() {
         </Text>
       </YStack>
 
-      <XStack items="center" gap="$2" mt="$1">
-        <Button size="$2" onPress={() => setActive((v) => !v)} variant="outlined">
-          <Text>{active ? 'Active: Yes' : 'Active: No'}</Text>
-        </Button>
-        <Text color="$color10">Set as active routine</Text>
-      </XStack>
+      <Controller
+        control={control}
+        name="active"
+        render={({ field: { onChange, value } }) => (
+          <XStack items="center" gap="$2" mt="$1">
+            <Button size="$2" onPress={() => onChange(!value)} variant="outlined">
+              <Text>{value ? 'Active: Yes' : 'Active: No'}</Text>
+            </Button>
+            <Text color="$color10">Set as active routine</Text>
+          </XStack>
+        )}
+      />
 
-      <DatePickerField
-        label="Start Date"
-        value={startDate}
-        onChange={setStartDate}
+      <Controller
+        control={control}
+        name="startDate"
+        render={({ field: { onChange, value } }) => (
+          <DatePickerField
+            label="Start Date"
+            value={value}
+            onChange={onChange}
+          />
+        )}
       />
 
       <Separator my="$2" />
@@ -161,11 +191,18 @@ export default function NewRoutinePage() {
         <Text fontSize="$5" fontWeight="700">
           Pattern
         </Text>
-        <RoutinePatternEditor
-          pattern={pattern}
-          onChange={setPattern}
-          hideRestOption={routineType === 'WEEKLY_COMPLETION'}
+        <Controller
+          control={control}
+          name="pattern"
+          render={({ field: { onChange, value } }) => (
+            <RoutinePatternEditor
+              pattern={value}
+              onChange={onChange}
+              hideRestOption={routineType === 'WEEKLY_COMPLETION'}
+            />
+          )}
         />
+        {errors.pattern && <Text color="$red10" fontSize="$2">{errors.pattern.message}</Text>}
       </YStack>
 
       <XStack gap="$3" mt="auto" pb="$3">
@@ -178,7 +215,7 @@ export default function NewRoutinePage() {
         >
           <Text>Cancel</Text>
         </Button>
-        <Button flex={1} bg="$primary" onPress={handleSave} disabled={!canSave || loading}>
+        <Button flex={1} bg="$primary" onPress={handleSubmit(onSubmit)} disabled={!isValid || loading}>
           {loading ? (
             <XStack items="center" gap="$2">
               <LoadingSpinner size="small" />
@@ -192,3 +229,4 @@ export default function NewRoutinePage() {
     </YStack>
   )
 }
+
