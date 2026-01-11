@@ -98,7 +98,7 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onPress }) => {
         </XStack>
         <YStack flex={1}>
           <Text fontSize="$5" fontWeight="700" color="$color">
-            {workout.title}
+            {workout?.title}
           </Text>
           <Text fontSize="$2" color="$colorSubtle" fontWeight="500">
             {exercises} exercises
@@ -243,10 +243,10 @@ const WorkoutChecklistItem: React.FC<WorkoutChecklistItemProps> = ({
         color={isCompleted ? '$green11' : '$color'}
         textDecorationLine={isCompleted ? 'line-through' : 'none'}
       >
-        {workout.title}
+        {workout?.title}
       </Text>
       <Text fontSize="$2" color="$colorSubtle">
-        {workout.workoutTemplate.exercises.length} exercises
+        {workout?.workoutTemplate.exercises.length} exercises
       </Text>
     </YStack>
   </XStack>
