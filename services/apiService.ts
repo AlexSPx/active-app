@@ -80,13 +80,14 @@ class ApiService {
     return options
   }
 
-  private async handleResponse<T>(response: Response): Promise<T> {
+  private async handleResponse<T>(response: Response, skipUnauthorizedHandler = false): Promise<T> {
     // Log response
     console.log(`API Response: ${response.status} ${response.url}`)
 
     if (!response.ok) {
       // On unauthorized globally signal handler
-      if (response.status === 401 && this.unauthorizedHandler) {
+      // Skip if the caller (request method) will handle 401 with token refresh
+      if (response.status === 401 && this.unauthorizedHandler && !skipUnauthorizedHandler) {
         try {
           this.unauthorizedHandler()
         } catch (e) {
@@ -141,7 +142,8 @@ class ApiService {
 
           // Retry the original request immediately
           headers.Authorization = `Bearer ${token}`
-          const retryResponse = await fetch(url, { ...options, headers })
+          const retryFetchOptions = this.getFetchOptions({ ...options, headers })
+          const retryResponse = await fetch(url, retryFetchOptions)
           return this.handleResponse<T>(retryResponse)
         } catch (error) {
           this.onRefreshFailed(error)
@@ -166,7 +168,8 @@ class ApiService {
           }
           try {
             headers.Authorization = `Bearer ${token}`
-            const retryResponse = await fetch(url, { ...options, headers })
+            const retryFetchOptions = this.getFetchOptions({ ...options, headers })
+            const retryResponse = await fetch(url, retryFetchOptions)
             resolve(this.handleResponse<T>(retryResponse))
           } catch (error) {
             reject(error)
@@ -295,6 +298,9 @@ class ApiService {
       }
       body = JSON.stringify({ refreshToken })
     }
+
+    console.log("Refresh token request:", body)
+    
 
     const response = await fetch(url, this.getFetchOptions({
       method: 'POST',
