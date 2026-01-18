@@ -4,22 +4,22 @@ import Body from 'react-native-body-highlighter'
 import type { MuscleGroup } from '../../../types/api'
 
 const muscleToSlug: Record<MuscleGroup, string[]> = {
-  // Front
+  // Front muscles
   CHEST: ['chest'],
   BICEPS: ['biceps'],
-  ABDOMINALS: ['abs'], 
+  ABDOMINALS: ['abs'],
   FOREARMS: ['forearm'],
   QUADRICEPS: ['quadriceps'],
-  SHOULDERS: ['front-deltoids', 'back-deltoids'],
+  SHOULDERS: ['deltoids'],
   NECK: ['neck'],
-  ADDUCTORS: ['adductor'],
-  ABDUCTORS: ['abductors'],
+  ADDUCTORS: ['adductors'],
+  ABDUCTORS: ['adductors'],
 
-  // Back
+  // Back muscles
   TRAPS: ['trapezius'],
   MIDDLE_BACK: ['upper-back'],
   LOWER_BACK: ['lower-back'],
-  LATS: ['upper-back', 'back-deltoids'],
+  LATS: ['upper-back'],
   TRICEPS: ['triceps'],
   HAMSTRINGS: ['hamstring'],
   GLUTES: ['gluteal'],
