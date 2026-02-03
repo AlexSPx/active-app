@@ -13,6 +13,7 @@ export interface RoutineCardProps {
   onEdit?: (routine: Routine) => void
   onDelete?: (routineId: string) => void
   onStartFromToday?: (routineId: string) => void
+  onPress?: (routine: Routine) => void
   disabled?: boolean
 }
 
@@ -23,6 +24,7 @@ export const RoutineCard = memo(function RoutineCard({
   onEdit,
   onDelete,
   onStartFromToday,
+  onPress,
   disabled = false,
 }: RoutineCardProps) {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -65,6 +67,7 @@ export const RoutineCard = memo(function RoutineCard({
         rounded="$5"
         animation="quick"
         pressStyle={{ scale: 0.98, opacity: 0.9 }}
+        onPress={onPress ? () => onPress(routine) : undefined}
       >
         <YStack gap="$3">
           {/* Header Section */}

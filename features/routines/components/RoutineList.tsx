@@ -11,6 +11,7 @@ export interface RoutineListProps {
   onActivate: (routineId: string) => void
   onEditRoutine?: (routine: Routine) => void
   onDeleteRoutine?: (routineId: string) => void
+  onPressRoutine?: (routine: Routine) => void
   listHeader?: React.ReactElement
   refreshing?: boolean
   onRefresh?: () => void
@@ -25,6 +26,7 @@ export const RoutineList = memo(function RoutineList({
   onActivate,
   onEditRoutine,
   onDeleteRoutine,
+  onPressRoutine,
   onStartFromToday,
   listHeader,
   refreshing,
@@ -40,6 +42,7 @@ export const RoutineList = memo(function RoutineList({
         onActivate={onActivate}
         onEdit={onEditRoutine}
         onDelete={onDeleteRoutine}
+        onPress={onPressRoutine}
         onStartFromToday={onStartFromToday}
         disabled={!!disableActions}
       />

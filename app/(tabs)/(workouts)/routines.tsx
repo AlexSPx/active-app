@@ -51,6 +51,10 @@ export default function RoutinesTab() {
     router.push(`/routines/edit?id=${routine.id}`)
   }, [])
 
+  const openDetail = useCallback((routine: Routine) => {
+    router.push(`/routines/${routine.id}`)
+  }, [])
+
   const handleActivate = useCallback(
     async (routineId: string) => {
       const updated = await activateRoutine(routineId)
@@ -173,6 +177,7 @@ export default function RoutinesTab() {
           onActivate={handleActivate}
           onEditRoutine={openEdit}
           onDeleteRoutine={handleDeleteRoutine}
+          onPressRoutine={openDetail}
           onStartFromToday={handleStartFromToday}
           disableActions={mutating}
           listHeader={
