@@ -50,6 +50,8 @@ export const useAuthStore = create<AuthState>()(
       // Actions
       loginWithWorkOS: async (code: string) => {
         try {
+          console.log('Handling WorkOS login on ' + (isWeb ? 'web' : 'native'));
+          
           set({ isLoading: true, error: null })
 
           const response = await apiService.workosLogin(code)

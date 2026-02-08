@@ -114,6 +114,7 @@ export const WorkOSSignInButton = ({ onSuccess, label = 'Sign in with WorkOS' }:
   }, [handleLogin])
 
   const handleWebAuth = () => {
+    console.log('WorkOS: web auth handler called')
     const clientId = process.env.EXPO_PUBLIC_WORKOS_CLIENT_ID || ''
     
     // Generate cryptographically secure state for CSRF protection
