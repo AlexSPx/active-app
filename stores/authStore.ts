@@ -1,5 +1,6 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 import { apiService } from '../services/apiService'
 import { useSettingsStore } from '../features/settings'
@@ -324,6 +325,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => AsyncStorage),
       // Only persist essential data
       partialize: (state) => ({
         token: state.token,

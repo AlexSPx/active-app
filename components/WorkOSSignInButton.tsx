@@ -38,7 +38,6 @@ export const WorkOSSignInButton = ({ onSuccess, label = 'Sign in with WorkOS' }:
 
   const handleLogin = useCallback(async (code: string) => {
     try {
-      console.log('WorkOS: handleLogin called with code')
       await loginWithWorkOS(code)
       if (onSuccess) {
         onSuccess(code)
