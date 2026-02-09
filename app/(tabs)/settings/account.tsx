@@ -10,7 +10,7 @@ import { useAuthMutations } from '../../../features/auth'
 export default function AccountSettingsScreen() {
   const router = useRouter()
   const { logout } = useAuth()
-  const { deleteAccount, linkGoogleAccount, loading, error } = useAuthMutations()
+  const { deleteAccount, error } = useAuthMutations()
   const [open, setOpen] = useState(false)
 
   const handleDeleteAccount = async () => {
@@ -19,34 +19,6 @@ export default function AccountSettingsScreen() {
       logout()
     } else {
       Alert.alert('Error', error ?? 'Failed to delete account. Please try again.')
-    }
-  }
-
-  const handleLinkGoogle = async () => {
-    try {
-      await GoogleSignin.hasPlayServices()
-      const userInfo = await GoogleSignin.signIn()
-      if (userInfo.data?.idToken) {
-        const success = await linkGoogleAccount(userInfo.data.idToken)
-        if (success) {
-          Alert.alert('Success', 'Google account linked successfully')
-        } else {
-          Alert.alert('Error', error ?? 'Failed to link Google account')
-        }
-      } else {
-        throw new Error('No ID token present')
-      }
-    } catch (err: any) {
-      if (err.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled the login flow
-      } else if (err.code === statusCodes.IN_PROGRESS) {
-        // operation (e.g. sign in) is in progress already
-      } else if (err.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Error', 'Google Play Services not available')
-      } else {
-        console.error(err)
-        Alert.alert('Error', 'Failed to link Google account')
-      }
     }
   }
 
@@ -66,22 +38,6 @@ export default function AccountSettingsScreen() {
             </Paragraph>
           </YStack>
           
-          <Separator mb="$2" />
-          
-          <YStack gap="$2">
-            <Text fontWeight="700">Google Account</Text>
-            <Paragraph size="$2" color="$color11">
-              Connect your Google account. Note: The Google account must not be already used. You will lose the option to login with password.
-            </Paragraph>
-            <Button
-              icon={<LinkIcon size={18} />}
-              onPress={handleLinkGoogle}
-              mt="$2"
-            >
-              Link Google Account
-            </Button>
-          </YStack>
-
           <Separator />
 
           <YStack gap="$2">
