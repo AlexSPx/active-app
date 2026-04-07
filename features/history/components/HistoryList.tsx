@@ -22,6 +22,7 @@ type Props = {
   onViewableItemsChanged: any
   viewabilityConfig: any
   onPressItem?: (item: HistoryListItem) => void
+  onLongPressItem?: (item: HistoryListItem) => void
   refreshing?: boolean
   onRefresh?: () => void
   listHeader?: React.ReactElement
@@ -34,6 +35,7 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
       onViewableItemsChanged,
       viewabilityConfig,
       onPressItem,
+      onLongPressItem,
       refreshing,
       onRefresh,
       listHeader,
@@ -100,74 +102,77 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
                   </Text>
                   <View position="absolute" t={18} b={-8} width={2} bg="$borderColor" />
                 </YStack>
-                <Button unstyled onPress={() => onPressItem?.(item)} flex={1}>
-                  <Card
-                    p="$3"
-                    bg="$surface"
-                    borderColor="$borderColor"
-                    borderWidth="$0.5"
-                    width="100%"
-                  >
-                    <YStack gap="$2">
-                      <XStack justify="space-between" items="center">
-                        <XStack gap="$2">
-                          <Text fontSize="$5" fontWeight="700" color="$color">
-                            {item.name}
-                          </Text>
-                          <XStack gap="$2" justify="flex-end">
-                            {item.prOneRm && (
-                              <XStack
-                                width={24}
-                                height={24}
-                                bg="$primary"
-                                rounded="$2"
-                                items="center"
-                                justify="center"
-                              >
-                                <Trophy size={14} color="$color" strokeWidth={2.5} />
-                              </XStack>
-                            )}
-                            {item.prVolume && (
-                              <XStack
-                                width={24}
-                                height={24}
-                                bg="$primary"
-                                rounded="$2"
-                                items="center"
-                                justify="center"
-                              >
-                                <BarChart2 size={14} color="$color" strokeWidth={2.5} />
-                              </XStack>
-                            )}
-                          </XStack>
+                <Card
+                  flex={1}
+                  p="$3"
+                  bg="$surface"
+                  borderColor="$borderColor"
+                  borderWidth="$0.5"
+                  width="100%"
+                  pressStyle={{ bg: '#111111' }}
+                  animation="quick"
+                  onPress={() => onPressItem?.(item)}
+                  onLongPress={() => onLongPressItem?.(item)}
+                >
+                  <YStack gap="$2">
+                    <XStack justify="space-between" items="center">
+                      <XStack gap="$2">
+                        <Text fontSize="$5" fontWeight="700" color="$color">
+                          {item.name}
+                        </Text>
+                        <XStack gap="$2" justify="flex-end">
+                          {item.prOneRm && (
+                            <XStack
+                              width={24}
+                              height={24}
+                              bg="$primary"
+                              rounded="$2"
+                              items="center"
+                              justify="center"
+                            >
+                              <Trophy size={14} color="$color" strokeWidth={2.5} />
+                            </XStack>
+                          )}
+                          {item.prVolume && (
+                            <XStack
+                              width={24}
+                              height={24}
+                              bg="$primary"
+                              rounded="$2"
+                              items="center"
+                              justify="center"
+                            >
+                              <BarChart2 size={14} color="$color" strokeWidth={2.5} />
+                            </XStack>
+                          )}
                         </XStack>
                       </XStack>
-                      <XStack items="center">
-                        <XStack flex={1} items="center" justify="center" gap="$1">
-                          <TimerIcon size={14} color="$colorSubtle" />
-                          <Text fontWeight="700" color="$color">
-                            {formatDuration(item.duration)}
-                          </Text>
-                        </XStack>
-                        <View width={1} height={18} bg="$borderColor" mx="$3" />
-                        <XStack flex={1} items="center" justify="center" gap="$1">
-                          <Dumbbell size={14} color="$colorSubtle" />
-                          <Text fontWeight="700" color="$color">
-                            {item.totalVolume.toLocaleString()}
-                          </Text>
-                          <Text color="$colorSubtle">kg</Text>
-                        </XStack>
-                        <View width={1} height={18} bg="$borderColor" mx="$3" />
-                        <XStack flex={1} items="center" justify="center" gap="$1">
-                          <Text fontWeight="700" color="$color">
-                            {item.totalSets}
-                          </Text>
-                          <Text color="$colorSubtle">sets</Text>
-                        </XStack>
+                    </XStack>
+                    <XStack items="center">
+                      <XStack flex={1} items="center" justify="center" gap="$1">
+                        <TimerIcon size={14} color="$colorSubtle" />
+                        <Text fontWeight="700" color="$color">
+                          {formatDuration(item.duration)}
+                        </Text>
                       </XStack>
-                    </YStack>
-                  </Card>
-                </Button>
+                      <View width={1} height={18} bg="$borderColor" mx="$3" />
+                      <XStack flex={1} items="center" justify="center" gap="$1">
+                        <Dumbbell size={14} color="$colorSubtle" />
+                        <Text fontWeight="700" color="$color">
+                          {item.totalVolume.toLocaleString()}
+                        </Text>
+                        <Text color="$colorSubtle">kg</Text>
+                      </XStack>
+                      <View width={1} height={18} bg="$borderColor" mx="$3" />
+                      <XStack flex={1} items="center" justify="center" gap="$1">
+                        <Text fontWeight="700" color="$color">
+                          {item.totalSets}
+                        </Text>
+                        <Text color="$colorSubtle">sets</Text>
+                      </XStack>
+                    </XStack>
+                  </YStack>
+                </Card>
               </XStack>
             </YStack>
           )

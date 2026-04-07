@@ -3,6 +3,7 @@ import type { CreateWorkoutRequest, Workout } from '../../../types/workout'
 import type { UpdateWorkoutRequest } from '../../../types/api'
 import { apiService } from '../../../services/apiService'
 import { queryKeys } from '../../../lib/queryKeys'
+import { useAuthStore } from '../../../stores/authStore'
 
 export function useWorkoutMutations() {
   const queryClient = useQueryClient()
@@ -41,6 +42,15 @@ export function useWorkoutMutations() {
     },
   })
 
+  const deleteRecordMutation = useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      await apiService.deleteWorkoutRecord(id)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
+    },
+  })
+
   const createWorkout = async (workout: CreateWorkoutRequest): Promise<Workout | null> => {
     try {
       return await createMutation.mutateAsync(workout)
@@ -67,19 +77,30 @@ export function useWorkoutMutations() {
     }
   }
 
-  const isPending = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending
-  const currentError = createMutation.error ?? updateMutation.error ?? deleteMutation.error
+  const deleteWorkoutRecord = async (id: string): Promise<boolean> => {
+    try {
+      await deleteRecordMutation.mutateAsync(id)
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  const isPending = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending || deleteRecordMutation.isPending
+  const currentError = createMutation.error ?? updateMutation.error ?? deleteMutation.error ?? deleteRecordMutation.error
 
   return {
     createWorkout,
     updateWorkout,
     deleteWorkout,
+    deleteWorkoutRecord,
     loading: isPending,
     error: currentError?.message ?? null,
     clearError: () => {
       createMutation.reset()
       updateMutation.reset()
       deleteMutation.reset()
+      deleteRecordMutation.reset()
     },
   }
 }

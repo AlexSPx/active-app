@@ -384,6 +384,18 @@ class ApiService {
     })
   }
 
+  async deleteWorkoutRecord(recordId: string): Promise<void> {
+    const base = config.API_ENDPOINTS.WORKOUTS.RECORD
+    const url = getApiUrl(`${base}/${encodeURIComponent(recordId)}`)
+    console.log(`API Request: DELETE ${url}`)
+
+    await this.request<void>(url, {
+      method: 'DELETE',
+    })
+    
+    await queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
+  }
+
   async deleteWorkout(workoutId: string): Promise<void> {
     const base = config.API_ENDPOINTS.WORKOUTS.DELETE
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
