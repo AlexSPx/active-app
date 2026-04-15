@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiService } from '../../../services/apiService'
 import { queryKeys } from '../../../lib/queryKeys'
-import { workoutRecordsArraySchema } from '../../../lib/schemas/api'
+import { useWorkoutRepository } from '../../../lib/hooks/useRepository'
 import type { WorkoutRecord } from '../../../types/api'
 
 export interface UseWorkoutRecordsReturn {
@@ -12,13 +11,14 @@ export interface UseWorkoutRecordsReturn {
 }
 
 export function useWorkoutRecords(): UseWorkoutRecordsReturn {
+  const repo = useWorkoutRepository()
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.records.list(),
     queryFn: async () => {
-      const response = await apiService.getWorkoutRecords()
-      return workoutRecordsArraySchema.parse(response)
+      return repo.getAllRecords()
     },
-    staleTime: 1000 * 60 * 60 * 8, // 8 hours
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
   return {

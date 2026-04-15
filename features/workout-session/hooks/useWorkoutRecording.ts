@@ -1,14 +1,14 @@
 import { useState, useCallback } from 'react'
-import { apiService } from '../../../services/apiService'
 import type {
   WorkoutRecordRequest,
   ExerciseRecord,
-  WorkoutRecord,
   WorkoutRecordResponse,
 } from '../../../types/api'
+import { WorkoutRepository } from '../../../lib/repositories/WorkoutRepository'
+import { getDatabase } from '../../../lib/db/connection'
 
 export interface UseWorkoutRecordingReturn {
-  recordWorkout: (workoutRecord: WorkoutRecordRequest) => Promise<WorkoutRecordResponse | null>
+  recordWorkout: (workoutRecord: WorkoutRecordRequest, workoutTitle?: string) => Promise<WorkoutRecordResponse | null>
   isRecording: boolean
   error: string | null
 }
@@ -17,12 +17,14 @@ export function useWorkoutRecording(): UseWorkoutRecordingReturn {
   const [isRecording, setIsRecording] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const recordWorkout = useCallback(async (workoutRecord: WorkoutRecordRequest) => {
+  const recordWorkout = useCallback(async (workoutRecord: WorkoutRecordRequest, workoutTitle?: string) => {
     try {
       setIsRecording(true)
       setError(null)
 
-      const result = await apiService.recordWorkout(workoutRecord)
+      const db = await getDatabase()
+      const repo = new WorkoutRepository(db)
+      const result = await repo.recordWorkout(workoutRecord, workoutTitle || 'Workout')
       return result
     } catch (err) {
       console.error('Failed to record workout:', err)

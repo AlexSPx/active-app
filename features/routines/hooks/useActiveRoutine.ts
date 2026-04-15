@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiService } from '../../../services/apiService'
 import { queryKeys } from '../../../lib/queryKeys'
-import { routineSchema } from '../../../lib/schemas/api'
+import { useRoutineRepository } from '../../../lib/hooks/useRepository'
 import type { Routine } from '../../../types/routine'
 
 export interface UseActiveRoutineReturn {
@@ -13,31 +12,18 @@ export interface UseActiveRoutineReturn {
 }
 
 /**
- * Hook that fetches the currently active routine.
- * - Treats 404 as "no active routine" (not an error)
- * - Exposes a refetch function for manual refresh
+ * Hook that fetches the currently active routine from local SQLite.
+ * Returns null if no routine is active.
  */
 export function useActiveRoutine(): UseActiveRoutineReturn {
+  const repo = useRoutineRepository()
+
   const { data, isLoading, error, refetch, isStale } = useQuery({
     queryKey: queryKeys.routines.active(),
     queryFn: async (): Promise<Routine | null> => {
-      try {
-        const response = await apiService.getActiveRoutine()
-        return routineSchema.parse(response)
-      } catch (e: any) {
-        // Treat 404 as "no active routine"
-        if (e && typeof e === 'object' && 'status' in e && e.status === 404) {
-          return null
-        }
-        throw e
-      }
+      return repo.getActive()
     },
-    staleTime: 1000 * 60 * 30, // 30 minutes
-    retry: (failureCount, error: any) => {
-      // Don't retry on 404
-      if (error?.status === 404) return false
-      return failureCount < 2
-    },
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
   return {

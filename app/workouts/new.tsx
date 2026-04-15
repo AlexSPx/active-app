@@ -69,17 +69,22 @@ export default function NewWorkoutScreen() {
     setIsCreating(true)
     setError(null)
 
-    const createWorkoutRequest = convertToCreateWorkoutRequest(data.name, selectedExercises, data.notes)
-    const result = await createWorkout(createWorkoutRequest)
-    
-    if (result) {
-      console.log('Workout created successfully:', result.id)
-      clearExercises()
-      reset()
-      router.replace('/(tabs)/(workouts)')
-    } else {
-      setError('Failed to create workout')
+    try {
+      const createWorkoutRequest = convertToCreateWorkoutRequest(data.name, selectedExercises, data.notes)
+      const result = await createWorkout(createWorkoutRequest)
+      
+      if (result) {
+        console.log('Workout created successfully:', result.id)
+        clearExercises()
+        reset()
+        router.replace('/(tabs)/(workouts)')
+      } else {
+        setError('Failed to create workout: Unknown error occurred.')
+      }
+    } catch (err: any) {
+      setError(`Failed to create workout: ${err?.message || err}`)
     }
+    
     setIsCreating(false)
   }
 

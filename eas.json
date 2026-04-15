@@ -2,17 +2,12 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal",
-      "channel": "development"
-    },
-    "preview-dev": {
-      "developmentClient": true,
-      "credentialsSource": "local",
+      "environment": "development",
       "distribution": "internal",
       "android": {
         "buildType": "apk"
       },
-      "channel": "preview-dev"
+      "channel": "development"
     },
     "preview-internal": {
       "distribution": "internal",

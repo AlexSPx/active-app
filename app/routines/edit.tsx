@@ -58,8 +58,7 @@ export default function EditRoutinePage() {
 
   useEffect(() => {
     navigation.setOptions({ title: 'Edit Routine' })
-    return () => clearError()
-  }, [clearError, navigation])
+  }, [navigation])
 
   // Populate form when routine loads
   useEffect(() => {

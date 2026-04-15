@@ -1,8 +1,9 @@
+import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiService } from '../../../services/apiService'
 import type { CreateRoutineRequest, UpdateRoutineRequest, Routine } from '../../../types/routine'
 import type { ApiError } from '../../../types/api'
 import { queryKeys } from '../../../lib/queryKeys'
+import { useRoutineRepository } from '../../../lib/hooks/useRepository'
 
 function toFriendlyError(err: unknown, fallback: string): string {
   const defaultMsg = fallback
@@ -21,9 +22,10 @@ function toFriendlyError(err: unknown, fallback: string): string {
 
 export function useRoutineMutations() {
   const queryClient = useQueryClient()
+  const repo = useRoutineRepository()
 
   const createMutation = useMutation({
-    mutationFn: (payload: CreateRoutineRequest) => apiService.createRoutine(payload),
+    mutationFn: (payload: CreateRoutineRequest) => repo.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
     },
@@ -31,14 +33,14 @@ export function useRoutineMutations() {
 
   const updateMutation = useMutation({
     mutationFn: ({ routineId, payload }: { routineId: string; payload: UpdateRoutineRequest }) =>
-      apiService.updateRoutine(routineId, payload),
+      repo.update(routineId, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
     },
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (routineId: string) => apiService.deleteRoutine(routineId),
+    mutationFn: (routineId: string) => repo.delete(routineId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
     },
@@ -98,10 +100,10 @@ export function useRoutineMutations() {
     clearActiveRoutine,
     loading: createMutation.isPending || updateMutation.isPending || deleteMutation.isPending,
     error: currentError ? toFriendlyError(currentError, 'An error occurred') : null,
-    clearError: () => {
+    clearError: useCallback(() => {
       createMutation.reset()
       updateMutation.reset()
       deleteMutation.reset()
-    },
+    }, [createMutation, updateMutation, deleteMutation]),
   }
 }

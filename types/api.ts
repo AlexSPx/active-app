@@ -7,8 +7,8 @@ export interface ApiExercise {
   id: string
   name: string
   level: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT'
-  force: 'PULL' | 'PUSH' | 'STATIC'
-  mechanic: 'COMPOUND' | 'ISOLATION'
+  force: 'PULL' | 'PUSH' | 'STATIC' | null
+  mechanic: 'COMPOUND' | 'ISOLATION' | null
   equipment:
     | 'BODY_ONLY'
     | 'MACHINE'
@@ -22,6 +22,7 @@ export interface ApiExercise {
     | 'MEDICINE_BALL'
     | 'EXERCISE_BALL'
     | 'E_Z_CURL_BAR'
+    | null
   primaryMuscles: string[]
   secondaryMuscles: string[]
   instructions: string[]

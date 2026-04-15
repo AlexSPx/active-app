@@ -1,0 +1,223 @@
+/**
+ * RoutineRepository - Centralized data access for routines.
+ *
+ * All reads come from local SQLite.
+ * All writes go to local SQLite first, then to the sync queue.
+ */
+import { BaseRepository } from './BaseRepository'
+import type {
+  Routine,
+  CreateRoutineRequest,
+  UpdateRoutineRequest,
+  RoutinePatternItem,
+} from '../../types/routine'
+
+// ---------------------------------------------------------------------------
+// Internal SQLite row shape
+// ---------------------------------------------------------------------------
+
+interface RoutineRow {
+  id: string
+  name: string
+  description: string | null
+  user_id: string | null
+  routine_type: string
+  pattern: string | null
+  start_date: string | null
+  created_at: string | null
+  updated_at: string | null
+  is_active: number
+  is_synced: number
+  synced_at: string | null
+}
+
+// ---------------------------------------------------------------------------
+// Repository
+// ---------------------------------------------------------------------------
+
+export class RoutineRepository extends BaseRepository {
+  // -------------------------------------------------------------------------
+  // Reads
+  // -------------------------------------------------------------------------
+
+  async getAll(): Promise<Routine[]> {
+    const rows = await this.queryAll<RoutineRow>('SELECT * FROM routines ORDER BY created_at DESC')
+    return rows.map(this.rowToRoutine)
+  }
+
+  async getById(id: string): Promise<Routine | null> {
+    const row = await this.queryFirst<RoutineRow>('SELECT * FROM routines WHERE id = ?', id)
+    return row ? this.rowToRoutine(row) : null
+  }
+
+  async getActive(): Promise<Routine | null> {
+    const row = await this.queryFirst<RoutineRow>('SELECT * FROM routines WHERE is_active = 1 LIMIT 1')
+    return row ? this.rowToRoutine(row) : null
+  }
+
+  // -------------------------------------------------------------------------
+  // Writes
+  // -------------------------------------------------------------------------
+
+  async create(payload: CreateRoutineRequest): Promise<Routine> {
+    const localId = this.generateLocalId()
+    const now = new Date().toISOString()
+
+    await this.run(
+      `INSERT INTO routines (id, name, description, routine_type, pattern, start_date, created_at, updated_at, is_active, is_synced)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      localId,
+      payload.name,
+      payload.description || null,
+      payload.routineType || 'SEQUENTIAL',
+      JSON.stringify(payload.pattern),
+      payload.startDate || now,
+      now,
+      now,
+      payload.active ? 1 : 0,
+      0,
+    )
+
+    await this.enqueueSync({
+      apiMethod: 'createRoutine',
+      payload: payload,
+      localTable: 'routines',
+      localId,
+    })
+
+    return this.rowToRoutine({
+      id: localId,
+      name: payload.name,
+      description: payload.description || null,
+      user_id: null,
+      routine_type: payload.routineType || 'SEQUENTIAL',
+      pattern: JSON.stringify(payload.pattern),
+      start_date: payload.startDate || now,
+      created_at: now,
+      updated_at: now,
+      is_active: payload.active ? 1 : 0,
+      is_synced: 0,
+      synced_at: null,
+    })
+  }
+
+  async update(routineId: string, payload: UpdateRoutineRequest): Promise<Routine | null> {
+    const sets: string[] = []
+    const vals: any[] = []
+
+    if (payload.name !== undefined) {
+      sets.push('name = ?')
+      vals.push(payload.name)
+    }
+    if (payload.description !== undefined) {
+      sets.push('description = ?')
+      vals.push(payload.description)
+    }
+    if (payload.routineType !== undefined) {
+      sets.push('routine_type = ?')
+      vals.push(payload.routineType)
+    }
+    if (payload.pattern !== undefined) {
+      sets.push('pattern = ?')
+      vals.push(JSON.stringify(payload.pattern))
+    }
+    if (payload.startDate !== undefined) {
+      sets.push('start_date = ?')
+      vals.push(payload.startDate)
+    }
+    if (payload.active !== undefined) {
+      // If activating this routine, first deactivate all others
+      if (payload.active) {
+        await this.run('UPDATE routines SET is_active = 0')
+      }
+      sets.push('is_active = ?')
+      vals.push(payload.active ? 1 : 0)
+    }
+
+    sets.push('is_synced = ?')
+    vals.push(0)
+    sets.push('updated_at = ?')
+    vals.push(new Date().toISOString())
+    vals.push(routineId)
+
+    await this.run(`UPDATE routines SET ${sets.join(', ')} WHERE id = ?`, ...vals)
+
+    await this.enqueueSync({
+      apiMethod: 'updateRoutine',
+      payload: [routineId, payload],
+    })
+
+    return this.getById(routineId)
+  }
+
+  async delete(routineId: string): Promise<void> {
+    await this.run('DELETE FROM routines WHERE id = ?', routineId)
+
+    await this.enqueueSync({
+      apiMethod: 'deleteRoutine',
+      payload: [routineId],
+    })
+  }
+
+  // -------------------------------------------------------------------------
+  // Server Hydration
+  // -------------------------------------------------------------------------
+
+  async hydrateFromServer(serverRoutines: Routine[], activeRoutineId?: string | null): Promise<void> {
+    for (const r of serverRoutines) {
+      const isActive = activeRoutineId ? (r.id === activeRoutineId ? 1 : 0) : 0
+
+      await this.run(
+        `INSERT INTO routines (id, name, description, user_id, routine_type, pattern, start_date, created_at, updated_at, is_active, is_synced, synced_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           description = excluded.description,
+           user_id = excluded.user_id,
+           routine_type = excluded.routine_type,
+           pattern = excluded.pattern,
+           start_date = excluded.start_date,
+           updated_at = excluded.updated_at,
+           is_active = excluded.is_active,
+           is_synced = 1,
+           synced_at = excluded.synced_at`,
+        r.id,
+        r.name,
+        r.description || null,
+        r.userId || null,
+        r.routineType || 'SEQUENTIAL',
+        JSON.stringify(r.pattern),
+        r.startDate,
+        r.createdAt,
+        r.updatedAt,
+        isActive,
+        new Date().toISOString(),
+      )
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Row Mapper
+  // -------------------------------------------------------------------------
+
+  private rowToRoutine = (row: RoutineRow): Routine => {
+    let pattern: RoutinePatternItem[] = []
+    try {
+      pattern = JSON.parse(row.pattern || '[]')
+    } catch {
+      pattern = []
+    }
+
+    return {
+      id: row.id,
+      name: row.name,
+      description: row.description,
+      userId: row.user_id || '',
+      routineType: (row.routine_type as Routine['routineType']) || 'SEQUENTIAL',
+      pattern,
+      startDate: row.start_date || '',
+      createdAt: row.created_at || '',
+      updatedAt: row.updated_at || '',
+    }
+  }
+}

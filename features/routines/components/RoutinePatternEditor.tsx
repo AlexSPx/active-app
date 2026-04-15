@@ -61,6 +61,7 @@ export function RoutinePatternEditor({ pattern, onChange, hideRestOption }: Rout
     <FlashList
       data={pattern}
       keyExtractor={(_, index) => String(index)}
+      estimatedItemSize={200}
       style={{ width: '100%', alignSelf: 'stretch' }}
       contentContainerStyle={{ paddingBottom: 8 }}
       renderItem={({ item, index }) => (

@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiService } from '../../../services/apiService'
 import { queryKeys } from '../../../lib/queryKeys'
-import { routinesArraySchema } from '../../../lib/schemas/api'
+import { useRoutineRepository } from '../../../lib/hooks/useRepository'
 import type { Routine } from '../../../types/routine'
 
 export interface UseRoutinesReturn {
@@ -13,13 +12,14 @@ export interface UseRoutinesReturn {
 }
 
 export function useRoutines(): UseRoutinesReturn {
+  const repo = useRoutineRepository()
+
   const { data, isLoading, error, refetch, isStale } = useQuery({
     queryKey: queryKeys.routines.list(),
     queryFn: async () => {
-      const response = await apiService.getRoutines()
-      return routinesArraySchema.parse(response)
+      return repo.getAll()
     },
-    staleTime: 1000 * 60 * 60 * 2, // 2 hours
+    staleTime: 1000 * 60 * 5, // 5 minutes
   })
 
   return {

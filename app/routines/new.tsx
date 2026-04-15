@@ -52,8 +52,7 @@ export default function NewRoutinePage() {
 
   useEffect(() => {
     navigation.setOptions({ title: 'Create Routine' })
-    return () => clearError()
-  }, [clearError, navigation])
+  }, [navigation])
 
   const handleRoutineTypeChange = useCallback(
     (newType: RoutineType) => {

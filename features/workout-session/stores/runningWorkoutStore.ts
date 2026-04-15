@@ -2,8 +2,9 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { ApiExercise } from '../../../types/api'
-import { apiService } from '../../../services/apiService'
 import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecordResponse } from '../../../types/api'
+import { WorkoutRepository } from '../../../lib/repositories/WorkoutRepository'
+import { getDatabase } from '../../../lib/db/connection'
 import type { FinishedCongratsPayload } from '../../../types/congrats'
 import { haptics } from '../../../utils/haptics'
 import { posthog } from '../../../services/posthog'
@@ -141,10 +142,16 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
             startTime: toLocalDateTime(new Date(state.runningWorkout.startTime)),
           }
 
-          // Record the workout to the server
-          const result = await apiService.recordWorkout(workoutRecord)
+          // Save to local SQLite FIRST, then queue for server sync.
+          // This guarantees no data loss even if the app is offline.
+          const db = await getDatabase()
+          const workoutRepo = new WorkoutRepository(db)
+          const result = await workoutRepo.recordWorkout(
+            workoutRecord,
+            state.runningWorkout.name || 'Workout',
+          )
 
-          // Clear the running workout after successful recording
+          // Clear the running workout after successful local save
           set({ runningWorkout: null, isRecording: false })
           haptics.success()
 
@@ -158,10 +165,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           console.error('Failed to record workout:', error)
           const errorMessage = error instanceof Error ? error.message : 'Failed to record workout'
           set({ recordingError: errorMessage, isRecording: false })
-
-          // Still clear the running workout even if recording fails
-          // User can try to manually save later or we can add retry logic
-          set({ runningWorkout: null })
+          // Do NOT clear runningWorkout on failure — user can retry
         }
       },
 

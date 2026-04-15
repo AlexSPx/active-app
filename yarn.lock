@@ -4211,6 +4211,11 @@ available-typed-arrays@^1.0.7:
   dependencies:
     possible-typed-array-names "^1.0.0"
 
+await-lock@^2.2.2:
+  version "2.2.2"
+  resolved "https://registry.yarnpkg.com/await-lock/-/await-lock-2.2.2.tgz#a95a9b269bfd2f69d22b17a321686f551152bcef"
+  integrity sha512-aDczADvlvTGajTDjcjpJMqRkOF6Qdz3YbPZm/PyW6tKPkx2hlYBzxMhEywM/tU72HrVZjgl5VCdRuMlA7pZ8Gw==
+
 babel-jest@^29.7.0:
   version "29.7.0"
   resolved "https://registry.npmjs.org/babel-jest/-/babel-jest-29.7.0.tgz"
@@ -5369,6 +5374,13 @@ expo-image@^3.0.11:
   resolved "https://registry.yarnpkg.com/expo-image/-/expo-image-3.0.11.tgz#54195565dc710e632c10414c3609deebb7149ac5"
   integrity sha512-4TudfUCLgYgENv+f48omnU8tjS2S0Pd9EaON5/s1ZUBRwZ7K8acEr4NfvLPSaeXvxW24iLAiyQ7sV7BXQH3RoA==
 
+expo-insights@~0.10.8:
+  version "0.10.8"
+  resolved "https://registry.yarnpkg.com/expo-insights/-/expo-insights-0.10.8.tgz#962a6a97b5430eacb239b6cd98ee9c94eab70d60"
+  integrity sha512-5X96+4KGbYFYjxW/cxK9Q7zTYgLYXoVNNmnk18qiLiSZYKcb4pEnaDSKk97RCxTdzWo9ZBbvM4u8nyCwWeHsmw==
+  dependencies:
+    expo-eas-client "~1.0.8"
+
 expo-json-utils@~0.15.0:
   version "0.15.0"
   resolved "https://registry.npmjs.org/expo-json-utils/-/expo-json-utils-0.15.0.tgz"
@@ -5424,6 +5436,11 @@ expo-modules-core@3.0.29:
   integrity sha512-LzipcjGqk8gvkrOUf7O2mejNWugPkf3lmd9GkqL9WuNyeN2fRwU0Dn77e3ZUKI3k6sI+DNwjkq4Nu9fNN9WS7Q==
   dependencies:
     invariant "^2.2.4"
+
+expo-network@~8.0.8:
+  version "8.0.8"
+  resolved "https://registry.yarnpkg.com/expo-network/-/expo-network-8.0.8.tgz#d8eb25b60a93b010e635192f343d3a955a763df5"
+  integrity sha512-dgrL8UHAmWofqeY4UEjWskCl/RoQAM0DG6PZR8xz2WZt+6aQEboQgFRXowCfhbKZ71d16sNuKXtwBEsp2DtdNw==
 
 expo-notifications@~0.32.16:
   version "0.32.16"
@@ -5485,6 +5502,13 @@ expo-splash-screen@~31.0.13:
   integrity sha512-1epJLC1cDlwwj089R2h8cxaU5uk4ONVAC+vzGiTZH4YARQhL4Stlz1MbR6yAS173GMosvkE6CAeihR7oIbCkDA==
   dependencies:
     "@expo/prebuild-config" "^54.0.8"
+
+expo-sqlite@~16.0.10:
+  version "16.0.10"
+  resolved "https://registry.yarnpkg.com/expo-sqlite/-/expo-sqlite-16.0.10.tgz#dd3275e3b1f79063b6121fa3b11a074b7b84ce1f"
+  integrity sha512-tUOKxE9TpfneRG3eOfbNfhN9236SJ7IiUnP8gCqU7umd9DtgDGB/5PhYVVfl+U7KskgolgNoB9v9OZ9iwXN8Eg==
+  dependencies:
+    await-lock "^2.2.2"
 
 expo-status-bar@~3.0.9:
   version "3.0.9"

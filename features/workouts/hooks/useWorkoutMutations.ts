@@ -1,20 +1,21 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { CreateWorkoutRequest, Workout } from '../../../types/workout'
 import type { UpdateWorkoutRequest } from '../../../types/api'
-import { apiService } from '../../../services/apiService'
 import { queryKeys } from '../../../lib/queryKeys'
-import { useAuthStore } from '../../../stores/authStore'
+import { useWorkoutRepository } from '../../../lib/hooks/useRepository'
 
 export function useWorkoutMutations() {
   const queryClient = useQueryClient()
+  const repo = useWorkoutRepository()
 
   const createMutation = useMutation({
     mutationFn: async (workout: CreateWorkoutRequest): Promise<Workout> => {
-      const result = await apiService.createWorkout(workout)
+      const created = await repo.create(workout)
+
       return {
-        id: result.id,
-        name: workout.title,
-        notes: workout.notes,
+        id: created.id,
+        name: created.title || '',
+        notes: created.notes ?? undefined,
         exercises: [],
         date: new Date(),
       }
@@ -26,7 +27,7 @@ export function useWorkoutMutations() {
 
   const updateMutation = useMutation({
     mutationFn: async ({ workoutId, payload }: { workoutId: string; payload: UpdateWorkoutRequest }): Promise<void> => {
-      await apiService.updateWorkout(workoutId, payload)
+      await repo.update(workoutId, payload)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
@@ -35,7 +36,7 @@ export function useWorkoutMutations() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      await apiService.deleteWorkout(id)
+      await repo.delete(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
@@ -44,7 +45,7 @@ export function useWorkoutMutations() {
 
   const deleteRecordMutation = useMutation({
     mutationFn: async (id: string): Promise<void> => {
-      await apiService.deleteWorkoutRecord(id)
+      await repo.deleteRecord(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
@@ -54,8 +55,10 @@ export function useWorkoutMutations() {
   const createWorkout = async (workout: CreateWorkoutRequest): Promise<Workout | null> => {
     try {
       return await createMutation.mutateAsync(workout)
-    } catch {
-      return null
+    } catch (error: any) {
+      console.error('Error creating workout:', error)
+      // Throw error to let the caller handle it and show exact message
+      throw error
     }
   }
 
@@ -63,7 +66,8 @@ export function useWorkoutMutations() {
     try {
       await updateMutation.mutateAsync({ workoutId, payload })
       return true
-    } catch {
+    } catch (error) {
+      console.error('Error updating workout:', error)
       return false
     }
   }
@@ -72,7 +76,8 @@ export function useWorkoutMutations() {
     try {
       await deleteMutation.mutateAsync(id)
       return true
-    } catch {
+    } catch (error) {
+      console.error('Error deleting workout:', error)
       return false
     }
   }
@@ -81,7 +86,8 @@ export function useWorkoutMutations() {
     try {
       await deleteRecordMutation.mutateAsync(id)
       return true
-    } catch {
+    } catch (error) {
+      console.error('Error deleting workout record:', error)
       return false
     }
   }
