@@ -1,10 +1,10 @@
 export default {
   expo: {
-    name: "Active Next",
+    name: "Active Next Dev",
     slug: "active-next",
     version: "1.0.1",
     orientation: "portrait",
-    scheme: "myapp",
+    scheme: "dev.activenext",
     userInterfaceStyle: "automatic",
     splash: {
       image: "./assets/icons/splash-icon-light.png",
@@ -32,7 +32,7 @@ export default {
         monochromeImage: "./assets/icons/adaptive-icon.png",
         backgroundColor: "#000000"
       },
-      package: "com.alexspx.activenext",
+      package: "com.alexspx.dev.activenext",
       permissions: [
         "POST_NOTIFICATIONS",
         "VIBRATE",
@@ -42,9 +42,15 @@ export default {
     web: {
       bundler: "metro",
       output: "static",
-      favicon: "./assets/images/favicon.png"
+      favicon: "./assets/icons/adaptive-icon.png",
+      name: "Active Next",
+      shortName: "Active",
+      description: "Active Next - Your personal activity companion",
+      themeColor: "#000000",
+      backgroundColor: "#000000"
     },
     plugins: [
+      "expo-sqlite",
       "expo-router",
       "expo-font",
       [
@@ -79,7 +85,8 @@ export default {
         }
       ],
       "expo-web-browser",
-      "expo-localization"
+      "expo-localization",
+      "@react-native-community/datetimepicker"
     ],
     experiments: {
       "typedRoutes": true

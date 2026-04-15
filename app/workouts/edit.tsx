@@ -2,32 +2,55 @@ import { useEffect, useMemo, useState, useCallback } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { YStack, Text, Input, Button, Separator, View, TextArea } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
-import { useEditWorkoutStore } from 'stores/editWorkoutStore'
+import { useForm, Controller } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useToastController } from '@tamagui/toast'
+import { useEditWorkoutStore, useWorkoutMutations } from '../../features/workouts'
 import { apiService } from 'services/apiService'
 import {
   apiWorkoutToEditableExercises,
   buildUpdateWorkoutRequest,
-  validateWorkoutData,
 } from 'utils/workoutUtils'
-import ExerciseEditor from 'components/ExerciseEditor'
+import { ExerciseEditor } from '../../features/exercises'
 import { LoadingSpinner } from 'components/ui'
-// no extra types
+import { createWorkoutSchema, type CreateWorkoutFormData } from '../../lib/schemas/forms'
 
 export default function EditWorkoutScreen() {
   const router = useRouter()
+  const toast = useToastController()
   const params = useLocalSearchParams<{ id?: string }>()
   const workoutId = params.id as string | undefined
 
-  const [title, setTitle] = useState('')
-  const [notes, setNotes] = useState('')
+  const {
+    control,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    trigger,
+    formState: { errors },
+  } = useForm<CreateWorkoutFormData>({
+    resolver: zodResolver(createWorkoutSchema),
+    defaultValues: {
+      name: '',
+      notes: '',
+      exercises: [],
+    },
+    mode: 'onChange',
+  })
+
+  const name = watch('name')
+
   const [isSaving, setIsSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // Keep original values to decide partial updates
-  const [initialTitle, setInitialTitle] = useState('')
+  const [initialName, setInitialName] = useState('')
   const [initialNotes, setInitialNotes] = useState('')
   const [initialSig, setInitialSig] = useState('')
+
+  const { updateWorkout: updateWorkoutMutation } = useWorkoutMutations()
 
   const {
     selectedExercises,
@@ -38,7 +61,12 @@ export default function EditWorkoutScreen() {
     clearExercises,
   } = useEditWorkoutStore()
 
-  // Load current workout details from the list endpoint and find by id
+  // Sync store exercises to form for Zod validation (silent sync)
+  useEffect(() => {
+    setValue('exercises', selectedExercises as any, { shouldValidate: false })
+  }, [selectedExercises, setValue])
+
+  // Load current workout details
   useEffect(() => {
     let active = true
     const load = async () => {
@@ -55,9 +83,13 @@ export default function EditWorkoutScreen() {
         if (!found) throw new Error('Workout not found')
 
         if (!active) return
-        setTitle(found.title)
-        setNotes(found.notes || '')
-        setInitialTitle(found.title)
+        // Set form values
+        reset({
+          name: found.title,
+          notes: found.notes || '',
+          exercises: [],
+        })
+        setInitialName(found.title)
         setInitialNotes(found.notes || '')
         const editable = apiWorkoutToEditableExercises(found)
         setExercises(editable)
@@ -72,24 +104,50 @@ export default function EditWorkoutScreen() {
     return () => {
       active = false
     }
-  }, [workoutId, setExercises])
+  }, [workoutId, setExercises, reset])
 
-  const handleSave = async () => {
-    if (!workoutId) return
-    // Only validate template when exercises are being updated
-    const changedTemplate = signature(selectedExercises) !== initialSig
-    const vErr = changedTemplate ? validateWorkoutData(title || 'x', selectedExercises) : null
-    if (changedTemplate && vErr) {
-      setError(vErr)
-      return
+  // Show validation toast and return true if there are issues
+  const showValidationToast = useCallback(async () => {
+    const isFormValid = await trigger()
+    if (!isFormValid) {
+      const currentIssues: string[] = []
+      const currentErrors = control._formState.errors as typeof errors
+      if (currentErrors.name?.message) currentIssues.push(currentErrors.name.message)
+      if (currentErrors.notes?.message) currentIssues.push(currentErrors.notes.message)
+      if (currentErrors.exercises?.message) currentIssues.push(currentErrors.exercises.message)
+      if ((currentErrors.exercises as any)?.root?.message) currentIssues.push((currentErrors.exercises as any).root.message)
+      
+      // Check individual exercise errors
+      const exercisesErrors = currentErrors.exercises as any
+      if (Array.isArray(exercisesErrors)) {
+        exercisesErrors.forEach((exError: any) => {
+          if (exError?.message) currentIssues.push(exError.message)
+          if (exError?.root?.message) currentIssues.push(exError.root.message)
+        })
+      }
+      
+      if (currentIssues.length > 0) {
+        toast.show('Please fix the following:', {
+          message: currentIssues.join('\n'),
+          duration: 4000,
+        })
+        return true
+      }
     }
+    return false
+  }, [trigger, toast, control])
+
+  const onSubmit = async (data: CreateWorkoutFormData) => {
+    if (!workoutId) return
+    
+    const changedTemplate = signature(selectedExercises) !== initialSig
+    const notes = data.notes || ''
 
     setIsSaving(true)
     setError(null)
     try {
       const payload = buildUpdateWorkoutRequest({
-        title: title !== initialTitle ? title : undefined,
-        // For notes: allow clearing to empty when changed
+        title: data.name !== initialName ? data.name : undefined,
         notes: notes !== initialNotes ? notes : undefined,
         exercises: changedTemplate ? selectedExercises : undefined,
       })
@@ -97,13 +155,13 @@ export default function EditWorkoutScreen() {
         router.replace('/(tabs)/(workouts)')
         return
       }
-      await apiService.updateWorkout(workoutId, payload)
-
-      // Clear editor state and go back to workouts list
-      clearExercises()
-      router.replace('/(tabs)/(workouts)')
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update workout')
+      const success = await updateWorkoutMutation(workoutId, payload)
+      if (success) {
+        clearExercises()
+        router.replace('/(tabs)/(workouts)')
+      } else {
+        setError('Failed to update workout')
+      }
     } finally {
       setIsSaving(false)
     }
@@ -121,6 +179,32 @@ export default function EditWorkoutScreen() {
     [updateExerciseSets, addSetToExercise, removeSetFromExercise]
   )
 
+  // Shared form fields component
+  const FormFields = useCallback(() => (
+    <YStack gap="$3">
+      <Controller
+        control={control}
+        name="name"
+        render={({ field: { onChange, value } }) => (
+          <Input placeholder="Title" value={value} onChangeText={onChange} size="$4" />
+        )}
+      />
+      <Controller
+        control={control}
+        name="notes"
+        render={({ field: { onChange, value } }) => (
+          <TextArea
+            placeholder="Notes"
+            value={value || ''}
+            onChangeText={onChange}
+            size="$4"
+            height={80}
+          />
+        )}
+      />
+    </YStack>
+  ), [control])
+
   const Header = useMemo(
     () => (
       <YStack gap="$4">
@@ -128,16 +212,7 @@ export default function EditWorkoutScreen() {
           ✏️ Edit Workout
         </Text>
 
-        <YStack gap="$3">
-          <Input placeholder="Title" value={title} onChangeText={setTitle} size="$4" />
-          <TextArea
-            placeholder="Notes"
-            value={notes}
-            onChangeText={setNotes}
-            size="$4"
-            height={80}
-          />
-        </YStack>
+        <FormFields />
 
         {error && (
           <YStack bg="$red3" borderColor="$red7" borderWidth="$0.5" rounded="$4" p="$3">
@@ -160,7 +235,7 @@ export default function EditWorkoutScreen() {
         )}
       </YStack>
     ),
-    [title, notes, error, selectedExercises.length, router]
+    [FormFields, error, selectedExercises.length, router]
   )
 
   if (loading) {
@@ -189,15 +264,11 @@ export default function EditWorkoutScreen() {
             <Button
               bg="$primary"
               size="$5"
-              onPress={handleSave}
-              disabled={
-                isSaving ||
-                selectedExercises.some((ex) =>
-                  ex.category === 'CARDIO'
-                    ? ex.sets.some((s) => s.durationSeconds == null)
-                    : ex.sets.some((s) => s.reps == null || s.weight == null)
-                )
-              }
+              disabled={isSaving}
+              onPress={async () => {
+                if (await showValidationToast()) return
+                handleSubmit(onSubmit)()
+              }}
             >
               {isSaving ? (
                 <LoadingSpinner size="small" color="$onPrimary" />

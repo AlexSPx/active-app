@@ -1,7 +1,7 @@
 import { Check, Dumbbell } from '@tamagui/lucide-icons'
-import { XStack, YStack, Text } from 'tamagui'
+import { XStack, YStack, Text, Progress } from 'tamagui'
 import { StreakUpdateResponse } from '../types/api'
-import { useActiveRoutine } from '../hooks/useActiveRoutine'
+import { useActiveRoutine } from '../features/routines'
 import { routinePatternIndex } from '../utils/date'
 
 type StreakViewProps = {
@@ -43,7 +43,7 @@ function DayCircle({ label, isWorkout, isStreak, isToday }: DayCircleProps) {
   )
 }
 
-// A component to display the weekly streak progress
+// A component to display the weekly streak progress for SEQUENTIAL routines
 function WeeklyStreakView({
   streakDays,
   routineDays,
@@ -70,8 +70,59 @@ function WeeklyStreakView({
   )
 }
 
+// Progress view for WEEKLY_COMPLETION routines
+function WeeklyCompletionProgress({
+  completed,
+  total,
+}: {
+  completed: number
+  total: number
+}) {
+  const progress = total > 0 ? (completed / total) * 100 : 0
+  const isComplete = completed >= total
+
+  return (
+    <YStack gap="$3" width="100%">
+      <XStack justify="space-between" items="center">
+        <Text fontSize="$3" color="$colorSubtle" fontWeight="500">
+          This week's progress
+        </Text>
+        <Text
+          fontSize="$4"
+          fontWeight="700"
+          color={isComplete ? '$green10' : '$primary'}
+        >
+          {completed}/{total} workouts
+        </Text>
+      </XStack>
+      <Progress value={progress} size="$2">
+        <Progress.Indicator
+          animation="bouncy"
+          bg={isComplete ? '$green9' : '$primary'}
+        />
+      </Progress>
+      {isComplete && (
+        <XStack items="center" gap="$2" justify="center">
+          <Check size={16} color="$green10" />
+          <Text fontSize="$3" color="$green10" fontWeight="600">
+            Week complete! Streak +1
+          </Text>
+        </XStack>
+      )}
+    </YStack>
+  )
+}
+
 export function StreakView({ streak }: StreakViewProps) {
   const { activeRoutine } = useActiveRoutine()
+
+  // Determine routine type
+  const routineType = activeRoutine?.routineType ?? 'SEQUENTIAL'
+  const isWeeklyCompletion = routineType === 'WEEKLY_COMPLETION'
+
+  // For WEEKLY_COMPLETION: use the new fields from streak response
+  const weeklyCompleted = streak.weeklyCompletedWorkoutIds?.length ?? 0
+  const weeklyRequired = streak.weeklyWorkoutsRequired ?? 0
 
   // Compute colored boxes from currentStreak: color today and the previous N-1 boxes (up to 7)
   const streakDays = Array(7).fill(false) as boolean[]
@@ -112,6 +163,14 @@ export function StreakView({ streak }: StreakViewProps) {
     }
   }
 
+  // Determine status message based on streak status
+  const getStatusMessage = () => {
+    if (streak.status === 'WEEKLY_PROGRESS') {
+      return 'Making progress!'
+    }
+    return 'Keep it up!'
+  }
+
   return (
     <YStack
       gap="$4"
@@ -126,12 +185,18 @@ export function StreakView({ streak }: StreakViewProps) {
         <Text fontSize={32}>🔥</Text>
         <YStack>
           <Text fontSize="$5" fontWeight="700">
-            {streak.currentStreak} day streak
+            {streak.currentStreak} {isWeeklyCompletion ? 'week' : 'day'} streak
           </Text>
-          <Text color="$color10">Keep it up!</Text>
+          <Text color="$color10">{getStatusMessage()}</Text>
         </YStack>
       </XStack>
-      <WeeklyStreakView streakDays={streakDays} routineDays={routineDays} />
+      
+      {isWeeklyCompletion && weeklyRequired > 0 ? (
+        <WeeklyCompletionProgress completed={weeklyCompleted} total={weeklyRequired} />
+      ) : (
+        <WeeklyStreakView streakDays={streakDays} routineDays={routineDays} />
+      )}
     </YStack>
   )
 }
+

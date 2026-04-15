@@ -1,12 +1,9 @@
 import { useMemo } from 'react'
 import { usePathname, useRouter, Slot } from 'expo-router'
-import { YStack, XStack, Tabs, Text, Button, Separator } from 'tamagui'
-import { useAppNavigation } from '../../../navigation/useAppNavigation'
-
+import { YStack, XStack, Tabs, Text, Separator } from 'tamagui'
 export default function WorkoutsLayout() {
   const pathname = usePathname()
   const router = useRouter()
-  const { navigateToNewWorkout } = useAppNavigation()
 
   const current = useMemo<'workouts' | 'routines'>(() => {
     if (!pathname) return 'workouts'

@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { YStack, XStack, Text, Button, ScrollView } from 'tamagui'
 import { Clock } from '@tamagui/lucide-icons'
 import { useAuth } from '../../../contexts/AuthContext'
-import { useUpdateUser } from '../../../hooks/useUpdateUser'
+import { useUpdateUser } from '../../../features/settings'
 import NotificationPermissions from '../../../components/NotificationPermissions'
 import * as Haptics from 'expo-haptics'
 

@@ -5,44 +5,20 @@ import { Trash, Link as LinkIcon, Settings } from '@tamagui/lucide-icons'
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Alert } from 'react-native'
-import { apiService } from '../../../services/apiService'
+import { useAuthMutations } from '../../../features/auth'
 
 export default function AccountSettingsScreen() {
   const router = useRouter()
   const { logout } = useAuth()
+  const { deleteAccount, error } = useAuthMutations()
   const [open, setOpen] = useState(false)
 
   const handleDeleteAccount = async () => {
-    try {
-      await apiService.deleteAccount()
+    const success = await deleteAccount()
+    if (success) {
       logout()
-    } catch (error) {
-      console.error('Failed to delete account:', error)
-      Alert.alert('Error', 'Failed to delete account. Please try again.')
-    }
-  }
-
-  const handleLinkGoogle = async () => {
-    try {
-      await GoogleSignin.hasPlayServices()
-      const userInfo = await GoogleSignin.signIn()
-      if (userInfo.data?.idToken) {
-        await apiService.linkGoogleAccount(userInfo.data.idToken)
-        Alert.alert('Success', 'Google account linked successfully')
-      } else {
-        throw new Error('No ID token present')
-      }
-    } catch (error: any) {
-      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
-        // user cancelled the login flow
-      } else if (error.code === statusCodes.IN_PROGRESS) {
-        // operation (e.g. sign in) is in progress already
-      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
-        Alert.alert('Error', 'Google Play Services not available')
-      } else {
-        console.error(error)
-        Alert.alert('Error', 'Failed to link Google account')
-      }
+    } else {
+      Alert.alert('Error', error ?? 'Failed to delete account. Please try again.')
     }
   }
 
@@ -62,22 +38,6 @@ export default function AccountSettingsScreen() {
             </Paragraph>
           </YStack>
           
-          <Separator mb="$2" />
-          
-          <YStack gap="$2">
-            <Text fontWeight="700">Google Account</Text>
-            <Paragraph size="$2" color="$color11">
-              Connect your Google account. Note: The Google account must not be already used. You will lose the option to login with password.
-            </Paragraph>
-            <Button
-              icon={<LinkIcon size={18} />}
-              onPress={handleLinkGoogle}
-              mt="$2"
-            >
-              Link Google Account
-            </Button>
-          </YStack>
-
           <Separator />
 
           <YStack gap="$2">

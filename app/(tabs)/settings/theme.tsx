@@ -1,6 +1,6 @@
 import { YStack, Text, XStack, Button, Card } from 'tamagui'
 import { Check, Sun, Moon, Smartphone } from '@tamagui/lucide-icons'
-import { useSettingsStore } from '../../../stores/settingsStore'
+import { useSettingsStore } from '../../../features/settings'
 import { Stack } from 'expo-router'
 
 export default function ThemeSettingsScreen() {

@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Platform } from 'react-native'
 import { config, getApiUrl } from '../config/api'
 import type {
   ApiError,
@@ -16,6 +17,8 @@ import type {
 } from '../types/api'
 import type { WorkoutRecordResponse } from '../types/api'
 import type { Routine, CreateRoutineRequest, UpdateRoutineRequest } from '../types/routine'
+import { queryClient } from '../lib/queryClient'
+import { queryKeys } from '../lib/queryKeys'
 
 // Re-export types for backward compatibility
 export type {
@@ -31,35 +34,60 @@ export type {
   WorkoutRecord,
 } from '../types/api'
 
+const isWeb = Platform.OS === 'web'
+
 class ApiService {
   private unauthorizedHandler?: () => void
   private isRefreshing = false
-  private refreshSubscribers: ((token: string) => void)[] = []
+  private refreshSubscribers: ((token: string | null, error?: any) => void)[] = []
 
   setUnauthorizedHandler(handler: () => void) {
     this.unauthorizedHandler = handler
   }
 
   private async getAuthHeaders(): Promise<HeadersInit> {
-    const token = await AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN)
     const headers: HeadersInit = {
       'Content-Type': 'application/json',
+      // Standard header to indicate platform - server can use this to decide
+      // whether to return tokens in body (native) or set httpOnly cookies (web)
+      'X-Platform': isWeb ? 'web' : 'native',
+      ...(process.env.NODE_ENV === 'development' && { 'ngrok-skip-browser-warning': 'true' }),
     }
 
-    if (token) {
-      headers.Authorization = `Bearer ${token}`
+    // On web, authentication is handled via httpOnly cookies
+    // On native, we need to include the Bearer token
+    if (!isWeb) {
+      const token = await AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN)
+      if (token) {
+        headers.Authorization = `Bearer ${token}`
+      }
     }
 
     return headers
   }
 
-  private async handleResponse<T>(response: Response): Promise<T> {
+  /**
+   * Get fetch options with appropriate credentials for the platform.
+   * Web requests include credentials to send/receive httpOnly cookies.
+   */
+  private getFetchOptions(options: RequestInit = {}): RequestInit {
+    if (isWeb) {
+      return {
+        ...options,
+        credentials: 'include', // Required for httpOnly cookies
+      }
+    }
+    return options
+  }
+
+  private async handleResponse<T>(response: Response, skipUnauthorizedHandler = false): Promise<T> {
     // Log response
     console.log(`API Response: ${response.status} ${response.url}`)
 
     if (!response.ok) {
       // On unauthorized globally signal handler
-      if (response.status === 401 && this.unauthorizedHandler) {
+      // Skip if the caller (request method) will handle 401 with token refresh
+      if (response.status === 401 && this.unauthorizedHandler && !skipUnauthorizedHandler) {
         try {
           this.unauthorizedHandler()
         } catch (e) {
@@ -100,7 +128,8 @@ class ApiService {
       Object.assign(headers, options.headers)
     }
 
-    const response = await fetch(url, { ...options, headers })
+    const fetchOptions = this.getFetchOptions({ ...options, headers })
+    const response = await fetch(url, fetchOptions)
 
     if (response.status === 401) {
       if (!this.isRefreshing) {
@@ -110,8 +139,14 @@ class ApiService {
           await this.setToken(token)
           await this.setRefreshToken(refreshToken)
           this.onRefreshed(token)
+
+          // Retry the original request immediately
+          headers.Authorization = `Bearer ${token}`
+          const retryFetchOptions = this.getFetchOptions({ ...options, headers })
+          const retryResponse = await fetch(url, retryFetchOptions)
+          return this.handleResponse<T>(retryResponse)
         } catch (error) {
-          this.isRefreshing = false
+          this.onRefreshFailed(error)
           if (this.unauthorizedHandler) {
             this.unauthorizedHandler()
           }
@@ -122,10 +157,19 @@ class ApiService {
       }
 
       return new Promise((resolve, reject) => {
-        this.addRefreshSubscriber(async (token) => {
+        this.addRefreshSubscriber(async (token, error) => {
+          if (error) {
+            reject(error)
+            return
+          }
+          if (!token) {
+            reject(new Error('Token refresh failed'))
+            return
+          }
           try {
             headers.Authorization = `Bearer ${token}`
-            const retryResponse = await fetch(url, { ...options, headers })
+            const retryFetchOptions = this.getFetchOptions({ ...options, headers })
+            const retryResponse = await fetch(url, retryFetchOptions)
             resolve(this.handleResponse<T>(retryResponse))
           } catch (error) {
             reject(error)
@@ -141,11 +185,11 @@ class ApiService {
     const url = getApiUrl(config.API_ENDPOINTS.AUTH.LOGIN)
     console.log(`API Request: POST ${url}`, { email: credentials.email })
 
-    const response = await fetch(url, {
+    const response = await fetch(url, this.getFetchOptions({
       method: 'POST',
       headers: await this.getAuthHeaders(),
       body: JSON.stringify(credentials),
-    })
+    }))
 
     return this.handleResponse<LoginResponse>(response)
   }
@@ -231,26 +275,35 @@ class ApiService {
     this.refreshSubscribers = []
   }
 
-  private addRefreshSubscriber(callback: (token: string) => void) {
+  private onRefreshFailed(error: any) {
+    this.refreshSubscribers.forEach((callback) => callback(null, error))
+    this.refreshSubscribers = []
+  }
+
+  private addRefreshSubscriber(callback: (token: string | null, error?: any) => void) {
     this.refreshSubscribers.push(callback)
   }
 
   async refreshToken(): Promise<LoginResponse> {
-    const refreshToken = await this.getRefreshToken()
-    if (!refreshToken) {
-      throw new Error('No refresh token available')
-    }
-
     const url = getApiUrl(config.API_ENDPOINTS.AUTH.REFRESH)
     console.log(`API Request: POST ${url}`)
 
-    const response = await fetch(url, {
+    // On web, refresh token is sent via httpOnly cookie automatically
+    // On native, we need to send it in the request body
+    let body: string | undefined
+    if (!isWeb) {
+      const refreshToken = await this.getRefreshToken()
+      if (!refreshToken) {
+        throw new Error('No refresh token available')
+      }
+      body = JSON.stringify({ refreshToken })
+    }
+    
+    const response = await fetch(url, this.getFetchOptions({
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ refreshToken }),
-    })
+      headers: await this.getAuthHeaders(),
+      body,
+    }))
 
     if (!response.ok) {
       throw new Error('Failed to refresh token')
@@ -273,10 +326,14 @@ class ApiService {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.CREATE)
     console.log(`API Request: POST ${url}`, workoutData)
 
-    return this.request<{ id: string }>(url, {
+    const result = await this.request<{ id: string }>(url, {
       method: 'POST',
       body: JSON.stringify(workoutData),
     })
+    
+    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
+    
+    return result
   }
 
   async getWorkouts(): Promise<ApiWorkout[]> {
@@ -310,10 +367,12 @@ class ApiService {
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
     console.log(`API Request: PUT ${url}`, payload)
 
-    return this.request<void>(url, {
+    await this.request<void>(url, {
       method: 'PUT',
       body: JSON.stringify(payload),
     })
+    
+    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
   }
 
   async getWorkoutRecords(): Promise<WorkoutRecord[]> {
@@ -325,25 +384,39 @@ class ApiService {
     })
   }
 
+  async deleteWorkoutRecord(recordId: string): Promise<void> {
+    const base = config.API_ENDPOINTS.WORKOUTS.RECORD
+    const url = getApiUrl(`${base}/${encodeURIComponent(recordId)}`)
+    console.log(`API Request: DELETE ${url}`)
+
+    await this.request<void>(url, {
+      method: 'DELETE',
+    })
+    
+    await queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
+  }
+
   async deleteWorkout(workoutId: string): Promise<void> {
     const base = config.API_ENDPOINTS.WORKOUTS.DELETE
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
     console.log(`API Request: DELETE ${url}`)
 
-    return this.request<void>(url, {
+    await this.request<void>(url, {
       method: 'DELETE',
     })
+    
+    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
   }
 
   async signup(payload: RegisterRequest): Promise<LoginResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.AUTH.SIGNUP)
     console.log(`API Request: POST ${url}`, { email: payload.email })
 
-    const response = await fetch(url, {
+    const response = await fetch(url, this.getFetchOptions({
       method: 'POST',
       headers: await this.getAuthHeaders(),
       body: JSON.stringify(payload),
-    })
+    }))
 
     return this.handleResponse<LoginResponse>(response)
   }
@@ -352,13 +425,24 @@ class ApiService {
     const url = getApiUrl(`${config.API_ENDPOINTS.AUTH.BASE}/google`)
     console.log(`API Request: POST ${url}`)
 
-    const response = await fetch(url, {
+    const response = await fetch(url, this.getFetchOptions({
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: await this.getAuthHeaders(),
       body: JSON.stringify({ idToken }),
-    })
+    }))
+
+    return this.handleResponse<LoginResponse>(response)
+  }
+
+  async workosLogin(code: string): Promise<LoginResponse> {
+    const url = new URL(getApiUrl(config.API_ENDPOINTS.AUTH.WORKOS))
+    url.searchParams.append('code', code)
+    console.log(`API Request: POST ${url.toString()}`)
+
+    const response = await fetch(url.toString(), this.getFetchOptions({
+      method: 'POST',
+      headers: await this.getAuthHeaders(),
+    }))
 
     return this.handleResponse<LoginResponse>(response)
   }
@@ -446,12 +530,13 @@ class ApiService {
     const url = getApiUrl(config.API_ENDPOINTS.LEGAL.TERMS)
     console.log(`API Request: GET ${url}`)
 
-    const response = await fetch(url, {
+    const response = await fetch(url, this.getFetchOptions({
       method: 'GET',
       headers: {
         'Content-Type': 'text/markdown',
+        'X-Platform': isWeb ? 'web' : 'native',
       },
-    })
+    }))
 
     if (!response.ok) {
       throw new Error(`Failed to fetch terms of service: ${response.status}`)
@@ -464,12 +549,13 @@ class ApiService {
     const url = getApiUrl(config.API_ENDPOINTS.LEGAL.PRIVACY)
     console.log(`API Request: GET ${url}`)
 
-    const response = await fetch(url, {
+    const response = await fetch(url, this.getFetchOptions({
       method: 'GET',
       headers: {
         'Content-Type': 'text/markdown',
+        'X-Platform': isWeb ? 'web' : 'native',
       },
-    })
+    }))
 
     if (!response.ok) {
       throw new Error(`Failed to fetch privacy policy: ${response.status}`)

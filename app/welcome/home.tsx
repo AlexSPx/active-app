@@ -1,13 +1,10 @@
 import { YStack, XStack, Text, Button, H1, Image } from 'tamagui'
 import { useRouter } from 'expo-router'
 import { Dumbbell, Zap, Target, ArrowRight } from '@tamagui/lucide-icons'
+import { WorkOSSignInButton } from '../../components/WorkOSSignInButton'
 
 export default function WelcomeHome() {
   const router = useRouter()
-
-  const handleLogin = () => {
-    router.push('/welcome/login')
-  }
 
   const handleSignup = () => {
     router.push('/welcome/register')
@@ -18,7 +15,7 @@ export default function WelcomeHome() {
       {/* Hero Section */}
       <YStack items="center" animation="bouncy" enterStyle={{ opacity: 0, y: -20, scale: 0.9 }} mt="$4">
         <Image
-          source={{ uri: require('../../assets/icons/splash-icon-light.png') }}
+          source={require('../../assets/icons/splash-icon-light.png')}
           width={100}
           height={100}
           resizeMode="contain"
@@ -58,7 +55,7 @@ export default function WelcomeHome() {
       </YStack>
 
       {/* Action Buttons */}
-      <YStack gap="$4" width="100%" mb="$4">
+      <YStack width="100%" mb="$4">
         <Button
           size="$6"
           bg="$blue9"
@@ -74,20 +71,7 @@ export default function WelcomeHome() {
           </Text>
         </Button>
 
-        <Button
-          size="$6"
-          variant="outlined"
-          borderColor="$color5"
-          color="$color11"
-          rounded="$8"
-          onPress={handleLogin}
-          pressStyle={{ opacity: 0.8, scale: 0.98, borderColor: '$color7' }}
-          animation="quick"
-        >
-          <Text fontSize="$5" fontWeight="600">
-            I already have an account
-          </Text>
-        </Button>
+        <WorkOSSignInButton label="I already have an account" />
       </YStack>
     </YStack>
   )

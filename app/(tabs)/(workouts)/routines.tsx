@@ -1,28 +1,25 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
-import { BackHandler } from 'react-native'
+import { BackHandler, Platform } from 'react-native'
 import { useNavigation, router } from 'expo-router'
-import { YStack, Button, Text, XStack } from 'tamagui'
+import { YStack, Button, Text, XStack, Dialog } from 'tamagui'
 import { Sheet } from '@tamagui/sheet'
 import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
-import { RoutineList } from '../../../components/routines/RoutineList'
-import { useRoutines } from '../../../hooks/useRoutines'
-import { useRoutineMutations } from '../../../hooks/useRoutineMutations'
-import { useActiveRoutine } from '../../../hooks/useActiveRoutine'
+import { RoutineList, useRoutines, useRoutineMutations, useActiveRoutine } from '../../../features/routines'
 import type { Routine } from '../../../types/routine'
 import { posthog } from '../../../services/posthog'
 
 export default function RoutinesTab() {
   const navigation = useNavigation()
 
-  const { routines, loading, error, refetch, isExpired: routinesExpired } = useRoutines()
+  const { routines, loading, error, refetch, isStale: routinesStale } = useRoutines()
   const { deleteRoutine, activateRoutine, updateRoutine, loading: mutating } = useRoutineMutations()
   const {
     activeRoutine,
     refetch: refetchActive,
-    isExpired: activeExpired,
+    isStale: activeStale,
     loading: activeLoading,
   } = useActiveRoutine()
 
@@ -37,15 +34,14 @@ export default function RoutinesTab() {
 
   // Refresh data when this screen gains focus
 
-  // Refetch when screen gains focus (ensures newly created routines appear)
-  // On screen focus, only refetch if expired (to avoid unnecessary network requests)
+  // Refetch when screen gains focus (only if data is stale to avoid unnecessary requests)
   useEffect(() => {
     const unsub = (navigation as any).addListener?.('focus', async () => {
-      if (routinesExpired) await refetch()
-      if (activeExpired) await refetchActive()
+      if (routinesStale) await refetch()
+      if (activeStale) await refetchActive()
     })
     return () => unsub?.()
-  }, [navigation, refetch, refetchActive, routinesExpired, activeExpired])
+  }, [navigation, refetch, refetchActive, routinesStale, activeStale])
 
   const openCreate = useCallback(() => {
     router.push('/routines/new')
@@ -53,6 +49,10 @@ export default function RoutinesTab() {
 
   const openEdit = useCallback((routine: Routine) => {
     router.push(`/routines/edit?id=${routine.id}`)
+  }, [])
+
+  const openDetail = useCallback((routine: Routine) => {
+    router.push(`/routines/${routine.id}`)
   }, [])
 
   const handleActivate = useCallback(
@@ -140,6 +140,34 @@ export default function RoutinesTab() {
     )
   }
 
+  // Delete confirmation content - shared between Sheet (native) and Dialog (web)
+  const DeleteConfirmContent = (
+    <YStack gap="$3" items="center">
+      <XStack items="center" gap="$2">
+        <AlertTriangle size="$1" color="$secondary" />
+        <Text fontSize="$6" fontWeight="700">
+          Delete routine
+        </Text>
+      </XStack>
+      <Text color="$color10">Are you sure? This will permanently delete this routine.</Text>
+      <YStack mt="$2" gap="$3" width="100%">
+        <Button
+          bg="$red4"
+          color="$red11"
+          size="$5"
+          iconAfter={Trash2}
+          disabled={mutating}
+          onPress={confirmDelete}
+        >
+          <Text>{mutating ? 'Deleting…' : 'Delete routine'}</Text>
+        </Button>
+        <Button bg="$blue4" color="$blue12" size="$5" onPress={() => setConfirmOpen(false)}>
+          <Text>Cancel</Text>
+        </Button>
+      </YStack>
+    </YStack>
+  )
+
   return (
     <YStack flex={1} bg="$background">
       <YStack flex={1} px="$4">
@@ -149,6 +177,7 @@ export default function RoutinesTab() {
           onActivate={handleActivate}
           onEditRoutine={openEdit}
           onDeleteRoutine={handleDeleteRoutine}
+          onPressRoutine={openDetail}
           onStartFromToday={handleStartFromToday}
           disableActions={mutating}
           listHeader={
@@ -176,43 +205,47 @@ export default function RoutinesTab() {
         />
       </YStack>
 
-      {/* Delete confirm */}
-      <Sheet
-        open={confirmOpen}
-        onOpenChange={setConfirmOpen}
-        modal
-        dismissOnOverlayPress={!mutating}
-        snapPointsMode="fit"
-      >
-        <Sheet.Overlay animation="slow" style={{ backgroundColor: 'transparent' }} />
-        <Sheet.Handle bg="$surface" />
-        <Sheet.Frame bg="$surface" borderTopLeftRadius="$6" borderTopRightRadius="$6" p="$4">
-          <YStack gap="$3" items="center">
-            <XStack items="center" gap="$2">
-              <AlertTriangle size="$1" color="$secondary" />
-              <Text fontSize="$6" fontWeight="700">
-                Delete routine
-              </Text>
-            </XStack>
-            <Text color="$color10">Are you sure? This will permanently delete this routine.</Text>
-            <YStack mt="$2" gap="$3" width="100%">
-              <Button
-                bg="$red4"
-                color="$red11"
-                size="$5"
-                iconAfter={Trash2}
-                disabled={mutating}
-                onPress={confirmDelete}
-              >
-                <Text>{mutating ? 'Deleting…' : 'Delete routine'}</Text>
-              </Button>
-              <Button bg="$blue4" color="$blue12" size="$5" onPress={() => setConfirmOpen(false)}>
-                <Text>Cancel</Text>
-              </Button>
-            </YStack>
-          </YStack>
-        </Sheet.Frame>
-      </Sheet>
+      {/* Use Dialog on web (Sheet has rendering issues), Sheet on native */}
+      {Platform.OS === 'web' ? (
+        <Dialog modal open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <Dialog.Portal>
+            <Dialog.Overlay
+              key="overlay"
+              animation="slow"
+              opacity={0.5}
+              enterStyle={{ opacity: 0 }}
+              exitStyle={{ opacity: 0 }}
+            />
+            <Dialog.Content
+              bordered
+              elevate
+              key="content"
+              animation={['quick', { opacity: { overshootClamping: true } }]}
+              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
+              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              bg="$surface"
+              p="$4"
+            >
+              {DeleteConfirmContent}
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog>
+      ) : (
+        <Sheet
+          open={confirmOpen}
+          onOpenChange={setConfirmOpen}
+          modal
+          dismissOnOverlayPress={!mutating}
+          snapPointsMode="fit"
+        >
+          <Sheet.Overlay animation="slow" style={{ backgroundColor: 'transparent' }} />
+          <Sheet.Handle bg="$surface" />
+          <Sheet.Frame bg="$surface" borderTopLeftRadius="$6" borderTopRightRadius="$6" p="$4">
+            {DeleteConfirmContent}
+          </Sheet.Frame>
+        </Sheet>
+      )}
     </YStack>
   )
 }
+

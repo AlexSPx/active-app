@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router'
 import { useTheme, YStack } from 'tamagui'
 import { Dumbbell, History, Home, Settings as SettingsIcon } from '@tamagui/lucide-icons'
-import RunningWorkoutFloat from '../../components/workout-session/RunningWorkoutFloat'
+import { RunningWorkoutFloat } from '../../features/workout-session'
 
 export default function TabLayout() {
   const theme = useTheme()

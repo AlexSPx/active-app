@@ -1,12 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useCacheStore } from '../stores/cacheStore'
-import { useUserStore } from '../stores/userStore'
-import { useSettingsStore } from '../stores/settingsStore'
-import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
-import { useWorkoutStore } from '../stores/createWorkoutStore'
-import { useEditWorkoutStore } from '../stores/editWorkoutStore'
+import { useSettingsStore, useUserStore } from '../features/settings'
+import { useRunningWorkoutStore } from '../features/workout-session'
+import { useWorkoutStore, useEditWorkoutStore } from '../features/workouts'
 import { useWidgetStore } from '../stores/widgetStore'
 import { useUiStore } from '../stores/uiStore'
+import { queryClient } from '../lib/queryClient'
 
 /**
  * Resets all application stores and clears AsyncStorage.
@@ -17,8 +15,10 @@ export async function resetAllStores(): Promise<void> {
     // Clear AsyncStorage completely
     await AsyncStorage.clear()
 
+    // Clear TanStack Query cache
+    queryClient.clear()
+
     // Reset all Zustand stores to their initial state
-    useCacheStore.getState().clearAll()
     useUserStore.getState().reset()
     useSettingsStore.getState().reset()
     useRunningWorkoutStore.getState().reset()

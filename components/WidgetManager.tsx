@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { YStack, XStack, Text, Button, Input, ScrollView, View, Sheet } from 'tamagui'
 import { Search, X, Plus } from '@tamagui/lucide-icons'
 import { useWidgetStore, type ProgressionMetric } from '../stores/widgetStore'
-import { useExerciseSearch } from '../hooks/useExerciseSearch'
+import { useExerciseSearch } from '../features/exercises'
 
 interface WidgetManagerProps {
   isVisible: boolean

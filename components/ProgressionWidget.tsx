@@ -2,7 +2,7 @@ import React, { useMemo } from 'react'
 import { Card, YStack, XStack, Text, Button, Spinner, useTheme } from 'tamagui'
 import { LineChart } from 'react-native-gifted-charts'
 import { TrendingUp, TrendingDown, Trash2, Target, BarChart3 } from '@tamagui/lucide-icons'
-import { useExerciseProgression } from '../hooks/useExerciseProgression'
+import { useExerciseProgression } from '../features/exercises'
 import type { WidgetConfig, ProgressionMetric } from '../stores/widgetStore'
 import { getMetricLabel, getMetricUnit } from '../stores/widgetStore'
 

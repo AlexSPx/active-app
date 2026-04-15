@@ -1,6 +1,5 @@
 import { useColorScheme } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { Stack } from 'expo-router'
 import { useTheme, View } from 'tamagui'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -9,7 +8,6 @@ export function RootLayoutNav() {
   const colorScheme = useColorScheme()
   const theme = useTheme()
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.background.val }}>
         <View flex={1} bg="$background">
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
@@ -138,6 +136,5 @@ export function RootLayoutNav() {
           </Stack>
         </View>
       </SafeAreaView>
-    </ThemeProvider>
   )
 }

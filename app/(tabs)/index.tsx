@@ -1,5 +1,4 @@
 import { YStack, XStack, Text, Button, View, ScrollView } from 'tamagui'
-import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Plus } from '@tamagui/lucide-icons'
 import { WeeklyView } from '../../components/WeeklyView'
@@ -9,7 +8,6 @@ import { WidgetManager } from '../../components/WidgetManager'
 import { useWidgetStore } from '../../stores/widgetStore'
 
 export default function HomeScreen() {
-  const router = useRouter()
   const [showWidgetManager, setShowWidgetManager] = useState(false)
 
   const { widgets, removeWidget } = useWidgetStore()

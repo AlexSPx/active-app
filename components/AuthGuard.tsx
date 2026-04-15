@@ -2,9 +2,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { RootLayoutNav } from '../components/RootLayoutNav'
 import { useEffect } from 'react'
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router'
+import { YStack, Spinner } from 'tamagui'
 
 export function AuthGuard() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user, isLoading } = useAuth()
   const router = useRouter()
   const segments = useSegments()
   const navigationState = useRootNavigationState()
@@ -35,6 +36,14 @@ export function AuthGuard() {
       }
     }
   }, [isAuthenticated, segments, navigationState?.key, user])
+
+  if (isLoading || isAuthenticated == null) {
+    return (
+      <YStack flex={1} items="center" justify="center" bg="$background">
+        <Spinner size="large" color="$blue9" />
+      </YStack>
+    )
+  }
 
   return <RootLayoutNav />
 }

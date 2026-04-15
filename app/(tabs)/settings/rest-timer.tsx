@@ -11,7 +11,7 @@ import {
   Label,
 } from 'tamagui'
 import { Timer as TimerIcon } from '@tamagui/lucide-icons'
-import { useSettingsStore } from '../../../stores/settingsStore'
+import { useSettingsStore } from '../../../features/settings'
 import SmartTimeInput from '../../../components/ui/SmartTimeInput'
 import { useRouter, Stack } from 'expo-router'
 

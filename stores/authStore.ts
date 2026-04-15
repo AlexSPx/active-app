@@ -1,10 +1,17 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Platform } from 'react-native'
 import { apiService } from '../services/apiService'
-import { useSettingsStore } from './settingsStore'
+import { useSettingsStore } from '../features/settings'
 import { resetAllStores } from '../utils/storeReset'
+import { clearDatabase, getDatabase } from '../lib/db/connection'
+import { hydrateFromServer } from '../lib/sync/hydrate'
+import { queryClient } from '../lib/queryClient'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { posthog } from '../services/posthog'
+
+const isWeb = Platform.OS === 'web'
 
 interface AuthState {
   // State
@@ -18,6 +25,7 @@ interface AuthState {
   // Actions
   login: (credentials: LoginRequest) => Promise<void>
   loginWithGoogle: (idToken: string) => Promise<void>
+  loginWithWorkOS: (code: string) => Promise<void>
   register: (payload: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
   fetchUser: () => Promise<void>
@@ -30,6 +38,7 @@ interface AuthState {
   setUser: (user: User | null) => void
   setToken: (token: string | null) => void
   setRefreshToken: (token: string | null) => void
+  postLoginSync: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -44,6 +53,45 @@ export const useAuthStore = create<AuthState>()(
       error: null,
 
       // Actions
+      loginWithWorkOS: async (code: string) => {
+        try {
+          console.log('Handling WorkOS login on ' + (isWeb ? 'web' : 'native'));
+          
+          set({ isLoading: true, error: null })
+
+          const response = await apiService.workosLogin(code)
+          
+          // On native, store tokens locally; on web, httpOnly cookies are set by server
+          if (!isWeb) {
+            await apiService.setToken(response.token)
+            await apiService.setRefreshToken(response.refreshToken)
+            set({
+              token: response.token,
+              refreshToken: response.refreshToken,
+            })
+          }
+
+          set({
+            isAuthenticated: true,
+            isLoading: false,
+          })
+
+          await get().fetchUser()
+          get().postLoginSync() // non-blocking sync
+          posthog.capture('user_logged_in', { method: 'workos' })
+        } catch (error) {
+          const apiError = error as ApiError
+          set({
+            isLoading: false,
+            error: apiError.message || 'WorkOS login failed',
+            isAuthenticated: false,
+            token: null,
+            refreshToken: null,
+            user: null,
+          })
+          throw error
+        }
+      },
       login: async (credentials: LoginRequest) => {
         try {
           set({ isLoading: true, error: null })
@@ -51,20 +99,25 @@ export const useAuthStore = create<AuthState>()(
           // Call login API
           const response = await apiService.login(credentials)
 
-          // Store token
-          await apiService.setToken(response.token)
-          await apiService.setRefreshToken(response.refreshToken)
+          // On native, store tokens locally; on web, httpOnly cookies are set by server
+          if (!isWeb) {
+            await apiService.setToken(response.token)
+            await apiService.setRefreshToken(response.refreshToken)
+            set({
+              token: response.token,
+              refreshToken: response.refreshToken,
+            })
+          }
 
           // Update state
           set({
-            token: response.token,
-            refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
           })
 
           // Fetch user data
           await get().fetchUser()
+          get().postLoginSync() // non-blocking sync
 
           posthog.capture('user_logged_in', {method: "email"})
         } catch (error) {
@@ -86,17 +139,24 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true, error: null })
 
           const response = await apiService.signup(payload)
-          await apiService.setToken(response.token)
-          await apiService.setRefreshToken(response.refreshToken)
+          
+          // On native, store tokens locally; on web, httpOnly cookies are set by server
+          if (!isWeb) {
+            await apiService.setToken(response.token)
+            await apiService.setRefreshToken(response.refreshToken)
+            set({
+              token: response.token,
+              refreshToken: response.refreshToken,
+            })
+          }
 
           set({
-            token: response.token,
-            refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
           })
 
           await get().fetchUser()
+          get().postLoginSync() // non-blocking sync
 
           posthog.capture('user_signed_up')
           posthog.capture('user_logged_in')
@@ -118,15 +178,23 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null })
           const response = await apiService.googleLogin(idToken)
-          await apiService.setToken(response.token)
-          await apiService.setRefreshToken(response.refreshToken)
+          
+          // On native, store tokens locally; on web, httpOnly cookies are set by server
+          if (!isWeb) {
+            await apiService.setToken(response.token)
+            await apiService.setRefreshToken(response.refreshToken)
+            set({
+              token: response.token,
+              refreshToken: response.refreshToken,
+            })
+          }
+          
           set({
-            token: response.token,
-            refreshToken: response.refreshToken,
             isAuthenticated: true,
             isLoading: false,
           })
           await get().fetchUser()
+          get().postLoginSync() // non-blocking sync
           posthog.capture('user_logged_in', { method: 'google' })
         } catch (error) {
           const apiError = error as ApiError
@@ -146,6 +214,9 @@ export const useAuthStore = create<AuthState>()(
         try {
           // Clear all stores and caches first
           await resetAllStores()
+
+          // Clear local SQLite database
+          await clearDatabase()
 
           // Then clear auth state (this will be redundant for auth store but ensures consistency)
           set({
@@ -262,9 +333,19 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user: User | null) => set({ user }),
       setToken: (token: string | null) => set({ token, isAuthenticated: !!token }),
       setRefreshToken: (refreshToken: string | null) => set({ refreshToken }),
+      postLoginSync: async () => {
+        try {
+          const db = await getDatabase()
+          await hydrateFromServer(db)
+          await queryClient.invalidateQueries()
+        } catch (error) {
+          console.warn('[postLoginSync] Failed to sync data after login', error)
+        }
+      },
     }),
     {
       name: 'auth-storage',
+      storage: createJSONStorage(() => AsyncStorage),
       // Only persist essential data
       partialize: (state) => ({
         token: state.token,

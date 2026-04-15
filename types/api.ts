@@ -7,8 +7,8 @@ export interface ApiExercise {
   id: string
   name: string
   level: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT'
-  force: 'PULL' | 'PUSH' | 'STATIC'
-  mechanic: 'COMPOUND' | 'ISOLATION'
+  force: 'PULL' | 'PUSH' | 'STATIC' | null
+  mechanic: 'COMPOUND' | 'ISOLATION' | null
   equipment:
     | 'BODY_ONLY'
     | 'MACHINE'
@@ -22,6 +22,7 @@ export interface ApiExercise {
     | 'MEDICINE_BALL'
     | 'EXERCISE_BALL'
     | 'E_Z_CURL_BAR'
+    | null
   primaryMuscles: string[]
   secondaryMuscles: string[]
   instructions: string[]
@@ -64,6 +65,9 @@ export interface UserStreak {
   nextWorkoutId: string | null
   nextWorkoutDeadline: string | null // ISO string (LocalDate on server)
   streakFreezeCount: number
+  lastWorkoutCountedDate: string | null // ISO string (LocalDate on server)
+  weeklyCompletedWorkoutIds: string[]
+  currentWeekStart: string | null // ISO string (LocalDate on server)
 }
 
 export interface User {
@@ -102,6 +106,26 @@ export interface UpdateUserRequest {
   registrationCompleted?: boolean
 }
 
+// Muscle Group enum matching backend MuscleGroup
+export type MuscleGroup =
+  | 'ABDOMINALS'
+  | 'ABDUCTORS'
+  | 'ADDUCTORS'
+  | 'BICEPS'
+  | 'CALVES'
+  | 'CHEST'
+  | 'FOREARMS'
+  | 'GLUTES'
+  | 'HAMSTRINGS'
+  | 'LATS'
+  | 'LOWER_BACK'
+  | 'MIDDLE_BACK'
+  | 'NECK'
+  | 'QUADRICEPS'
+  | 'SHOULDERS'
+  | 'TRAPS'
+  | 'TRICEPS'
+
 // Workout Template Types (Server Request/Response)
 export interface ApiWorkoutExercise {
   exerciseId: string
@@ -109,6 +133,8 @@ export interface ApiWorkoutExercise {
   weight: number[]
   durationSeconds?: number[] | null
   category: ApiExercise['category']
+  primaryMuscles?: MuscleGroup[]
+  secondaryMuscles?: MuscleGroup[]
 }
 
 export interface ApiWorkoutTemplate {
@@ -197,7 +223,12 @@ export interface WorkoutRecord {
 }
 
 // Streak update types
-export type StreakUpdateStatus = 'CONTINUED' | 'STARTED' | 'WRONG_WORKOUT' | 'BROKEN_RESET'
+export type StreakUpdateStatus =
+  | 'CONTINUED'
+  | 'STARTED'
+  | 'WRONG_WORKOUT'
+  | 'BROKEN_RESET'
+  | 'WEEKLY_PROGRESS' // Workout counted towards weekly goal, but week not yet complete
 
 export interface StreakUpdateResponse {
   status: StreakUpdateStatus
@@ -207,6 +238,9 @@ export interface StreakUpdateResponse {
   // ISO date string (LocalDate on server); keep as string client-side
   nextWorkoutDeadline: string | null
   streakFreezeCount: number
+  // Weekly completion fields (only present for WEEKLY_COMPLETION routines)
+  weeklyCompletedWorkoutIds?: string[] // Workout IDs completed this week
+  weeklyWorkoutsRequired?: number // Total workouts needed for the week
 }
 
 // Response shape from recording a workout
