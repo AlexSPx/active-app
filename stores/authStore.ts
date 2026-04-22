@@ -5,8 +5,8 @@ import { Platform } from 'react-native'
 import { apiService } from '../services/apiService'
 import { useSettingsStore } from '../features/settings'
 import { resetAllStores } from '../utils/storeReset'
-import { clearDatabase, getDatabase } from '../lib/db/connection'
-import { hydrateFromServer } from '../lib/sync/hydrate'
+import { clearDatabase } from '../lib/db/connection'
+
 import { queryClient } from '../lib/queryClient'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { posthog } from '../services/posthog'
@@ -38,7 +38,6 @@ interface AuthState {
   setUser: (user: User | null) => void
   setToken: (token: string | null) => void
   setRefreshToken: (token: string | null) => void
-  postLoginSync: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -77,7 +76,6 @@ export const useAuthStore = create<AuthState>()(
           })
 
           await get().fetchUser()
-          get().postLoginSync() // non-blocking sync
           posthog.capture('user_logged_in', { method: 'workos' })
         } catch (error) {
           const apiError = error as ApiError
@@ -117,7 +115,6 @@ export const useAuthStore = create<AuthState>()(
 
           // Fetch user data
           await get().fetchUser()
-          get().postLoginSync() // non-blocking sync
 
           posthog.capture('user_logged_in', {method: "email"})
         } catch (error) {
@@ -156,7 +153,6 @@ export const useAuthStore = create<AuthState>()(
           })
 
           await get().fetchUser()
-          get().postLoginSync() // non-blocking sync
 
           posthog.capture('user_signed_up')
           posthog.capture('user_logged_in')
@@ -194,7 +190,6 @@ export const useAuthStore = create<AuthState>()(
             isLoading: false,
           })
           await get().fetchUser()
-          get().postLoginSync() // non-blocking sync
           posthog.capture('user_logged_in', { method: 'google' })
         } catch (error) {
           const apiError = error as ApiError
@@ -333,15 +328,6 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user: User | null) => set({ user }),
       setToken: (token: string | null) => set({ token, isAuthenticated: !!token }),
       setRefreshToken: (refreshToken: string | null) => set({ refreshToken }),
-      postLoginSync: async () => {
-        try {
-          const db = await getDatabase()
-          await hydrateFromServer(db)
-          await queryClient.invalidateQueries()
-        } catch (error) {
-          console.warn('[postLoginSync] Failed to sync data after login', error)
-        }
-      },
     }),
     {
       name: 'auth-storage',

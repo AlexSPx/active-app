@@ -1,5 +1,5 @@
 import { useColorScheme } from 'react-native'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite'
 import { migrateDbIfNeeded } from '../lib/db/migrations'
 import { TamaguiProvider, type TamaguiProviderProps, PortalProvider, Theme } from 'tamagui'
@@ -10,9 +10,6 @@ import { config } from '../tamagui.config'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useUiStore } from '../stores/uiStore'
 import FinishedWorkoutCongrats from '../components/FinishedWorkoutCongrats'
-import { FloatingDevTools, InstalledApp } from '@react-buoy/core'
-import { NetworkModal } from '@react-buoy/network'
-import { Globe } from '@react-buoy/shared-ui'
 import { initNotifications, registerPushNotifications } from '../services/notificationService'
 import { PostHogProvider } from 'posthog-react-native'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
@@ -20,54 +17,61 @@ import { useSettingsStore } from '../features/settings'
 import { posthog } from '../services/posthog'
 import { queryClient } from '../lib/queryClient'
 import { syncEngine } from '../lib/sync'
-import { apiService } from '../services/apiService'
-import { WorkoutRepository } from '../lib/repositories/WorkoutRepository'
-import { RoutineRepository } from '../lib/repositories/RoutineRepository'
 import { hydrateFromServer } from '../lib/sync/hydrate'
 import { setSharedDatabase } from '../lib/db/connection'
+import { useAuthStore } from '../stores/authStore'
 
-const TOOLS: InstalledApp[] = [
-  {
-    id: 'network',
-    name: 'NETWORK',
-    description: 'Network request logger',
-    slot: 'both',
-    icon: ({ size }) => <Globe size={size} color="#38bdf8" />,
-    component: NetworkModal,
-    props: {},
-  },
-]
+// Track which DB instances have already been hydrated to avoid double-runs
+const hydratedDbs = new WeakSet<object>()
+
+
 
 /**
  * Inner component that has access to SQLiteContext.
- * Initializes the SyncEngine and runs server hydration on mount.
+ * Initializes the SyncEngine, registers the shared DB handle, and
+ * runs hydration whenever the user authenticates.
  */
 function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
   const db = useSQLiteContext()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+
+  // Always keep the singleton reference pointing at the live handle
   setSharedDatabase(db)
 
+  // On mount: init SyncEngine (drains leftover queue from previous session)
   useEffect(() => {
-    let cancelled = false
-
-    const bootstrap = async () => {
-      // 1. Initialize SyncEngine with the shared DB handle
-      await syncEngine.init(db)
-
-      // 2. Hydrate local DB from server (best-effort, not blocking)
-      if (!cancelled) {
-        hydrateFromServer(db).catch((err) => {
-          console.warn('[Hydration] Server hydration failed (offline?):', err?.message)
-        })
-      }
-    }
-
-    bootstrap().catch(console.error)
-
-    return () => {
-      cancelled = true
-      syncEngine.destroy()
-    }
+    syncEngine.init(db).catch(console.error)
+    return () => { syncEngine.destroy() }
   }, [db])
+
+  // Whenever auth state transitions to authenticated, hydrate and invalidate
+  const prevAuthRef = useRef<boolean | null>(null)
+  useEffect(() => {
+    const wasAuthenticated = prevAuthRef.current
+    prevAuthRef.current = isAuthenticated
+
+    // Skip: not authenticated, or already was authenticated before this render
+    if (!isAuthenticated || wasAuthenticated === true) return
+
+    // Skip if this exact DB handle was already hydrated (prevents double-fires on re-renders)
+    if (hydratedDbs.has(db)) {
+      console.log('[SyncEngineBootstrap] DB already hydrated, skipping')
+      return
+    }
+    hydratedDbs.add(db)
+
+    console.log('[SyncEngineBootstrap] Auth detected — hydrating...')
+    hydrateFromServer(db)
+      .then(() => {
+        console.log('[SyncEngineBootstrap] Hydration complete — invalidating queries')
+        return queryClient.invalidateQueries()
+      })
+      .catch((err) => {
+        // Remove from set so it can be retried on next auth transition
+        hydratedDbs.delete(db)
+        console.warn('[SyncEngineBootstrap] Hydration failed (offline?):', err?.message)
+      })
+  }, [isAuthenticated, db])
 
   return <>{children}</>
 }
