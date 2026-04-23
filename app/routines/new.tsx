@@ -1,11 +1,21 @@
-import { useEffect, useCallback, useMemo } from 'react'
-import { YStack, XStack, Text, Input, Button, Separator } from 'tamagui'
+import { useEffect, useCallback, useState } from 'react'
+import {
+  YStack,
+  XStack,
+  Text,
+  Input,
+  TextArea,
+  Button,
+  Separator,
+  Switch,
+  ScrollView,
+} from 'tamagui'
 import { useNavigation, router } from 'expo-router'
 import { Calendar, ListChecks } from '@tamagui/lucide-icons'
 import { useToastController } from '@tamagui/toast'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { RoutinePatternItem, CreateRoutineRequest, RoutineType } from '../../types/routine'
+import type { CreateRoutineRequest, RoutineType } from '../../types/routine'
 import { RoutinePatternEditor, useRoutineMutations } from '../../features/routines'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -16,14 +26,16 @@ import { createRoutineSchema, type CreateRoutineFormData } from '../../lib/schem
 export default function NewRoutinePage() {
   const navigation = useNavigation()
   const toast = useToastController()
-  const { createRoutine, loading, error, clearError } = useRoutineMutations()
+  const { createRoutine, loading, error } = useRoutineMutations()
+  const [step, setStep] = useState<1 | 2>(1)
 
   const {
     control,
     handleSubmit,
     watch,
     setValue,
-    formState: { errors, isValid },
+    trigger,
+    formState: { errors },
   } = useForm<CreateRoutineFormData>({
     resolver: zodResolver(createRoutineSchema),
     defaultValues: {
@@ -40,16 +52,6 @@ export default function NewRoutinePage() {
   const routineType = watch('routineType')
   const pattern = watch('pattern')
 
-  // Get validation issues from Zod schema errors + runtime checks
-  const validationIssues = useMemo(() => {
-    const issues: string[] = []
-    // Add errors from Zod schema validation
-    if (errors.name?.message) issues.push(errors.name.message)
-    if (errors.pattern?.message) issues.push(errors.pattern.message)
-    if (errors.description?.message) issues.push(errors.description.message)
-    return issues
-  }, [errors])
-
   useEffect(() => {
     navigation.setOptions({ title: 'Create Routine' })
   }, [navigation])
@@ -60,194 +62,387 @@ export default function NewRoutinePage() {
       if (newType === 'WEEKLY_COMPLETION') {
         const workoutOnly = pattern.filter((p) => p.dayType === 'WORKOUT')
         if (workoutOnly.length > 0) {
-          setValue('pattern', workoutOnly.map((p, idx) => ({ ...p, dayIndex: idx + 1 })))
+          setValue(
+            'pattern',
+            workoutOnly.map((p, idx) => ({ ...p, dayIndex: idx + 1 }))
+          )
         }
       }
     },
     [pattern, setValue]
   )
 
-  const onSubmit = useCallback(async (data: CreateRoutineFormData) => {
-    const payload: CreateRoutineRequest = {
-      name: data.name.trim(),
-      description: data.description?.trim() || undefined,
-      routineType: data.routineType,
-      pattern: data.pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
-      active: data.active,
-      startDate: data.startDate.toISOString(),
-    }
-    const created = await createRoutine(payload)
-    if (created) {
-      posthog.capture('routine_created', {
+  const getValidationIssues = useCallback((currentErrors: typeof errors) => {
+    const issues: string[] = []
+    if (currentErrors.name?.message) issues.push(currentErrors.name.message)
+    if (currentErrors.description?.message) issues.push(currentErrors.description.message)
+    if (currentErrors.pattern?.message) issues.push(currentErrors.pattern.message)
+    return issues
+  }, [])
+
+  const showValidationToast = useCallback(
+    async (fields?: (keyof CreateRoutineFormData)[]) => {
+      const isFormValid = await trigger(fields)
+      if (isFormValid) return false
+
+      const currentIssues = getValidationIssues(control._formState.errors as typeof errors)
+      if (currentIssues.length > 0) {
+        toast.show('Please fix the following:', {
+          message: currentIssues.join('\n'),
+          duration: 4000,
+        })
+      }
+      return true
+    },
+    [trigger, getValidationIssues, control, errors, toast]
+  )
+
+  const onSubmit = useCallback(
+    async (data: CreateRoutineFormData) => {
+      const payload: CreateRoutineRequest = {
+        name: data.name.trim(),
+        description: data.description?.trim() || undefined,
         routineType: data.routineType,
-        workoutDays: payload.pattern.filter((p) => p.dayType === 'WORKOUT').length,
-        restDays: payload.pattern.filter((p) => p.dayType === 'REST').length,
-        active: !!payload.active,
-      })
-      router.back()
+        pattern: data.pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
+        active: data.active,
+        startDate: data.startDate.toISOString(),
+      }
+      const created = await createRoutine(payload)
+      if (created) {
+        posthog.capture('routine_created', {
+          routineType: data.routineType,
+          workoutDays: payload.pattern.filter((p) => p.dayType === 'WORKOUT').length,
+          restDays: payload.pattern.filter((p) => p.dayType === 'REST').length,
+          active: !!payload.active,
+        })
+        router.back()
+      }
+    },
+    [createRoutine]
+  )
+
+  const onContinue = useCallback(async () => {
+    const hasErrors = await showValidationToast([
+      'name',
+      'description',
+      'routineType',
+      'active',
+      'startDate',
+    ])
+    if (!hasErrors) {
+      setStep(2)
     }
-  }, [createRoutine])
+  }, [showValidationToast])
+
+  const onSave = useCallback(async () => {
+    if (await showValidationToast()) return
+    handleSubmit(onSubmit)()
+  }, [showValidationToast, handleSubmit, onSubmit])
 
   return (
     <YStack flex={1} bg="$background" px="$4" py="$3" gap="$3">
       {error && <ErrorDisplay message={error} />}
 
-      <YStack gap="$2">
-        <Text fontSize="$3" color="$color10">
-          Name
-        </Text>
-        <Controller
-          control={control}
-          name="name"
-          render={({ field: { onChange, value } }) => (
-            <Input value={value} onChangeText={onChange} placeholder="Routine name" />
-          )}
-        />
-        {errors.name && <Text color="$red10" fontSize="$2">{errors.name.message}</Text>}
-      </YStack>
-
-      <YStack gap="$2">
-        <Text fontSize="$3" color="$color10">
-          Description
-        </Text>
-        <Controller
-          control={control}
-          name="description"
-          render={({ field: { onChange, value } }) => (
-            <Input
-              value={value || ''}
-              onChangeText={onChange}
-              placeholder="Optional description"
-            />
-          )}
-        />
-      </YStack>
-
-      <YStack gap="$2">
-        <Text fontSize="$3" color="$color10">
-          Type
-        </Text>
-        <XStack gap="$3">
-          <Button
-            flex={1}
-            size="$4"
-            icon={Calendar}
-            bg={routineType === 'SEQUENTIAL' ? '$primary' : '$backgroundHover'}
-            borderWidth={routineType === 'SEQUENTIAL' ? 0 : 1}
-            borderColor="$borderColor"
-            onPress={() => handleRoutineTypeChange('SEQUENTIAL')}
-            pressStyle={{ scale: 0.97 }}
-          >
-            <Text
-              color={routineType === 'SEQUENTIAL' ? '$onPrimary' : '$color'}
-              fontWeight={routineType === 'SEQUENTIAL' ? '600' : '500'}
+      <YStack gap="$3">
+        <XStack items="center" gap="$2">
+          <YStack flex={1} items="center" gap="$1">
+            <YStack
+              width={32}
+              height={32}
+              rounded="$12"
+              items="center"
+              justify="center"
+              bg={step === 2 ? '$primary' : '$backgroundAccent'}
+              borderWidth={step === 1 ? 1 : 0}
+              borderColor="$primary"
             >
-              Sequential
-            </Text>
-          </Button>
-          <Button
-            flex={1}
-            size="$4"
-            icon={ListChecks}
-            bg={routineType === 'WEEKLY_COMPLETION' ? '$primary' : '$backgroundHover'}
-            borderWidth={routineType === 'WEEKLY_COMPLETION' ? 0 : 1}
-            borderColor="$borderColor"
-            onPress={() => handleRoutineTypeChange('WEEKLY_COMPLETION')}
-            pressStyle={{ scale: 0.97 }}
-          >
+              <Text color={step === 2 ? '$onPrimary' : '$primary'} fontWeight="700">
+                {step === 2 ? '✓' : '1'}
+              </Text>
+            </YStack>
             <Text
-              color={routineType === 'WEEKLY_COMPLETION' ? '$onPrimary' : '$color'}
-              fontWeight={routineType === 'WEEKLY_COMPLETION' ? '600' : '500'}
+              fontSize="$1"
+              textTransform="uppercase"
+              letterSpacing={1}
+              color={step === 1 ? '$primary' : '$color11'}
             >
-              Weekly
+              Details
             </Text>
-          </Button>
+          </YStack>
+
+          <Separator flex={1} borderColor={step === 2 ? '$primary' : '$borderColor'} />
+
+          <YStack flex={1} items="center" gap="$1">
+            <YStack
+              width={32}
+              height={32}
+              rounded="$12"
+              items="center"
+              justify="center"
+              bg={step === 2 ? '$backgroundAccent' : '$backgroundHover'}
+              borderWidth={step === 2 ? 1 : 0}
+              borderColor="$primary"
+            >
+              <Text color={step === 2 ? '$primary' : '$color10'} fontWeight="700">
+                2
+              </Text>
+            </YStack>
+            <Text
+              fontSize="$1"
+              textTransform="uppercase"
+              letterSpacing={1}
+              color={step === 2 ? '$primary' : '$color10'}
+            >
+              Pattern
+            </Text>
+          </YStack>
         </XStack>
-        <Text fontSize="$2" color="$color11">
-          {routineType === 'SEQUENTIAL'
-            ? 'Workouts follow a specific day order in a repeating cycle'
-            : 'Complete all workouts within a week (Mon-Sun) in any order'}
-        </Text>
       </YStack>
 
-      <Controller
-        control={control}
-        name="active"
-        render={({ field: { onChange, value } }) => (
-          <XStack items="center" gap="$2" mt="$1">
-            <Button size="$2" onPress={() => onChange(!value)} variant="outlined">
-              <Text>{value ? 'Active: Yes' : 'Active: No'}</Text>
-            </Button>
-            <Text color="$color10">Set as active routine</Text>
-          </XStack>
-        )}
-      />
+      {step === 1 ? (
+        <ScrollView flex={1} showsVerticalScrollIndicator={false}>
+          <YStack gap="$4" pb="$4">
+            <YStack gap="$1">
+              <Text fontSize="$7" fontWeight="700">
+                Routine details
+              </Text>
+              <Text color="$color11">Give your routine a name and set up how it runs.</Text>
+            </YStack>
 
-      <Controller
-        control={control}
-        name="startDate"
-        render={({ field: { onChange, value } }) => (
-          <DatePickerField
-            label="Start Date"
-            value={value}
-            onChange={onChange}
-          />
-        )}
-      />
+            <YStack gap="$2">
+              <Text
+                fontSize="$2"
+                fontWeight="600"
+                textTransform="uppercase"
+                letterSpacing={1}
+                color="$color10"
+              >
+                Name
+              </Text>
+              <Controller
+                control={control}
+                name="name"
+                render={({ field: { onChange, value } }) => (
+                  <Input
+                    value={value}
+                    onChangeText={onChange}
+                    placeholder="e.g. Push / Pull / Legs"
+                  />
+                )}
+              />
+              {errors.name && (
+                <Text color="$red10" fontSize="$2">
+                  {errors.name.message}
+                </Text>
+              )}
+            </YStack>
 
-      <Separator my="$2" />
+            <YStack gap="$2">
+              <Text
+                fontSize="$2"
+                fontWeight="600"
+                textTransform="uppercase"
+                letterSpacing={1}
+                color="$color10"
+              >
+                Description
+              </Text>
+              <Controller
+                control={control}
+                name="description"
+                render={({ field: { onChange, value } }) => (
+                  <TextArea
+                    value={value || ''}
+                    onChangeText={onChange}
+                    placeholder="Optional — what's this routine for?"
+                    height={90}
+                  />
+                )}
+              />
+              {errors.description && (
+                <Text color="$red10" fontSize="$2">
+                  {errors.description.message}
+                </Text>
+              )}
+            </YStack>
 
-      <YStack gap="$2" items="center" flex={1}>
-        <Text fontSize="$5" fontWeight="700">
-          Pattern
-        </Text>
-        <Controller
-          control={control}
-          name="pattern"
-          render={({ field: { onChange, value } }) => (
-            <RoutinePatternEditor
-              pattern={value}
-              onChange={onChange}
-              hideRestOption={routineType === 'WEEKLY_COMPLETION'}
+            <YStack gap="$2">
+              <Text
+                fontSize="$2"
+                fontWeight="600"
+                textTransform="uppercase"
+                letterSpacing={1}
+                color="$color10"
+              >
+                Type
+              </Text>
+              <XStack gap="$2">
+                <Button
+                  flex={1}
+                  size="$4"
+                  icon={Calendar}
+                  bg={routineType === 'SEQUENTIAL' ? '$backgroundAccent' : '$backgroundHover'}
+                  borderWidth={1}
+                  borderColor={routineType === 'SEQUENTIAL' ? '$primary' : '$borderColor'}
+                  onPress={() => handleRoutineTypeChange('SEQUENTIAL')}
+                  pressStyle={{ scale: 0.98 }}
+                >
+                  <Text
+                    color={routineType === 'SEQUENTIAL' ? '$primary' : '$color'}
+                    fontWeight={routineType === 'SEQUENTIAL' ? '600' : '500'}
+                  >
+                    Sequential
+                  </Text>
+                </Button>
+                <Button
+                  flex={1}
+                  size="$4"
+                  icon={ListChecks}
+                  bg={
+                    routineType === 'WEEKLY_COMPLETION' ? '$backgroundAccent' : '$backgroundHover'
+                  }
+                  borderWidth={1}
+                  borderColor={routineType === 'WEEKLY_COMPLETION' ? '$primary' : '$borderColor'}
+                  onPress={() => handleRoutineTypeChange('WEEKLY_COMPLETION')}
+                  pressStyle={{ scale: 0.98 }}
+                >
+                  <Text
+                    color={routineType === 'WEEKLY_COMPLETION' ? '$primary' : '$color'}
+                    fontWeight={routineType === 'WEEKLY_COMPLETION' ? '600' : '500'}
+                  >
+                    Weekly
+                  </Text>
+                </Button>
+              </XStack>
+              <Text fontSize="$2" color="$color11">
+                {routineType === 'SEQUENTIAL'
+                  ? 'Days repeat in a fixed cycle, regardless of the calendar.'
+                  : 'Complete all workouts within a week (Mon-Sun) in any order.'}
+              </Text>
+            </YStack>
+
+            <YStack gap="$2">
+              <Text
+                fontSize="$2"
+                fontWeight="600"
+                textTransform="uppercase"
+                letterSpacing={1}
+                color="$color10"
+              >
+                Active routine
+              </Text>
+              <XStack
+                items="center"
+                justify="space-between"
+                p="$3"
+                bg="$surface"
+                borderWidth={1}
+                borderColor="$borderColor"
+                rounded="$4"
+              >
+                <YStack>
+                  <Text fontWeight="600">Set as active</Text>
+                  <Text color="$color11" fontSize="$2">
+                    {watch('active')
+                      ? 'On — this will be your current routine'
+                      : 'Off — not your current routine'}
+                  </Text>
+                </YStack>
+                <Controller
+                  control={control}
+                  name="active"
+                  render={({ field: { onChange, value } }) => (
+                    <Switch
+                      checked={value}
+                      onCheckedChange={onChange}
+                      bg={value ? '$primary' : '$red8'}
+                    >
+                      <Switch.Thumb animation="bouncy" />
+                    </Switch>
+                  )}
+                />
+              </XStack>
+            </YStack>
+
+            <Controller
+              control={control}
+              name="startDate"
+              render={({ field: { onChange, value } }) => (
+                <DatePickerField label="Start Date" value={value} onChange={onChange} />
+              )}
             />
-          )}
-        />
-        {errors.pattern && <Text color="$red10" fontSize="$2">{errors.pattern.message}</Text>}
-      </YStack>
+          </YStack>
+        </ScrollView>
+      ) : (
+        <YStack flex={1} gap="$3">
+          <YStack gap="$1">
+            <Text fontSize="$7" fontWeight="700">
+              Build the pattern
+            </Text>
+            <Text color="$color11">Add days and assign workouts or rest to each slot.</Text>
+          </YStack>
 
-      <XStack gap="$3" mt="auto" pb="$3">
+          <Separator borderColor="$borderColor" />
+
+          <YStack flex={1}>
+            <Controller
+              control={control}
+              name="pattern"
+              render={({ field: { onChange, value } }) => (
+                <RoutinePatternEditor
+                  pattern={value}
+                  onChange={onChange}
+                  hideRestOption={routineType === 'WEEKLY_COMPLETION'}
+                />
+              )}
+            />
+          </YStack>
+          {errors.pattern && (
+            <Text color="$red10" fontSize="$2">
+              {errors.pattern.message}
+            </Text>
+          )}
+        </YStack>
+      )}
+
+      <XStack gap="$3" pb="$3" pt="$1">
         <Button
           flex={1}
-          bg="$blue4"
-          color="$blue12"
-          onPress={() => router.back()}
+          variant="outlined"
+          borderColor="$borderColor"
+          onPress={() => {
+            if (step === 2) {
+              setStep(1)
+              return
+            }
+            router.back()
+          }}
           disabled={loading}
         >
-          <Text>Cancel</Text>
+          <Text>{step === 1 ? 'Cancel' : 'Back'}</Text>
         </Button>
-        <Button flex={1} bg="$primary" onPress={() => {
-          // Show validation toast if form is invalid
-          if (validationIssues.length > 0) {
-            toast.show('Please fix the following:', {
-              message: validationIssues.join('\n'),
-              duration: 4000,
-            })
-            return
-          }
-          handleSubmit(onSubmit)()
-        }} disabled={loading}>
+        <Button
+          flex={2}
+          bg="$primary"
+          onPress={() => {
+            if (step === 1) {
+              onContinue()
+              return
+            }
+            onSave()
+          }}
+          disabled={loading}
+        >
           {loading ? (
             <XStack items="center" gap="$2">
               <LoadingSpinner size="small" />
               <Text>Saving…</Text>
             </XStack>
           ) : (
-            <Text>Create Routine</Text>
+            <Text>{step === 1 ? 'Continue' : 'Create Routine'}</Text>
           )}
         </Button>
       </XStack>
-
     </YStack>
   )
 }
-
