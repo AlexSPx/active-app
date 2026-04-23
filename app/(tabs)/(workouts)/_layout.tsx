@@ -12,13 +12,8 @@ export default function WorkoutsLayout() {
 
   return (
     <YStack flex={1} bg="$background">
-      <XStack px={20} pt={52} pb={24} justify="space-between" items="center">
-        <Text fontSize={30} fontWeight="700" color="$color" letterSpacing={-0.8}>
-          Workouts
-        </Text>
-      </XStack>
-
       <XStack
+        mt={12}
         mx={20}
         mb={20}
         bg="$surface"
