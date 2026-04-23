@@ -15,6 +15,7 @@ import { useRoutines } from '../../../features/routines'
 import { useAppNavigation } from '../../../navigation/useAppNavigation'
 import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 import { ApiWorkout } from '../../../types/api'
+import { CreateTopButton } from '../../../components/ui/CreateTopButton'
 
 export default function WorkoutsInnerTab() {
   const navigation = useNavigation()
@@ -140,48 +141,8 @@ export default function WorkoutsInnerTab() {
           onEditWorkout={handleEditWorkout}
           focusId={(params.focusId as string) || undefined}
           listHeader={
-            <YStack mt="$1">
-              <Button
-                unstyled
-                borderWidth={1.5}
-                borderColor="$borderColor"
-                borderStyle="dashed"
-                py={15}
-                bg="transparent"
-                onPress={navigateToNewWorkout}
-                pressStyle={{ opacity: 0.86 }}
-                style={{ borderRadius: 14 }}
-              >
-                <XStack items="center" justify="center" gap="$2.5">
-                  <XStack
-                    width={22}
-                    height={22}
-                    borderWidth={1.5}
-                    borderColor="$colorMuted"
-                    items="center"
-                    justify="center"
-                    style={{ borderRadius: 999 }}
-                  >
-                    <Text fontSize={17} color="$colorMuted" lineHeight={17} mt={-2}>
-                      +
-                    </Text>
-                  </XStack>
-                  <Text fontSize="$4" fontWeight="500" color="$colorMuted">
-                    Create workout
-                  </Text>
-                </XStack>
-              </Button>
-              <Text
-                fontSize={11}
-                fontWeight="600"
-                letterSpacing={1.1}
-                textTransform="uppercase"
-                color="$colorMuted"
-                mt={22}
-                mb={12}
-              >
-                Recent
-              </Text>
+            <YStack mt="$1" mb="$3">
+              <CreateTopButton label="Create workout" onPress={navigateToNewWorkout} />
             </YStack>
           }
           onDeleteWorkout={handleDeleteWorkout}
