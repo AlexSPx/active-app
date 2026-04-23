@@ -7,7 +7,12 @@ import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
-import { RoutineList, useRoutines, useRoutineMutations, useActiveRoutine } from '../../../features/routines'
+import {
+  RoutineList,
+  useRoutines,
+  useRoutineMutations,
+  useActiveRoutine,
+} from '../../../features/routines'
 import type { Routine } from '../../../types/routine'
 import { posthog } from '../../../services/posthog'
 
@@ -170,7 +175,7 @@ export default function RoutinesTab() {
 
   return (
     <YStack flex={1} bg="$background">
-      <YStack flex={1} px="$4">
+      <YStack flex={1}>
         <RoutineList
           routines={routines}
           activeRoutineId={activeRoutine?.id ?? null}
@@ -248,4 +253,3 @@ export default function RoutinesTab() {
     </YStack>
   )
 }
-

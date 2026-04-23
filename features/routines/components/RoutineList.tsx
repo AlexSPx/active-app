@@ -56,7 +56,7 @@ export const RoutineList = memo(function RoutineList({
         renderItem={renderRoutine}
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 48 }}
+        contentContainerStyle={{ paddingBottom: 48, paddingHorizontal: 20 }}
         ListHeaderComponent={listHeader}
         refreshing={refreshing}
         onRefresh={onRefresh}
@@ -69,7 +69,7 @@ export const RoutineList = memo(function RoutineList({
             onAction={onCreateRoutine}
           />
         }
-        ItemSeparatorComponent={() => <View height="$4" />}
+        ItemSeparatorComponent={() => <View height={12} />}
         showsVerticalScrollIndicator={false}
       />
     </View>
