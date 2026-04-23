@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { usePathname, useRouter, Slot } from 'expo-router'
-import { YStack, XStack, Tabs, Text, Separator } from 'tamagui'
+import { YStack, XStack, Button, Text } from 'tamagui'
 export default function WorkoutsLayout() {
   const pathname = usePathname()
   const router = useRouter()
@@ -12,27 +12,59 @@ export default function WorkoutsLayout() {
 
   return (
     <YStack flex={1} bg="$background">
-      <YStack px="$4">
-        <Tabs
-          value={current}
-          onValueChange={(v: any) => {
-            if (v === 'routines') router.replace({ pathname: '/(tabs)/(workouts)/routines' })
-            else router.replace({ pathname: '/(tabs)/(workouts)' })
-          }}
+      <XStack px={20} pt={52} pb={24} justify="space-between" items="center">
+        <Text fontSize={30} fontWeight="700" color="$color" letterSpacing={-0.8}>
+          Workouts
+        </Text>
+      </XStack>
+
+      <XStack
+        mx={20}
+        mb={20}
+        bg="$surface"
+        p={4}
+        gap={4}
+        borderColor="$borderColor"
+        borderWidth={1}
+        style={{ borderRadius: 12 }}
+      >
+        <Button
+          unstyled
+          flex={1}
+          py={9}
+          bg={current === 'workouts' ? '$backgroundStrong' : 'transparent'}
+          onPress={() => router.replace({ pathname: '/(tabs)/(workouts)' })}
+          pressStyle={{ opacity: 0.9 }}
+          style={{ borderRadius: 9 }}
         >
-          <XStack justify="center" width="100%">
-            <Tabs.List alignItems="center" justifyContent="center" gap="$4">
-              <Tabs.Tab value="workouts">
-                <Text color={current === 'workouts' ? '$color' : '$color10'}>Workouts</Text>
-              </Tabs.Tab>
-              <Separator self="stretch" vertical />
-              <Tabs.Tab value="routines">
-                <Text color={current === 'routines' ? '$color' : '$color10'}>Routines</Text>
-              </Tabs.Tab>
-            </Tabs.List>
-          </XStack>
-        </Tabs>
-      </YStack>
+          <Text
+            fontSize={14}
+            fontWeight="500"
+            color={current === 'workouts' ? '$color' : '$colorMuted'}
+            style={{ textAlign: 'center' }}
+          >
+            Workouts
+          </Text>
+        </Button>
+        <Button
+          unstyled
+          flex={1}
+          py={9}
+          bg={current === 'routines' ? '$backgroundStrong' : 'transparent'}
+          onPress={() => router.replace({ pathname: '/(tabs)/(workouts)/routines' })}
+          pressStyle={{ opacity: 0.9 }}
+          style={{ borderRadius: 9 }}
+        >
+          <Text
+            fontSize={14}
+            fontWeight="500"
+            color={current === 'routines' ? '$color' : '$colorMuted'}
+            style={{ textAlign: 'center' }}
+          >
+            Routines
+          </Text>
+        </Button>
+      </XStack>
 
       <YStack flex={1}>
         <Slot />

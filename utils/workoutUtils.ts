@@ -137,10 +137,10 @@ export const buildUpdateWorkoutRequest = (params: {
 /** Convert an ApiWorkout to editable WorkoutExercise[] used by the editor */
 export const apiWorkoutToEditableExercises = (workout: ApiWorkout): CreateWorkoutExercise[] => {
   return workout.workoutTemplate.exercises.map((ex, idx) => ({
-    // Editor expects Exercise-like object with id/name/muscles; we only have exerciseId.
-    // Use exerciseId for id and a readable name; muscle metadata is not available from API here.
+    // Editor expects Exercise-like object with id/name/muscles.
+    // Use API exerciseTitle when present; fall back to a readable ID.
     id: ex.exerciseId,
-    name: ex.exerciseId.replace(/_/g, ' '),
+    name: ex.exerciseTitle?.trim() || ex.exerciseId.replace(/_/g, ' '),
     level: 'INTERMEDIATE',
     force: 'PUSH',
     mechanic: 'COMPOUND',

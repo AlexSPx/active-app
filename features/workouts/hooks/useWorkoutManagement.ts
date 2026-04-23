@@ -29,7 +29,7 @@ export function useWorkoutManagement(): UseWorkoutManagementActions {
       name: workout.title || 'Untitled Workout',
       exercises: workout.workoutTemplate.exercises.map((exercise, index) => ({
         id: `${workout.id}-ex-${index}`,
-        name: exercise.exerciseId.replace(/_/g, ' '), // Convert exercise ID to readable name
+        name: exercise.exerciseTitle?.trim() || exercise.exerciseId.replace(/_/g, ' '),
         level: 'INTERMEDIATE' as const,
         force: 'PUSH' as const,
         mechanic: 'COMPOUND' as const,
