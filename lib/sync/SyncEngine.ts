@@ -15,6 +15,7 @@ import { type SQLiteDatabase } from 'expo-sqlite'
 import * as Network from 'expo-network'
 import { AppState, type AppStateStatus } from 'react-native'
 import { apiService } from '../../services/apiService'
+import { replaceQueuedIdReferences } from './queuePayloadRemap'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -45,6 +46,19 @@ export interface SyncJob {
 
 export type SyncEvent = 'sync:start' | 'sync:complete' | 'sync:error' | 'sync:idle'
 
+interface SyncEngineDeps {
+  api: typeof apiService
+  getNetworkState: () => Promise<{
+    isConnected?: boolean | null
+    isInternetReachable?: boolean | null
+  }>
+  addAppStateListener: (handler: (state: AppStateStatus) => void) => { remove(): void }
+}
+
+interface InitOptions {
+  processOnInit?: boolean
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -60,16 +74,24 @@ const MAX_BACKOFF_MS = 60_000
 // SyncEngine
 // ---------------------------------------------------------------------------
 
-class SyncEngine {
+export class SyncEngine {
   private db: SQLiteDatabase | null = null
   private isProcessing = false
-  private appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null
+  private appStateSubscription: { remove(): void } | null = null
   private listeners: Record<SyncEvent, Set<() => void>> = {
     'sync:start': new Set(),
     'sync:complete': new Set(),
     'sync:error': new Set(),
     'sync:idle': new Set(),
   }
+
+  constructor(
+    private readonly deps: SyncEngineDeps = {
+      api: apiService,
+      getNetworkState: () => Network.getNetworkStateAsync(),
+      addAppStateListener: (handler) => AppState.addEventListener('change', handler),
+    },
+  ) {}
 
   // -----------------------------------------------------------------------
   // Lifecycle
@@ -79,17 +101,19 @@ class SyncEngine {
    * Must be called once during app bootstrap (in Provider useEffect).
    * Registers listeners and kicks off an initial queue drain.
    */
-  async init(db: SQLiteDatabase): Promise<void> {
+  async init(db: SQLiteDatabase, options: InitOptions = {}): Promise<void> {
     this.db = db
 
     // Ensure pragmas on this handle
     await db.execAsync('PRAGMA foreign_keys = ON;')
 
     // Listen to app-state transitions (process queue on resume)
-    this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange)
+    this.appStateSubscription = this.deps.addAppStateListener(this.handleAppStateChange)
 
     // Drain any jobs left over from a previous session
-    this.processQueue()
+    if (options.processOnInit !== false) {
+      this.processQueue()
+    }
   }
 
   destroy(): void {
@@ -160,7 +184,7 @@ class SyncEngine {
 
     // Network check
     try {
-      const networkState = await Network.getNetworkStateAsync()
+      const networkState = await this.deps.getNetworkState()
       if (!networkState.isConnected || !networkState.isInternetReachable) {
         return
       }
@@ -225,7 +249,7 @@ class SyncEngine {
       }
 
       const methodName = currentJob.endpoint as keyof typeof apiService
-      const apiFunc = apiService[methodName] as (...args: any[]) => Promise<any>
+      const apiFunc = this.deps.api[methodName] as (...args: any[]) => Promise<any>
 
       if (typeof apiFunc !== 'function') {
         console.error(`[SyncEngine] Unknown API method: ${currentJob.endpoint}`)
@@ -235,7 +259,7 @@ class SyncEngine {
 
       const parsedPayload = JSON.parse(currentJob.payload)
       const args = Array.isArray(parsedPayload) ? parsedPayload : [parsedPayload]
-      const response = await apiFunc.apply(apiService, args)
+      const response = await apiFunc.apply(this.deps.api, args)
 
       // ID remapping: server responded with a real ID
       if (response && response.id && currentJob.local_table && currentJob.local_id) {
@@ -325,11 +349,7 @@ class SyncEngine {
         continue
       }
 
-      const { value: rewrittenPayload, changed } = this.replaceQueuedIdReferences(
-        parsedPayload,
-        oldId,
-        newId,
-      )
+      const { value: rewrittenPayload, changed } = replaceQueuedIdReferences(parsedPayload, oldId, newId)
 
       if (!changed) continue
 
@@ -339,44 +359,6 @@ class SyncEngine {
         queuedJob.id,
       )
     }
-  }
-
-  private replaceQueuedIdReferences(
-    value: unknown,
-    oldId: string,
-    newId: string,
-  ): { value: unknown; changed: boolean } {
-    if (typeof value === 'string') {
-      if (value === oldId) {
-        return { value: newId, changed: true }
-      }
-      return { value, changed: false }
-    }
-
-    if (Array.isArray(value)) {
-      let changed = false
-      const nextValue = value.map((item) => {
-        const result = this.replaceQueuedIdReferences(item, oldId, newId)
-        changed = changed || result.changed
-        return result.value
-      })
-      return { value: changed ? nextValue : value, changed }
-    }
-
-    if (value && typeof value === 'object') {
-      let changed = false
-      const nextValue: Record<string, unknown> = {}
-
-      for (const [key, nestedValue] of Object.entries(value)) {
-        const result = this.replaceQueuedIdReferences(nestedValue, oldId, newId)
-        nextValue[key] = result.value
-        changed = changed || result.changed
-      }
-
-      return { value: changed ? nextValue : value, changed }
-    }
-
-    return { value, changed: false }
   }
 
   // -----------------------------------------------------------------------
