@@ -14,6 +14,7 @@ export interface Set {
 }
 
 export interface Exercise extends ApiExercise {
+  sessionId: string
   sets: Set[]
   previousBest?: {
     weight: number
