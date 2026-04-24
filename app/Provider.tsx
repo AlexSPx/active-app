@@ -81,6 +81,8 @@ function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   const colorScheme = useColorScheme()
   const theme = useSettingsStore((s) => s.theme)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const userId = useAuthStore((s) => s.user?.id)
   const finishedCongrats = useUiStore((s) => s.finishedCongrats)
   const hideFinishedCongrats = useUiStore((s) => s.hideFinishedCongrats)
   const congratsVisible = finishedCongrats.visible && !!finishedCongrats.payload
@@ -90,8 +92,12 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
 
   useEffect(() => {
     initNotifications().catch(() => {})
-    registerPushNotifications().catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!isAuthenticated || !userId) return
+    registerPushNotifications().catch(() => {})
+  }, [isAuthenticated, userId])
 
   return (
     <SafeAreaProvider>
@@ -144,4 +150,3 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
 }
 
 export default Provider
-

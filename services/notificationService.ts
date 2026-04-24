@@ -14,6 +14,8 @@ import { useAuthStore } from '../stores/authStore'
 let Notifications: typeof import('expo-notifications') | null = null
 let initialized = false
 let scheduledId: string | null = null
+let lastRegisteredUserId: string | null = null
+let lastRegisteredPushToken: string | null = null
 
 /**
  * Lazily loads the expo-notifications module.
@@ -88,8 +90,27 @@ export async function initNotifications(): Promise<void> {
 }
 
 export async function registerPushNotifications(): Promise<void> {
+  if (Platform.OS === 'web') return
+
   const mod = await loadModule()
   if (!mod) return
+
+  const authState = useAuthStore.getState()
+  const userId = authState.user?.id ?? null
+  if (!authState.isAuthenticated || !userId) {
+    lastRegisteredUserId = null
+    lastRegisteredPushToken = null
+    return
+  }
+
+  const permissions = await mod.getPermissionsAsync()
+  const notificationsAllowed =
+    permissions.granted ||
+    permissions.ios?.status === mod.IosAuthorizationStatus.PROVISIONAL
+
+  if (!notificationsAllowed) {
+    return
+  }
 
   if (Platform.OS === 'android') {
     const channelInput: NotificationChannelInput = {
@@ -113,10 +134,16 @@ export async function registerPushNotifications(): Promise<void> {
     console.log('Push token: ', expoPushToken)
 
     if (expoPushToken && expoPushToken.trim() !== '') {
+      if (lastRegisteredUserId === userId && lastRegisteredPushToken === expoPushToken) {
+        return
+      }
+
       try {
         const updated = await apiService.registerPushToken(expoPushToken)
         // Update user in auth store to reflect any server-side changes
         useAuthStore.getState().setUser(updated)
+        lastRegisteredUserId = userId
+        lastRegisteredPushToken = expoPushToken
       } catch (e) {
         console.error('Failed to register push token with server:', e)
       }

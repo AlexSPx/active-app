@@ -7,6 +7,7 @@ import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
 import * as Haptics from 'expo-haptics'
 import { useFocusEffect } from 'expo-router'
+import { registerPushNotifications } from '../services/notificationService'
 
 interface NotificationPermissionsProps {
   onStatusChange?: (status: { notifications: boolean; alarms: boolean }) => void
@@ -45,6 +46,12 @@ export default function NotificationPermissions({ onStatusChange }: Notification
        }
     }
     setAlarmsAllowed(alarmAllowed)
+
+    if (notifAllowed) {
+      registerPushNotifications().catch((error) => {
+        console.error('Failed to register push notifications after permission check:', error)
+      })
+    }
 
     // Notify parent
     onStatusChange?.({ notifications: notifAllowed, alarms: alarmAllowed })
