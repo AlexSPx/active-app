@@ -214,32 +214,51 @@ class SyncEngine {
       // Mark as processing
       await this.db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'processing', job.id)
 
-      const methodName = job.endpoint as keyof typeof apiService
+      // Reload the job from SQLite so we pick up any ID remaps applied by
+      // earlier jobs in the same queue-drain pass.
+      const currentJob = await this.db.getFirstAsync<SyncJob>(
+        'SELECT * FROM sync_queue WHERE id = ?',
+        job.id,
+      )
+      if (!currentJob) {
+        return true
+      }
+
+      const methodName = currentJob.endpoint as keyof typeof apiService
       const apiFunc = apiService[methodName] as (...args: any[]) => Promise<any>
 
       if (typeof apiFunc !== 'function') {
-        console.error(`[SyncEngine] Unknown API method: ${job.endpoint}`)
-        await this.markDeadLetter(job, `Unknown API method: ${job.endpoint}`)
+        console.error(`[SyncEngine] Unknown API method: ${currentJob.endpoint}`)
+        await this.markDeadLetter(currentJob, `Unknown API method: ${currentJob.endpoint}`)
         return true // continue to next job
       }
 
-      const parsedPayload = JSON.parse(job.payload)
+      const parsedPayload = JSON.parse(currentJob.payload)
       const args = Array.isArray(parsedPayload) ? parsedPayload : [parsedPayload]
       const response = await apiFunc.apply(apiService, args)
 
       // ID remapping: server responded with a real ID
-      if (response && response.id && job.local_table && job.local_id) {
-        await this.remapId(job.local_table, job.local_id, response.id)
+      if (response && response.id && currentJob.local_table && currentJob.local_id) {
+        await this.remapId(currentJob.local_table, currentJob.local_id, response.id, currentJob.id)
       }
 
       // For workout recording, handle the nested response shape
-      if (response?.workoutRecord?.id && job.local_table === 'workout_records' && job.local_id) {
-        await this.remapId('workout_records', job.local_id, response.workoutRecord.id)
+      if (
+        response?.workoutRecord?.id &&
+        currentJob.local_table === 'workout_records' &&
+        currentJob.local_id
+      ) {
+        await this.remapId(
+          'workout_records',
+          currentJob.local_id,
+          response.workoutRecord.id,
+          currentJob.id,
+        )
       }
 
       // Success — remove completed job
-      await this.db.runAsync('DELETE FROM sync_queue WHERE id = ?', job.id)
-      console.log(`[SyncEngine] ✓ ${job.endpoint}`)
+      await this.db.runAsync('DELETE FROM sync_queue WHERE id = ?', currentJob.id)
+      console.log(`[SyncEngine] ✓ ${currentJob.endpoint}`)
       return true
     } catch (error: any) {
       return this.handleJobError(job, error)
@@ -250,7 +269,12 @@ class SyncEngine {
   // ID Remapping (safe)
   // -----------------------------------------------------------------------
 
-  private async remapId(tableName: string, oldId: string, newId: string): Promise<void> {
+  private async remapId(
+    tableName: string,
+    oldId: string,
+    newId: string,
+    sourceJobId?: string,
+  ): Promise<void> {
     if (!this.db) return
 
     // Allowlist check (defense-in-depth; already validated at enqueue)
@@ -270,7 +294,89 @@ class SyncEngine {
       newId,
     )
 
+    await this.rewriteQueuedPayloadReferences(oldId, newId, sourceJobId)
+
     console.log(`[SyncEngine] Remapped ${tableName}: ${oldId} → ${newId}`)
+  }
+
+  private async rewriteQueuedPayloadReferences(
+    oldId: string,
+    newId: string,
+    sourceJobId?: string,
+  ): Promise<void> {
+    if (!this.db || oldId === newId) return
+
+    const queuedJobs = await this.db.getAllAsync<Pick<SyncJob, 'id' | 'payload'>>(
+      `SELECT id, payload
+       FROM sync_queue
+       WHERE (status = ? OR status = ?)
+         AND id != ?`,
+      'pending',
+      'failed',
+      sourceJobId || '',
+    )
+
+    for (const queuedJob of queuedJobs) {
+      let parsedPayload: unknown
+      try {
+        parsedPayload = JSON.parse(queuedJob.payload)
+      } catch (error) {
+        console.warn(`[SyncEngine] Failed to parse queued payload for remap (${queuedJob.id})`, error)
+        continue
+      }
+
+      const { value: rewrittenPayload, changed } = this.replaceQueuedIdReferences(
+        parsedPayload,
+        oldId,
+        newId,
+      )
+
+      if (!changed) continue
+
+      await this.db.runAsync(
+        'UPDATE sync_queue SET payload = ? WHERE id = ?',
+        JSON.stringify(rewrittenPayload),
+        queuedJob.id,
+      )
+    }
+  }
+
+  private replaceQueuedIdReferences(
+    value: unknown,
+    oldId: string,
+    newId: string,
+  ): { value: unknown; changed: boolean } {
+    if (typeof value === 'string') {
+      if (value === oldId) {
+        return { value: newId, changed: true }
+      }
+      return { value, changed: false }
+    }
+
+    if (Array.isArray(value)) {
+      let changed = false
+      const nextValue = value.map((item) => {
+        const result = this.replaceQueuedIdReferences(item, oldId, newId)
+        changed = changed || result.changed
+        return result.value
+      })
+      return { value: changed ? nextValue : value, changed }
+    }
+
+    if (value && typeof value === 'object') {
+      let changed = false
+      const nextValue: Record<string, unknown> = {}
+
+      for (const [key, nestedValue] of Object.entries(value)) {
+        const result = this.replaceQueuedIdReferences(nestedValue, oldId, newId)
+        nextValue[key] = result.value
+        changed = changed || result.changed
+      }
+
+      return { value: changed ? nextValue : value, changed }
+    }
+
+    return { value, changed: false }
   }
 
   // -----------------------------------------------------------------------
