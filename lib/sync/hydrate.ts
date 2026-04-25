@@ -19,6 +19,7 @@ export async function hydrateFromServer(db: SQLiteDatabase): Promise<void> {
   let activeRoutineId: string | null = null
   try {
     const user = await syncApi.getUser()
+
     activeRoutineId = user?.activeRoutineId ?? null
     console.log('[Hydration] User fetched, activeRoutineId:', activeRoutineId)
   } catch (e) {
