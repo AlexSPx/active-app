@@ -17,6 +17,27 @@ export default function NotificationPermissions({ onStatusChange }: Notification
   const [notificationsAllowed, setNotificationsAllowed] = useState(false)
   const [alarmsAllowed, setAlarmsAllowed] = useState(false)
 
+  const getExactAlarmPermissionModule = () => {
+    const module =
+      NativeModules.ExactAlarm ??
+      NativeModules.ExactAlarmPermission ??
+      null
+
+    if (!module) {
+      return null
+    }
+
+    if (typeof module.canScheduleExactAlarms === 'function') {
+      return () => module.canScheduleExactAlarms()
+    }
+
+    if (typeof module.hasExactAlarmPermission === 'function') {
+      return () => module.hasExactAlarmPermission()
+    }
+
+    return null
+  }
+
   const checkPermissions = async () => {
     // 1. Check Standard Notifications
     const settings = await Notifications.getPermissionsAsync()
@@ -26,24 +47,19 @@ export default function NotificationPermissions({ onStatusChange }: Notification
     // 2. Check Exact Alarms (Android only)
     let alarmAllowed = true
     if (Platform.OS === 'android') {
-       try {
-         const { ExactAlarmPermission } = NativeModules
-         console.log("ExactAlarmPermission module: ", ExactAlarmPermission);
-         console.log("All NativeModules: ", Object.keys(NativeModules));
-         
-         if (ExactAlarmPermission) {
-           alarmAllowed = await ExactAlarmPermission.hasExactAlarmPermission()
-           
-           console.log("alarms allowed: ", alarmAllowed);
-           
-         } else {
-            // Fallback if module missing (dev client issue)
-            console.warn('ExactAlarmPermission module missing')
-         }
-       } catch (e) {
-         console.warn('Failed to check exact alarm', e)
-         alarmAllowed = false
-       }
+      try {
+        const checkExactAlarmPermission = getExactAlarmPermissionModule()
+
+        if (checkExactAlarmPermission) {
+          alarmAllowed = await checkExactAlarmPermission()
+        } else {
+          // Fallback if module missing (for example, stale dev client)
+          console.warn('Exact alarm native module missing')
+        }
+      } catch (e) {
+        console.warn('Failed to check exact alarm', e)
+        alarmAllowed = false
+      }
     }
     setAlarmsAllowed(alarmAllowed)
 
