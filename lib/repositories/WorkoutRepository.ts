@@ -74,6 +74,7 @@ export class WorkoutRepository extends BaseRepository {
       id: localId,
       exercises: (workout.template?.exercises || []).map((ex) => ({
         exerciseId: ex.exerciseId,
+        exerciseTitle: ex.exerciseId.replace(/_/g, ' '),
         reps: ex.reps || [],
         weight: ex.weight || [],
         durationSeconds: ex.durationSeconds || null,
@@ -94,7 +95,7 @@ export class WorkoutRepository extends BaseRepository {
       now,
       now,
       JSON.stringify(templatePayload),
-      0,
+      0
     )
 
     await this.enqueueSync({
@@ -165,7 +166,7 @@ export class WorkoutRepository extends BaseRepository {
 
   async getAllRecords(): Promise<WorkoutRecord[]> {
     const rows = await this.queryAll<WorkoutRecordRow>(
-      'SELECT * FROM workout_records ORDER BY created_at DESC',
+      'SELECT * FROM workout_records ORDER BY created_at DESC'
     )
     return rows.map(this.rowToRecord)
   }
@@ -178,7 +179,10 @@ export class WorkoutRepository extends BaseRepository {
    * Record a completed workout. Saves locally first, then queues for server sync.
    * Returns a WorkoutRecordResponse-shaped object for the UI (congrats screen, etc).
    */
-  async recordWorkout(request: WorkoutRecordRequest, workoutTitle: string): Promise<WorkoutRecordResponse> {
+  async recordWorkout(
+    request: WorkoutRecordRequest,
+    workoutTitle: string
+  ): Promise<WorkoutRecordResponse> {
     const localId = this.generateLocalId()
     const now = new Date().toISOString()
 
@@ -201,7 +205,7 @@ export class WorkoutRepository extends BaseRepository {
       now,
       request.startTime || null,
       JSON.stringify(exerciseRecords),
-      0,
+      0
     )
 
     await this.enqueueSync({
@@ -270,7 +274,7 @@ export class WorkoutRepository extends BaseRepository {
         w.createdAt,
         w.updatedAt,
         JSON.stringify(w.workoutTemplate),
-        new Date().toISOString(),
+        new Date().toISOString()
       )
     }
   }
@@ -293,7 +297,7 @@ export class WorkoutRepository extends BaseRepository {
         r.createdAt,
         r.startTime || null,
         JSON.stringify(r.exerciseRecords),
-        new Date().toISOString(),
+        new Date().toISOString()
       )
     }
   }
@@ -308,6 +312,14 @@ export class WorkoutRepository extends BaseRepository {
       template = JSON.parse(row.workout_template || '{}')
     } catch {
       template = { id: row.id, exercises: [], createdAt: row.created_at, updatedAt: row.created_at }
+    }
+
+    template = {
+      ...template,
+      exercises: (template.exercises || []).map((exercise) => ({
+        ...exercise,
+        exerciseTitle: exercise.exerciseTitle?.trim() || exercise.exerciseId.replace(/_/g, ' '),
+      })),
     }
 
     return {

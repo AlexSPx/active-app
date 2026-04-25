@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import type { UpdateUserRequest, User, ApiError } from '../../../types/api'
 import { timeZonesNames } from '@vvo/tzdb'
-import { queryClient } from '../../../lib/queryClient'
+import { useQueryClient } from '@tanstack/react-query'
 import { queryKeys } from '../../../lib/queryKeys'
 
 // Simple email regex (client-side validation aid; server performs authoritative validation)
@@ -17,6 +17,7 @@ export interface UseUpdateUserResult {
 
 export function useUpdateUser(): UseUpdateUserResult {
   const { updateUser } = useAuth()
+  const queryClient = useQueryClient()
   const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -62,7 +63,7 @@ export function useUpdateUser(): UseUpdateUserResult {
         return null
       }
     },
-    [updateUser, validate]
+    [queryClient, updateUser, validate]
   )
 
   return { updateUserProfile, isUpdating, error, validate }

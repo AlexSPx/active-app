@@ -22,8 +22,8 @@ export default function TabLayout() {
           headerShadowVisible: false,
           headerTitleStyle: {
             color: theme.color.val,
-            fontWeight: '600',
-            fontSize: 16,
+            fontWeight: '700',
+            fontSize: 20,
           },
         }}
       >

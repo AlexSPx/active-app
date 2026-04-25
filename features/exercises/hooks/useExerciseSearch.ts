@@ -1,20 +1,19 @@
 import { useState, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { apiService } from '../../../services/apiService'
+import { useExerciseRepository } from '../../../lib/hooks/useRepository'
 import { queryKeys } from '../../../lib/queryKeys'
-import { exercisesArraySchema } from '../../../lib/schemas/api'
 import type { ApiExercise } from '../../../types/api'
 
 export function useExerciseSearch() {
   const [searchQuery, setSearchQuery] = useState('')
   const queryClient = useQueryClient()
+  const repo = useExerciseRepository()
 
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.exercises.search(searchQuery),
     queryFn: async () => {
       if (!searchQuery.trim()) return []
-      const response = await apiService.searchExercises(searchQuery.trim())
-      return exercisesArraySchema.parse(response)
+      return repo.search(searchQuery.trim())
     },
     enabled: searchQuery.trim().length > 0,
     staleTime: 1000 * 60 * 60 * 3, // 3 hours

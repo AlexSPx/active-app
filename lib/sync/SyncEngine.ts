@@ -14,15 +14,16 @@
 import { type SQLiteDatabase } from 'expo-sqlite'
 import * as Network from 'expo-network'
 import { AppState, type AppStateStatus } from 'react-native'
-import { apiService } from '../../services/apiService'
+import { syncApi, type SyncApi } from './api'
+import { replaceQueuedIdReferences } from './queuePayloadRemap'
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 export interface SyncJobConfig {
-  /** Key of apiService method to invoke */
-  apiMethod: keyof typeof apiService
+  /** Key of the sync API method to invoke */
+  apiMethod: keyof SyncApi
   /** Arguments to pass (will be JSON-serialized) */
   payload: any
   /** Target local table for ID remapping (optional) */
@@ -45,6 +46,19 @@ export interface SyncJob {
 
 export type SyncEvent = 'sync:start' | 'sync:complete' | 'sync:error' | 'sync:idle'
 
+interface SyncEngineDeps {
+  api: SyncApi
+  getNetworkState: () => Promise<{
+    isConnected?: boolean | null
+    isInternetReachable?: boolean | null
+  }>
+  addAppStateListener: (handler: (state: AppStateStatus) => void) => { remove(): void }
+}
+
+interface InitOptions {
+  processOnInit?: boolean
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
@@ -60,16 +74,24 @@ const MAX_BACKOFF_MS = 60_000
 // SyncEngine
 // ---------------------------------------------------------------------------
 
-class SyncEngine {
+export class SyncEngine {
   private db: SQLiteDatabase | null = null
   private isProcessing = false
-  private appStateSubscription: ReturnType<typeof AppState.addEventListener> | null = null
+  private appStateSubscription: { remove(): void } | null = null
   private listeners: Record<SyncEvent, Set<() => void>> = {
     'sync:start': new Set(),
     'sync:complete': new Set(),
     'sync:error': new Set(),
     'sync:idle': new Set(),
   }
+
+  constructor(
+    private readonly deps: SyncEngineDeps = {
+      api: syncApi,
+      getNetworkState: () => Network.getNetworkStateAsync(),
+      addAppStateListener: (handler) => AppState.addEventListener('change', handler),
+    },
+  ) {}
 
   // -----------------------------------------------------------------------
   // Lifecycle
@@ -79,17 +101,19 @@ class SyncEngine {
    * Must be called once during app bootstrap (in Provider useEffect).
    * Registers listeners and kicks off an initial queue drain.
    */
-  async init(db: SQLiteDatabase): Promise<void> {
+  async init(db: SQLiteDatabase, options: InitOptions = {}): Promise<void> {
     this.db = db
 
     // Ensure pragmas on this handle
     await db.execAsync('PRAGMA foreign_keys = ON;')
 
     // Listen to app-state transitions (process queue on resume)
-    this.appStateSubscription = AppState.addEventListener('change', this.handleAppStateChange)
+    this.appStateSubscription = this.deps.addAppStateListener(this.handleAppStateChange)
 
     // Drain any jobs left over from a previous session
-    this.processQueue()
+    if (options.processOnInit !== false) {
+      this.processQueue()
+    }
   }
 
   destroy(): void {
@@ -160,7 +184,7 @@ class SyncEngine {
 
     // Network check
     try {
-      const networkState = await Network.getNetworkStateAsync()
+      const networkState = await this.deps.getNetworkState()
       if (!networkState.isConnected || !networkState.isInternetReachable) {
         return
       }
@@ -214,32 +238,51 @@ class SyncEngine {
       // Mark as processing
       await this.db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'processing', job.id)
 
-      const methodName = job.endpoint as keyof typeof apiService
-      const apiFunc = apiService[methodName] as (...args: any[]) => Promise<any>
+      // Reload the job from SQLite so we pick up any ID remaps applied by
+      // earlier jobs in the same queue-drain pass.
+      const currentJob = await this.db.getFirstAsync<SyncJob>(
+        'SELECT * FROM sync_queue WHERE id = ?',
+        job.id,
+      )
+      if (!currentJob) {
+        return true
+      }
+
+      const methodName = currentJob.endpoint as keyof SyncApi
+      const apiFunc = this.deps.api[methodName] as (...args: any[]) => Promise<any>
 
       if (typeof apiFunc !== 'function') {
-        console.error(`[SyncEngine] Unknown API method: ${job.endpoint}`)
-        await this.markDeadLetter(job, `Unknown API method: ${job.endpoint}`)
+        console.error(`[SyncEngine] Unknown API method: ${currentJob.endpoint}`)
+        await this.markDeadLetter(currentJob, `Unknown API method: ${currentJob.endpoint}`)
         return true // continue to next job
       }
 
-      const parsedPayload = JSON.parse(job.payload)
+      const parsedPayload = JSON.parse(currentJob.payload)
       const args = Array.isArray(parsedPayload) ? parsedPayload : [parsedPayload]
-      const response = await apiFunc.apply(apiService, args)
+      const response = await apiFunc.apply(this.deps.api, args)
 
       // ID remapping: server responded with a real ID
-      if (response && response.id && job.local_table && job.local_id) {
-        await this.remapId(job.local_table, job.local_id, response.id)
+      if (response && response.id && currentJob.local_table && currentJob.local_id) {
+        await this.remapId(currentJob.local_table, currentJob.local_id, response.id, currentJob.id)
       }
 
       // For workout recording, handle the nested response shape
-      if (response?.workoutRecord?.id && job.local_table === 'workout_records' && job.local_id) {
-        await this.remapId('workout_records', job.local_id, response.workoutRecord.id)
+      if (
+        response?.workoutRecord?.id &&
+        currentJob.local_table === 'workout_records' &&
+        currentJob.local_id
+      ) {
+        await this.remapId(
+          'workout_records',
+          currentJob.local_id,
+          response.workoutRecord.id,
+          currentJob.id,
+        )
       }
 
       // Success — remove completed job
-      await this.db.runAsync('DELETE FROM sync_queue WHERE id = ?', job.id)
-      console.log(`[SyncEngine] ✓ ${job.endpoint}`)
+      await this.db.runAsync('DELETE FROM sync_queue WHERE id = ?', currentJob.id)
+      console.log(`[SyncEngine] ✓ ${currentJob.endpoint}`)
       return true
     } catch (error: any) {
       return this.handleJobError(job, error)
@@ -250,7 +293,12 @@ class SyncEngine {
   // ID Remapping (safe)
   // -----------------------------------------------------------------------
 
-  private async remapId(tableName: string, oldId: string, newId: string): Promise<void> {
+  private async remapId(
+    tableName: string,
+    oldId: string,
+    newId: string,
+    sourceJobId?: string,
+  ): Promise<void> {
     if (!this.db) return
 
     // Allowlist check (defense-in-depth; already validated at enqueue)
@@ -270,7 +318,47 @@ class SyncEngine {
       newId,
     )
 
+    await this.rewriteQueuedPayloadReferences(oldId, newId, sourceJobId)
+
     console.log(`[SyncEngine] Remapped ${tableName}: ${oldId} → ${newId}`)
+  }
+
+  private async rewriteQueuedPayloadReferences(
+    oldId: string,
+    newId: string,
+    sourceJobId?: string,
+  ): Promise<void> {
+    if (!this.db || oldId === newId) return
+
+    const queuedJobs = await this.db.getAllAsync<Pick<SyncJob, 'id' | 'payload'>>(
+      `SELECT id, payload
+       FROM sync_queue
+       WHERE (status = ? OR status = ?)
+         AND id != ?`,
+      'pending',
+      'failed',
+      sourceJobId || '',
+    )
+
+    for (const queuedJob of queuedJobs) {
+      let parsedPayload: unknown
+      try {
+        parsedPayload = JSON.parse(queuedJob.payload)
+      } catch (error) {
+        console.warn(`[SyncEngine] Failed to parse queued payload for remap (${queuedJob.id})`, error)
+        continue
+      }
+
+      const { value: rewrittenPayload, changed } = replaceQueuedIdReferences(parsedPayload, oldId, newId)
+
+      if (!changed) continue
+
+      await this.db.runAsync(
+        'UPDATE sync_queue SET payload = ? WHERE id = ?',
+        JSON.stringify(rewrittenPayload),
+        queuedJob.id,
+      )
+    }
   }
 
   // -----------------------------------------------------------------------

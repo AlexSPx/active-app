@@ -1,7 +1,26 @@
 {
-  "extends": "./tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "baseUrl": ".",
+    "paths": {
+      "app/*": ["app/*"],
+      "components/*": ["components/*"],
+      "config/*": ["config/*"],
+      "constants/*": ["constants/*"],
+      "contexts/*": ["contexts/*"],
+      "features/*": ["features/*"],
+      "lib/*": ["lib/*"],
+      "navigation/*": ["navigation/*"],
+      "services/*": ["services/*"],
+      "stores/*": ["stores/*"],
+      "types/*": ["types/*"],
+      "utils/*": ["utils/*"]
+    }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "extends": "expo/tsconfig.base",
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
 }

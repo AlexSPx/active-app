@@ -39,9 +39,9 @@ export const WorkoutSessionExercise = memo(
               set={set}
               index={index}
               previousDuration={undefined}
-              onUpdateDuration={(secs) => onUpdateSet(exercise.id, set.id, 'duration', secs)}
-              onToggleComplete={() => onToggleSetComplete(exercise.id, set.id)}
-              onDelete={() => onRemoveSet(exercise.id, index)}
+              onUpdateDuration={(secs) => onUpdateSet(exercise.sessionId, set.id, 'duration', secs)}
+              onToggleComplete={() => onToggleSetComplete(exercise.sessionId, set.id)}
+              onDelete={() => onRemoveSet(exercise.sessionId, index)}
             />
           )
         }
@@ -50,20 +50,20 @@ export const WorkoutSessionExercise = memo(
             set={set}
             index={index}
             previousSet={exercise.lastWorkout?.sets[index]}
-            onUpdateSet={(field, value) => onUpdateSet(exercise.id, set.id, field, value)}
+            onUpdateSet={(field, value) => onUpdateSet(exercise.sessionId, set.id, field, value)}
             onToggleComplete={() => {
-              onToggleSetComplete(exercise.id, set.id)
+              onToggleSetComplete(exercise.sessionId, set.id)
               if (!set.completed && set.reps && set.weight) {
                 onStartRestTimer(set.id)
               }
             }}
-            onDelete={() => onRemoveSet(exercise.id, index)}
+            onDelete={() => onRemoveSet(exercise.sessionId, index)}
           />
         )
       },
       [
         isCardio,
-        exercise.id,
+        exercise.sessionId,
         exercise.lastWorkout?.sets,
         onUpdateSet,
         onToggleSetComplete,
@@ -169,7 +169,7 @@ export const WorkoutSessionExercise = memo(
             size="$3"
             variant="outlined"
             icon={Plus}
-            onPress={() => onAddSet(exercise.id)}
+            onPress={() => onAddSet(exercise.sessionId)}
             borderColor="$primary"
             color="$primary"
           >
@@ -182,7 +182,7 @@ export const WorkoutSessionExercise = memo(
   (prevProps, nextProps) => {
     // Only re-render if exercise data has changed
     return (
-      prevProps.exercise.id === nextProps.exercise.id &&
+      prevProps.exercise.sessionId === nextProps.exercise.sessionId &&
       prevProps.exercise.sets.length === nextProps.exercise.sets.length &&
       prevProps.exercise.sets.every((set, index) => {
         const nextSet = nextProps.exercise.sets[index]

@@ -2,7 +2,7 @@ import { FlashList } from '@shopify/flash-list'
 import { memo, useEffect, useRef } from 'react'
 import type { ApiWorkout } from '../../../types/api'
 import { WorkoutCard } from './WorkoutCard'
-import { View, YStack, Text, Button } from 'tamagui'
+import { View } from 'tamagui'
 import { EmptyState } from '../../../components/ui/EmptyState'
 import { Dumbbell } from '@tamagui/lucide-icons'
 
@@ -10,6 +10,7 @@ export interface WorkoutListProps {
   workouts: ApiWorkout[]
   onStartWorkout: (workout: ApiWorkout) => void
   isWorkoutRunning: boolean
+  routineNameByWorkoutId?: Record<string, string>
   onEditWorkout?: (workout: ApiWorkout) => void
   onDeleteWorkout?: (workoutId: string) => void
   onWorkoutPress?: (workout: ApiWorkout) => void
@@ -25,6 +26,7 @@ export const WorkoutList = memo(
     workouts,
     onStartWorkout,
     isWorkoutRunning,
+    routineNameByWorkoutId,
     onEditWorkout,
     onDeleteWorkout,
     onWorkoutPress,
@@ -54,6 +56,7 @@ export const WorkoutList = memo(
           workout={workout}
           onStartWorkout={() => onStartWorkout(workout)}
           isWorkoutRunning={isWorkoutRunning}
+          routineName={routineNameByWorkoutId?.[workout.id]}
           onEdit={onEditWorkout ? () => onEditWorkout(workout) : undefined}
           onDelete={onDeleteWorkout ? () => onDeleteWorkout(workout.id) : undefined}
           onPress={onWorkoutPress}
@@ -69,7 +72,7 @@ export const WorkoutList = memo(
           renderItem={renderWorkout}
           keyExtractor={(item) => item.id}
           style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 48 }}
+          contentContainerStyle={{ paddingBottom: 48, paddingHorizontal: 20 }}
           ListHeaderComponent={listHeader}
           refreshing={refreshing}
           onRefresh={onRefresh}
@@ -82,7 +85,7 @@ export const WorkoutList = memo(
               onAction={onCreateWorkout}
             />
           }
-          ItemSeparatorComponent={() => <View height="$4" />}
+          ItemSeparatorComponent={() => <View height={12} />}
           showsVerticalScrollIndicator={false}
         />
       </View>
@@ -93,6 +96,11 @@ export const WorkoutList = memo(
     return (
       prevProps.workouts.length === nextProps.workouts.length &&
       prevProps.workouts.every((workout, index) => workout.id === nextProps.workouts[index]?.id) &&
+      prevProps.workouts.every(
+        (workout) =>
+          prevProps.routineNameByWorkoutId?.[workout.id] ===
+          nextProps.routineNameByWorkoutId?.[workout.id]
+      ) &&
       prevProps.isWorkoutRunning === nextProps.isWorkoutRunning &&
       prevProps.refreshing === nextProps.refreshing &&
       prevProps.focusId === nextProps.focusId

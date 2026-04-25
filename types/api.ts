@@ -129,6 +129,7 @@ export type MuscleGroup =
 // Workout Template Types (Server Request/Response)
 export interface ApiWorkoutExercise {
   exerciseId: string
+  exerciseTitle: string
   reps: number[]
   weight: number[]
   durationSeconds?: number[] | null

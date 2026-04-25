@@ -1,18 +1,14 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { YStack, Text, Input, Button, Separator, View, TextArea } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToastController } from '@tamagui/toast'
-import { useEditWorkoutStore, useWorkoutMutations } from '../../features/workouts'
-import { apiService } from 'services/apiService'
-import {
-  apiWorkoutToEditableExercises,
-  buildUpdateWorkoutRequest,
-} from 'utils/workoutUtils'
+import { useEditWorkoutStore, useWorkout, useWorkoutMutations } from '../../features/workouts'
+import { apiWorkoutToEditableExercises, buildUpdateWorkoutRequest } from '../../utils/workoutUtils'
 import { ExerciseEditor } from '../../features/exercises'
-import { LoadingSpinner } from 'components/ui'
+import { LoadingSpinner } from '../../components/ui'
 import { createWorkoutSchema, type CreateWorkoutFormData } from '../../lib/schemas/forms'
 
 export default function EditWorkoutScreen() {
@@ -42,14 +38,15 @@ export default function EditWorkoutScreen() {
   const name = watch('name')
 
   const [isSaving, setIsSaving] = useState(false)
-  const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const initializedWorkoutIdRef = useRef<string | null>(null)
 
   // Keep original values to decide partial updates
   const [initialName, setInitialName] = useState('')
   const [initialNotes, setInitialNotes] = useState('')
   const [initialSig, setInitialSig] = useState('')
 
+  const { workout, loading, error: workoutError } = useWorkout(workoutId)
   const { updateWorkout: updateWorkoutMutation } = useWorkoutMutations()
 
   const {
@@ -66,45 +63,49 @@ export default function EditWorkoutScreen() {
     setValue('exercises', selectedExercises as any, { shouldValidate: false })
   }, [selectedExercises, setValue])
 
-  // Load current workout details
   useEffect(() => {
-    let active = true
-    const load = async () => {
-      if (!workoutId) {
-        setError('Missing workout id')
-        setLoading(false)
-        return
-      }
-      try {
-        setLoading(true)
-        setError(null)
-        const workouts = await apiService.getWorkouts()
-        const found = workouts.find((w) => w.id === workoutId)
-        if (!found) throw new Error('Workout not found')
+    if (!workoutId) {
+      initializedWorkoutIdRef.current = null
+      setError('Missing workout id')
+      return
+    }
 
-        if (!active) return
-        // Set form values
-        reset({
-          name: found.title,
-          notes: found.notes || '',
-          exercises: [],
-        })
-        setInitialName(found.title)
-        setInitialNotes(found.notes || '')
-        const editable = apiWorkoutToEditableExercises(found)
-        setExercises(editable)
-        setInitialSig(signature(editable))
-      } catch (e) {
-        if (active) setError(e instanceof Error ? e.message : 'Failed to load workout')
-      } finally {
-        if (active) setLoading(false)
+    if (loading) {
+      return
+    }
+
+    if (workoutError) {
+      initializedWorkoutIdRef.current = null
+      setError(workoutError)
+      return
+    }
+
+    if (!workout) {
+      initializedWorkoutIdRef.current = null
+      setError('Workout not found')
+      return
+    }
+
+    if (initializedWorkoutIdRef.current === workout.id) {
+      if (error) {
+        setError(null)
       }
+      return
     }
-    load()
-    return () => {
-      active = false
-    }
-  }, [workoutId, setExercises, reset])
+
+    reset({
+      name: workout.title,
+      notes: workout.notes || '',
+      exercises: [],
+    })
+    setInitialName(workout.title)
+    setInitialNotes(workout.notes || '')
+    const editable = apiWorkoutToEditableExercises(workout)
+    setExercises(editable)
+    setInitialSig(signature(editable))
+    initializedWorkoutIdRef.current = workout.id
+    setError(null)
+  }, [workoutId, workout, loading, workoutError, reset, setExercises, error])
 
   // Show validation toast and return true if there are issues
   const showValidationToast = useCallback(async () => {
@@ -115,8 +116,9 @@ export default function EditWorkoutScreen() {
       if (currentErrors.name?.message) currentIssues.push(currentErrors.name.message)
       if (currentErrors.notes?.message) currentIssues.push(currentErrors.notes.message)
       if (currentErrors.exercises?.message) currentIssues.push(currentErrors.exercises.message)
-      if ((currentErrors.exercises as any)?.root?.message) currentIssues.push((currentErrors.exercises as any).root.message)
-      
+      if ((currentErrors.exercises as any)?.root?.message)
+        currentIssues.push((currentErrors.exercises as any).root.message)
+
       // Check individual exercise errors
       const exercisesErrors = currentErrors.exercises as any
       if (Array.isArray(exercisesErrors)) {
@@ -125,7 +127,7 @@ export default function EditWorkoutScreen() {
           if (exError?.root?.message) currentIssues.push(exError.root.message)
         })
       }
-      
+
       if (currentIssues.length > 0) {
         toast.show('Please fix the following:', {
           message: currentIssues.join('\n'),
@@ -139,7 +141,7 @@ export default function EditWorkoutScreen() {
 
   const onSubmit = async (data: CreateWorkoutFormData) => {
     if (!workoutId) return
-    
+
     const changedTemplate = signature(selectedExercises) !== initialSig
     const notes = data.notes || ''
 
@@ -180,30 +182,33 @@ export default function EditWorkoutScreen() {
   )
 
   // Shared form fields component
-  const FormFields = useCallback(() => (
-    <YStack gap="$3">
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, value } }) => (
-          <Input placeholder="Title" value={value} onChangeText={onChange} size="$4" />
-        )}
-      />
-      <Controller
-        control={control}
-        name="notes"
-        render={({ field: { onChange, value } }) => (
-          <TextArea
-            placeholder="Notes"
-            value={value || ''}
-            onChangeText={onChange}
-            size="$4"
-            height={80}
-          />
-        )}
-      />
-    </YStack>
-  ), [control])
+  const FormFields = useCallback(
+    () => (
+      <YStack gap="$3">
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, value } }) => (
+            <Input placeholder="Title" value={value} onChangeText={onChange} size="$4" />
+          )}
+        />
+        <Controller
+          control={control}
+          name="notes"
+          render={({ field: { onChange, value } }) => (
+            <TextArea
+              placeholder="Notes"
+              value={value || ''}
+              onChangeText={onChange}
+              size="$4"
+              height={80}
+            />
+          )}
+        />
+      </YStack>
+    ),
+    [control]
+  )
 
   const Header = useMemo(
     () => (

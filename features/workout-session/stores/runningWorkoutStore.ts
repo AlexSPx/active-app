@@ -10,6 +10,7 @@ import { haptics } from '../../../utils/haptics'
 import { posthog } from '../../../services/posthog'
 
 export interface RunningWorkoutExercise extends ApiExercise {
+  sessionId: string
   sets: number
   reps: number
   sessionSets: Array<{
@@ -68,7 +69,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         const exercisesWithSets = workout.exercises.map((exercise) => ({
           ...exercise,
           sessionSets: Array.from({ length: exercise.sets }, (_, index) => ({
-            id: `${exercise.id}-set-${index + 1}`,
+            id: `${exercise.sessionId}-set-${index + 1}`,
             reps: null,
             weight: null,
             durationSeconds: exercise.category === 'CARDIO' ? 0 : undefined,
@@ -105,7 +106,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
                 .filter((v): v is number => v != null)
               if (durations.length === 0) return null
               return {
-                exerciseId: exercise.name.replace(/\s+/g, '_'),
+                exerciseId: exercise.id,
                 reps: [],
                 weight: [],
                 durationSeconds: durations,
@@ -116,7 +117,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
             const weightArr = completedSets.map((set) => set.weight || 0)
             if (repsArr.length === 0) return null
             return {
-              exerciseId: exercise.name.replace(/\s+/g, '_'),
+              exerciseId: exercise.id,
               reps: repsArr,
               weight: weightArr,
               notes: undefined as string | undefined,
@@ -216,7 +217,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         const state = get()
         if (state.runningWorkout) {
           const updatedExercises = state.runningWorkout.exercises.map((exercise) => {
-            if (exercise.id === exerciseId) {
+            if (exercise.sessionId === exerciseId) {
               return {
                 ...exercise,
                 sessionSets: exercise.sessionSets.map((set) => {
@@ -248,7 +249,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         const state = get()
         if (state.runningWorkout) {
           const updatedExercises = state.runningWorkout.exercises.map((exercise) => {
-            if (exercise.id === exerciseId) {
+            if (exercise.sessionId === exerciseId) {
               return {
                 ...exercise,
                 sessionSets: exercise.sessionSets.map((set) => {
@@ -279,7 +280,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         const state = get()
         if (state.runningWorkout) {
           const updatedExercises = state.runningWorkout.exercises.map((exercise) => {
-            if (exercise.id === exerciseId) {
+            if (exercise.sessionId === exerciseId) {
               return {
                 ...exercise,
                 sessionSets: exercise.sessionSets.filter((_, index) => index !== setIndex),
@@ -301,14 +302,14 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         const state = get()
         if (state.runningWorkout) {
           const updatedExercises = state.runningWorkout.exercises.map((exercise) => {
-            if (exercise.id === exerciseId) {
+            if (exercise.sessionId === exerciseId) {
               const newSetIndex = exercise.sessionSets.length + 1
               return {
                 ...exercise,
                 sessionSets: [
                   ...exercise.sessionSets,
                   {
-                    id: `${exerciseId}-set-${newSetIndex}`,
+                    id: `${exercise.sessionId}-set-${newSetIndex}`,
                     reps: null,
                     weight: null,
                     durationSeconds: exercise.category === 'CARDIO' ? 0 : undefined,

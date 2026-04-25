@@ -1,3 +1,7 @@
+export { AuthRepository } from './AuthRepository'
 export { BaseRepository } from './BaseRepository'
+export { ExerciseRepository } from './ExerciseRepository'
+export { LegalRepository } from './LegalRepository'
 export { WorkoutRepository } from './WorkoutRepository'
 export { RoutineRepository } from './RoutineRepository'
+export { UserRepository } from './UserRepository'

@@ -17,8 +17,6 @@ import type {
 } from '../types/api'
 import type { WorkoutRecordResponse } from '../types/api'
 import type { Routine, CreateRoutineRequest, UpdateRoutineRequest } from '../types/routine'
-import { queryClient } from '../lib/queryClient'
-import { queryKeys } from '../lib/queryKeys'
 
 // Re-export types for backward compatibility
 export type {
@@ -35,6 +33,12 @@ export type {
 } from '../types/api'
 
 const isWeb = Platform.OS === 'web'
+const shouldLogApi = process.env.NODE_ENV === 'development'
+
+interface RequestLogContext {
+  method: string
+  url: string
+}
 
 class ApiService {
   private unauthorizedHandler?: () => void
@@ -80,9 +84,61 @@ class ApiService {
     return options
   }
 
-  private async handleResponse<T>(response: Response, skipUnauthorizedHandler = false): Promise<T> {
-    // Log response
-    console.log(`API Response: ${response.status} ${response.url}`)
+  private logRequest({ method, url }: RequestLogContext) {
+    if (!shouldLogApi) return
+    console.log(`[API] ${method} ${url}`)
+  }
+
+  private logResponse({ method, url }: RequestLogContext, response: Response) {
+    if (!shouldLogApi) return
+    console.log(`[API] ${method} ${url} -> ${response.status}`)
+  }
+
+  private logFailure(
+    { method, url }: RequestLogContext,
+    details: { status?: number; message?: string; code?: string },
+  ) {
+    if (!shouldLogApi) return
+    console.error(`[API] ${method} ${url} failed`, details)
+  }
+
+  private createTimeoutError(url: string): ApiError {
+    const error: ApiError = new Error(
+      `Request timed out after ${config.REQUEST_TIMEOUT}ms: ${url}`
+    )
+    error.status = 408
+    error.code = 'REQUEST_TIMEOUT'
+    return error
+  }
+
+  private async fetchWithTimeout(url: string, options: RequestInit = {}): Promise<Response> {
+    const controller = new AbortController()
+    const abortHandler = () => controller.abort()
+    options.signal?.addEventListener('abort', abortHandler)
+    const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT)
+
+    try {
+      return await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      })
+    } catch (error) {
+      if ((error as Error)?.name === 'AbortError') {
+        throw this.createTimeoutError(url)
+      }
+      throw error
+    } finally {
+      clearTimeout(timeoutId)
+      options.signal?.removeEventListener('abort', abortHandler)
+    }
+  }
+
+  private async handleResponse<T>(
+    response: Response,
+    context: RequestLogContext,
+    skipUnauthorizedHandler = false,
+  ): Promise<T> {
+    this.logResponse(context, response)
 
     if (!response.ok) {
       // On unauthorized globally signal handler
@@ -102,34 +158,38 @@ class ApiService {
         const errorData = await response.json()
         error.message = errorData.message || error.message
         error.code = errorData.code
-        console.error(`API Error Details:`, errorData)
       } catch {
-        // If response is not JSON, use default error message
-        console.error(`API Error: ${response.status} - ${response.statusText}`)
+        error.message = response.statusText || error.message
       }
+
+      this.logFailure(context, {
+        status: error.status,
+        message: error.message,
+        code: error.code,
+      })
 
       throw error
     }
 
     try {
-      const data = await response.json()
-      console.log(`API Success:`, { url: response.url, data })
-      return data
+      return await response.json()
     } catch {
       // If response is not JSON, return empty object
-      console.log(`API Success (no JSON):`, response.url)
       return {} as T
     }
   }
 
   private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+    const method = options.method || 'GET'
+    const context: RequestLogContext = { method, url }
     const headers = (await this.getAuthHeaders()) as Record<string, string>
     if (options.headers) {
       Object.assign(headers, options.headers)
     }
 
     const fetchOptions = this.getFetchOptions({ ...options, headers })
-    const response = await fetch(url, fetchOptions)
+    this.logRequest(context)
+    const response = await this.fetchWithTimeout(url, fetchOptions)
 
     if (response.status === 401) {
       if (!this.isRefreshing) {
@@ -143,8 +203,9 @@ class ApiService {
           // Retry the original request immediately
           headers.Authorization = `Bearer ${token}`
           const retryFetchOptions = this.getFetchOptions({ ...options, headers })
-          const retryResponse = await fetch(url, retryFetchOptions)
-          return this.handleResponse<T>(retryResponse)
+          this.logRequest(context)
+          const retryResponse = await this.fetchWithTimeout(url, retryFetchOptions)
+          return this.handleResponse<T>(retryResponse, context)
         } catch (error) {
           this.onRefreshFailed(error)
           if (this.unauthorizedHandler) {
@@ -169,8 +230,9 @@ class ApiService {
           try {
             headers.Authorization = `Bearer ${token}`
             const retryFetchOptions = this.getFetchOptions({ ...options, headers })
-            const retryResponse = await fetch(url, retryFetchOptions)
-            resolve(this.handleResponse<T>(retryResponse))
+            this.logRequest(context)
+            const retryResponse = await this.fetchWithTimeout(url, retryFetchOptions)
+            resolve(this.handleResponse<T>(retryResponse, context))
           } catch (error) {
             reject(error)
           }
@@ -178,25 +240,59 @@ class ApiService {
       })
     }
 
-    return this.handleResponse<T>(response)
+    return this.handleResponse<T>(response, context)
+  }
+
+  private async requestWithoutRefresh<T>(
+    url: string,
+    options: RequestInit = {},
+    skipUnauthorizedHandler = false,
+  ): Promise<T> {
+    const method = options.method || 'GET'
+    const context: RequestLogContext = { method, url }
+    const headers = (await this.getAuthHeaders()) as Record<string, string>
+    if (options.headers) {
+      Object.assign(headers, options.headers)
+    }
+
+    this.logRequest(context)
+    const response = await this.fetchWithTimeout(url, this.getFetchOptions({ ...options, headers }))
+    return this.handleResponse<T>(response, context, skipUnauthorizedHandler)
+  }
+
+  private async requestText(url: string, options: RequestInit = {}): Promise<string> {
+    const method = options.method || 'GET'
+    const context: RequestLogContext = { method, url }
+    const headers = (await this.getAuthHeaders()) as Record<string, string>
+    if (options.headers) {
+      Object.assign(headers, options.headers)
+    }
+
+    this.logRequest(context)
+    const response = await this.fetchWithTimeout(url, this.getFetchOptions({ ...options, headers }))
+    this.logResponse(context, response)
+
+    if (!response.ok) {
+      const error: ApiError = new Error(`API Error: ${response.status}`)
+      error.status = response.status
+      error.message = response.statusText || error.message
+      this.logFailure(context, { status: error.status, message: error.message })
+      throw error
+    }
+
+    return response.text()
   }
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.AUTH.LOGIN)
-    console.log(`API Request: POST ${url}`, { email: credentials.email })
-
-    const response = await fetch(url, this.getFetchOptions({
+    return this.requestWithoutRefresh<LoginResponse>(url, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify(credentials),
-    }))
-
-    return this.handleResponse<LoginResponse>(response)
+    })
   }
 
   async getUser(): Promise<User> {
     const url = getApiUrl(config.API_ENDPOINTS.USER.ME)
-    console.log(`API Request: GET ${url}`)
 
     return this.request<User>(url, {
       method: 'GET',
@@ -205,7 +301,6 @@ class ApiService {
 
   async deleteAccount(): Promise<void> {
     const url = getApiUrl(config.API_ENDPOINTS.USER.ME)
-    console.log(`API Request: DELETE ${url}`)
 
     return this.request<void>(url, {
       method: 'DELETE',
@@ -224,8 +319,6 @@ class ApiService {
 
     const body = Object.fromEntries(bodyEntries)
 
-    console.log(`API Request: PATCH ${url}`, body)
-
     return this.request<User>(url, {
       method: 'PATCH',
       body: JSON.stringify(body),
@@ -239,7 +332,6 @@ class ApiService {
       throw err
     }
     const url = getApiUrl(config.API_ENDPOINTS.USER.PUSH_TOKEN)
-    console.log(`API Request: POST ${url}`, { hasToken: !!token })
     return this.request<User>(url, {
       method: 'POST',
       body: JSON.stringify({ token }),
@@ -286,7 +378,6 @@ class ApiService {
 
   async refreshToken(): Promise<LoginResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.AUTH.REFRESH)
-    console.log(`API Request: POST ${url}`)
 
     // On web, refresh token is sent via httpOnly cookie automatically
     // On native, we need to send it in the request body
@@ -298,24 +389,16 @@ class ApiService {
       }
       body = JSON.stringify({ refreshToken })
     }
-    
-    const response = await fetch(url, this.getFetchOptions({
+
+    return this.requestWithoutRefresh<LoginResponse>(url, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
       body,
-    }))
-
-    if (!response.ok) {
-      throw new Error('Failed to refresh token')
-    }
-
-    return response.json()
+    }, true)
   }
 
   async searchExercises(query: string): Promise<ApiExercise[]> {
     const url = new URL(getApiUrl(config.API_ENDPOINTS.EXERCISES.SEARCH))
     url.searchParams.append('name', query)
-    console.log(`API Request: GET ${url.toString()}`)
 
     return this.request<ApiExercise[]>(url.toString(), {
       method: 'GET',
@@ -324,21 +407,15 @@ class ApiService {
 
   async createWorkout(workoutData: CreateWorkoutRequest): Promise<{ id: string }> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.CREATE)
-    console.log(`API Request: POST ${url}`, workoutData)
 
-    const result = await this.request<{ id: string }>(url, {
+    return this.request<{ id: string }>(url, {
       method: 'POST',
       body: JSON.stringify(workoutData),
     })
-    
-    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
-    
-    return result
   }
 
   async getWorkouts(): Promise<ApiWorkout[]> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.LIST)
-    console.log(`API Request: GET ${url}`)
 
     return this.request<ApiWorkout[]>(url, {
       method: 'GET',
@@ -347,7 +424,6 @@ class ApiService {
 
   async recordWorkout(workoutRecord: WorkoutRecordRequest): Promise<WorkoutRecordResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.RECORD)
-    console.log(`API Request: POST ${url}`, workoutRecord)
 
     return this.request<WorkoutRecordResponse>(url, {
       method: 'POST',
@@ -365,19 +441,15 @@ class ApiService {
   ): Promise<void> {
     const base = config.API_ENDPOINTS.WORKOUTS.UPDATE
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
-    console.log(`API Request: PUT ${url}`, payload)
 
-    await this.request<void>(url, {
+    return this.request<void>(url, {
       method: 'PUT',
       body: JSON.stringify(payload),
     })
-    
-    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
   }
 
   async getWorkoutRecords(): Promise<WorkoutRecord[]> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.RECORD)
-    console.log(`API Request: GET ${url}`)
 
     return this.request<WorkoutRecord[]>(url, {
       method: 'GET',
@@ -387,69 +459,47 @@ class ApiService {
   async deleteWorkoutRecord(recordId: string): Promise<void> {
     const base = config.API_ENDPOINTS.WORKOUTS.RECORD
     const url = getApiUrl(`${base}/${encodeURIComponent(recordId)}`)
-    console.log(`API Request: DELETE ${url}`)
 
-    await this.request<void>(url, {
+    return this.request<void>(url, {
       method: 'DELETE',
     })
-    
-    await queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
   }
 
   async deleteWorkout(workoutId: string): Promise<void> {
     const base = config.API_ENDPOINTS.WORKOUTS.DELETE
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
-    console.log(`API Request: DELETE ${url}`)
 
-    await this.request<void>(url, {
+    return this.request<void>(url, {
       method: 'DELETE',
     })
-    
-    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
   }
 
   async signup(payload: RegisterRequest): Promise<LoginResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.AUTH.SIGNUP)
-    console.log(`API Request: POST ${url}`, { email: payload.email })
-
-    const response = await fetch(url, this.getFetchOptions({
+    return this.requestWithoutRefresh<LoginResponse>(url, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify(payload),
-    }))
-
-    return this.handleResponse<LoginResponse>(response)
+    })
   }
 
   async googleLogin(idToken: string): Promise<LoginResponse> {
     const url = getApiUrl(`${config.API_ENDPOINTS.AUTH.BASE}/google`)
-    console.log(`API Request: POST ${url}`)
-
-    const response = await fetch(url, this.getFetchOptions({
+    return this.requestWithoutRefresh<LoginResponse>(url, {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
       body: JSON.stringify({ idToken }),
-    }))
-
-    return this.handleResponse<LoginResponse>(response)
+    })
   }
 
   async workosLogin(code: string): Promise<LoginResponse> {
     const url = new URL(getApiUrl(config.API_ENDPOINTS.AUTH.WORKOS))
     url.searchParams.append('code', code)
-    console.log(`API Request: POST ${url.toString()}`)
-
-    const response = await fetch(url.toString(), this.getFetchOptions({
+    return this.requestWithoutRefresh<LoginResponse>(url.toString(), {
       method: 'POST',
-      headers: await this.getAuthHeaders(),
-    }))
-
-    return this.handleResponse<LoginResponse>(response)
+    })
   }
 
   async linkGoogleAccount(idToken: string): Promise<void> {
     const url = getApiUrl(`${config.API_ENDPOINTS.USER.ME}/link-google`)
-    console.log(`API Request: POST ${url}`)
 
     return this.request<void>(url, {
       method: 'POST',
@@ -461,7 +511,6 @@ class ApiService {
     const url = getApiUrl(
       `${config.API_ENDPOINTS.EXERCISES.LOGS}/${encodeURIComponent(exerciseId)}/logs`
     )
-    console.log(`API Request: GET ${url}`)
 
     return this.request<ExerciseLogResponse[]>(url, {
       method: 'GET',
@@ -470,7 +519,6 @@ class ApiService {
 
   async getRoutines(): Promise<Routine[]> {
     const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.LIST)
-    console.log(`API Request: GET ${url}`)
 
     return this.request<Routine[]>(url, {
       method: 'GET',
@@ -480,7 +528,6 @@ class ApiService {
   async getRoutine(routineId: string): Promise<Routine> {
     const base = config.API_ENDPOINTS.ROUTINES.UPDATE
     const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
-    console.log(`API Request: GET ${url}`)
 
     return this.request<Routine>(url, {
       method: 'GET',
@@ -489,7 +536,6 @@ class ApiService {
 
   async getActiveRoutine(): Promise<Routine> {
     const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.ACTIVE)
-    console.log(`API Request: GET ${url}`)
 
     return this.request<Routine>(url, {
       method: 'GET',
@@ -498,7 +544,6 @@ class ApiService {
 
   async createRoutine(payload: CreateRoutineRequest): Promise<Routine> {
     const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.CREATE)
-    console.log(`API Request: POST ${url}`, payload)
 
     return this.request<Routine>(url, {
       method: 'POST',
@@ -509,7 +554,6 @@ class ApiService {
   async updateRoutine(routineId: string, payload: UpdateRoutineRequest): Promise<Routine> {
     const base = config.API_ENDPOINTS.ROUTINES.UPDATE
     const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
-    console.log(`API Request: PUT ${url}`, payload)
 
     return this.request<Routine>(url, {
       method: 'PUT',
@@ -520,7 +564,6 @@ class ApiService {
   async deleteRoutine(routineId: string): Promise<void> {
     const base = config.API_ENDPOINTS.ROUTINES.DELETE
     const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
-    console.log(`API Request: DELETE ${url}`)
 
     return this.request<void>(url, {
       method: 'DELETE',
@@ -528,40 +571,24 @@ class ApiService {
   }
   async getTermsOfService(): Promise<string> {
     const url = getApiUrl(config.API_ENDPOINTS.LEGAL.TERMS)
-    console.log(`API Request: GET ${url}`)
-
-    const response = await fetch(url, this.getFetchOptions({
+    return this.requestText(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'text/markdown',
         'X-Platform': isWeb ? 'web' : 'native',
       },
-    }))
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch terms of service: ${response.status}`)
-    }
-
-    return response.text()
+    })
   }
 
   async getPrivacyPolicy(): Promise<string> {
     const url = getApiUrl(config.API_ENDPOINTS.LEGAL.PRIVACY)
-    console.log(`API Request: GET ${url}`)
-
-    const response = await fetch(url, this.getFetchOptions({
+    return this.requestText(url, {
       method: 'GET',
       headers: {
         'Content-Type': 'text/markdown',
         'X-Platform': isWeb ? 'web' : 'native',
       },
-    }))
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch privacy policy: ${response.status}`)
-    }
-
-    return response.text()
+    })
   }
 }
 

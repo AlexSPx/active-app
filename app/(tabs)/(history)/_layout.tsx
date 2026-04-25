@@ -11,7 +11,7 @@ export default function HistoryStackLayout() {
         headerShown: true,
         headerStyle: { backgroundColor: theme.background.val },
         headerTintColor: theme.color.val,
-        headerTitleStyle: { color: theme.color.val, fontWeight: '700' },
+        headerTitleStyle: { color: theme.color.val, fontWeight: '700', fontSize: 20 },
       }}
     >
       <Stack.Screen name="index" options={{ title: 'History' }} />

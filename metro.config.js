@@ -1,9 +1,26 @@
 const { getDefaultConfig } = require('expo/metro-config')
 const { withTamagui } = require('@tamagui/metro-plugin')
+const path = require('path')
 
 const config = getDefaultConfig(__dirname, {
   isCSSEnabled: true,
 })
+
+config.resolver.extraNodeModules = {
+  ...(config.resolver.extraNodeModules || {}),
+  app: path.resolve(__dirname, 'app'),
+  components: path.resolve(__dirname, 'components'),
+  config: path.resolve(__dirname, 'config'),
+  constants: path.resolve(__dirname, 'constants'),
+  contexts: path.resolve(__dirname, 'contexts'),
+  features: path.resolve(__dirname, 'features'),
+  lib: path.resolve(__dirname, 'lib'),
+  navigation: path.resolve(__dirname, 'navigation'),
+  services: path.resolve(__dirname, 'services'),
+  stores: path.resolve(__dirname, 'stores'),
+  types: path.resolve(__dirname, 'types'),
+  utils: path.resolve(__dirname, 'utils'),
+}
 
 // START: Fix for zustand v5 import.meta issue on web
 // This overrides resolution for 'zustand' to force the CommonJS entry point

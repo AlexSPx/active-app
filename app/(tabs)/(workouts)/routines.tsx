@@ -7,9 +7,15 @@ import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
-import { RoutineList, useRoutines, useRoutineMutations, useActiveRoutine } from '../../../features/routines'
+import {
+  RoutineList,
+  useRoutines,
+  useRoutineMutations,
+  useActiveRoutine,
+} from '../../../features/routines'
 import type { Routine } from '../../../types/routine'
 import { posthog } from '../../../services/posthog'
+import { CreateTopButton } from '../../../components/ui/CreateTopButton'
 
 export default function RoutinesTab() {
   const navigation = useNavigation()
@@ -170,7 +176,7 @@ export default function RoutinesTab() {
 
   return (
     <YStack flex={1} bg="$background">
-      <YStack flex={1} px="$4">
+      <YStack flex={1}>
         <RoutineList
           routines={routines}
           activeRoutineId={activeRoutine?.id ?? null}
@@ -181,16 +187,9 @@ export default function RoutinesTab() {
           onStartFromToday={handleStartFromToday}
           disableActions={mutating}
           listHeader={
-            <Button
-              bg="$primary"
-              width="100%"
-              my="$3"
-              onPress={openCreate}
-              animation="bouncy"
-              pressStyle={{ scale: 0.85, opacity: 0.7 }}
-            >
-              <Text>Create Routine</Text>
-            </Button>
+            <YStack mt="$1" mb="$3">
+              <CreateTopButton label="Create routine" onPress={openCreate} />
+            </YStack>
           }
           refreshing={refreshing || activeLoading}
           onRefresh={async () => {
@@ -248,4 +247,3 @@ export default function RoutinesTab() {
     </YStack>
   )
 }
-

@@ -72,7 +72,7 @@ export default function WorkoutSessionScreen() {
       <FlashList
         data={exercises}
         renderItem={renderExercise}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.sessionId}
         ItemSeparatorComponent={() => <View style={{ height: 16 }} />}
         ListHeaderComponent={ListHeaderComponent}
         ListHeaderComponentStyle={{ marginBottom: 16 }}

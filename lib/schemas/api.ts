@@ -123,24 +123,39 @@ export const muscleGroupSchema = z.enum([
   'TRICEPS',
 ])
 
-export const workoutExerciseSchema = z.object({
-  exerciseId: z.string(),
-  reps: z.array(z.number()).nullable().optional().transform((v) => v ?? []),
-  weight: z.array(z.number()).nullable().optional().transform((v) => v ?? []),
-  durationSeconds: z.array(z.number()).nullable().optional().transform((v) => v ?? []),
-  category: exerciseCategorySchema,
-  primaryMuscles: z.array(muscleGroupSchema).optional().default([]),
-  secondaryMuscles: z.array(muscleGroupSchema).optional().default([]),
-}).refine(
-  (data) => {
-    const hasRepsWeight = data.reps.length > 0 && data.weight.length > 0
-    const hasDuration = data.durationSeconds.length > 0
-    return hasRepsWeight || hasDuration
-  },
-  {
-    message: 'Exercise must have either reps/weight or durationSeconds',
-  }
-)
+export const workoutExerciseSchema = z
+  .object({
+    exerciseId: z.string(),
+    exerciseTitle: z.string(),
+    reps: z
+      .array(z.number())
+      .nullable()
+      .optional()
+      .transform((v) => v ?? []),
+    weight: z
+      .array(z.number())
+      .nullable()
+      .optional()
+      .transform((v) => v ?? []),
+    durationSeconds: z
+      .array(z.number())
+      .nullable()
+      .optional()
+      .transform((v) => v ?? []),
+    category: exerciseCategorySchema,
+    primaryMuscles: z.array(muscleGroupSchema).optional().default([]),
+    secondaryMuscles: z.array(muscleGroupSchema).optional().default([]),
+  })
+  .refine(
+    (data) => {
+      const hasRepsWeight = data.reps.length > 0 && data.weight.length > 0
+      const hasDuration = data.durationSeconds.length > 0
+      return hasRepsWeight || hasDuration
+    },
+    {
+      message: 'Exercise must have either reps/weight or durationSeconds',
+    }
+  )
 
 export const workoutTemplateSchema = z.object({
   id: z.string(),

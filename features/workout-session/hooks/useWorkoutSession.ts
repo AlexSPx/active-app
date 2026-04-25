@@ -137,7 +137,7 @@ export function useWorkoutSession(
     // Update in the store if running workout exists
     if (runningWorkout) {
       const currentSet = runningWorkout.exercises
-        .find((ex) => ex.id === exerciseId)
+        .find((ex) => ex.sessionId === exerciseId)
         ?.sessionSets.find((set) => set.id === setId)
 
       if (currentSet) {
@@ -153,7 +153,7 @@ export function useWorkoutSession(
       // Fallback to local state for non-running workouts
       setExercises((prev) =>
         prev.map((exercise) =>
-          exercise.id === exerciseId
+          exercise.sessionId === exerciseId
             ? {
                 ...exercise,
                 sets: exercise.sets.map((set) =>
@@ -178,7 +178,7 @@ export function useWorkoutSession(
       // Fallback to local state for non-running workouts
       setExercises((prev) =>
         prev.map((exercise) =>
-          exercise.id === exerciseId
+          exercise.sessionId === exerciseId
             ? {
                 ...exercise,
                 sets: exercise.sets.map((set) =>
@@ -199,13 +199,13 @@ export function useWorkoutSession(
       // Fallback to local state for non-running workouts
       setExercises((prev) =>
         prev.map((exercise) =>
-          exercise.id === exerciseId
+          exercise.sessionId === exerciseId
             ? {
                 ...exercise,
                 sets: [
                   ...exercise.sets,
                   {
-                    id: `${exerciseId}-${exercise.sets.length + 1}`,
+                    id: `${exercise.sessionId}-set-${exercise.sets.length + 1}`,
                     reps: null,
                     weight: null,
                     completed: false,
@@ -226,7 +226,7 @@ export function useWorkoutSession(
       // Fallback to local state for non-running workouts
       setExercises((prev) =>
         prev.map((exercise) =>
-          exercise.id === exerciseId
+          exercise.sessionId === exerciseId
             ? {
                 ...exercise,
                 sets: exercise.sets.filter((_, index) => index !== setIndex),

@@ -1,14 +1,21 @@
-import { YStack, XStack, Button, Text, Separator, Dialog, Adapt } from 'tamagui'
+import { YStack, XStack, Button, Text, Dialog } from 'tamagui'
 import { Sheet } from '@tamagui/sheet'
-import { useState, useCallback, useEffect, useLayoutEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router'
 import { BackHandler, Platform } from 'react-native'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
-import { useWorkoutManagement, useWorkouts, WorkoutList, useWorkoutMutations } from '../../../features/workouts'
+import {
+  useWorkoutManagement,
+  useWorkouts,
+  WorkoutList,
+  useWorkoutMutations,
+} from '../../../features/workouts'
+import { useRoutines } from '../../../features/routines'
 import { useAppNavigation } from '../../../navigation/useAppNavigation'
 import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 import { ApiWorkout } from '../../../types/api'
+import { CreateTopButton } from '../../../components/ui/CreateTopButton'
 
 export default function WorkoutsInnerTab() {
   const navigation = useNavigation()
@@ -16,18 +23,26 @@ export default function WorkoutsInnerTab() {
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
   const { navigateToNewWorkout, navigateToEditWorkout } = useAppNavigation()
   const { workouts, loading, error, refetch } = useWorkouts()
+  const { routines } = useRoutines()
   const { deleteWorkout, loading: deleting } = useWorkoutMutations()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const params = useLocalSearchParams<{ focusId?: string }>()
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      title: 'Workouts',
-    })
-  }, [navigation])
+  const routineNameByWorkoutId = useMemo(() => {
+    const mapping: Record<string, string> = {}
+    for (const routine of routines) {
+      for (const day of routine.pattern) {
+        if (day.dayType !== 'WORKOUT' || !day.workoutId) continue
+        if (!mapping[day.workoutId]) {
+          mapping[day.workoutId] = routine.name
+        }
+      }
+    }
+    return mapping
+  }, [routines])
 
-  const handleEditWorkout = (workout: any) => navigateToEditWorkout(workout.id)
+  const handleEditWorkout = (workout: ApiWorkout) => navigateToEditWorkout(workout.id)
 
   const handleDeleteWorkout = useCallback((workoutId: string) => {
     setPendingDeleteId(workoutId)
@@ -117,24 +132,18 @@ export default function WorkoutsInnerTab() {
 
   return (
     <YStack flex={1} bg="$background">
-      <YStack flex={1} px="$4">
+      <YStack flex={1}>
         <WorkoutList
           workouts={workouts}
           onStartWorkout={startWorkout}
           isWorkoutRunning={isWorkoutRunning()}
+          routineNameByWorkoutId={routineNameByWorkoutId}
           onEditWorkout={handleEditWorkout}
           focusId={(params.focusId as string) || undefined}
           listHeader={
-            <Button
-              bg="$primary"
-              width="100%"
-              my="$3"
-              onPress={navigateToNewWorkout}
-              animation="bouncy"
-              pressStyle={{ scale: 0.85, opacity: 0.7 }}
-            >
-              <Text>Create Workout</Text>
-            </Button>
+            <YStack mt="$1" mb="$3">
+              <CreateTopButton label="Create workout" onPress={navigateToNewWorkout} />
+            </YStack>
           }
           onDeleteWorkout={handleDeleteWorkout}
           refreshing={loading}
@@ -187,4 +196,3 @@ export default function WorkoutsInnerTab() {
     </YStack>
   )
 }
-

@@ -7,6 +7,7 @@ import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
 import * as Haptics from 'expo-haptics'
 import { useFocusEffect } from 'expo-router'
+import { registerPushNotifications } from '../services/notificationService'
 
 interface NotificationPermissionsProps {
   onStatusChange?: (status: { notifications: boolean; alarms: boolean }) => void
@@ -15,6 +16,27 @@ interface NotificationPermissionsProps {
 export default function NotificationPermissions({ onStatusChange }: NotificationPermissionsProps) {
   const [notificationsAllowed, setNotificationsAllowed] = useState(false)
   const [alarmsAllowed, setAlarmsAllowed] = useState(false)
+
+  const getExactAlarmPermissionModule = () => {
+    const module =
+      NativeModules.ExactAlarm ??
+      NativeModules.ExactAlarmPermission ??
+      null
+
+    if (!module) {
+      return null
+    }
+
+    if (typeof module.canScheduleExactAlarms === 'function') {
+      return () => module.canScheduleExactAlarms()
+    }
+
+    if (typeof module.hasExactAlarmPermission === 'function') {
+      return () => module.hasExactAlarmPermission()
+    }
+
+    return null
+  }
 
   const checkPermissions = async () => {
     // 1. Check Standard Notifications
@@ -25,26 +47,27 @@ export default function NotificationPermissions({ onStatusChange }: Notification
     // 2. Check Exact Alarms (Android only)
     let alarmAllowed = true
     if (Platform.OS === 'android') {
-       try {
-         const { ExactAlarmPermission } = NativeModules
-         console.log("ExactAlarmPermission module: ", ExactAlarmPermission);
-         console.log("All NativeModules: ", Object.keys(NativeModules));
-         
-         if (ExactAlarmPermission) {
-           alarmAllowed = await ExactAlarmPermission.hasExactAlarmPermission()
-           
-           console.log("alarms allowed: ", alarmAllowed);
-           
-         } else {
-            // Fallback if module missing (dev client issue)
-            console.warn('ExactAlarmPermission module missing')
-         }
-       } catch (e) {
-         console.warn('Failed to check exact alarm', e)
-         alarmAllowed = false
-       }
+      try {
+        const checkExactAlarmPermission = getExactAlarmPermissionModule()
+
+        if (checkExactAlarmPermission) {
+          alarmAllowed = await checkExactAlarmPermission()
+        } else {
+          // Fallback if module missing (for example, stale dev client)
+          console.warn('Exact alarm native module missing')
+        }
+      } catch (e) {
+        console.warn('Failed to check exact alarm', e)
+        alarmAllowed = false
+      }
     }
     setAlarmsAllowed(alarmAllowed)
+
+    if (notifAllowed) {
+      registerPushNotifications().catch((error) => {
+        console.error('Failed to register push notifications after permission check:', error)
+      })
+    }
 
     // Notify parent
     onStatusChange?.({ notifications: notifAllowed, alarms: alarmAllowed })
