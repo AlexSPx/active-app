@@ -72,7 +72,6 @@ export async function initNotifications(): Promise<void> {
         importance: mod.AndroidImportance.HIGH,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#FF7A00',
-        sound: 'default',
         lockscreenVisibility: mod.AndroidNotificationVisibility.PUBLIC,
       }
       await mod.setNotificationChannelAsync('rest-timer', channelInput)
@@ -118,7 +117,6 @@ export async function registerPushNotifications(): Promise<void> {
       importance: mod.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF7A00',
-      sound: 'default',
       lockscreenVisibility: mod.AndroidNotificationVisibility.PUBLIC,
     }
     await mod.setNotificationChannelAsync('streak-reminders', channelInput)
@@ -176,7 +174,7 @@ export async function scheduleRestNotification(deadlineMs: number): Promise<void
     const content: NotificationContentInput = {
       title: 'Rest complete',
       body: 'Time to start your next set.',
-      sound: 'default',
+      ...(Platform.OS === 'ios' ? { sound: 'default' as const } : {}),
 
       priority: mod.AndroidNotificationPriority.HIGH,
       interruptionLevel: 'timeSensitive',

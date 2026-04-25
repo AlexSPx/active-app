@@ -3,11 +3,11 @@ import { YStack, XStack, Text, Card, Circle } from 'tamagui'
 import { Calendar, Clock, Zap, Check, Circle as CircleIcon } from '@tamagui/lucide-icons'
 import { useActiveRoutine } from '../features/routines'
 import { useWorkouts } from '../features/workouts'
-import { useAuth } from 'contexts/AuthContext'
-import type { Routine, RoutinePatternItem } from 'types/routine'
-import type { ApiWorkout } from 'types/api'
+import { useAuth } from '../contexts/AuthContext'
+import type { Routine, RoutinePatternItem } from '../types/routine'
+import type { ApiWorkout } from '../types/api'
 import { router } from 'expo-router'
-import { routinePatternIndex } from 'utils/date'
+import { routinePatternIndex } from '../utils/date'
 
 // ============================================================================
 // Shared Components
@@ -230,11 +230,7 @@ const WorkoutChecklistItem: React.FC<WorkoutChecklistItemProps> = ({
       items="center"
       justify="center"
     >
-      {isCompleted ? (
-        <Check size={16} color="white" />
-      ) : (
-        <CircleIcon size={16} color="$color8" />
-      )}
+      {isCompleted ? <Check size={16} color="white" /> : <CircleIcon size={16} color="$color8" />}
     </Circle>
     <YStack flex={1}>
       <Text
@@ -281,9 +277,7 @@ const WeeklyCompletionTodayView: React.FC<WeeklyCompletionTodayViewProps> = ({
   }, [routine.pattern, workouts, completedWorkoutIds])
 
   const totalWorkouts = new Set(
-    routine.pattern
-      .filter((p) => p.dayType === 'WORKOUT' && p.workoutId)
-      .map((p) => p.workoutId)
+    routine.pattern.filter((p) => p.dayType === 'WORKOUT' && p.workoutId).map((p) => p.workoutId)
   ).size
   const completedCount = completedWorkoutIds.length
   const allComplete = weeklyWorkouts.length === 0

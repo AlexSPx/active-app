@@ -6,13 +6,10 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToastController } from '@tamagui/toast'
 import { useEditWorkoutStore, useWorkoutMutations } from '../../features/workouts'
-import { apiService } from 'services/apiService'
-import {
-  apiWorkoutToEditableExercises,
-  buildUpdateWorkoutRequest,
-} from 'utils/workoutUtils'
+import { apiService } from '../../services/apiService'
+import { apiWorkoutToEditableExercises, buildUpdateWorkoutRequest } from '../../utils/workoutUtils'
 import { ExerciseEditor } from '../../features/exercises'
-import { LoadingSpinner } from 'components/ui'
+import { LoadingSpinner } from '../../components/ui'
 import { createWorkoutSchema, type CreateWorkoutFormData } from '../../lib/schemas/forms'
 
 export default function EditWorkoutScreen() {
@@ -115,8 +112,9 @@ export default function EditWorkoutScreen() {
       if (currentErrors.name?.message) currentIssues.push(currentErrors.name.message)
       if (currentErrors.notes?.message) currentIssues.push(currentErrors.notes.message)
       if (currentErrors.exercises?.message) currentIssues.push(currentErrors.exercises.message)
-      if ((currentErrors.exercises as any)?.root?.message) currentIssues.push((currentErrors.exercises as any).root.message)
-      
+      if ((currentErrors.exercises as any)?.root?.message)
+        currentIssues.push((currentErrors.exercises as any).root.message)
+
       // Check individual exercise errors
       const exercisesErrors = currentErrors.exercises as any
       if (Array.isArray(exercisesErrors)) {
@@ -125,7 +123,7 @@ export default function EditWorkoutScreen() {
           if (exError?.root?.message) currentIssues.push(exError.root.message)
         })
       }
-      
+
       if (currentIssues.length > 0) {
         toast.show('Please fix the following:', {
           message: currentIssues.join('\n'),
@@ -139,7 +137,7 @@ export default function EditWorkoutScreen() {
 
   const onSubmit = async (data: CreateWorkoutFormData) => {
     if (!workoutId) return
-    
+
     const changedTemplate = signature(selectedExercises) !== initialSig
     const notes = data.notes || ''
 
@@ -180,30 +178,33 @@ export default function EditWorkoutScreen() {
   )
 
   // Shared form fields component
-  const FormFields = useCallback(() => (
-    <YStack gap="$3">
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, value } }) => (
-          <Input placeholder="Title" value={value} onChangeText={onChange} size="$4" />
-        )}
-      />
-      <Controller
-        control={control}
-        name="notes"
-        render={({ field: { onChange, value } }) => (
-          <TextArea
-            placeholder="Notes"
-            value={value || ''}
-            onChangeText={onChange}
-            size="$4"
-            height={80}
-          />
-        )}
-      />
-    </YStack>
-  ), [control])
+  const FormFields = useCallback(
+    () => (
+      <YStack gap="$3">
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, value } }) => (
+            <Input placeholder="Title" value={value} onChangeText={onChange} size="$4" />
+          )}
+        />
+        <Controller
+          control={control}
+          name="notes"
+          render={({ field: { onChange, value } }) => (
+            <TextArea
+              placeholder="Notes"
+              value={value || ''}
+              onChangeText={onChange}
+              size="$4"
+              height={80}
+            />
+          )}
+        />
+      </YStack>
+    ),
+    [control]
+  )
 
   const Header = useMemo(
     () => (

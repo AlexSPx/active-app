@@ -6,10 +6,10 @@ import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToastController } from '@tamagui/toast'
 import { useWorkoutStore, useWorkoutMutations } from '../../features/workouts'
-import { convertToCreateWorkoutRequest, validateWorkoutData } from 'utils/workoutUtils'
+import { convertToCreateWorkoutRequest, validateWorkoutData } from '../../utils/workoutUtils'
 import { ExerciseEditor } from '../../features/exercises'
-import { LoadingSpinner } from 'components/ui'
 import { createWorkoutSchema, type CreateWorkoutFormData } from '../../lib/schemas/forms'
+import { LoadingSpinner } from '../../components/ui'
 
 export default function NewWorkoutScreen() {
   const router = useRouter()
@@ -70,9 +70,13 @@ export default function NewWorkoutScreen() {
     setError(null)
 
     try {
-      const createWorkoutRequest = convertToCreateWorkoutRequest(data.name, selectedExercises, data.notes)
+      const createWorkoutRequest = convertToCreateWorkoutRequest(
+        data.name,
+        selectedExercises,
+        data.notes
+      )
       const result = await createWorkout(createWorkoutRequest)
-      
+
       if (result) {
         console.log('Workout created successfully:', result.id)
         clearExercises()
@@ -84,7 +88,7 @@ export default function NewWorkoutScreen() {
     } catch (err: any) {
       setError(`Failed to create workout: ${err?.message || err}`)
     }
-    
+
     setIsCreating(false)
   }
 
@@ -101,31 +105,38 @@ export default function NewWorkoutScreen() {
   )
 
   // Shared form fields component
-  const FormFields = useCallback(() => (
-    <YStack gap="$3">
-      <Controller
-        control={control}
-        name="name"
-        render={({ field: { onChange, value } }) => (
-          <Input placeholder="Workout name" value={value} onChangeText={onChange} size="$4" />
+  const FormFields = useCallback(
+    () => (
+      <YStack gap="$3">
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, value } }) => (
+            <Input placeholder="Workout name" value={value} onChangeText={onChange} size="$4" />
+          )}
+        />
+        {errors.name && (
+          <Text color="$red10" fontSize="$2">
+            {errors.name.message}
+          </Text>
         )}
-      />
-      {errors.name && <Text color="$red10" fontSize="$2">{errors.name.message}</Text>}
-      <Controller
-        control={control}
-        name="notes"
-        render={({ field: { onChange, value } }) => (
-          <TextArea
-            placeholder="Notes (optional)"
-            value={value || ''}
-            onChangeText={onChange}
-            size="$4"
-            height={80}
-          />
-        )}
-      />
-    </YStack>
-  ), [control, errors.name])
+        <Controller
+          control={control}
+          name="notes"
+          render={({ field: { onChange, value } }) => (
+            <TextArea
+              placeholder="Notes (optional)"
+              value={value || ''}
+              onChangeText={onChange}
+              size="$4"
+              height={80}
+            />
+          )}
+        />
+      </YStack>
+    ),
+    [control, errors.name]
+  )
 
   const hasNulls = selectedExercises.some((ex) =>
     ex.sets.some((s) =>
@@ -163,8 +174,9 @@ export default function NewWorkoutScreen() {
       if (currentErrors.name?.message) currentIssues.push(currentErrors.name.message)
       if (currentErrors.notes?.message) currentIssues.push(currentErrors.notes.message)
       if (currentErrors.exercises?.message) currentIssues.push(currentErrors.exercises.message)
-      if ((currentErrors.exercises as any)?.root?.message) currentIssues.push((currentErrors.exercises as any).root.message)
-      
+      if ((currentErrors.exercises as any)?.root?.message)
+        currentIssues.push((currentErrors.exercises as any).root.message)
+
       // Check individual exercise errors (array items)
       const exercisesErrors = currentErrors.exercises as any
       if (Array.isArray(exercisesErrors)) {
@@ -174,7 +186,7 @@ export default function NewWorkoutScreen() {
           if (exError?.sets?.message) currentIssues.push(exError.sets.message)
         })
       }
-      
+
       if (currentIssues.length > 0) {
         toast.show('Please fix the following:', {
           message: currentIssues.join('\n'),
