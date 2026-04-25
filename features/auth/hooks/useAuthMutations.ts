@@ -1,12 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiService } from '../../../services/apiService'
+import { useUserRepository } from '../../../lib/hooks/useRepository'
 
 export function useAuthMutations() {
   const queryClient = useQueryClient()
+  const repo = useUserRepository()
 
   const deleteAccountMutation = useMutation({
     mutationFn: async (): Promise<void> => {
-      await apiService.deleteAccount()
+      await repo.deleteCurrentUser()
     },
     onSuccess: () => {
       queryClient.clear()

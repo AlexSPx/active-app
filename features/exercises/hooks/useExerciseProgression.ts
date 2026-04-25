@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
-import { apiService } from '../../../services/apiService'
+import { useExerciseRepository } from '../../../lib/hooks/useRepository'
 import { queryKeys } from '../../../lib/queryKeys'
-import { exerciseLogsArraySchema } from '../../../lib/schemas/api'
 import type { ExerciseLogResponse } from '../../../types/api'
 
 export interface ProgressionDataPoint {
@@ -129,13 +128,14 @@ function processExerciseLogs(logs: ExerciseLogResponse[]): ExerciseProgressionDa
 }
 
 export function useExerciseProgression(exerciseId: string | null) {
+  const repo = useExerciseRepository()
+
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: queryKeys.exercises.logs(exerciseId || ''),
     queryFn: async () => {
       if (!exerciseId) throw new Error('No exercise ID provided')
-      const logs = await apiService.getExerciseLogs(exerciseId)
-      const validatedLogs = exerciseLogsArraySchema.parse(logs)
-      return processExerciseLogs(validatedLogs as ExerciseLogResponse[])
+      const logs = await repo.getLogs(exerciseId)
+      return processExerciseLogs(logs)
     },
     enabled: !!exerciseId,
     staleTime: 1000 * 60 * 60 * 3, // 3 hours

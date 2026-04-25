@@ -14,7 +14,7 @@
 import { type SQLiteDatabase } from 'expo-sqlite'
 import * as Network from 'expo-network'
 import { AppState, type AppStateStatus } from 'react-native'
-import { apiService } from '../../services/apiService'
+import { syncApi, type SyncApi } from './api'
 import { replaceQueuedIdReferences } from './queuePayloadRemap'
 
 // ---------------------------------------------------------------------------
@@ -22,8 +22,8 @@ import { replaceQueuedIdReferences } from './queuePayloadRemap'
 // ---------------------------------------------------------------------------
 
 export interface SyncJobConfig {
-  /** Key of apiService method to invoke */
-  apiMethod: keyof typeof apiService
+  /** Key of the sync API method to invoke */
+  apiMethod: keyof SyncApi
   /** Arguments to pass (will be JSON-serialized) */
   payload: any
   /** Target local table for ID remapping (optional) */
@@ -47,7 +47,7 @@ export interface SyncJob {
 export type SyncEvent = 'sync:start' | 'sync:complete' | 'sync:error' | 'sync:idle'
 
 interface SyncEngineDeps {
-  api: typeof apiService
+  api: SyncApi
   getNetworkState: () => Promise<{
     isConnected?: boolean | null
     isInternetReachable?: boolean | null
@@ -87,7 +87,7 @@ export class SyncEngine {
 
   constructor(
     private readonly deps: SyncEngineDeps = {
-      api: apiService,
+      api: syncApi,
       getNetworkState: () => Network.getNetworkStateAsync(),
       addAppStateListener: (handler) => AppState.addEventListener('change', handler),
     },
@@ -248,7 +248,7 @@ export class SyncEngine {
         return true
       }
 
-      const methodName = currentJob.endpoint as keyof typeof apiService
+      const methodName = currentJob.endpoint as keyof SyncApi
       const apiFunc = this.deps.api[methodName] as (...args: any[]) => Promise<any>
 
       if (typeof apiFunc !== 'function') {

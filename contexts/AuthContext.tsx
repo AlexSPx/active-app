@@ -1,8 +1,9 @@
 import React, { createContext, useContext, useEffect, ReactNode } from 'react'
 import { useAuthStore, initializeAuth } from '../stores/authStore'
-import type { User, LoginRequest } from '../services/apiService'
-import type { RegisterRequest, UpdateUserRequest } from '../types/api'
-import { apiService } from '../services/apiService'
+import { AuthRepository } from '../lib/repositories'
+import type { User, LoginRequest, RegisterRequest, UpdateUserRequest } from '../types/api'
+
+const authRepository = new AuthRepository()
 
 interface AuthContextType {
   isAuthenticated: boolean
@@ -30,7 +31,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // Initialize auth state on mount
   useEffect(() => {
     // Attach global 401 handler -> triggers logout
-    apiService.setUnauthorizedHandler(() => {
+    authRepository.setUnauthorizedHandler(() => {
       // fire and forget; store handles clearing
       useAuthStore.getState().logout()
     })

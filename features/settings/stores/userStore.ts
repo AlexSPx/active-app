@@ -1,6 +1,8 @@
 import { create } from 'zustand'
-import { apiService } from '../../../services/apiService'
+import { UserRepository } from '../../../lib/repositories/UserRepository'
 import type { User, ApiError, UpdateUserRequest } from '../../../types/api'
+
+const userRepository = new UserRepository()
 
 interface UserState {
   // State
@@ -33,7 +35,7 @@ export const useUserStore = create<UserState>((set, get) => ({
     try {
       set({ isLoading: true, error: null })
 
-      const user = await apiService.getUser()
+      const user = await userRepository.getCurrentUser()
 
       set({
         user,
@@ -63,7 +65,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   patchUser: async (payload: UpdateUserRequest) => {
     try {
       set({ isLoading: true, error: null })
-      const updated = await apiService.updateCurrentUser(payload)
+      const updated = await userRepository.updateCurrentUser(payload)
       // Merge into current user state
       const currentUser = get().user
       if (currentUser) {

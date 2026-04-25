@@ -17,8 +17,6 @@ import type {
 } from '../types/api'
 import type { WorkoutRecordResponse } from '../types/api'
 import type { Routine, CreateRoutineRequest, UpdateRoutineRequest } from '../types/routine'
-import { queryClient } from '../lib/queryClient'
-import { queryKeys } from '../lib/queryKeys'
 
 // Re-export types for backward compatibility
 export type {
@@ -410,14 +408,10 @@ class ApiService {
   async createWorkout(workoutData: CreateWorkoutRequest): Promise<{ id: string }> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.CREATE)
 
-    const result = await this.request<{ id: string }>(url, {
+    return this.request<{ id: string }>(url, {
       method: 'POST',
       body: JSON.stringify(workoutData),
     })
-    
-    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
-    
-    return result
   }
 
   async getWorkouts(): Promise<ApiWorkout[]> {
@@ -448,12 +442,10 @@ class ApiService {
     const base = config.API_ENDPOINTS.WORKOUTS.UPDATE
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
 
-    await this.request<void>(url, {
+    return this.request<void>(url, {
       method: 'PUT',
       body: JSON.stringify(payload),
     })
-    
-    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
   }
 
   async getWorkoutRecords(): Promise<WorkoutRecord[]> {
@@ -468,22 +460,18 @@ class ApiService {
     const base = config.API_ENDPOINTS.WORKOUTS.RECORD
     const url = getApiUrl(`${base}/${encodeURIComponent(recordId)}`)
 
-    await this.request<void>(url, {
+    return this.request<void>(url, {
       method: 'DELETE',
     })
-    
-    await queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
   }
 
   async deleteWorkout(workoutId: string): Promise<void> {
     const base = config.API_ENDPOINTS.WORKOUTS.DELETE
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
 
-    await this.request<void>(url, {
+    return this.request<void>(url, {
       method: 'DELETE',
     })
-    
-    await queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
   }
 
   async signup(payload: RegisterRequest): Promise<LoginResponse> {

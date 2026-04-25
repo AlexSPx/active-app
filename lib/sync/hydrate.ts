@@ -1,7 +1,7 @@
 import { SQLiteDatabase } from 'expo-sqlite'
-import { apiService } from '../../services/apiService'
 import { WorkoutRepository } from '../repositories/WorkoutRepository'
 import { RoutineRepository } from '../repositories/RoutineRepository'
+import { syncApi } from './api'
 
 /**
  * Pull fresh data from the server and UPSERT into local SQLite.
@@ -18,7 +18,7 @@ export async function hydrateFromServer(db: SQLiteDatabase): Promise<void> {
   // Fetch the user first (needed for activeRoutineId), then the rest in parallel
   let activeRoutineId: string | null = null
   try {
-    const user = await apiService.getUser()
+    const user = await syncApi.getUser()
     activeRoutineId = user?.activeRoutineId ?? null
     console.log('[Hydration] User fetched, activeRoutineId:', activeRoutineId)
   } catch (e) {
@@ -27,15 +27,15 @@ export async function hydrateFromServer(db: SQLiteDatabase): Promise<void> {
 
   // Fire all entity fetches in parallel
   const [serverWorkouts, serverRecords, serverRoutines] = await Promise.all([
-    apiService.getWorkouts().catch((e) => {
+    syncApi.getWorkouts().catch((e) => {
       console.error('[Hydration] Failed to fetch workouts:', e)
       return null
     }),
-    apiService.getWorkoutRecords().catch((e) => {
+    syncApi.getWorkoutRecords().catch((e) => {
       console.error('[Hydration] Failed to fetch workout records:', e)
       return null
     }),
-    apiService.getRoutines().catch((e) => {
+    syncApi.getRoutines().catch((e) => {
       console.error('[Hydration] Failed to fetch routines:', e)
       return null
     }),

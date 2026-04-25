@@ -2,16 +2,55 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
-import { apiService } from '../services/apiService'
 import { useSettingsStore } from '../features/settings'
 import { resetAllStores } from '../utils/storeReset'
 import { clearDatabase } from '../lib/db/connection'
-
-import { queryClient } from '../lib/queryClient'
+import { AuthRepository, UserRepository } from '../lib/repositories'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { posthog } from '../services/posthog'
 
 const isWeb = Platform.OS === 'web'
+const authRepository = new AuthRepository()
+const userRepository = new UserRepository()
+
+function clearAuthState(set: (partial: Partial<AuthState>) => void) {
+  set({
+    isAuthenticated: false,
+    user: null,
+    token: null,
+    refreshToken: null,
+    isLoading: false,
+    error: null,
+  })
+}
+
+async function persistSession(response: { token: string; refreshToken: string }) {
+  if (isWeb) return
+
+  await authRepository.setToken(response.token)
+  await authRepository.setRefreshToken(response.refreshToken)
+}
+
+function syncUserToSettings(user: User) {
+  if (user.timezone) {
+    try {
+      useSettingsStore.getState().setTimeZone(user.timezone)
+    } catch (e) {
+      console.error('Failed to sync timezone to settings store', e)
+      useSettingsStore.getState().setTimeZone('UTC')
+    }
+  }
+
+  if (user.measurements) {
+    try {
+      const { weightKg, heightCm } = user.measurements
+      useSettingsStore.getState().setBodyWeight(typeof weightKg === 'number' ? weightKg : null)
+      useSettingsStore.getState().setHeight(typeof heightCm === 'number' ? heightCm : null)
+    } catch (e) {
+      console.error('Failed to sync measurements to settings store', e)
+    }
+  }
+}
 
 interface AuthState {
   // State
@@ -54,39 +93,26 @@ export const useAuthStore = create<AuthState>()(
       // Actions
       loginWithWorkOS: async (code: string) => {
         try {
-          console.log('Handling WorkOS login on ' + (isWeb ? 'web' : 'native'));
-          
+          console.log('Handling WorkOS login on ' + (isWeb ? 'web' : 'native'))
+
           set({ isLoading: true, error: null })
 
-          const response = await apiService.workosLogin(code)
-          
-          // On native, store tokens locally; on web, httpOnly cookies are set by server
-          if (!isWeb) {
-            await apiService.setToken(response.token)
-            await apiService.setRefreshToken(response.refreshToken)
-            set({
-              token: response.token,
-              refreshToken: response.refreshToken,
-            })
-          }
+          const response = await authRepository.loginWithWorkOS(code)
+          await persistSession(response)
 
           set({
             isAuthenticated: true,
             isLoading: false,
+            token: isWeb ? null : response.token,
+            refreshToken: isWeb ? null : response.refreshToken,
           })
 
           await get().fetchUser()
           posthog.capture('user_logged_in', { method: 'workos' })
         } catch (error) {
           const apiError = error as ApiError
-          set({
-            isLoading: false,
-            error: apiError.message || 'WorkOS login failed',
-            isAuthenticated: false,
-            token: null,
-            refreshToken: null,
-            user: null,
-          })
+          clearAuthState(set)
+          set({ error: apiError.message || 'WorkOS login failed' })
           throw error
         }
       },
@@ -95,22 +121,15 @@ export const useAuthStore = create<AuthState>()(
           set({ isLoading: true, error: null })
 
           // Call login API
-          const response = await apiService.login(credentials)
-
-          // On native, store tokens locally; on web, httpOnly cookies are set by server
-          if (!isWeb) {
-            await apiService.setToken(response.token)
-            await apiService.setRefreshToken(response.refreshToken)
-            set({
-              token: response.token,
-              refreshToken: response.refreshToken,
-            })
-          }
+          const response = await authRepository.login(credentials)
+          await persistSession(response)
 
           // Update state
           set({
             isAuthenticated: true,
             isLoading: false,
+            token: isWeb ? null : response.token,
+            refreshToken: isWeb ? null : response.refreshToken,
           })
 
           // Fetch user data
@@ -119,14 +138,8 @@ export const useAuthStore = create<AuthState>()(
           posthog.capture('user_logged_in', {method: "email"})
         } catch (error) {
           const apiError = error as ApiError
-          set({
-            isLoading: false,
-            error: apiError.message || 'Login failed',
-            isAuthenticated: false,
-            token: null,
-            refreshToken: null,
-            user: null,
-          })
+          clearAuthState(set)
+          set({ error: apiError.message || 'Login failed' })
           throw error
         }
       },
@@ -135,21 +148,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null })
 
-          const response = await apiService.signup(payload)
-          
-          // On native, store tokens locally; on web, httpOnly cookies are set by server
-          if (!isWeb) {
-            await apiService.setToken(response.token)
-            await apiService.setRefreshToken(response.refreshToken)
-            set({
-              token: response.token,
-              refreshToken: response.refreshToken,
-            })
-          }
+          const response = await authRepository.register(payload)
+          await persistSession(response)
 
           set({
             isAuthenticated: true,
             isLoading: false,
+            token: isWeb ? null : response.token,
+            refreshToken: isWeb ? null : response.refreshToken,
           })
 
           await get().fetchUser()
@@ -158,14 +164,8 @@ export const useAuthStore = create<AuthState>()(
           posthog.capture('user_logged_in')
         } catch (error) {
           const apiError = error as ApiError
-          set({
-            isLoading: false,
-            error: apiError.message || 'Registration failed',
-            isAuthenticated: false,
-            token: null,
-            refreshToken: null,
-            user: null,
-          })
+          clearAuthState(set)
+          set({ error: apiError.message || 'Registration failed' })
           throw error
         }
       },
@@ -173,34 +173,21 @@ export const useAuthStore = create<AuthState>()(
       loginWithGoogle: async (idToken: string) => {
         try {
           set({ isLoading: true, error: null })
-          const response = await apiService.googleLogin(idToken)
-          
-          // On native, store tokens locally; on web, httpOnly cookies are set by server
-          if (!isWeb) {
-            await apiService.setToken(response.token)
-            await apiService.setRefreshToken(response.refreshToken)
-            set({
-              token: response.token,
-              refreshToken: response.refreshToken,
-            })
-          }
-          
+          const response = await authRepository.loginWithGoogle(idToken)
+          await persistSession(response)
+
           set({
             isAuthenticated: true,
             isLoading: false,
+            token: isWeb ? null : response.token,
+            refreshToken: isWeb ? null : response.refreshToken,
           })
           await get().fetchUser()
           posthog.capture('user_logged_in', { method: 'google' })
         } catch (error) {
           const apiError = error as ApiError
-          set({
-            isLoading: false,
-            error: apiError.message || 'Google login failed',
-            isAuthenticated: false,
-            token: null,
-            refreshToken: null,
-            user: null,
-          })
+          clearAuthState(set)
+          set({ error: apiError.message || 'Google login failed' })
           throw error
         }
       },
@@ -214,13 +201,7 @@ export const useAuthStore = create<AuthState>()(
           await clearDatabase()
 
           // Then clear auth state (this will be redundant for auth store but ensures consistency)
-          set({
-            isAuthenticated: false,
-            user: null,
-            token: null,
-            refreshToken: null,
-            error: null,
-          })
+          clearAuthState(set)
           posthog.reset()
         } catch (error) {
           console.error('Logout error:', error)
@@ -231,35 +212,14 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null })
 
-          const user = await apiService.getUser()
+          const user = await userRepository.getCurrentUser()
 
           set({
             user,
             isLoading: false,
           })
 
-          // Sync timezone into settings store if provided
-          if (user.timezone) {
-            try {
-              useSettingsStore.getState().setTimeZone(user.timezone)
-            } catch (e) {
-              console.error('Failed to sync timezone to settings store', e)
-              useSettingsStore.getState().setTimeZone('UTC')
-            }
-          }
-
-          // Sync measurements (kg/cm) into settings store if present
-          if (user.measurements) {
-            try {
-              const { weightKg, heightCm } = user.measurements
-              useSettingsStore
-                .getState()
-                .setBodyWeight(typeof weightKg === 'number' ? weightKg : null)
-              useSettingsStore.getState().setHeight(typeof heightCm === 'number' ? heightCm : null)
-            } catch (e) {
-              console.error('Failed to sync measurements to settings store', e)
-            }
-          }
+          syncUserToSettings(user)
         } catch (error) {
           const apiError = error as ApiError
 
@@ -279,31 +239,11 @@ export const useAuthStore = create<AuthState>()(
       updateUser: async (payload: UpdateUserRequest) => {
         try {
           set({ isLoading: true, error: null })
-          const updated = await apiService.updateCurrentUser(payload)
+          const updated = await userRepository.updateCurrentUser(payload)
           // Merge with existing state (server returns full user shape)
           set({ user: updated, isLoading: false })
 
-          // Sync timezone if changed
-          if (updated.timezone) {
-            try {
-              useSettingsStore.getState().setTimeZone(updated.timezone)
-            } catch (e) {
-              console.error('Failed to sync updated timezone', e)
-            }
-          }
-
-          // Sync measurements if present
-          if (updated.measurements) {
-            try {
-              const { weightKg, heightCm } = updated.measurements
-              useSettingsStore
-                .getState()
-                .setBodyWeight(typeof weightKg === 'number' ? weightKg : null)
-              useSettingsStore.getState().setHeight(typeof heightCm === 'number' ? heightCm : null)
-            } catch (e) {
-              console.error('Failed to sync updated measurements', e)
-            }
-          }
+          syncUserToSettings(updated)
           return updated
         } catch (error) {
           const apiError = error as ApiError
@@ -345,8 +285,8 @@ export const useAuthStore = create<AuthState>()(
 
 // Initialize auth state on app start
 export const initializeAuth = async () => {
-  const token = await apiService.getToken()
-  const refreshToken = await apiService.getRefreshToken()
+  const token = await authRepository.getToken()
+  const refreshToken = await authRepository.getRefreshToken()
   const { setToken, setRefreshToken, fetchUser } = useAuthStore.getState()
 
   if (token) {
