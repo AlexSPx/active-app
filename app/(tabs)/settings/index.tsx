@@ -1,11 +1,23 @@
 import React, { useState, useCallback } from 'react'
 import { YStack, XStack, Text, Paragraph, ScrollView, Button, Separator } from 'tamagui'
 import { Link, useFocusEffect } from 'expo-router'
-import { Ruler, Timer as TimerIcon, LogOut, ChevronRight, Globe, AlertTriangle, Settings, FileText, Shield, Bell } from '@tamagui/lucide-icons'
+import {
+  Ruler,
+  Timer as TimerIcon,
+  LogOut,
+  ChevronRight,
+  Globe,
+  AlertTriangle,
+  Settings,
+  FileText,
+  Shield,
+  Bell,
+} from '@tamagui/lucide-icons'
 import { useAuth } from '../../../contexts/AuthContext'
 import { Platform, NativeModules } from 'react-native'
 import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
+import Constants from 'expo-constants'
 import * as Haptics from 'expo-haptics'
 
 export function MenuRow({
@@ -36,7 +48,9 @@ export function MenuRow({
       <XStack gap="$3" flex={1} style={{ alignItems: 'center' }}>
         {icon}
         <YStack flex={1} gap="$1">
-          <Text fontWeight="700" color={danger ? 'white' : '$color'}>{title}</Text>
+          <Text fontWeight="700" color={danger ? 'white' : '$color'}>
+            {title}
+          </Text>
           {description && (
             <Paragraph size="$2" color={danger ? 'white' : '$color11'}>
               {description}
@@ -85,7 +99,7 @@ export default function SettingsMenuScreen() {
 
   const checkAndroidPermissions = async () => {
     if (Platform.OS !== 'android') return
-    
+
     try {
       const { ExactAlarm } = NativeModules
       if (ExactAlarm) {
@@ -116,7 +130,6 @@ export default function SettingsMenuScreen() {
     Linking.sendIntent(action, [{ key: 'data', value: alarmSettingsUri }])
   }
 
-
   const fullName = user
     ? [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || user.email
     : 'User'
@@ -129,6 +142,8 @@ export default function SettingsMenuScreen() {
     const lastChar = last ? last.charAt(0) : ''
     return (firstChar + lastChar).toUpperCase()
   }, [user])
+  const appVersion =
+    Application.nativeApplicationVersion || Constants.expoConfig?.version || 'Unknown'
   return (
     <YStack flex={1} bg="$background">
       <ScrollView flex={1} showsVerticalScrollIndicator={false}>
@@ -176,10 +191,12 @@ export default function SettingsMenuScreen() {
             >
               <XStack gap="$3" style={{ alignItems: 'center' }}>
                 <YStack bg="$surfacePress" p="$2" style={{ borderRadius: 8 }}>
-                   <AlertTriangle size={20} color="$secondary" />
+                  <AlertTriangle size={20} color="$secondary" />
                 </YStack>
                 <YStack flex={1} gap="$1">
-                  <Text fontWeight="700" color="$secondary">Permission Required</Text>
+                  <Text fontWeight="700" color="$secondary">
+                    Permission Required
+                  </Text>
                   <Paragraph size="$2" color="$color11">
                     Allow "Alarms & Reminders" for precise notifications. Tap to fix.
                   </Paragraph>
@@ -259,6 +276,10 @@ export default function SettingsMenuScreen() {
             }}
             danger
           />
+
+          <Text fontSize="$2" color="$color10" text="center">
+            App Version {appVersion}
+          </Text>
         </YStack>
       </ScrollView>
     </YStack>

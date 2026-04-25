@@ -5,7 +5,8 @@ import { Platform } from 'react-native'
 import { useSettingsStore } from '../features/settings'
 import { resetAllStores } from '../utils/storeReset'
 import { clearDatabase } from '../lib/db/connection'
-import { AuthRepository, UserRepository } from '../lib/repositories'
+import { AuthRepository, UserRepository } from 'lib/repositories'
+
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { posthog } from '../services/posthog'
 
@@ -135,7 +136,7 @@ export const useAuthStore = create<AuthState>()(
           // Fetch user data
           await get().fetchUser()
 
-          posthog.capture('user_logged_in', {method: "email"})
+          posthog.capture('user_logged_in', { method: 'email' })
         } catch (error) {
           const apiError = error as ApiError
           clearAuthState(set)
