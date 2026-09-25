@@ -157,7 +157,7 @@ export default function EditWorkoutScreen() {
         router.replace('/(tabs)/(workouts)')
         return
       }
-      const success = await updateWorkoutMutation(workoutId, payload)
+      const success = await updateWorkoutMutation(workoutId, payload, selectedExercises)
       if (success) {
         clearExercises()
         router.replace('/(tabs)/(workouts)')

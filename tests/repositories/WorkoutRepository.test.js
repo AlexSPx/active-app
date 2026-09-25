@@ -25,19 +25,46 @@ describe('WorkoutRepository', () => {
       template: {
         exercises: [
           {
-            exerciseId: 'barbell_bench_press',
+            exerciseId: 'exercise_1',
             reps: [5, 5, 5],
             weight: [100, 100, 100],
           },
         ],
       },
     }
+    const selectedExercises = [
+      {
+        id: 'exercise_1',
+        name: 'Barbell Bench Press',
+        category: 'POWERLIFTING',
+        primaryMuscles: ['chest'],
+        secondaryMuscles: ['triceps', 'shoulders'],
+      },
+    ]
 
-    const created = await repo.create(payload)
+    const created = await repo.create(payload, selectedExercises)
 
     expect(created.title).toBe('Upper Body')
     expect(created.id).toMatch(/^local_/)
-    expect(created.workoutTemplate.exercises[0].exerciseId).toBe('barbell_bench_press')
+    expect(created.workoutTemplate.exercises[0]).toMatchObject({
+      exerciseId: 'exercise_1',
+      exerciseTitle: 'Barbell Bench Press',
+      category: 'POWERLIFTING',
+      primaryMuscles: ['chest'],
+      secondaryMuscles: ['triceps', 'shoulders'],
+    })
+    await expect(repo.getById(created.id)).resolves.toMatchObject({
+      workoutTemplate: {
+        exercises: [
+          {
+            exerciseTitle: 'Barbell Bench Press',
+            category: 'POWERLIFTING',
+            primaryMuscles: ['chest'],
+            secondaryMuscles: ['triceps', 'shoulders'],
+          },
+        ],
+      },
+    })
 
     const rows = db.getTableRows('workouts')
     expect(rows).toHaveLength(1)
@@ -76,9 +103,27 @@ describe('WorkoutRepository', () => {
     const updatePayload = {
       title: 'Updated Title',
       notes: 'Updated Notes',
+      template: {
+        exercises: [
+          {
+            exerciseId: 'exercise_2',
+            reps: [8],
+            weight: [30],
+          },
+        ],
+      },
     }
+    const selectedExercises = [
+      {
+        id: 'exercise_2',
+        name: 'Bench Dips',
+        category: 'STRENGTH',
+        primaryMuscles: ['triceps'],
+        secondaryMuscles: ['chest', 'shoulders'],
+      },
+    ]
 
-    await repo.update('workout_1', updatePayload)
+    await repo.update('workout_1', updatePayload, selectedExercises)
 
     const updated = db.tables.workouts.get('workout_1')
     expect(updated).toMatchObject({
@@ -87,6 +132,19 @@ describe('WorkoutRepository', () => {
       is_synced: 0,
     })
     expect(updated.updated_at).not.toBe('2026-04-24T10:00:00.000Z')
+    await expect(repo.getById('workout_1')).resolves.toMatchObject({
+      workoutTemplate: {
+        exercises: [
+          {
+            exerciseId: 'exercise_2',
+            exerciseTitle: 'Bench Dips',
+            category: 'STRENGTH',
+            primaryMuscles: ['triceps'],
+            secondaryMuscles: ['chest', 'shoulders'],
+          },
+        ],
+      },
+    })
 
     expect(syncEngine.enqueue).toHaveBeenCalledWith({
       apiMethod: 'updateWorkout',

@@ -103,25 +103,7 @@ export const loginResponseSchema = z.object({
 // Workout Schemas
 // ==========================================
 
-export const muscleGroupSchema = z.enum([
-  'ABDOMINALS',
-  'ABDUCTORS',
-  'ADDUCTORS',
-  'BICEPS',
-  'CALVES',
-  'CHEST',
-  'FOREARMS',
-  'GLUTES',
-  'HAMSTRINGS',
-  'LATS',
-  'LOWER_BACK',
-  'MIDDLE_BACK',
-  'NECK',
-  'QUADRICEPS',
-  'SHOULDERS',
-  'TRAPS',
-  'TRICEPS',
-])
+export const muscleGroupSchema = z.string()
 
 export const workoutExerciseSchema = z
   .object({

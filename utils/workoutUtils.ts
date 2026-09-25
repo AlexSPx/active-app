@@ -145,8 +145,8 @@ export const apiWorkoutToEditableExercises = (workout: ApiWorkout): CreateWorkou
     force: 'PUSH',
     mechanic: 'COMPOUND',
     equipment: 'OTHER',
-    primaryMuscles: ['OTHER'],
-    secondaryMuscles: [],
+    primaryMuscles: ex.primaryMuscles || [],
+    secondaryMuscles: ex.secondaryMuscles || [],
     instructions: [],
     category: ex.category,
     sets:

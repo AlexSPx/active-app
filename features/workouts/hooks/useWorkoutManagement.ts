@@ -35,8 +35,8 @@ export function useWorkoutManagement(): UseWorkoutManagementActions {
         force: 'PUSH' as const,
         mechanic: 'COMPOUND' as const,
         equipment: 'OTHER' as const,
-        primaryMuscles: ['OTHER'],
-        secondaryMuscles: [],
+        primaryMuscles: exercise.primaryMuscles || [],
+        secondaryMuscles: exercise.secondaryMuscles || [],
         instructions: [],
         category: exercise.category,
         sets:
