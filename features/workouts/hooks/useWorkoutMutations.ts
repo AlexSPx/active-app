@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import type { CreateWorkoutRequest, Workout } from '../../../types/workout'
-import type { UpdateWorkoutRequest } from '../../../types/api'
+import type { ApiExercise, CreateWorkoutRequest, UpdateWorkoutRequest } from '../../../types/api'
+import type { Workout } from '../../../types/workout'
 import { queryKeys } from '../../../lib/queryKeys'
 import { useWorkoutRepository } from '../../../lib/hooks/useRepository'
 
@@ -9,8 +9,14 @@ export function useWorkoutMutations() {
   const repo = useWorkoutRepository()
 
   const createMutation = useMutation({
-    mutationFn: async (workout: CreateWorkoutRequest): Promise<Workout> => {
-      const created = await repo.create(workout)
+    mutationFn: async ({
+      workout,
+      exercises,
+    }: {
+      workout: CreateWorkoutRequest
+      exercises: ApiExercise[]
+    }): Promise<Workout> => {
+      const created = await repo.create(workout, exercises)
 
       return {
         id: created.id,
@@ -26,8 +32,16 @@ export function useWorkoutMutations() {
   })
 
   const updateMutation = useMutation({
-    mutationFn: async ({ workoutId, payload }: { workoutId: string; payload: UpdateWorkoutRequest }): Promise<void> => {
-      await repo.update(workoutId, payload)
+    mutationFn: async ({
+      workoutId,
+      payload,
+      exercises,
+    }: {
+      workoutId: string
+      payload: UpdateWorkoutRequest
+      exercises: ApiExercise[]
+    }): Promise<void> => {
+      await repo.update(workoutId, payload, exercises)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
@@ -52,9 +66,12 @@ export function useWorkoutMutations() {
     },
   })
 
-  const createWorkout = async (workout: CreateWorkoutRequest): Promise<Workout | null> => {
+  const createWorkout = async (
+    workout: CreateWorkoutRequest,
+    exercises: ApiExercise[]
+  ): Promise<Workout | null> => {
     try {
-      return await createMutation.mutateAsync(workout)
+      return await createMutation.mutateAsync({ workout, exercises })
     } catch (error: any) {
       console.error('Error creating workout:', error)
       // Throw error to let the caller handle it and show exact message
@@ -62,9 +79,13 @@ export function useWorkoutMutations() {
     }
   }
 
-  const updateWorkout = async (workoutId: string, payload: UpdateWorkoutRequest): Promise<boolean> => {
+  const updateWorkout = async (
+    workoutId: string,
+    payload: UpdateWorkoutRequest,
+    exercises: ApiExercise[]
+  ): Promise<boolean> => {
     try {
-      await updateMutation.mutateAsync({ workoutId, payload })
+      await updateMutation.mutateAsync({ workoutId, payload, exercises })
       return true
     } catch (error) {
       console.error('Error updating workout:', error)

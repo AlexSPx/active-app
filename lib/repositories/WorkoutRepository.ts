@@ -6,9 +6,11 @@
  */
 import { BaseRepository } from './BaseRepository'
 import type {
+  ApiExercise,
   ApiWorkout,
   ApiWorkoutTemplate,
   CreateWorkoutRequest,
+  TemplateExercise,
   UpdateWorkoutRequest,
   WorkoutRecord,
   WorkoutRecordExercise,
@@ -66,22 +68,16 @@ export class WorkoutRepository extends BaseRepository {
   // Workouts — Writes
   // -------------------------------------------------------------------------
 
-  async create(workout: CreateWorkoutRequest): Promise<ApiWorkout> {
+  async create(
+    workout: CreateWorkoutRequest,
+    selectedExercises: ApiExercise[]
+  ): Promise<ApiWorkout> {
     const localId = this.generateLocalId()
     const now = new Date().toISOString()
 
     const templatePayload: ApiWorkoutTemplate = {
       id: localId,
-      exercises: (workout.template?.exercises || []).map((ex) => ({
-        exerciseId: ex.exerciseId,
-        exerciseTitle: ex.exerciseId.replace(/_/g, ' '),
-        reps: ex.reps || [],
-        weight: ex.weight || [],
-        durationSeconds: ex.durationSeconds || null,
-        category: 'STRENGTH' as const, // Default; server will resolve canonical value
-        primaryMuscles: [],
-        secondaryMuscles: [],
-      })),
+      exercises: this.withExerciseMetadata(workout.template.exercises, selectedExercises),
       createdAt: now,
       updatedAt: now,
     }
@@ -117,7 +113,11 @@ export class WorkoutRepository extends BaseRepository {
     })
   }
 
-  async update(workoutId: string, payload: UpdateWorkoutRequest): Promise<void> {
+  async update(
+    workoutId: string,
+    payload: UpdateWorkoutRequest,
+    selectedExercises: ApiExercise[]
+  ): Promise<void> {
     const sets: string[] = []
     const vals: any[] = []
 
@@ -130,8 +130,17 @@ export class WorkoutRepository extends BaseRepository {
       vals.push(payload.notes || null)
     }
     if (payload.template) {
+      const current = await this.getById(workoutId)
+      const now = new Date().toISOString()
       sets.push('workout_template = ?')
-      vals.push(JSON.stringify(payload.template))
+      vals.push(
+        JSON.stringify({
+          id: current?.workoutTemplate.id || workoutId,
+          exercises: this.withExerciseMetadata(payload.template.exercises, selectedExercises),
+          createdAt: current?.workoutTemplate.createdAt || now,
+          updatedAt: now,
+        })
+      )
     }
 
     sets.push('is_synced = ?')
@@ -330,6 +339,28 @@ export class WorkoutRepository extends BaseRepository {
       updatedAt: row.updated_at || row.created_at,
       workoutTemplate: template,
     }
+  }
+
+  private withExerciseMetadata(
+    templateExercises: TemplateExercise[],
+    selectedExercises: ApiExercise[]
+  ): ApiWorkoutTemplate['exercises'] {
+    const exercisesById = new Map(selectedExercises.map((exercise) => [exercise.id, exercise]))
+    return templateExercises.map((exercise) => {
+      const details = exercisesById.get(exercise.exerciseId)
+      if (!details) throw new Error(`Missing selected exercise: ${exercise.exerciseId}`)
+
+      return {
+        exerciseId: exercise.exerciseId,
+        exerciseTitle: details.name,
+        reps: exercise.reps || [],
+        weight: exercise.weight || [],
+        durationSeconds: exercise.durationSeconds || null,
+        category: details.category,
+        primaryMuscles: details.primaryMuscles,
+        secondaryMuscles: details.secondaryMuscles,
+      }
+    })
   }
 
   private rowToRecord = (row: WorkoutRecordRow): WorkoutRecord => {

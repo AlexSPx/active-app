@@ -36,8 +36,8 @@ const HEAT_MAP_COLORS = [
 ]
 
 interface MuscleHeatMapProps {
-  primaryMuscles: MuscleGroup[]
-  secondaryMuscles: MuscleGroup[]
+  primaryMuscles: string[]
+  secondaryMuscles: string[]
   scale?: number
 }
 
@@ -52,7 +52,7 @@ export const MuscleHeatMap = memo(function MuscleHeatMap({
     const muscleScoreMap = new Map<string, number>()
 
     for (const muscle of secondaryMuscles) {
-      const slugs = muscleToSlug[muscle]
+      const slugs = muscleToSlug[muscle.replace(/[\s-]+/g, '_').toUpperCase() as MuscleGroup]
       if (slugs) {
         slugs.forEach(slug => {
           const current = muscleScoreMap.get(slug) || 0
@@ -62,7 +62,7 @@ export const MuscleHeatMap = memo(function MuscleHeatMap({
     }
 
     for (const muscle of primaryMuscles) {
-      const slugs = muscleToSlug[muscle]
+      const slugs = muscleToSlug[muscle.replace(/[\s-]+/g, '_').toUpperCase() as MuscleGroup]
       if (slugs) {
         slugs.forEach(slug => {
           const current = muscleScoreMap.get(slug) || 0

@@ -75,7 +75,7 @@ export default function NewWorkoutScreen() {
         selectedExercises,
         data.notes
       )
-      const result = await createWorkout(createWorkoutRequest)
+      const result = await createWorkout(createWorkoutRequest, selectedExercises)
 
       if (result) {
         console.log('Workout created successfully:', result.id)

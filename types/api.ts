@@ -134,8 +134,8 @@ export interface ApiWorkoutExercise {
   weight: number[]
   durationSeconds?: number[] | null
   category: ApiExercise['category']
-  primaryMuscles?: MuscleGroup[]
-  secondaryMuscles?: MuscleGroup[]
+  primaryMuscles?: string[]
+  secondaryMuscles?: string[]
 }
 
 export interface ApiWorkoutTemplate {
