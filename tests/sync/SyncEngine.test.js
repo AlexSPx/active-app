@@ -1,10 +1,121 @@
 jest.mock('../../services/apiService', () => ({
   apiService: {},
 }))
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+)
+jest.mock('../../services/posthog', () => ({
+  posthog: { capture: jest.fn() },
+}))
 
-const { createApi, makeJob, runQueue } = require('../helpers/syncTestUtils')
+const { createApi, makeJob, runQueue, FakeDb } = require('../helpers/syncTestUtils')
 
 describe('SyncEngine queue remapping', () => {
+  it('serializes record saves behind an in-flight ID remap', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const engine = new SyncEngine({
+      api: createApi(),
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    const order = []
+    let releaseRemap
+    const remapGate = new Promise((resolve) => {
+      releaseRemap = resolve
+    })
+
+    const remap = engine.withIdRemapLock(async () => {
+      order.push('remap-start')
+      await remapGate
+      order.push('remap-end')
+    })
+    await Promise.resolve()
+    const save = engine.withIdRemapLock(async () => order.push('record-save'))
+    await Promise.resolve()
+
+    expect(order).toEqual(['remap-start'])
+    releaseRemap()
+    await Promise.all([remap, save])
+    expect(order).toEqual(['remap-start', 'remap-end', 'record-save'])
+  })
+
+  it('updates an active session when its workout receives a server id', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const {
+      useRunningWorkoutStore,
+      remapRunningWorkoutId,
+    } = require('../../features/workout-session/stores/runningWorkoutStore')
+    const { queryClient } = require('../../lib/queryClient')
+    const { queryKeys } = require('../../lib/queryKeys')
+    const { replaceQueuedIdReferences } = require('../../lib/sync/queuePayloadRemap')
+    const oldId = 'local_workout_active'
+
+    useRunningWorkoutStore.setState({
+      runningWorkout: {
+        id: oldId,
+        name: 'Workout',
+        startTime: '2026-09-26T10:00:00.000Z',
+        exercises: [],
+        currentExerciseIndex: 0,
+        completedExercises: 0,
+      },
+    })
+    queryClient.setQueryData(queryKeys.workouts.list(), [
+      { id: oldId, workoutTemplate: { id: oldId, exercises: [] } },
+    ])
+
+    const engine = new SyncEngine({
+      api: createApi({ createWorkout: jest.fn(async () => ({ id: 'server_workout_active' })) }),
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    engine.onIdRemap((tableName, from, to) => {
+      if (tableName !== 'workouts') return
+
+      remapRunningWorkoutId(from, to)
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.workouts.all },
+        (data) => replaceQueuedIdReferences(data, from, to).value
+      )
+    })
+    const db = new FakeDb({
+      tables: { workouts: [oldId], routines: ['routine_active'] },
+      jobs: [
+        makeJob({
+          id: 'job-create-active-workout',
+          endpoint: 'createWorkout',
+          payload: { title: 'Workout', template: { exercises: [] } },
+          localTable: 'workouts',
+          localId: oldId,
+        }),
+      ],
+    })
+    db.tables.workouts.get(oldId).workout_template = JSON.stringify({ id: oldId, exercises: [] })
+    db.tables.routines.get('routine_active').pattern = JSON.stringify([
+      { dayIndex: 1, dayType: 'WORKOUT', workoutId: oldId },
+    ])
+
+    await engine.init(db, { processOnInit: false })
+    await engine.processQueue()
+
+    expect(engine.resolveId('workouts', oldId)).toBe('server_workout_active')
+    expect(useRunningWorkoutStore.getState().runningWorkout.id).toBe('server_workout_active')
+    expect(queryClient.getQueryData(queryKeys.workouts.list())[0]).toMatchObject({
+      id: 'server_workout_active',
+      workoutTemplate: { id: 'server_workout_active' },
+    })
+    expect(JSON.parse(db.tables.workouts.get('server_workout_active').workout_template)).toEqual({
+      id: 'server_workout_active',
+      exercises: [],
+    })
+    expect(JSON.parse(db.tables.routines.get('routine_active').pattern)[0].workoutId).toBe(
+      'server_workout_active'
+    )
+    engine.destroy()
+    useRunningWorkoutStore.setState({ runningWorkout: null })
+    queryClient.removeQueries({ queryKey: queryKeys.workouts.all })
+  })
+
   it('rewrites queued workout updates after an offline workout create', async () => {
     const api = createApi({
       createWorkout: jest.fn(async () => ({ id: 'server_workout_1' })),
@@ -35,6 +146,134 @@ describe('SyncEngine queue remapping', () => {
     expect(api.updateWorkout).toHaveBeenCalledWith('server_workout_1', {
       title: 'Heavy Leg Day',
     })
+  })
+
+  it('restores workout ID aliases from SQLite after a process restart', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const db = new FakeDb({
+      tables: { workouts: ['local_workout_restart'] },
+      jobs: [
+        makeJob({
+          id: 'job-create-workout-restart',
+          endpoint: 'createWorkout',
+          payload: { title: 'Restart', template: { exercises: [] } },
+          localTable: 'workouts',
+          localId: 'local_workout_restart',
+        }),
+      ],
+    })
+    const deps = {
+      api: createApi({ createWorkout: jest.fn(async () => ({ id: 'server_workout_restart' })) }),
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    }
+    const firstProcess = new SyncEngine(deps)
+    await firstProcess.init(db, { processOnInit: false })
+    await firstProcess.processQueue()
+
+    const nextProcess = new SyncEngine(deps)
+    const replayedRemaps = []
+    nextProcess.onIdRemap((table, oldId, newId) => replayedRemaps.push([table, oldId, newId]))
+    await nextProcess.init(db, { processOnInit: false })
+
+    expect(nextProcess.resolveId('workouts', 'local_workout_restart')).toBe(
+      'server_workout_restart'
+    )
+    expect(replayedRemaps).toContainEqual([
+      'workouts',
+      'local_workout_restart',
+      'server_workout_restart',
+    ])
+    firstProcess.destroy()
+    nextProcess.destroy()
+  })
+
+  it('remaps existing history references before foreign key checks resume', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const oldId = 'local_workout_with_history'
+    const db = new FakeDb({
+      enforceForeignKeys: true,
+      tables: { workouts: [oldId] },
+      jobs: [
+        makeJob({
+          id: 'job-create-workout-with-history',
+          endpoint: 'createWorkout',
+          payload: { title: 'History', template: { exercises: [] } },
+          localTable: 'workouts',
+          localId: oldId,
+        }),
+      ],
+    })
+    db.tables.workout_records.set('record_existing', {
+      id: 'record_existing',
+      workout_id: oldId,
+      workout_title: 'History',
+    })
+    const engine = new SyncEngine({
+      api: createApi({
+        createWorkout: jest.fn(async () => ({ id: 'server_workout_with_history' })),
+      }),
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+
+    await engine.init(db, { processOnInit: false })
+    await engine.processQueue()
+
+    expect(db.tables.workout_records.get('record_existing').workout_id).toBe(
+      'server_workout_with_history'
+    )
+    await expect(
+      db.runAsync(
+        'INSERT INTO workout_records (id, workout_id, workout_title, notes, created_at, start_time, exercise_records, is_synced) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        'record_stale',
+        oldId,
+        'History',
+        null,
+        '2026-09-27T10:00:00Z',
+        null,
+        '[]',
+        0
+      )
+    ).rejects.toThrow('FOREIGN KEY constraint failed')
+    engine.destroy()
+  })
+
+  it('merges a local workout when hydration already inserted its server row', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const oldId = 'local_workout_hydration_race'
+    const serverId = 'server_workout_hydration_race'
+    const db = new FakeDb({
+      enforceForeignKeys: true,
+      tables: { workouts: [oldId, serverId] },
+      jobs: [
+        makeJob({
+          id: 'job-create-workout-hydration-race',
+          endpoint: 'createWorkout',
+          payload: { title: 'Raced import', template: { exercises: [] } },
+          localTable: 'workouts',
+          localId: oldId,
+        }),
+      ],
+    })
+    db.tables.workout_records.set('record_hydration_race', {
+      id: 'record_hydration_race',
+      workout_id: oldId,
+      workout_title: 'Raced import',
+    })
+    const engine = new SyncEngine({
+      api: createApi({ createWorkout: jest.fn(async () => ({ id: serverId })) }),
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+
+    await engine.init(db, { processOnInit: false })
+    await engine.processQueue()
+
+    expect(db.tables.workouts.has(oldId)).toBe(false)
+    expect(db.tables.workouts.has(serverId)).toBe(true)
+    expect(db.tables.workout_records.get('record_hydration_race').workout_id).toBe(serverId)
+    engine.destroy()
   })
 
   it('rewrites queued workout records after an offline workout create', async () => {

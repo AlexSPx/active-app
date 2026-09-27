@@ -16,10 +16,13 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useSettingsStore } from '../features/settings'
 import { posthog } from '../services/posthog'
 import { queryClient } from '../lib/queryClient'
+import { queryKeys } from '../lib/queryKeys'
 import { syncEngine } from '../lib/sync'
+import { replaceQueuedIdReferences } from '../lib/sync/queuePayloadRemap'
 import { hydrateFromServer } from '../lib/sync/hydrate'
 import { setSharedDatabase } from '../lib/db/connection'
 import { useAuthStore } from '../stores/authStore'
+import { remapRunningWorkoutId } from '../features/workout-session/stores/runningWorkoutStore'
 
 // Track which DB instances have already been hydrated to avoid double-runs
 const hydratedDbs = new WeakSet<object>()
@@ -40,8 +43,21 @@ function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
 
   // On mount: init SyncEngine (drains leftover queue from previous session)
   useEffect(() => {
+    const unsubscribeIdRemap = syncEngine.onIdRemap((tableName, oldId, newId) => {
+      if (tableName !== 'workouts') return
+
+      remapRunningWorkoutId(oldId, newId)
+      for (const queryKey of [queryKeys.workouts.all, queryKeys.routines.all]) {
+        queryClient.setQueriesData({ queryKey }, (data) =>
+          replaceQueuedIdReferences(data, oldId, newId).value
+        )
+      }
+    })
     syncEngine.init(db).catch(console.error)
-    return () => { syncEngine.destroy() }
+    return () => {
+      unsubscribeIdRemap()
+      syncEngine.destroy()
+    }
   }, [db])
 
   // Whenever auth state transitions to authenticated, hydrate and invalidate

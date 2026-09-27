@@ -1,6 +1,8 @@
 jest.mock('../../lib/sync', () => ({
   syncEngine: {
     enqueue: jest.fn(async () => undefined),
+    withIdRemapLock: jest.fn((operation) => operation()),
+    resolveId: jest.fn((_table, id) => id),
   },
 }))
 
@@ -152,6 +154,38 @@ describe('WorkoutRepository', () => {
     })
   })
 
+  it('resolves remapped IDs for workout updates and deletes', async () => {
+    db.tables.workouts.set('server_workout_4', {
+      id: 'server_workout_4',
+      title: 'Before update',
+      notes: null,
+      created_at: '2026-04-24T10:00:00.000Z',
+      updated_at: '2026-04-24T10:00:00.000Z',
+      workout_template: '{}',
+      is_synced: 1,
+      synced_at: null,
+    })
+    syncEngine.resolveId
+      .mockReturnValueOnce('server_workout_4')
+      .mockReturnValueOnce('server_workout_4')
+    const payload = { title: 'After update' }
+
+    await repo.update('local_workout_4', payload, [])
+    expect(db.tables.workouts.get('server_workout_4').title).toBe('After update')
+    await repo.delete('local_workout_4')
+
+    expect(db.tables.workouts.has('server_workout_4')).toBe(false)
+    expect(syncEngine.withIdRemapLock).toHaveBeenCalledTimes(2)
+    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(1, {
+      apiMethod: 'updateWorkout',
+      payload: ['server_workout_4', payload],
+    })
+    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(2, {
+      apiMethod: 'deleteWorkout',
+      payload: ['server_workout_4'],
+    })
+  })
+
   it('records a workout locally and enqueues recordWorkout', async () => {
     const recordRequest = {
       workoutId: 'workout_2',
@@ -196,6 +230,33 @@ describe('WorkoutRepository', () => {
       localTable: 'workout_records',
       localId: result.workoutRecord.id,
     })
+  })
+
+  it('removes the local workout record if it cannot be queued', async () => {
+    const recordRequest = {
+      workoutId: 'workout_2',
+      exerciseRecords: [],
+    }
+    syncEngine.enqueue.mockRejectedValueOnce(new Error('queue unavailable'))
+
+    await expect(repo.recordWorkout(recordRequest, 'Pull Day')).rejects.toThrow('queue unavailable')
+    expect(db.getTableRows('workout_records')).toHaveLength(0)
+  })
+
+  it('uses the remapped workout ID for the saved record and its queue job', async () => {
+    syncEngine.resolveId.mockReturnValueOnce('server_workout_2')
+    const request = { workoutId: 'local_workout_2', exerciseRecords: [] }
+
+    const result = await repo.recordWorkout(request, 'Pull Day')
+
+    expect(result.workoutRecord.workoutId).toBe('server_workout_2')
+    expect(db.getTableRows('workout_records')[0].workout_id).toBe('server_workout_2')
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      expect.objectContaining({
+        apiMethod: 'recordWorkout',
+        payload: { ...request, workoutId: 'server_workout_2' },
+      }),
+    )
   })
 
   it('deletes local workout rows and enqueues delete operations', async () => {

@@ -1,6 +1,8 @@
 jest.mock('../../lib/sync', () => ({
   syncEngine: {
     enqueue: jest.fn(async () => undefined),
+    withIdRemapLock: jest.fn((operation) => operation()),
+    resolveId: jest.fn((_table, id) => id),
   },
 }))
 
@@ -14,6 +16,7 @@ describe('RoutineRepository', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    syncEngine.resolveId.mockImplementation((_table, id) => id)
     db = new FakeDb()
     repo = new RoutineRepository(db)
   })
@@ -55,6 +58,29 @@ describe('RoutineRepository', () => {
       localTable: 'routines',
       localId: created.id,
     })
+  })
+
+  it('resolves workout IDs when an open routine form saves after sync remaps them', async () => {
+    syncEngine.resolveId.mockImplementation((_table, id) =>
+      id === 'local_workout_open_form' ? 'server_workout_open_form' : id
+    )
+    const pattern = [{ dayIndex: 1, dayType: 'WORKOUT', workoutId: 'local_workout_open_form' }]
+
+    const created = await repo.create({ name: 'Routine', pattern })
+    await repo.update(created.id, { pattern })
+
+    expect(JSON.parse(db.tables.routines.get(created.id).pattern)[0].workoutId).toBe(
+      'server_workout_open_form'
+    )
+    expect(syncEngine.enqueue).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        apiMethod: 'updateRoutine',
+        payload: [
+          created.id,
+          { pattern: [{ ...pattern[0], workoutId: 'server_workout_open_form' }] },
+        ],
+      })
+    )
   })
 
   it('updates the local routine row and enqueues updateRoutine', async () => {

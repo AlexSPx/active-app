@@ -2,9 +2,14 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import type { ApiExercise } from '../../../types/api'
-import type { WorkoutRecordRequest, ExerciseRecord, WorkoutRecordResponse } from '../../../types/api'
+import type {
+  WorkoutRecordRequest,
+  ExerciseRecord,
+  WorkoutRecordResponse,
+} from '../../../types/api'
 import { WorkoutRepository } from '../../../lib/repositories/WorkoutRepository'
 import { getDatabase } from '../../../lib/db/connection'
+import { syncEngine } from '../../../lib/sync'
 import type { FinishedCongratsPayload } from '../../../types/congrats'
 import { haptics } from '../../../utils/haptics'
 import { posthog } from '../../../services/posthog'
@@ -91,7 +96,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
 
       stopWorkout: async (notes?: string) => {
         const state = get()
-        if (!state.runningWorkout) return
+        if (!state.runningWorkout || state.isRecording) return
 
         try {
           set({ isRecording: true, recordingError: null })
@@ -147,9 +152,10 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           // This guarantees no data loss even if the app is offline.
           const db = await getDatabase()
           const workoutRepo = new WorkoutRepository(db)
+          const workoutId = get().runningWorkout?.id ?? workoutRecord.workoutId
           const result = await workoutRepo.recordWorkout(
-            workoutRecord,
-            state.runningWorkout.name || 'Workout',
+            { ...workoutRecord, workoutId },
+            state.runningWorkout.name || 'Workout'
           )
 
           // Clear the running workout after successful local save
@@ -157,7 +163,8 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           haptics.success()
 
           posthog.capture('workout_completed', {
-            duration_seconds: (Date.now() - new Date(state.runningWorkout.startTime).getTime()) / 1000,
+            duration_seconds:
+              (Date.now() - new Date(state.runningWorkout.startTime).getTime()) / 1000,
             total_exercises: state.runningWorkout.exercises.length,
           })
 
@@ -175,7 +182,8 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         const state = get()
         if (state.runningWorkout) {
           posthog.capture('workout_cancelled', {
-            duration_seconds: (Date.now() - new Date(state.runningWorkout.startTime).getTime()) / 1000,
+            duration_seconds:
+              (Date.now() - new Date(state.runningWorkout.startTime).getTime()) / 1000,
             total_exercises: state.runningWorkout.exercises.length,
           })
         }
@@ -357,6 +365,23 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         runningWorkout: state.runningWorkout,
         recordingError: state.recordingError,
       }),
+      onRehydrateStorage: () => (state) => {
+        // Startup sync can remap a workout before AsyncStorage restores its session.
+        const workout = state?.runningWorkout
+        if (!workout) return
+
+        const resolvedId = syncEngine.resolveId('workouts', workout.id)
+        if (resolvedId !== workout.id) remapRunningWorkoutId(workout.id, resolvedId)
+      },
     }
   )
 )
+
+export function remapRunningWorkoutId(oldId: string, newId: string): void {
+  const runningWorkout = useRunningWorkoutStore.getState().runningWorkout
+  if (runningWorkout?.id !== oldId) return
+
+  useRunningWorkoutStore.setState({
+    runningWorkout: { ...runningWorkout, id: newId },
+  })
+}
