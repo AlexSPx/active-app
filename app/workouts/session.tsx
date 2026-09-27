@@ -1,4 +1,5 @@
 import { useTheme, View, YStack } from 'tamagui'
+import { useToastController } from '@tamagui/toast'
 import { FlashList } from '@shopify/flash-list'
 
 import { WorkoutSessionExercise, WorkoutSessionHeader, WorkoutActions, useWorkoutSession, RestTimerOverlay } from '../../features/workout-session'
@@ -32,6 +33,7 @@ export default function WorkoutSessionScreen() {
   } = useWorkoutSession()
 
   const showFinishedCongrats = useUiStore((s) => s.showFinishedCongrats)
+  const toast = useToastController()
 
   const renderExercise = ({ item: exercise }: { item: Exercise }) => (
     <WorkoutSessionExercise
@@ -57,9 +59,15 @@ export default function WorkoutSessionScreen() {
       <WorkoutActions
         onFinishWorkout={async () => {
           const resp = await finishWorkout()
-          if (resp) {
-            showFinishedCongrats(resp.workoutRecord, resp.streakUpdate)
+          if (!resp) {
+            toast.show('Workout not saved', {
+              message: 'Your session is still in progress. Tap Finish workout to retry.',
+            })
+            return false
           }
+
+          showFinishedCongrats(resp.workoutRecord, resp.streakUpdate)
+          return true
         }}
         onCancelWorkout={cancelWorkout}
         onGoBack={goBack}

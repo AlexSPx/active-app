@@ -8,7 +8,7 @@
 import { SQLiteDatabase } from 'expo-sqlite'
 
 export async function migrateDbIfNeeded(db: SQLiteDatabase) {
-  const DATABASE_VERSION = 2
+  const DATABASE_VERSION = 3
 
   // Enable WAL for better performance
   await db.execAsync('PRAGMA journal_mode = "wal";')
@@ -93,7 +93,19 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase) {
       // Ignore if column already exists
       console.log('Column idempotency_key may already exist:', e)
     }
-    
+
     await db.execAsync(`PRAGMA user_version = 2`)
+  }
+
+  if (currentDbVersion < 3) {
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS id_remaps (
+        table_name TEXT NOT NULL,
+        old_id TEXT NOT NULL,
+        new_id TEXT NOT NULL,
+        PRIMARY KEY (table_name, old_id)
+      );
+      PRAGMA user_version = 3;
+    `)
   }
 }

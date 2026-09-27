@@ -10,12 +10,15 @@ import { apiWorkoutToEditableExercises, buildUpdateWorkoutRequest } from '../../
 import { ExerciseEditor } from '../../features/exercises'
 import { LoadingSpinner } from '../../components/ui'
 import { createWorkoutSchema, type CreateWorkoutFormData } from '../../lib/schemas/forms'
+import { useWorkoutIdRemap } from '../../features/workouts/hooks/useWorkoutIdRemap'
+import { syncEngine } from '../../lib/sync'
 
 export default function EditWorkoutScreen() {
   const router = useRouter()
   const toast = useToastController()
   const params = useLocalSearchParams<{ id?: string }>()
   const workoutId = params.id as string | undefined
+  useWorkoutIdRemap(workoutId)
 
   const {
     control,
@@ -90,6 +93,15 @@ export default function EditWorkoutScreen() {
       if (error) {
         setError(null)
       }
+      return
+    }
+
+    if (
+      initializedWorkoutIdRef.current &&
+      syncEngine.resolveId('workouts', initializedWorkoutIdRef.current) === workout.id
+    ) {
+      initializedWorkoutIdRef.current = workout.id
+      setError(null)
       return
     }
 

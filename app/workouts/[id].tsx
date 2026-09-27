@@ -14,12 +14,14 @@ import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { useMemo } from 'react'
 import { useSettingsStore } from '../../features/settings'
+import { useWorkoutIdRemap } from '../../features/workouts/hooks/useWorkoutIdRemap'
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const { workouts, loading, error } = useWorkouts()
   const { startWorkout } = useWorkoutManagement()
+  useWorkoutIdRemap(id)
 
   const {
     restTimerEnabled,

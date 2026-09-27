@@ -45,6 +45,7 @@ export interface SyncJob {
 }
 
 export type SyncEvent = 'sync:start' | 'sync:complete' | 'sync:error' | 'sync:idle'
+type IdRemapListener = (tableName: string, oldId: string, newId: string) => void
 
 interface SyncEngineDeps {
   api: SyncApi
@@ -57,6 +58,12 @@ interface SyncEngineDeps {
 
 interface InitOptions {
   processOnInit?: boolean
+}
+
+interface IdRemapRow {
+  table_name: string
+  old_id: string
+  new_id: string
 }
 
 // ---------------------------------------------------------------------------
@@ -78,6 +85,10 @@ export class SyncEngine {
   private db: SQLiteDatabase | null = null
   private isProcessing = false
   private appStateSubscription: { remove(): void } | null = null
+  // ponytail: one save/remap lock; split per table only if contention appears.
+  private idRemapLock: Promise<void> = Promise.resolve()
+  private remappedIds = new Map<string, string>()
+  private idRemapListeners = new Set<IdRemapListener>()
   private listeners: Record<SyncEvent, Set<() => void>> = {
     'sync:start': new Set(),
     'sync:complete': new Set(),
@@ -90,7 +101,7 @@ export class SyncEngine {
       api: syncApi,
       getNetworkState: () => Network.getNetworkStateAsync(),
       addAppStateListener: (handler) => AppState.addEventListener('change', handler),
-    },
+    }
   ) {}
 
   // -----------------------------------------------------------------------
@@ -106,6 +117,15 @@ export class SyncEngine {
 
     // Ensure pragmas on this handle
     await db.execAsync('PRAGMA foreign_keys = ON;')
+
+    // Restore aliases before processing the queue or hydrating persisted state.
+    const idRemaps = await db.getAllAsync<IdRemapRow>(
+      'SELECT table_name, old_id, new_id FROM id_remaps'
+    )
+    for (const remap of idRemaps) {
+      this.remappedIds.set(`${remap.table_name}:${remap.old_id}`, remap.new_id)
+      this.emitIdRemap(remap.table_name, remap.old_id, remap.new_id)
+    }
 
     // Listen to app-state transitions (process queue on resume)
     this.appStateSubscription = this.deps.addAppStateListener(this.handleAppStateChange)
@@ -130,6 +150,39 @@ export class SyncEngine {
     return () => {
       this.listeners[event].delete(cb)
     }
+  }
+
+  onIdRemap(cb: IdRemapListener): () => void {
+    this.idRemapListeners.add(cb)
+    return () => this.idRemapListeners.delete(cb)
+  }
+
+  async withIdRemapLock<T>(operation: () => Promise<T>): Promise<T> {
+    const previous = this.idRemapLock
+    let release!: () => void
+    this.idRemapLock = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    await previous
+    try {
+      return await operation()
+    } finally {
+      release()
+    }
+  }
+
+  resolveId(tableName: string, id: string): string {
+    let resolvedId = id
+    let nextId = this.remappedIds.get(`${tableName}:${resolvedId}`)
+    while (nextId) {
+      resolvedId = nextId
+      nextId = this.remappedIds.get(`${tableName}:${resolvedId}`)
+    }
+    return resolvedId
+  }
+
+  clearIdRemaps(): void {
+    this.remappedIds.clear()
   }
 
   private emit(event: SyncEvent): void {
@@ -168,7 +221,7 @@ export class SyncEngine {
       payloadStr,
       job.localTable || null,
       job.localId || null,
-      idempotencyKey,
+      idempotencyKey
     )
 
     // Fire-and-forget — errors are handled internally
@@ -202,7 +255,7 @@ export class SyncEngine {
          WHERE status = ? OR status = ?
          ORDER BY created_at ASC`,
         'pending',
-        'failed',
+        'failed'
       )
 
       if (pendingJobs.length === 0) {
@@ -242,7 +295,7 @@ export class SyncEngine {
       // earlier jobs in the same queue-drain pass.
       const currentJob = await this.db.getFirstAsync<SyncJob>(
         'SELECT * FROM sync_queue WHERE id = ?',
-        job.id,
+        job.id
       )
       if (!currentJob) {
         return true
@@ -276,7 +329,7 @@ export class SyncEngine {
           'workout_records',
           currentJob.local_id,
           response.workoutRecord.id,
-          currentJob.id,
+          currentJob.id
         )
       }
 
@@ -297,36 +350,121 @@ export class SyncEngine {
     tableName: string,
     oldId: string,
     newId: string,
-    sourceJobId?: string,
+    sourceJobId?: string
   ): Promise<void> {
-    if (!this.db) return
+    return this.withIdRemapLock(async () => {
+      if (!this.db) return
 
-    // Allowlist check (defense-in-depth; already validated at enqueue)
-    if (!(ALLOWED_TABLES as readonly string[]).includes(tableName)) {
-      console.error(`[SyncEngine] remapId rejected table: ${tableName}`)
-      return
-    }
+      // Allowlist check (defense-in-depth; already validated at enqueue)
+      if (!(ALLOWED_TABLES as readonly string[]).includes(tableName)) {
+        console.error(`[SyncEngine] remapId rejected table: ${tableName}`)
+        return
+      }
 
-    // Use a safe, compile-time known query for each table
-    const query = `UPDATE "${tableName}" SET id = ? WHERE id = ?`
-    await this.db.runAsync(query, newId, oldId)
+      await this.db.withTransactionAsync(async () => {
+        const serverWorkoutAlreadyHydrated =
+          tableName === 'workouts' &&
+          oldId !== newId &&
+          (await this.db!.getFirstAsync<{ id: string }>(
+            'SELECT id FROM workouts WHERE id = ?',
+            newId
+          ))
 
-    // Mark as synced
-    await this.db.runAsync(
-      `UPDATE "${tableName}" SET is_synced = 1, synced_at = ? WHERE id = ?`,
-      new Date().toISOString(),
-      newId,
+        if (serverWorkoutAlreadyHydrated) {
+          // Hydration can insert the server row before this create job returns.
+          await this.db!.runAsync(
+            'UPDATE workout_records SET workout_id = ? WHERE workout_id = ?',
+            newId,
+            oldId
+          )
+          await this.db!.runAsync('DELETE FROM workouts WHERE id = ?', oldId)
+        } else {
+          // Use a safe, compile-time known query for each table
+          const query = `UPDATE "${tableName}" SET id = ? WHERE id = ?`
+          await this.db!.runAsync(query, newId, oldId)
+        }
+
+        if (tableName === 'workouts') {
+          await this.remapJsonReferences('workouts', 'workout_template', oldId, newId)
+          await this.remapJsonReferences('routines', 'pattern', oldId, newId)
+        }
+
+        // Mark as synced
+        await this.db!.runAsync(
+          `UPDATE "${tableName}" SET is_synced = 1, synced_at = ? WHERE id = ?`,
+          new Date().toISOString(),
+          newId
+        )
+
+        await this.rewriteQueuedPayloadReferences(oldId, newId, sourceJobId)
+        if (oldId !== newId) {
+          await this.db!.runAsync(
+            'INSERT OR REPLACE INTO id_remaps (table_name, old_id, new_id) VALUES (?, ?, ?)',
+            tableName,
+            oldId,
+            newId
+          )
+        }
+      })
+
+      if (oldId !== newId) this.remappedIds.set(`${tableName}:${oldId}`, newId)
+      this.emitIdRemap(tableName, oldId, newId)
+
+      console.log(`[SyncEngine] Remapped ${tableName}: ${oldId} → ${newId}`)
+    })
+  }
+
+  private emitIdRemap(tableName: string, oldId: string, newId: string): void {
+    this.idRemapListeners.forEach((listener) => {
+      try {
+        listener(tableName, oldId, newId)
+      } catch (error) {
+        console.error('[SyncEngine] ID remap listener failed:', error)
+      }
+    })
+  }
+
+  private async remapJsonReferences(
+    tableName: 'workouts' | 'routines',
+    columnName: 'workout_template' | 'pattern',
+    oldId: string,
+    newId: string
+  ): Promise<void> {
+    if (!this.db || oldId === newId) return
+
+    const where = tableName === 'workouts' ? ' WHERE id = ?' : ''
+    // ponytail: scan routine JSON while the table stays small; index workout references if it grows.
+    const rows = await this.db.getAllAsync<{ id: string; value: string | null }>(
+      `SELECT id, "${columnName}" AS value FROM "${tableName}"${where}`,
+      ...(where ? [newId] : [])
     )
-
-    await this.rewriteQueuedPayloadReferences(oldId, newId, sourceJobId)
-
-    console.log(`[SyncEngine] Remapped ${tableName}: ${oldId} → ${newId}`)
+    for (const row of rows) {
+      if (!row.value) continue
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(row.value)
+      } catch (error) {
+        console.warn(
+          `[SyncEngine] Could not remap ${tableName}.${columnName} JSON for ${row.id}:`,
+          error
+        )
+        continue
+      }
+      const rewritten = replaceQueuedIdReferences(parsed, oldId, newId)
+      if (rewritten.changed) {
+        await this.db.runAsync(
+          `UPDATE "${tableName}" SET "${columnName}" = ? WHERE id = ?`,
+          JSON.stringify(rewritten.value),
+          row.id
+        )
+      }
+    }
   }
 
   private async rewriteQueuedPayloadReferences(
     oldId: string,
     newId: string,
-    sourceJobId?: string,
+    sourceJobId?: string
   ): Promise<void> {
     if (!this.db || oldId === newId) return
 
@@ -337,7 +475,7 @@ export class SyncEngine {
          AND id != ?`,
       'pending',
       'failed',
-      sourceJobId || '',
+      sourceJobId || ''
     )
 
     for (const queuedJob of queuedJobs) {
@@ -345,18 +483,25 @@ export class SyncEngine {
       try {
         parsedPayload = JSON.parse(queuedJob.payload)
       } catch (error) {
-        console.warn(`[SyncEngine] Failed to parse queued payload for remap (${queuedJob.id})`, error)
+        console.warn(
+          `[SyncEngine] Failed to parse queued payload for remap (${queuedJob.id})`,
+          error
+        )
         continue
       }
 
-      const { value: rewrittenPayload, changed } = replaceQueuedIdReferences(parsedPayload, oldId, newId)
+      const { value: rewrittenPayload, changed } = replaceQueuedIdReferences(
+        parsedPayload,
+        oldId,
+        newId
+      )
 
       if (!changed) continue
 
       await this.db.runAsync(
         'UPDATE sync_queue SET payload = ? WHERE id = ?',
         JSON.stringify(rewrittenPayload),
-        queuedJob.id,
+        queuedJob.id
       )
     }
   }
@@ -373,7 +518,13 @@ export class SyncEngine {
     const statusCode = error?.status as number | undefined
 
     // Permanent failures (4xx except 408, 429) — dead-letter immediately
-    if (statusCode && statusCode >= 400 && statusCode < 500 && statusCode !== 408 && statusCode !== 429) {
+    if (
+      statusCode &&
+      statusCode >= 400 &&
+      statusCode < 500 &&
+      statusCode !== 408 &&
+      statusCode !== 429
+    ) {
       console.error(`[SyncEngine] Permanent failure [${job.endpoint}]: ${statusCode} ${errorMsg}`)
       await this.markDeadLetter(job, `${statusCode}: ${errorMsg}`)
       return true // continue to next job — this one can't be retried
@@ -386,13 +537,15 @@ export class SyncEngine {
       return true // continue to next job
     }
 
-    console.warn(`[SyncEngine] Retryable failure [${job.endpoint}] attempt ${newRetryCount}/${MAX_RETRIES}: ${errorMsg}`)
+    console.warn(
+      `[SyncEngine] Retryable failure [${job.endpoint}] attempt ${newRetryCount}/${MAX_RETRIES}: ${errorMsg}`
+    )
     await this.db.runAsync(
       'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ? WHERE id = ?',
       'failed',
       newRetryCount,
       errorMsg,
-      job.id,
+      job.id
     )
 
     // Stop processing to preserve ordering (will retry on next trigger)
@@ -406,7 +559,7 @@ export class SyncEngine {
       'dead_letter',
       job.retry_count + 1,
       errorMsg,
-      job.id,
+      job.id
     )
   }
 

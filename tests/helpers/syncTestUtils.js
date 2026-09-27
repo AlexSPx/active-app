@@ -22,13 +22,15 @@ function makeJob({
 }
 
 class FakeDb {
-  constructor({ jobs = [], tables = {} } = {}) {
+  constructor({ jobs = [], tables = {}, enforceForeignKeys = false } = {}) {
     this.jobs = jobs.map((job) => ({ ...job }))
+    this.enforceForeignKeys = enforceForeignKeys
     this.tables = {
       workouts: new Map(),
       workout_records: new Map(),
       routines: new Map(),
     }
+    this.idRemaps = new Map()
 
     for (const [tableName, ids] of Object.entries(tables)) {
       for (const id of ids) {
@@ -37,14 +39,27 @@ class FakeDb {
     }
   }
 
-  async execAsync() {}
+  async execAsync(sql) {
+    if (this.enforceForeignKeys && sql.includes('PRAGMA foreign_keys = OFF')) {
+      this.foreignKeysEnabled = false
+    }
+    if (sql.includes('PRAGMA foreign_keys = ON')) {
+      this.foreignKeysEnabled = true
+    }
+  }
+
+  async withTransactionAsync(operation) {
+    await operation()
+  }
 
   async getAllAsync(sql, ...params) {
+    if (sql === 'SELECT table_name, old_id, new_id FROM id_remaps') {
+      return Array.from(this.idRemaps.values())
+    }
+
     if (sql.includes('ORDER BY created_at ASC')) {
       const [pendingStatus, failedStatus] = params
-      return this.jobs.filter(
-        (job) => job.status === pendingStatus || job.status === failedStatus
-      )
+      return this.jobs.filter((job) => job.status === pendingStatus || job.status === failedStatus)
     }
 
     if (sql.includes('SELECT id, payload') && sql.includes('FROM sync_queue')) {
@@ -58,6 +73,18 @@ class FakeDb {
           id: job.id,
           payload: job.payload,
         }))
+    }
+
+    const jsonColumnMatch = sql.match(
+      /^SELECT id, "(workout_template|pattern)" AS value FROM "(workouts|routines)"(?: WHERE id = \?)?$/
+    )
+    if (jsonColumnMatch) {
+      const [, columnName, tableName] = jsonColumnMatch
+      const table = this.tables[tableName]
+      const rows = params.length
+        ? [table.get(params[0])].filter(Boolean)
+        : Array.from(table.values())
+      return rows.map((row) => ({ id: row.id, value: row[columnName] ?? null }))
     }
 
     if (sql === 'SELECT * FROM workouts ORDER BY created_at DESC') {
@@ -90,6 +117,10 @@ class FakeDb {
       return this.tables.workouts.get(params[0]) ?? null
     }
 
+    if (sql === 'SELECT id FROM workouts WHERE id = ?') {
+      return this.tables.workouts.has(params[0]) ? { id: params[0] } : null
+    }
+
     if (sql === 'SELECT * FROM routines WHERE id = ?') {
       return this.tables.routines.get(params[0]) ?? null
     }
@@ -104,6 +135,16 @@ class FakeDb {
   }
 
   async runAsync(sql, ...params) {
+    if (sql === 'INSERT OR REPLACE INTO id_remaps (table_name, old_id, new_id) VALUES (?, ?, ?)') {
+      const [tableName, oldId, newId] = params
+      this.idRemaps.set(`${tableName}:${oldId}`, {
+        table_name: tableName,
+        old_id: oldId,
+        new_id: newId,
+      })
+      return
+    }
+
     if (
       sql.includes('INSERT INTO workouts') &&
       sql.includes('(id, title, notes, created_at, updated_at, workout_template, is_synced)')
@@ -146,6 +187,25 @@ class FakeDb {
       return
     }
 
+    if (sql === 'UPDATE workout_records SET workout_id = ? WHERE workout_id = ?') {
+      const [newWorkoutId, oldWorkoutId] = params
+      for (const record of this.tables.workout_records.values()) {
+        if (record.workout_id === oldWorkoutId) record.workout_id = newWorkoutId
+      }
+      return
+    }
+
+    const jsonUpdateMatch = sql.match(
+      /^UPDATE "(workouts|routines)" SET "(workout_template|pattern)" = \? WHERE id = \?$/
+    )
+    if (jsonUpdateMatch) {
+      const [, tableName, columnName] = jsonUpdateMatch
+      const [value, id] = params
+      const row = this.tables[tableName].get(id)
+      if (row) row[columnName] = value
+      return
+    }
+
     if (
       sql.includes('INSERT INTO workout_records') &&
       sql.includes(
@@ -154,6 +214,9 @@ class FakeDb {
     ) {
       const [id, workoutId, workoutTitle, notes, createdAt, startTime, exerciseRecords, isSynced] =
         params
+      if (this.foreignKeysEnabled && !this.tables.workouts.has(workoutId)) {
+        throw new Error('FOREIGN KEY constraint failed')
+      }
       this.tables.workout_records.set(id, {
         id,
         workout_id: workoutId,
@@ -179,8 +242,18 @@ class FakeDb {
         '(id, name, description, routine_type, pattern, start_date, created_at, updated_at, is_active, is_synced)'
       )
     ) {
-      const [id, name, description, routineType, pattern, startDate, createdAt, updatedAt, isActive, isSynced] =
-        params
+      const [
+        id,
+        name,
+        description,
+        routineType,
+        pattern,
+        startDate,
+        createdAt,
+        updatedAt,
+        isActive,
+        isSynced,
+      ] = params
       this.tables.routines.set(id, {
         id,
         name,
@@ -250,8 +323,7 @@ class FakeDb {
     }
 
     if (
-      sql ===
-      'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ? WHERE id = ?'
+      sql === 'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ? WHERE id = ?'
     ) {
       const [status, retryCount, errorMessage, jobId] = params
       const job = this.jobs.find((entry) => entry.id === jobId)
@@ -271,6 +343,11 @@ class FakeDb {
       const row = table.get(oldId) ?? { id: oldId, is_synced: 0, synced_at: null }
       table.delete(oldId)
       table.set(newId, { ...row, id: newId })
+      if (tableName === 'workouts' && this.foreignKeysEnabled) {
+        for (const record of this.tables.workout_records.values()) {
+          if (record.workout_id === oldId) record.workout_id = newId
+        }
+      }
       return
     }
 
