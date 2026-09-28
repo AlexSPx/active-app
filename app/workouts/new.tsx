@@ -2,7 +2,9 @@ import React, { useCallback, useState, useEffect } from 'react'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { YStack, Text, Input, Button, Separator, View, TextArea, ScrollView } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
+import { useHeaderHeight } from '@react-navigation/elements'
 import { useRouter } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToastController } from '@tamagui/toast'
@@ -14,6 +16,8 @@ import { LoadingSpinner } from '../../components/ui'
 
 export default function NewWorkoutScreen() {
   const router = useRouter()
+  const headerHeight = useHeaderHeight()
+  const insets = useSafeAreaInsets()
   const toast = useToastController()
 
   const {
@@ -282,6 +286,7 @@ export default function NewWorkoutScreen() {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight + insets.top}
     >
       <View flex={1} bg="$background" p="$4">
         {selectedExercises.length > 0 ? (
@@ -292,7 +297,6 @@ export default function NewWorkoutScreen() {
             style={{ flex: 1 }}
             contentInsetAdjustmentBehavior="automatic"
             keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="on-drag"
             ItemSeparatorComponent={() => <View height="$4" />}
             ListHeaderComponent={ListHeaderComponent}
             ListHeaderComponentStyle={{ marginBottom: 16 }}
