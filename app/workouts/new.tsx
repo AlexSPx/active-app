@@ -284,6 +284,10 @@ export default function NewWorkoutScreen() {
           data={selectedExercises}
           renderItem={renderExerciseEditor}
           keyExtractor={(item) => item.id}
+          style={{ flex: 1 }}
+          contentInsetAdjustmentBehavior="automatic"
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           ItemSeparatorComponent={() => <View height="$4" />}
           ListHeaderComponent={ListHeaderComponent}
           ListHeaderComponentStyle={{ marginBottom: 16 }}
