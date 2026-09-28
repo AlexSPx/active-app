@@ -1,5 +1,5 @@
-import { Text, YStack, XStack, Card, Button, H3, Separator } from 'tamagui'
-import { Plus, MoreHorizontal } from '@tamagui/lucide-icons'
+import { Text, YStack, XStack, Card, Button, Separator } from 'tamagui'
+import { Plus } from '@tamagui/lucide-icons'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback } from 'react'
 import { ExerciseSetRow } from './ExerciseSetRow'
@@ -58,18 +58,19 @@ export default function ExerciseEditor({
     <Card key={exercise.id} size="$4" mb="$3" p="$3" bg="$surface">
       <YStack gap="$2">
         {/* Exercise Header */}
-        <XStack justify="space-between" items="center">
-          <YStack>
-            <H3 color="$color">{exercise.name}</H3>
+        <XStack items="center" gap="$2">
+          <YStack flex={1} style={{ minWidth: 0 }}>
+            <Text fontSize="$5" fontWeight="600" color="$color">
+              {exercise.name}
+            </Text>
             <Text fontSize="$3" color="$colorSubtle">
               {exercise.primaryMuscles[0] || 'Other'}
             </Text>
           </YStack>
-          <Button size="$3" circular icon={MoreHorizontal} />
         </XStack>
         {/* Sets Header */}
         {exercise.category === 'CARDIO' ? (
-          <XStack justify="space-between" px="$1">
+          <XStack gap="$2" px="$1">
             <YStack flex={1} items="center">
               <Text fontSize="$3" fontWeight="600" color="$color">
                 SET
@@ -82,19 +83,19 @@ export default function ExerciseEditor({
             </YStack>
           </XStack>
         ) : (
-          <XStack justify="space-between" px="$1">
-            <YStack flex={1} items="center">
-              <Text fontSize="$3" fontWeight="600" color="$color">
+          <XStack gap="$2" px="$1">
+            <YStack flex={0.6} items="center">
+              <Text fontSize="$2" fontWeight="600" color="$color">
                 SET
               </Text>
             </YStack>
-            <YStack flex={1} items="center">
-              <Text fontSize="$3" fontWeight="600" color="$color">
-                WEIGHT
+            <YStack flex={1.2} items="center">
+              <Text fontSize="$2" fontWeight="600" color="$color">
+                WEIGHT (kg)
               </Text>
             </YStack>
-            <YStack flex={1} items="center">
-              <Text fontSize="$3" fontWeight="600" color="$color">
+            <YStack flex={1.2} items="center">
+              <Text fontSize="$2" fontWeight="600" color="$color">
                 REPS
               </Text>
             </YStack>

@@ -68,7 +68,7 @@ export function ExerciseSetRow({ index, weight, reps, onChange, onDelete }: SetR
           <Animated.View style={[styles.row, animatedStyle]}>
             <XStack items="center" gap="$2" bg="$surface" p="$1" r="$2">
               {/* Set Number */}
-              <YStack flex={1} items="center">
+              <YStack flex={0.6} items="center">
                 <Text fontSize="$4" fontWeight="600" color="$color">
                   {index + 1}
                 </Text>
@@ -76,11 +76,14 @@ export function ExerciseSetRow({ index, weight, reps, onChange, onDelete }: SetR
 
               {/* Weight Input */}
               <Input
-                flex={1}
-                size="$3"
+                flex={1.2}
+                size="$4"
+                height={48}
                 placeholder="kg"
                 py="$0"
                 px="$3"
+                fontSize="$4"
+                accessibilityLabel={`Set ${index + 1} weight in kilograms`}
                 keyboardType="numeric"
                 value={weight === null || typeof weight === 'undefined' ? '' : String(weight)}
                 onChangeText={(text) => {
@@ -99,10 +102,13 @@ export function ExerciseSetRow({ index, weight, reps, onChange, onDelete }: SetR
 
               {/* Reps Input */}
               <Input
-                flex={1}
-                size="$3"
+                flex={1.2}
+                size="$4"
+                height={48}
                 py="$0"
                 px="$3"
+                fontSize="$4"
+                accessibilityLabel={`Set ${index + 1} reps`}
                 placeholder="reps"
                 keyboardType="numeric"
                 value={reps === null || typeof reps === 'undefined' ? '' : String(reps)}

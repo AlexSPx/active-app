@@ -72,6 +72,10 @@ export const CardioEditorSetRow = memo(function CardioEditorSetRow({
                   seconds={typeof durationSeconds === 'number' ? durationSeconds : 0}
                   onChangeSeconds={(secs) => onChange(Number.isFinite(secs) ? secs : null)}
                   placeholder="0:00"
+                  size="$4"
+                  height={48}
+                  fontSize="$4"
+                  accessibilityLabel={`Interval ${index + 1} duration in minutes and seconds`}
                 />
               </YStack>
             </XStack>
