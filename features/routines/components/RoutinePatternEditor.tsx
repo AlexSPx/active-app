@@ -1,10 +1,10 @@
-import { useCallback, useMemo } from 'react'
+import { useCallback, useState } from 'react'
 import { YStack, XStack, Text, Button, Separator } from 'tamagui'
 import { Plus, Trash2, ChevronDown, Dumbbell, Moon, Calendar } from '@tamagui/lucide-icons'
 import type { RoutinePatternItem, RoutineDayType } from '../../../types/routine'
+import { router } from 'expo-router'
 import { Popover } from '@tamagui/popover'
 import { Pressable, StyleSheet } from 'react-native'
-import { useState } from 'react'
 import { useWorkouts } from '../../workouts'
 import type { ApiWorkout } from '../../../types/api'
 import { FlashList } from '@shopify/flash-list'
@@ -15,7 +15,11 @@ export interface RoutinePatternEditorProps {
   hideRestOption?: boolean
 }
 
-export function RoutinePatternEditor({ pattern, onChange, hideRestOption }: RoutinePatternEditorProps) {
+export function RoutinePatternEditor({
+  pattern,
+  onChange,
+  hideRestOption,
+}: RoutinePatternEditorProps) {
   const { workouts } = useWorkouts()
 
   const setDayType = useCallback(
@@ -61,11 +65,10 @@ export function RoutinePatternEditor({ pattern, onChange, hideRestOption }: Rout
     <FlashList
       data={pattern}
       keyExtractor={(_, index) => String(index)}
-      estimatedItemSize={200}
       style={{ width: '100%', alignSelf: 'stretch' }}
       contentContainerStyle={{ paddingBottom: 8 }}
       renderItem={({ item, index }) => (
-        <XStack width="100%" justify="center" mb="$4">
+        <XStack width="100%" justify="center" mb="$2">
           <DayRow
             index={index}
             item={item}
@@ -80,7 +83,7 @@ export function RoutinePatternEditor({ pattern, onChange, hideRestOption }: Rout
       )}
       ListFooterComponent={
         <XStack justify="center" width="100%">
-          <Button mt="$2" width="90%" icon={Plus} onPress={addDay}>
+          <Button mt="$2" width="100%" size="$4" icon={Plus} onPress={addDay}>
             <Text>Add day</Text>
           </Button>
         </XStack>
@@ -120,25 +123,28 @@ function DayRow({
   return (
     <YStack
       bg="$surface"
-      p="$4"
-      rounded="$5"
+      p="$3"
+      rounded="$4"
       borderWidth={1}
       borderColor={isWorkout ? '$primary' : isRest ? '$secondary' : '$borderColor'}
-      gap="$3"
+      gap="$2"
       width="100%"
     >
       {/* Header */}
       <XStack justify="space-between" items="center">
         <XStack items="center" gap="$2">
-          <Calendar size={20} color="$colorSubtle" />
-          <Text fontSize="$6" fontWeight="600" color="$color">
+          <Calendar size={18} color="$colorSubtle" />
+          <Text fontSize="$5" fontWeight="600" color="$color">
             Day {index + 1}
           </Text>
         </XStack>
         <Button
-          size="$3"
+          size="$4"
+          width={48}
+          height={48}
           chromeless
           icon={Trash2}
+          accessibilityLabel={`Remove day ${index + 1}`}
           onPress={() => onRemove(index)}
           color="$red10"
           hoverStyle={{ bg: '$red2' }}
@@ -146,60 +152,53 @@ function DayRow({
         />
       </XStack>
 
-      <Separator borderColor="$borderColor" />
-
       {/* Day Type Selection */}
       {!hideRestOption && (
-        <YStack gap="$2">
-          <Text fontSize="$3" fontWeight="500" color="$colorSubtle" textTransform="uppercase">
-            Type
-          </Text>
-          <XStack gap="$3" flex={1}>
-            <Button
-              flex={1}
-              size="$4"
-              icon={Dumbbell}
-              bg={isWorkout ? '$primary' : '$backgroundHover'}
-              borderWidth={isWorkout ? 0 : 1}
-              borderColor="$borderColor"
-              onPress={() => onSetDayType(index, 'WORKOUT')}
-              pressStyle={{
-                bg: isWorkout ? '$primaryPress' : '$surfacePress',
-                scale: 0.97,
-              }}
-              hoverStyle={{
-                bg: isWorkout ? '$primaryHover' : '$surfaceHover',
-              }}
+        <XStack gap="$3" flex={1}>
+          <Button
+            flex={1}
+            size="$4"
+            icon={Dumbbell}
+            bg={isWorkout ? '$primary' : '$backgroundHover'}
+            borderWidth={isWorkout ? 0 : 1}
+            borderColor="$borderColor"
+            onPress={() => onSetDayType(index, 'WORKOUT')}
+            pressStyle={{
+              bg: isWorkout ? '$primaryPress' : '$surfacePress',
+              scale: 0.97,
+            }}
+            hoverStyle={{
+              bg: isWorkout ? '$primaryHover' : '$surfaceHover',
+            }}
+          >
+            <Text
+              color={isWorkout ? '$onPrimary' : '$color'}
+              fontWeight={isWorkout ? '600' : '500'}
             >
-              <Text
-                color={isWorkout ? '$onPrimary' : '$color'}
-                fontWeight={isWorkout ? '600' : '500'}
-              >
-                Workout
-              </Text>
-            </Button>
-            <Button
-              flex={1}
-              size="$4"
-              icon={Moon}
-              bg={isRest ? '$secondary' : '$backgroundHover'}
-              borderWidth={isRest ? 0 : 1}
-              borderColor="$borderColor"
-              onPress={() => onSetDayType(index, 'REST')}
-              pressStyle={{
-                bg: isRest ? '$secondaryPress' : '$surfacePress',
-                scale: 0.97,
-              }}
-              hoverStyle={{
-                bg: isRest ? '$secondaryHover' : '$surfaceHover',
-              }}
-            >
-              <Text color={isRest ? '$onSecondary' : '$color'} fontWeight={isRest ? '600' : '500'}>
-                Rest
-              </Text>
-            </Button>
-          </XStack>
-        </YStack>
+              Workout
+            </Text>
+          </Button>
+          <Button
+            flex={1}
+            size="$4"
+            icon={Moon}
+            bg={isRest ? '$secondary' : '$backgroundHover'}
+            borderWidth={isRest ? 0 : 1}
+            borderColor="$borderColor"
+            onPress={() => onSetDayType(index, 'REST')}
+            pressStyle={{
+              bg: isRest ? '$secondaryPress' : '$surfacePress',
+              scale: 0.97,
+            }}
+            hoverStyle={{
+              bg: isRest ? '$secondaryHover' : '$surfaceHover',
+            }}
+          >
+            <Text color={isRest ? '$onSecondary' : '$color'} fontWeight={isRest ? '600' : '500'}>
+              Rest
+            </Text>
+          </Button>
+        </XStack>
       )}
 
       {/* Workout Selection */}
@@ -212,9 +211,6 @@ function DayRow({
             />
           )}
           <YStack gap="$2">
-            <Text fontSize="$3" fontWeight="500" color="$colorSubtle" textTransform="uppercase">
-              Workout
-            </Text>
             <Popover open={menuOpen} onOpenChange={setMenuOpen} size="$2" placement="bottom">
               <Popover.Trigger asChild>
                 <Button
@@ -268,10 +264,21 @@ function DayRow({
                     </Popover.Close>
                   ))}
                   {workouts.length === 0 && (
-                    <YStack width="100%" items="center">
-                      <Text color="$colorMuted" px="$3" py="$2">
-                        No workouts available
+                    <YStack width="100%" items="center" gap="$2" px="$3" py="$2">
+                      <Text color="$colorSubtle" text="center">
+                        Create a workout template before assigning this day.
                       </Text>
+                      <Popover.Close asChild>
+                        <Button
+                          size="$4"
+                          bg="$primary"
+                          onPress={() => router.push('/workouts/new?returnTo=routine')}
+                        >
+                          <Text color="$onPrimary" fontWeight="600">
+                            Create workout
+                          </Text>
+                        </Button>
+                      </Popover.Close>
                     </YStack>
                   )}
                   {item.workoutId && workouts.length > 0 && (

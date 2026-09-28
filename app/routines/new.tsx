@@ -15,7 +15,7 @@ import { Calendar, ListChecks } from '@tamagui/lucide-icons'
 import { useToastController } from '@tamagui/toast'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import type { CreateRoutineRequest, RoutineType } from '../../types/routine'
+import type { CreateRoutineRequest, RoutinePatternItem, RoutineType } from '../../types/routine'
 import { RoutinePatternEditor, useRoutineMutations } from '../../features/routines'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -28,6 +28,7 @@ export default function NewRoutinePage() {
   const toast = useToastController()
   const { createRoutine, loading, error } = useRoutineMutations()
   const [step, setStep] = useState<1 | 2>(1)
+  const [showPatternValidation, setShowPatternValidation] = useState(false)
 
   const {
     control,
@@ -103,7 +104,11 @@ export default function NewRoutinePage() {
         name: data.name.trim(),
         description: data.description?.trim() || undefined,
         routineType: data.routineType,
-        pattern: data.pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
+        pattern: data.pattern.map((p, idx) => ({
+          dayIndex: idx + 1,
+          dayType: p.dayType,
+          workoutId: p.workoutId ?? null,
+        })),
         active: data.active,
         startDate: data.startDate.toISOString(),
       }
@@ -135,6 +140,7 @@ export default function NewRoutinePage() {
   }, [showValidationToast])
 
   const onSave = useCallback(async () => {
+    setShowPatternValidation(true)
     if (await showValidationToast()) return
     handleSubmit(onSubmit)()
   }, [showValidationToast, handleSubmit, onSubmit])
@@ -390,14 +396,14 @@ export default function NewRoutinePage() {
               name="pattern"
               render={({ field: { onChange, value } }) => (
                 <RoutinePatternEditor
-                  pattern={value}
+                  pattern={value as RoutinePatternItem[]}
                   onChange={onChange}
                   hideRestOption={routineType === 'WEEKLY_COMPLETION'}
                 />
               )}
             />
           </YStack>
-          {errors.pattern && (
+          {showPatternValidation && errors.pattern && (
             <Text color="$red10" fontSize="$2">
               {errors.pattern.message}
             </Text>
