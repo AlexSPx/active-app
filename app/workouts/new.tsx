@@ -1,7 +1,10 @@
-import React, { useCallback, useState, useMemo, useEffect } from 'react'
-import { YStack, Text, Input, Button, Separator, View, TextArea, XStack } from 'tamagui'
+import React, { useCallback, useState, useEffect } from 'react'
+import { KeyboardAvoidingView, Platform } from 'react-native'
+import { YStack, Text, Input, Button, Separator, View, TextArea, ScrollView } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
+import { useHeaderHeight } from '@react-navigation/elements'
 import { useRouter } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useToastController } from '@tamagui/toast'
@@ -13,6 +16,8 @@ import { LoadingSpinner } from '../../components/ui'
 
 export default function NewWorkoutScreen() {
   const router = useRouter()
+  const headerHeight = useHeaderHeight()
+  const insets = useSafeAreaInsets()
   const toast = useToastController()
 
   const {
@@ -33,7 +38,7 @@ export default function NewWorkoutScreen() {
     mode: 'onChange',
   })
 
-  const name = watch('name')
+  const name = watch('name') ?? ''
 
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -108,60 +113,65 @@ export default function NewWorkoutScreen() {
   const FormFields = useCallback(
     () => (
       <YStack gap="$3">
-        <Controller
-          control={control}
-          name="name"
-          render={({ field: { onChange, value } }) => (
-            <Input placeholder="Workout name" value={value} onChangeText={onChange} size="$4" />
-          )}
-        />
-        {errors.name && (
-          <Text color="$red10" fontSize="$2">
-            {errors.name.message}
+        <YStack gap="$2">
+          <Text fontSize="$3" fontWeight="600" color="$color">
+            Workout name <Text color="$red10">(required)</Text>
           </Text>
-        )}
-        <Controller
-          control={control}
-          name="notes"
-          render={({ field: { onChange, value } }) => (
-            <TextArea
-              placeholder="Notes (optional)"
-              value={value || ''}
-              onChangeText={onChange}
-              size="$4"
-              height={80}
-            />
+          <Controller
+            control={control}
+            name="name"
+            render={({ field: { onChange, value } }) => (
+              <Input
+                accessibilityLabel="Workout name, required"
+                placeholder="Enter a name"
+                value={value}
+                onChangeText={onChange}
+                size="$4"
+              />
+            )}
+          />
+          {errors.name && (
+            <Text color="$red10" fontSize="$2">
+              {errors.name.message}
+            </Text>
           )}
-        />
+        </YStack>
+        <YStack gap="$2">
+          <Text fontSize="$3" fontWeight="600" color="$color">
+            Notes <Text color="$colorSubtle">(optional)</Text>
+          </Text>
+          <Controller
+            control={control}
+            name="notes"
+            render={({ field: { onChange, value } }) => (
+              <TextArea
+                accessibilityLabel="Notes, optional"
+                placeholder="Add notes"
+                value={value || ''}
+                onChangeText={onChange}
+                size="$4"
+                height={80}
+              />
+            )}
+          />
+          {errors.notes && (
+            <Text color="$red10" fontSize="$2">
+              {errors.notes.message}
+            </Text>
+          )}
+        </YStack>
       </YStack>
     ),
-    [control, errors.name]
+    [control, errors.name, errors.notes]
   )
 
-  const hasNulls = selectedExercises.some((ex) =>
-    ex.sets.some((s) =>
-      ex.category === 'CARDIO' ? s.durationSeconds == null : s.reps == null || s.weight == null
-    )
-  )
-
-  const canSave = name && selectedExercises.length > 0 && !hasNulls && !isCreating
-
-  // Get validation issues from Zod schema errors
-  const validationIssues = useMemo(() => {
-    const issues: string[] = []
-    // Add errors from Zod schema validation
-    if (errors.name?.message) issues.push(errors.name.message)
-    if (errors.notes?.message) issues.push(errors.notes.message)
-    if (errors.exercises?.message) issues.push(errors.exercises.message)
-    if (errors.exercises?.root?.message) issues.push(errors.exercises.root.message)
-    if (Array.isArray(errors.exercises)) {
-      errors.exercises.forEach((exError, idx) => {
-        if (exError?.message) issues.push(`Exercise ${idx + 1}: ${exError.message}`)
-        if (exError?.sets?.message) issues.push(`Exercise ${idx + 1}: ${exError.sets.message}`)
-      })
-    }
-    return issues
-  }, [errors])
+  const validationError =
+    errors.name?.message ?? errors.notes?.message ?? validateWorkoutData(name, selectedExercises)
+  const saveHint =
+    !name.trim() && selectedExercises.length === 0
+      ? 'Enter a name and add at least one exercise to enable saving.'
+      : validationError
+  const canSave = !validationError && !isCreating
 
   // Show validation toast and return true if there are issues
   const showValidationToast = useCallback(async () => {
@@ -201,10 +211,6 @@ export default function NewWorkoutScreen() {
   const ListHeaderComponent = useCallback(
     () => (
       <YStack gap="$4">
-        <Text fontSize="$7" fontWeight="800" color="$color">
-          📝 Create Workout
-        </Text>
-
         <FormFields />
 
         {error && (
@@ -215,14 +221,24 @@ export default function NewWorkoutScreen() {
           </YStack>
         )}
 
-        <Button bg="$primary" size="$4" onPress={() => router.push('/exercises/search')}>
-          <Text fontSize="$4" fontWeight="600" color="$onPrimary">
+        <Button
+          bg={selectedExercises.length ? '$surface' : '$primary'}
+          borderColor={selectedExercises.length ? '$primary' : undefined}
+          variant={selectedExercises.length ? 'outlined' : undefined}
+          size="$4"
+          onPress={() => router.push('/exercises/search')}
+        >
+          <Text
+            fontSize="$4"
+            fontWeight="600"
+            color={selectedExercises.length ? '$primary' : '$onPrimary'}
+          >
             + Add Exercises ({selectedExercises.length})
           </Text>
         </Button>
 
         {selectedExercises.length > 0 && (
-          <Text fontWeight="700" fontSize="$6" color="$color">
+          <Text fontWeight="700" fontSize="$5" color="$color">
             Selected Exercises:
           </Text>
         )}
@@ -233,89 +249,73 @@ export default function NewWorkoutScreen() {
 
   const ListFooterComponent = useCallback(
     () => (
-      <YStack gap="$4" pt="$4">
+      <YStack gap="$3" pt="$4">
         <Separator />
+        {saveHint && (
+          <Text fontSize="$3" color="$colorSubtle">
+            {saveHint}
+          </Text>
+        )}
         <Button
-          disabled={isCreating}
-          bg="$primary"
+          disabled={!canSave}
+          bg={canSave ? '$primary' : '$backgroundStrong'}
           size="$5"
           onPress={async () => {
+            if (!canSave) return
             if (await showValidationToast()) return
             handleSubmit(onSubmit)()
           }}
         >
           {isCreating ? (
-            <LoadingSpinner size="small" color="$onPrimary" />
+            <LoadingSpinner size="small" color={canSave ? '$onPrimary' : '$colorSubtle'} />
           ) : (
-            <Text fontSize="$5" fontWeight="700" color="$onPrimary">
+            <Text fontSize="$5" fontWeight="700" color={canSave ? '$onPrimary' : '$colorSubtle'}>
               Save Workout
             </Text>
           )}
         </Button>
-        <Button variant="outlined" size="$4" onPress={handleCancel}>
+        <Button variant="outlined" size="$4" onPress={handleCancel} disabled={isCreating}>
           <Text>Cancel</Text>
         </Button>
       </YStack>
     ),
-    [isCreating, handleSubmit, onSubmit, handleCancel, showValidationToast]
+    [saveHint, canSave, isCreating, handleSubmit, onSubmit, handleCancel, showValidationToast]
   )
 
   return (
-    <View flex={1} bg="$background" p="$4">
-      {selectedExercises.length > 0 ? (
-        <FlashList
-          data={selectedExercises}
-          renderItem={renderExerciseEditor}
-          keyExtractor={(item) => item.id}
-          ItemSeparatorComponent={() => <View height="$4" />}
-          ListHeaderComponent={ListHeaderComponent}
-          ListHeaderComponentStyle={{ marginBottom: 16 }}
-          ListFooterComponent={ListFooterComponent}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <YStack p="$4" gap="$4">
-          <Text fontSize="$7" fontWeight="800" color="$color">
-            📝 Create Workout
-          </Text>
-
-          <FormFields />
-
-          {error && (
-            <YStack bg="$red3" borderColor="$red7" borderWidth="$0.5" rounded="$4" p="$3">
-              <Text fontSize="$3" color="$red11">
-                {error}
-              </Text>
-            </YStack>
-          )}
-
-          <Button bg="$primary" size="$4" onPress={() => router.push('/exercises/search')}>
-            <Text fontSize="$4" fontWeight="600" color="$onPrimary">
-              + Add Exercises ({selectedExercises.length})
-            </Text>
-          </Button>
-
-          <Separator />
-
-          <Button
-            disabled={isCreating}
-            bg="$primary"
-            size="$5"
-            onPress={async () => {
-              if (await showValidationToast()) return
-              handleSubmit(onSubmit)()
-            }}
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight + insets.top}
+    >
+      <View flex={1} bg="$background" p="$4">
+        {selectedExercises.length > 0 ? (
+          <FlashList
+            data={selectedExercises}
+            renderItem={renderExerciseEditor}
+            keyExtractor={(item) => item.id}
+            style={{ flex: 1 }}
+            contentInsetAdjustmentBehavior="automatic"
+            keyboardShouldPersistTaps="handled"
+            ItemSeparatorComponent={() => <View height="$4" />}
+            ListHeaderComponent={ListHeaderComponent}
+            ListHeaderComponentStyle={{ marginBottom: 16 }}
+            ListFooterComponent={ListFooterComponent}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <ScrollView
+            flex={1}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
-            {isCreating ? (
-              <LoadingSpinner size="small" color="$onPrimary" />
-            ) : (
-              <Text fontSize="$5" fontWeight="700" color="$onPrimary">
-                Save Workout
-              </Text>
-            )}
-          </Button>
-        </YStack>
-      )}
-    </View>
+            <YStack gap="$4">
+              <ListHeaderComponent />
+              <ListFooterComponent />
+            </YStack>
+          </ScrollView>
+        )}
+      </View>
+    </KeyboardAvoidingView>
   )
 }
