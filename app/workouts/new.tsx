@@ -3,7 +3,7 @@ import { KeyboardAvoidingView, Platform } from 'react-native'
 import { YStack, Text, Input, Button, Separator, View, TextArea, ScrollView } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 import { useHeaderHeight } from '@react-navigation/elements'
-import { useRouter } from 'expo-router'
+import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -18,6 +18,7 @@ export default function NewWorkoutScreen() {
   const router = useRouter()
   const headerHeight = useHeaderHeight()
   const insets = useSafeAreaInsets()
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string }>()
   const toast = useToastController()
 
   const {
@@ -86,7 +87,8 @@ export default function NewWorkoutScreen() {
         console.log('Workout created successfully:', result.id)
         clearExercises()
         reset()
-        router.replace('/(tabs)/(workouts)')
+        if (returnTo === 'routine') router.back()
+        else router.replace('/(tabs)/(workouts)')
       } else {
         setError('Failed to create workout: Unknown error occurred.')
       }
