@@ -1,10 +1,10 @@
 export default {
   expo: {
-    name: 'Active Next Dev',
+    name: 'Active Next',
     slug: 'active-next',
-    version: '1.0.1',
+    version: '2.0.0',
     orientation: 'portrait',
-    scheme: 'dev.activenext',
+    scheme: 'activenext',
     userInterfaceStyle: 'automatic',
     splash: {
       image: './assets/icons/splash-icon-light.png',
@@ -24,13 +24,13 @@ export default {
       },
     },
     android: {
-      googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? 'google-services.json',
+      // googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
       adaptiveIcon: {
         foregroundImage: './assets/icons/adaptive-icon.png',
         monochromeImage: './assets/icons/adaptive-icon.png',
         backgroundColor: '#000000',
       },
-      package: 'com.alexspx.dev.activenext',
+      package: 'com.alexspx.activenext',
       permissions: ['POST_NOTIFICATIONS', 'VIBRATE', 'android.permission.SCHEDULE_EXACT_ALARM'],
     },
     web: {
@@ -85,6 +85,7 @@ export default {
     ],
     experiments: {
       typedRoutes: true,
+      reactCompiler: true,
     },
     extra: {
       router: {},

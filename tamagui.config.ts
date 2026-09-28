@@ -4,56 +4,56 @@ import { createTamagui } from 'tamagui'
 // Semantic fitness theme with cohesive naming
 const fitnessTheme = {
   // Background colors
-  background: '#0A0A0A',
-  backgroundHover: '#1A1A1A',
-  backgroundPress: '#1A1A1A',
-  backgroundFocus: '#1A1A1A',
-  backgroundStrong: '#1A1A1A',
+  background: '#0B0D10',
+  backgroundHover: '#171A20',
+  backgroundPress: '#20242C',
+  backgroundFocus: '#171A20',
+  backgroundStrong: '#171A20',
   backgroundTransparent: 'transparent',
 
   // Surface colors (cards, panels)
-  surface: '#1A1A1A',
-  surfaceHover: '#2C2C2E',
-  surfacePress: '#2C2C2E',
-  surfaceFocus: '#2C2C2E',
+  surface: '#11141A',
+  surfaceHover: '#1A1E26',
+  surfacePress: '#202630',
+  surfaceFocus: '#1A1E26',
 
   // Accent colors
-  backgroundAccent: '#0D132A', // Dark blue background
-  backgroundAccentHover: '#131C3A',
-  backgroundAccentPress: '#131C3A',
-  backgroundAccentFocus: '#131C3A',
+  backgroundAccent: '#101A31',
+  backgroundAccentHover: '#162340',
+  backgroundAccentPress: '#1B2A4C',
+  backgroundAccentFocus: '#162340',
 
   // Text colors
-  color: '#FFFFFF',
-  colorHover: '#FFFFFF',
-  colorPress: '#FFFFFF',
-  colorFocus: '#FFFFFF',
+  color: '#F7F8FA',
+  colorHover: '#F7F8FA',
+  colorPress: '#F7F8FA',
+  colorFocus: '#F7F8FA',
   colorTransparent: 'transparent',
-  colorSubtle: '#8E8E93',
-  colorMuted: '#636366',
+  colorSubtle: '#A0A7B4',
+  colorMuted: '#747C89',
 
   // Border colors
-  borderColor: '#2A2A2A',
-  borderColorHover: '#3A3A3C',
-  borderColorPress: '#3A3A3C',
-  borderColorFocus: '#007AFF',
-  borderAccent: '#007AFF',
+  borderColor: '#282E38',
+  borderColorHover: '#343B47',
+  borderColorPress: '#343B47',
+  borderColorFocus: '#4D8DFF',
+  borderAccent: '#4D8DFF',
 
   // Interactive colors
-  placeholderColor: '#8E8E93',
+  placeholderColor: '#A0A7B4',
 
   // Primary theme (Fitness Blue)
-  primary: '#007AFF',
-  primaryHover: '#1A8FFF',
-  primaryPress: '#0056CC',
-  primaryFocus: '#1A8FFF',
+  primary: '#4D8DFF',
+  primaryHover: '#6BA0FF',
+  primaryPress: '#2F6FED',
+  primaryFocus: '#6BA0FF',
   onPrimary: '#FFFFFF',
 
   // Secondary theme (Orange/Amber)
-  secondary: '#FF9500',
-  secondaryHover: '#FFAD33',
-  secondaryPress: '#CC7700',
-  secondaryFocus: '#FFAD33',
+  secondary: '#FFB24D',
+  secondaryHover: '#FFC06B',
+  secondaryPress: '#D98212',
+  secondaryFocus: '#FFC06B',
   onSecondary: '#FFFFFF',
 
   // Success theme (Green)
@@ -64,17 +64,17 @@ const fitnessTheme = {
   onSuccess: '#FFFFFF',
 
   // Legacy color scale (for compatibility)
-  color1: '#0A0A0A',
-  color2: '#1A1A1A',
-  color3: '#2C2C2E',
-  color4: '#3A3A3C',
-  color5: '#48484A',
-  color6: '#636366',
-  color7: '#8E8E93',
-  color8: '#AEAEB2',
-  color9: '#C7C7CC',
-  color10: '#8E8E93',
-  color11: '#FFFFFF',
+  color1: '#0B0D10',
+  color2: '#11141A',
+  color3: '#171A20',
+  color4: '#20242C',
+  color5: '#282E38',
+  color6: '#343B47',
+  color7: '#747C89',
+  color8: '#A0A7B4',
+  color9: '#C4CAD3',
+  color10: '#A0A7B4',
+  color11: '#F7F8FA',
   color12: '#FFFFFF',
 
   // Themed color scales
@@ -121,45 +121,45 @@ const fitnessTheme = {
 const lightTheme = {
   ...fitnessTheme,
   // Background colors
-  background: '#FFFFFF',
-  backgroundHover: '#F2F2F7',
-  backgroundPress: '#E5E5EA',
-  backgroundFocus: '#F2F2F7',
-  backgroundStrong: '#F2F2F7',
+  background: '#FBFCFE',
+  backgroundHover: '#F4F6FA',
+  backgroundPress: '#E9EDF4',
+  backgroundFocus: '#F4F6FA',
+  backgroundStrong: '#F4F6FA',
   backgroundTransparent: 'transparent',
 
   // Surface colors
-  surface: '#f6f6f6ff',
-  surfaceHover: '#F2F2F7',
-  surfacePress: '#E5E5EA',
-  surfaceFocus: '#F2F2F7',
+  surface: '#FFFFFF',
+  surfaceHover: '#F6F8FB',
+  surfacePress: '#EEF2F7',
+  surfaceFocus: '#F6F8FB',
 
   // Accent colors
-  backgroundAccent: '#E1F0FF', // Light blue background
-  backgroundAccentHover: '#D0E6FF',
-  backgroundAccentPress: '#C0DCFF',
-  backgroundAccentFocus: '#D0E6FF',
+  backgroundAccent: '#EEF5FF',
+  backgroundAccentHover: '#E3EFFF',
+  backgroundAccentPress: '#D7E8FF',
+  backgroundAccentFocus: '#E3EFFF',
 
   // Text colors
-  color: '#000000',
-  colorHover: '#000000',
-  colorPress: '#000000',
-  colorFocus: '#000000',
-  colorSubtle: '#8E8E93',
-  colorMuted: '#AEAEB2',
+  color: '#202531',
+  colorHover: '#202531',
+  colorPress: '#202531',
+  colorFocus: '#202531',
+  colorSubtle: '#6F7785',
+  colorMuted: '#98A1AF',
 
   // Border colors
-  borderColor: '#e1e1e1ff',
-  borderColorHover: '#D1D1D6',
-  borderColorPress: '#C7C7CC',
-  borderColorFocus: '#007AFF',
-  borderAccent: '#007AFF',
+  borderColor: '#E5EAF1',
+  borderColorHover: '#D7DEE8',
+  borderColorPress: '#CAD3E0',
+  borderColorFocus: '#2F6FED',
+  borderAccent: '#2F6FED',
 
-  // Primary theme (Fitness Blue) - keep similar but adjust for light mode if needed
-  primary: '#007AFF',
-  primaryHover: '#0062CC',
-  primaryPress: '#004999',
-  primaryFocus: '#0062CC',
+  // Primary theme (Fitness Blue)
+  primary: '#2F6FED',
+  primaryHover: '#245FDB',
+  primaryPress: '#1B4CAD',
+  primaryFocus: '#245FDB',
   onPrimary: '#FFFFFF',
 
   // Secondary theme (Orange/Amber)
@@ -178,17 +178,17 @@ const lightTheme = {
 
   // Legacy color scale (inverted for light)
   color1: '#FFFFFF',
-  color2: '#F2F2F7',
-  color3: '#E5E5EA',
-  color4: '#D1D1D6',
-  color5: '#C7C7CC',
-  color6: '#AEAEB2',
-  color7: '#8E8E93',
-  color8: '#636366',
-  color9: '#48484A',
-  color10: '#3A3A3C',
-  color11: '#1C1C1E',
-  color12: '#000000',
+  color2: '#FBFCFE',
+  color3: '#F4F6FA',
+  color4: '#E9EDF4',
+  color5: '#D7DEE8',
+  color6: '#CAD3E0',
+  color7: '#98A1AF',
+  color8: '#6F7785',
+  color9: '#4D5664',
+  color10: '#3A4250',
+  color11: '#202531',
+  color12: '#111827',
   // Themed color scales (Light Mode)
   red1: '#FFFFFF',
   red2: '#FFF5F5',
@@ -211,9 +211,9 @@ const lightTheme = {
   blue6: '#94C3FF',
   blue7: '#7AB5FF',
   blue8: '#61A6FF',
-  blue9: '#007AFF',
-  blue10: '#0062CC',
-  blue11: '#004999',
+  blue9: '#2F6FED',
+  blue10: '#245FDB',
+  blue11: '#1B4CAD',
   blue12: '#05101A',
 
   green1: '#FFFFFF',

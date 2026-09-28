@@ -80,3 +80,13 @@ credentials.json
 keystore.jks
 .env.development
 .env.development
+
+# Local agent tooling
+.agents/
+.antigravitycli/
+.codex
+skills-lock.json
+
+# Firebase service account credentials
+*-firebase-adminsdk-*.json
+activenext-*.json
