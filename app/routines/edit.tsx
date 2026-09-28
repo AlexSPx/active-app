@@ -391,7 +391,14 @@ export default function EditRoutinePage() {
                   control={control}
                   name="active"
                   render={({ field: { onChange, value } }) => (
-                    <Switch checked={value} onCheckedChange={onChange}>
+                    <Switch
+                      checked={value}
+                      onCheckedChange={onChange}
+                      bg={value ? '$primary' : '$backgroundHover'}
+                      borderWidth={1}
+                      borderColor={value ? '$primary' : '$borderColor'}
+                      accessibilityLabel="Set this routine as active"
+                    >
                       <Switch.Thumb animation="bouncy" />
                     </Switch>
                   )}
