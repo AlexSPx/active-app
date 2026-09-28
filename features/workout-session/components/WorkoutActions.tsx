@@ -1,9 +1,10 @@
+import { useRef, useState } from 'react'
 import { YStack, Button, Text } from 'tamagui'
 import { Plus } from '@tamagui/lucide-icons'
 
 export interface WorkoutActionsProps {
   onAddExercise?: () => void
-  onFinishWorkout: (notes?: string) => Promise<void>
+  onFinishWorkout: (notes?: string) => Promise<boolean>
   onCancelWorkout?: () => void
   onGoBack: () => void
 }
@@ -14,9 +15,27 @@ export function WorkoutActions({
   onCancelWorkout,
   onGoBack,
 }: WorkoutActionsProps) {
+  const finishingRef = useRef(false)
+  const [isFinishing, setIsFinishing] = useState(false)
+
   const handleFinishWorkout = async () => {
-    await onFinishWorkout()
-    onGoBack()
+    if (finishingRef.current) return
+    finishingRef.current = true
+    setIsFinishing(true)
+
+    try {
+      if (await onFinishWorkout()) {
+        onGoBack()
+        return
+      }
+    } catch (error) {
+      finishingRef.current = false
+      setIsFinishing(false)
+      throw error
+    }
+
+    finishingRef.current = false
+    setIsFinishing(false)
   }
 
   return (
@@ -27,9 +46,15 @@ export function WorkoutActions({
         </Button>
       )}
 
-      <Button size="$5" bg="$secondary" mt="$4" onPress={handleFinishWorkout}>
+      <Button
+        size="$5"
+        bg="$secondary"
+        mt="$4"
+        onPress={handleFinishWorkout}
+        disabled={isFinishing}
+      >
         <Text color="$onSecondary" fontSize="$5" fontWeight="600">
-          Finish Workout
+          {isFinishing ? 'Saving Workout…' : 'Finish Workout'}
         </Text>
       </Button>
 

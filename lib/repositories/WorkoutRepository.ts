@@ -5,6 +5,7 @@
  * All writes go to local SQLite first, then to the sync queue.
  */
 import { BaseRepository } from './BaseRepository'
+import { syncEngine } from '../sync'
 import type {
   ApiExercise,
   ApiWorkout,
@@ -118,54 +119,60 @@ export class WorkoutRepository extends BaseRepository {
     payload: UpdateWorkoutRequest,
     selectedExercises: ApiExercise[]
   ): Promise<void> {
-    const sets: string[] = []
-    const vals: any[] = []
+    return syncEngine.withIdRemapLock(async () => {
+      const resolvedWorkoutId = syncEngine.resolveId('workouts', workoutId)
+      const sets: string[] = []
+      const vals: any[] = []
 
-    if (payload.title) {
-      sets.push('title = ?')
-      vals.push(payload.title)
-    }
-    if (payload.notes !== undefined) {
-      sets.push('notes = ?')
-      vals.push(payload.notes || null)
-    }
-    if (payload.template) {
-      const current = await this.getById(workoutId)
-      const now = new Date().toISOString()
-      sets.push('workout_template = ?')
-      vals.push(
-        JSON.stringify({
-          id: current?.workoutTemplate.id || workoutId,
-          exercises: this.withExerciseMetadata(payload.template.exercises, selectedExercises),
-          createdAt: current?.workoutTemplate.createdAt || now,
-          updatedAt: now,
-        })
-      )
-    }
+      if (payload.title) {
+        sets.push('title = ?')
+        vals.push(payload.title)
+      }
+      if (payload.notes !== undefined) {
+        sets.push('notes = ?')
+        vals.push(payload.notes || null)
+      }
+      if (payload.template) {
+        const current = await this.getById(resolvedWorkoutId)
+        const now = new Date().toISOString()
+        sets.push('workout_template = ?')
+        vals.push(
+          JSON.stringify({
+            id: current?.workoutTemplate.id || resolvedWorkoutId,
+            exercises: this.withExerciseMetadata(payload.template.exercises, selectedExercises),
+            createdAt: current?.workoutTemplate.createdAt || now,
+            updatedAt: now,
+          })
+        )
+      }
 
-    sets.push('is_synced = ?')
-    vals.push(0)
-    sets.push('updated_at = ?')
-    vals.push(new Date().toISOString())
-    vals.push(workoutId) // for WHERE clause
+      sets.push('is_synced = ?')
+      vals.push(0)
+      sets.push('updated_at = ?')
+      vals.push(new Date().toISOString())
+      vals.push(resolvedWorkoutId) // for WHERE clause
 
-    if (sets.length > 2) {
-      // More than just is_synced + updated_at
-      await this.run(`UPDATE workouts SET ${sets.join(', ')} WHERE id = ?`, ...vals)
-    }
+      if (sets.length > 2) {
+        // More than just is_synced + updated_at
+        await this.run(`UPDATE workouts SET ${sets.join(', ')} WHERE id = ?`, ...vals)
+      }
 
-    await this.enqueueSync({
-      apiMethod: 'updateWorkout',
-      payload: [workoutId, payload],
+      await this.enqueueSync({
+        apiMethod: 'updateWorkout',
+        payload: [resolvedWorkoutId, payload],
+      })
     })
   }
 
   async delete(id: string): Promise<void> {
-    await this.run('DELETE FROM workouts WHERE id = ?', id)
+    return syncEngine.withIdRemapLock(async () => {
+      const resolvedId = syncEngine.resolveId('workouts', id)
+      await this.run('DELETE FROM workouts WHERE id = ?', resolvedId)
 
-    await this.enqueueSync({
-      apiMethod: 'deleteWorkout',
-      payload: [id],
+      await this.enqueueSync({
+        apiMethod: 'deleteWorkout',
+        payload: [resolvedId],
+      })
     })
   }
 
@@ -192,60 +199,71 @@ export class WorkoutRepository extends BaseRepository {
     request: WorkoutRecordRequest,
     workoutTitle: string
   ): Promise<WorkoutRecordResponse> {
-    const localId = this.generateLocalId()
-    const now = new Date().toISOString()
+    return syncEngine.withIdRemapLock(async () => {
+      const recordRequest = {
+        ...request,
+        workoutId: syncEngine.resolveId('workouts', request.workoutId),
+      }
+      const localId = this.generateLocalId()
+      const now = new Date().toISOString()
 
-    // Build the exercise records array for local storage
-    const exerciseRecords: WorkoutRecordExercise[] = request.exerciseRecords.map((er) => ({
-      exerciseName: er.exerciseId,
-      reps: er.reps,
-      weight: er.weight,
-      durationSeconds: er.durationSeconds || null,
-      notes: er.notes || null,
-    }))
+      // Build the exercise records array for local storage
+      const exerciseRecords: WorkoutRecordExercise[] = recordRequest.exerciseRecords.map((er) => ({
+        exerciseName: er.exerciseId,
+        reps: er.reps,
+        weight: er.weight,
+        durationSeconds: er.durationSeconds || null,
+        notes: er.notes || null,
+      }))
 
-    await this.run(
-      `INSERT INTO workout_records (id, workout_id, workout_title, notes, created_at, start_time, exercise_records, is_synced)
+      await this.run(
+        `INSERT INTO workout_records (id, workout_id, workout_title, notes, created_at, start_time, exercise_records, is_synced)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      localId,
-      request.workoutId,
-      workoutTitle,
-      request.notes || null,
-      now,
-      request.startTime || null,
-      JSON.stringify(exerciseRecords),
-      0
-    )
+        localId,
+        recordRequest.workoutId,
+        workoutTitle,
+        request.notes || null,
+        now,
+        request.startTime || null,
+        JSON.stringify(exerciseRecords),
+        0
+      )
 
-    await this.enqueueSync({
-      apiMethod: 'recordWorkout',
-      payload: request,
-      localTable: 'workout_records',
-      localId,
+      try {
+        await this.enqueueSync({
+          apiMethod: 'recordWorkout',
+          payload: recordRequest,
+          localTable: 'workout_records',
+          localId,
+        })
+      } catch (error) {
+        await this.run('DELETE FROM workout_records WHERE id = ?', localId)
+        throw error
+      }
+
+      // Return a local-shaped response for the UI
+      const localRecord: WorkoutRecord = {
+        id: localId,
+        workoutId: recordRequest.workoutId,
+        workoutTitle,
+        notes: request.notes || null,
+        createdAt: now,
+        startTime: request.startTime,
+        exerciseRecords,
+      }
+
+      return {
+        workoutRecord: localRecord,
+        streakUpdate: {
+          status: 'CONTINUED',
+          currentStreak: 0,
+          longestStreak: 0,
+          nextWorkoutId: null,
+          nextWorkoutDeadline: null,
+          streakFreezeCount: 0,
+        },
+      }
     })
-
-    // Return a local-shaped response for the UI
-    const localRecord: WorkoutRecord = {
-      id: localId,
-      workoutId: request.workoutId,
-      workoutTitle,
-      notes: request.notes || null,
-      createdAt: now,
-      startTime: request.startTime,
-      exerciseRecords,
-    }
-
-    return {
-      workoutRecord: localRecord,
-      streakUpdate: {
-        status: 'CONTINUED',
-        currentStreak: 0,
-        longestStreak: 0,
-        nextWorkoutId: null,
-        nextWorkoutDeadline: null,
-        streakFreezeCount: 0,
-      },
-    }
   }
 
   async deleteRecord(id: string): Promise<void> {

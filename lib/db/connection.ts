@@ -6,6 +6,7 @@
  * to be in effect and we avoid double-handle WAL problems.
  */
 import * as SQLite from 'expo-sqlite'
+import { syncEngine } from '../sync'
 
 let _db: SQLite.SQLiteDatabase | null = null
 let _dbResolver: ((db: SQLite.SQLiteDatabase) => void) | null = null
@@ -18,7 +19,7 @@ let _initPromise: Promise<SQLite.SQLiteDatabase> = new Promise((resolve) => {
  * (SyncEngine, repos, etc).
  */
 export function setSharedDatabase(db: SQLite.SQLiteDatabase) {
-  if (_db) return
+  if (_db === db) return
   _db = db
   if (_dbResolver) {
     _dbResolver(db)
@@ -31,7 +32,7 @@ export function setSharedDatabase(db: SQLite.SQLiteDatabase) {
  * call this before the provider is ready will wait for the Promise.
  */
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
-  return _initPromise
+  return _db ?? _initPromise
 }
 
 /**
@@ -41,13 +42,17 @@ export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
 export async function clearDatabase(): Promise<void> {
   try {
     const db = await getDatabase()
-    await db.withTransactionAsync(async () => {
-      await db.execAsync(`
-        DELETE FROM sync_queue;
-        DELETE FROM workout_records;
-        DELETE FROM workouts;
-        DELETE FROM routines;
-      `)
+    await syncEngine.withIdRemapLock(async () => {
+      await db.withTransactionAsync(async () => {
+        await db.execAsync(`
+          DELETE FROM sync_queue;
+          DELETE FROM workout_records;
+          DELETE FROM workouts;
+          DELETE FROM routines;
+          DELETE FROM id_remaps;
+        `)
+      })
+      syncEngine.clearIdRemaps()
     })
     console.log('Successfully cleared sqlite database on logout')
   } catch (error) {
