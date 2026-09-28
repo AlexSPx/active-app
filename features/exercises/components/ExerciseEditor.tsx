@@ -10,7 +10,7 @@ interface ExerciseEditorProps {
   exercise: WorkoutExercise
   onUpdateSets: (exerciseId: string, sets: WorkoutSet[]) => void
   onAddSet: (exerciseId: string) => void
-  onRemoveSet: (exerciseId: string, setIndex: number) => void
+  onRemoveSet: (exerciseId: string, setIndex: number) => () => void
 }
 
 export default function ExerciseEditor({
@@ -28,7 +28,7 @@ export default function ExerciseEditor({
       }
 
       const handleDelete = () => {
-        onRemoveSet(exercise.id, setIndex)
+        return onRemoveSet(exercise.id, setIndex)
       }
 
       if (exercise.category === 'CARDIO') {

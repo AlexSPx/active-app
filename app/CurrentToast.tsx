@@ -1,5 +1,5 @@
 import { Toast, useToastController, useToastState } from '@tamagui/toast'
-import { Button, H4, XStack, YStack, isWeb } from 'tamagui'
+import { Button, H4, Text, XStack, YStack, isWeb } from 'tamagui'
 
 export function CurrentToast() {
   const currentToast = useToastState()
@@ -22,6 +22,17 @@ export function CurrentToast() {
       <YStack items="center" p="$2" gap="$1">
         <Toast.Title fontWeight="bold">{currentToast.title}</Toast.Title>
         {!!currentToast.message && <Toast.Description>{currentToast.message}</Toast.Description>}
+        {currentToast.customData?.undo && (
+          <Toast.Action
+            altText="Undo deleting this set or interval"
+            accessibilityLabel="Undo deletion"
+            onPress={() => currentToast.customData.undo()}
+          >
+            <Text color="$primary" fontWeight="bold">
+              Undo
+            </Text>
+          </Toast.Action>
+        )}
       </YStack>
     </Toast>
   )

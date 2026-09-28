@@ -1,6 +1,8 @@
 import { Text, YStack, XStack, Button } from 'tamagui'
 import { StyleSheet } from 'react-native'
 import { memo, useEffect } from 'react'
+import { useToastController } from '@tamagui/toast'
+import { Trash2 } from '@tamagui/lucide-icons'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,7 +16,7 @@ interface CardioEditorSetRowProps {
   index: number
   durationSeconds: number | null | undefined
   onChange: (seconds: number | null) => void
-  onDelete: () => void
+  onDelete: () => () => void
 }
 
 const SWIPE_THRESHOLD = -80
@@ -25,7 +27,17 @@ export const CardioEditorSetRow = memo(function CardioEditorSetRow({
   onChange,
   onDelete,
 }: CardioEditorSetRowProps) {
+  const toast = useToastController()
   const translateX = useSharedValue(0)
+
+  const deleteInterval = () => {
+    const undo = onDelete()
+    toast.show('Interval deleted', {
+      duration: 5000,
+      message: 'Tap Undo to restore its value.',
+      customData: { undo },
+    })
+  }
 
   useEffect(() => {
     translateX.value = 0
@@ -38,7 +50,7 @@ export const CardioEditorSetRow = memo(function CardioEditorSetRow({
     .onEnd(() => {
       if (translateX.value < SWIPE_THRESHOLD) {
         translateX.value = withSpring(0)
-        runOnJS(onDelete)()
+        runOnJS(deleteInterval)()
       } else {
         translateX.value = withSpring(0)
       }
@@ -61,24 +73,39 @@ export const CardioEditorSetRow = memo(function CardioEditorSetRow({
         </Animated.View>
         <GestureDetector gesture={gesture}>
           <Animated.View style={[styles.row, animatedStyle]}>
-            <XStack items="center" gap="$2" bg="$surface" p="$1" r="$2">
-              <YStack flex={1} items="center">
-                <Text fontSize="$4" fontWeight="600" color="$color">
-                  {index + 1}
-                </Text>
-              </YStack>
-              <YStack flex={2} items="center">
-                <SmartTimeInput
-                  seconds={typeof durationSeconds === 'number' ? durationSeconds : 0}
-                  onChangeSeconds={(secs) => onChange(Number.isFinite(secs) ? secs : null)}
-                  placeholder="0:00"
-                  size="$4"
+            <YStack gap="$1">
+              <XStack items="center" gap="$2" bg="$surface" p="$1" r="$2">
+                <YStack flex={1} items="center">
+                  <Text fontSize="$4" fontWeight="600" color="$color">
+                    {index + 1}
+                  </Text>
+                </YStack>
+                <YStack flex={2} items="center">
+                  <SmartTimeInput
+                    seconds={typeof durationSeconds === 'number' ? durationSeconds : 0}
+                    onChangeSeconds={(secs) => onChange(Number.isFinite(secs) ? secs : null)}
+                    placeholder="0:00"
+                    size="$4"
+                    height={48}
+                    fontSize="$4"
+                    accessibilityLabel={`Interval ${index + 1} duration in minutes and seconds`}
+                  />
+                </YStack>
+              </XStack>
+              <XStack justify="flex-end">
+                <Button
+                  size="$3"
                   height={48}
-                  fontSize="$4"
-                  accessibilityLabel={`Interval ${index + 1} duration in minutes and seconds`}
-                />
-              </YStack>
-            </XStack>
+                  accessibilityLabel={`Delete interval ${index + 1}`}
+                  accessibilityHint="You can undo this for a few seconds."
+                  icon={<Trash2 size={18} color="$red10" />}
+                  color="$red10"
+                  onPress={deleteInterval}
+                >
+                  Delete
+                </Button>
+              </XStack>
+            </YStack>
           </Animated.View>
         </GestureDetector>
       </YStack>

@@ -35,7 +35,7 @@ export interface WorkoutSessionActions {
   ) => void
   toggleSetComplete: (exerciseId: string, setId: string) => void
   addSet: (exerciseId: string) => void
-  removeSet: (exerciseId: string, setIndex: number) => void
+  removeSet: (exerciseId: string, setIndex: number) => () => void
   startRestTimer: (setId: string) => void
   extendRestTimer: () => void
   skipRestTimer: () => void
@@ -221,18 +221,29 @@ export function useWorkoutSession(
   const removeSet = (exerciseId: string, setIndex: number) => {
     // Update in the store if running workout exists
     if (runningWorkout) {
-      removeExerciseSet(exerciseId, setIndex)
-    } else {
-      // Fallback to local state for non-running workouts
+      return removeExerciseSet(exerciseId, setIndex)
+    }
+
+    // Fallback to local state for non-running workouts
+    const removedSet = exercises.find((exercise) => exercise.sessionId === exerciseId)?.sets[
+      setIndex
+    ]
+    setExercises((prev) =>
+      prev.map((exercise) =>
+        exercise.sessionId === exerciseId
+          ? { ...exercise, sets: exercise.sets.filter((_, index) => index !== setIndex) }
+          : exercise
+      )
+    )
+    return () => {
+      if (!removedSet) return
       setExercises((prev) =>
-        prev.map((exercise) =>
-          exercise.sessionId === exerciseId
-            ? {
-                ...exercise,
-                sets: exercise.sets.filter((_, index) => index !== setIndex),
-              }
-            : exercise
-        )
+        prev.map((exercise) => {
+          if (exercise.sessionId !== exerciseId) return exercise
+          const sets = exercise.sets
+          const index = Math.min(setIndex, sets.length)
+          return { ...exercise, sets: [...sets.slice(0, index), removedSet, ...sets.slice(index)] }
+        })
       )
     }
   }

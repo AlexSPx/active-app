@@ -55,7 +55,7 @@ interface RunningWorkoutStore {
     durationSeconds?: number | null
   ) => void
   completeSet: (exerciseId: string, setId: string) => void
-  removeExerciseSet: (exerciseId: string, setIndex: number) => void
+  removeExerciseSet: (exerciseId: string, setIndex: number) => () => void
   addExerciseSet: (exerciseId: string) => void
   isWorkoutRunning: () => boolean
   getElapsedTime: () => number
@@ -286,6 +286,9 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
 
       removeExerciseSet: (exerciseId, setIndex) => {
         const state = get()
+        const removedSet = state.runningWorkout?.exercises.find(
+          (exercise) => exercise.sessionId === exerciseId
+        )?.sessionSets[setIndex]
         if (state.runningWorkout) {
           const updatedExercises = state.runningWorkout.exercises.map((exercise) => {
             if (exercise.sessionId === exerciseId) {
@@ -304,6 +307,35 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
             },
           })
         }
+
+        return () => {
+          if (!removedSet) return
+          set((current) => {
+            if (!current.runningWorkout) return current
+            return {
+              runningWorkout: {
+                ...current.runningWorkout,
+                exercises: current.runningWorkout.exercises.map((exercise) => {
+                  if (exercise.sessionId !== exerciseId) return exercise
+                  const sets = exercise.sessionSets
+                  const index = Math.min(setIndex, sets.length)
+                  let restoredSet = removedSet
+                  if (sets.some((set) => set.id === removedSet.id)) {
+                    let id = `${removedSet.id}-undo`
+                    let suffix = 2
+                    while (sets.some((set) => set.id === id))
+                      id = `${removedSet.id}-undo-${suffix++}`
+                    restoredSet = { ...removedSet, id }
+                  }
+                  return {
+                    ...exercise,
+                    sessionSets: [...sets.slice(0, index), restoredSet, ...sets.slice(index)],
+                  }
+                }),
+              },
+            }
+          })
+        }
       },
 
       addExerciseSet: (exerciseId) => {
@@ -311,13 +343,17 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         if (state.runningWorkout) {
           const updatedExercises = state.runningWorkout.exercises.map((exercise) => {
             if (exercise.sessionId === exerciseId) {
-              const newSetIndex = exercise.sessionSets.length + 1
+              let newSetId = `${exercise.sessionId}-set-${exercise.sessionSets.length + 1}`
+              let suffix = 2
+              while (exercise.sessionSets.some((set) => set.id === newSetId)) {
+                newSetId = `${exercise.sessionId}-set-${exercise.sessionSets.length + 1}-${suffix++}`
+              }
               return {
                 ...exercise,
                 sessionSets: [
                   ...exercise.sessionSets,
                   {
-                    id: `${exercise.sessionId}-set-${newSetIndex}`,
+                    id: newSetId,
                     reps: null,
                     weight: null,
                     durationSeconds: exercise.category === 'CARDIO' ? 0 : undefined,

@@ -12,11 +12,11 @@ type WorkoutState = {
     sets: { reps: number | null; weight: number | null; durationSeconds?: number | null }[]
   ) => void
   addSetToExercise: (exerciseId: string) => void
-  removeSetFromExercise: (exerciseId: string, setIndex: number) => void
+  removeSetFromExercise: (exerciseId: string, setIndex: number) => () => void
   reset: () => void
 }
 
-export const useWorkoutStore = create<WorkoutState>((set) => ({
+export const useWorkoutStore = create<WorkoutState>((set, get) => ({
   selectedExercises: [],
   setExercises: (exercises) => set({ selectedExercises: exercises }),
   addExercise: (e) => {
@@ -54,11 +54,24 @@ export const useWorkoutStore = create<WorkoutState>((set) => ({
           : ex
       ),
     })),
-  removeSetFromExercise: (exerciseId, setIndex) =>
+  removeSetFromExercise: (exerciseId, setIndex) => {
+    const removedSet = get().selectedExercises.find((ex) => ex.id === exerciseId)?.sets[setIndex]
     set((state) => ({
       selectedExercises: state.selectedExercises.map((ex) =>
         ex.id === exerciseId ? { ...ex, sets: ex.sets.filter((_, i) => i !== setIndex) } : ex
       ),
-    })),
+    }))
+    return () => {
+      if (!removedSet) return
+      set((state) => ({
+        selectedExercises: state.selectedExercises.map((ex) => {
+          if (ex.id !== exerciseId) return ex
+          const sets = ex.sets
+          const index = Math.min(setIndex, sets.length)
+          return { ...ex, sets: [...sets.slice(0, index), { ...removedSet }, ...sets.slice(index)] }
+        }),
+      }))
+    }
+  },
   reset: () => set({ selectedExercises: [] }),
 }))

@@ -1,7 +1,8 @@
 import { YStack, XStack, Text, Button, Input } from 'tamagui'
 import { StyleSheet } from 'react-native'
 import { useEffect, memo } from 'react'
-import { Check } from '@tamagui/lucide-icons'
+import { Check, Trash2 } from '@tamagui/lucide-icons'
+import { useToastController } from '@tamagui/toast'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -19,7 +20,7 @@ interface WorkoutSessionSetRowProps {
   previousSet?: { reps: number; weight: number }
   onUpdateSet: (field: 'reps' | 'weight', value: number) => void
   onToggleComplete: () => void
-  onDelete: () => void
+  onDelete: () => () => void
 }
 
 export const WorkoutSessionSetRow = memo(
@@ -31,7 +32,17 @@ export const WorkoutSessionSetRow = memo(
     onToggleComplete,
     onDelete,
   }: WorkoutSessionSetRowProps) {
+    const toast = useToastController()
     const translateX = useSharedValue(0)
+
+    const deleteSet = () => {
+      const undo = onDelete()
+      toast.show('Set deleted', {
+        duration: 5000,
+        message: 'Tap Undo to restore its values.',
+        customData: { undo },
+      })
+    }
 
     // Reset position when component re-renders (e.g., when a set is deleted)
     useEffect(() => {
@@ -48,8 +59,7 @@ export const WorkoutSessionSetRow = memo(
         if (translateX.value < SWIPE_THRESHOLD) {
           // Reset position before deleting
           translateX.value = withSpring(0)
-          // Auto-delete when swipe threshold is reached
-          runOnJS(onDelete)()
+          runOnJS(deleteSet)()
         } else {
           translateX.value = withSpring(0)
         }
@@ -78,100 +88,115 @@ export const WorkoutSessionSetRow = memo(
           {/* Swipeable Row */}
           <GestureDetector gesture={gesture}>
             <Animated.View style={[styles.row, animatedStyle]}>
-              <XStack
-                items="center"
-                gap="$2"
-                bg={set.completed ? '$primary' : '$surface'}
-                p="$1"
-                opacity={set.completed ? 0.8 : 1}
-              >
-                {/* Set Number */}
-                <YStack flex={1} items="center">
-                  <Text
-                    fontSize="$4"
-                    fontWeight="600"
-                    color={set.completed ? '$onPrimary' : '$color'}
-                  >
-                    {index + 1}
-                  </Text>
-                </YStack>
-
-                {/* Previous Set Data */}
-                <YStack flex={1} items="center">
-                  {previousSet ? (
-                    <Text fontSize="$3" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
-                      {previousSet.weight}×{previousSet.reps}
+              <YStack gap="$1">
+                <XStack
+                  items="center"
+                  gap="$2"
+                  bg={set.completed ? '$primary' : '$surface'}
+                  p="$1"
+                  opacity={set.completed ? 0.8 : 1}
+                >
+                  {/* Set Number */}
+                  <YStack flex={1} items="center">
+                    <Text
+                      fontSize="$4"
+                      fontWeight="600"
+                      color={set.completed ? '$onPrimary' : '$color'}
+                    >
+                      {index + 1}
                     </Text>
-                  ) : (
-                    <Text fontSize="$3" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
-                      -
-                    </Text>
-                  )}
-                </YStack>
+                  </YStack>
 
-                {/* Weight Input */}
-                <YStack flex={1} items="center">
-                  <Input
-                    width="100%"
-                    size="$3"
-                    py="$0"
-                    px="$3"
-                    placeholder="kg"
-                    keyboardType="numeric"
-                    value={set.weight?.toString() || ''}
-                    onChangeText={(text) => {
-                      if (text.trim() === '') {
-                        onUpdateSet('weight', undefined as any)
-                        return
-                      }
-                      const weight = Number.parseFloat(text)
-                      if (!Number.isNaN(weight)) onUpdateSet('weight', weight)
-                    }}
-                    bg={set.completed ? '$surface' : '$backgroundPress'}
-                    borderColor={set.completed ? '$onPrimary' : '$borderColor'}
-                    color={set.completed ? '$color' : '$color'}
-                    opacity={set.completed ? 0.9 : 1}
-                  />
-                </YStack>
+                  {/* Previous Set Data */}
+                  <YStack flex={1} items="center">
+                    {previousSet ? (
+                      <Text fontSize="$3" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
+                        {previousSet.weight}×{previousSet.reps}
+                      </Text>
+                    ) : (
+                      <Text fontSize="$3" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
+                        -
+                      </Text>
+                    )}
+                  </YStack>
 
-                {/* Reps Input */}
-                <YStack flex={1} items="center">
-                  <Input
-                    width="100%"
-                    size="$3"
-                    py="$0"
-                    px="$3"
-                    placeholder="reps"
-                    keyboardType="numeric"
-                    value={set.reps?.toString() || ''}
-                    onChangeText={(text) => {
-                      if (text.trim() === '') {
-                        onUpdateSet('reps', undefined as any)
-                        return
-                      }
-                      const reps = Number.parseInt(text)
-                      if (!Number.isNaN(reps)) onUpdateSet('reps', reps)
-                    }}
-                    bg={set.completed ? '$surface' : '$backgroundPress'}
-                    borderColor={set.completed ? '$onPrimary' : '$borderColor'}
-                    color={set.completed ? '$color' : '$color'}
-                    opacity={set.completed ? 0.9 : 1}
-                  />
-                </YStack>
+                  {/* Weight Input */}
+                  <YStack flex={1} items="center">
+                    <Input
+                      width="100%"
+                      size="$3"
+                      py="$0"
+                      px="$3"
+                      placeholder="kg"
+                      keyboardType="numeric"
+                      value={set.weight?.toString() || ''}
+                      onChangeText={(text) => {
+                        if (text.trim() === '') {
+                          onUpdateSet('weight', undefined as any)
+                          return
+                        }
+                        const weight = Number.parseFloat(text)
+                        if (!Number.isNaN(weight)) onUpdateSet('weight', weight)
+                      }}
+                      bg={set.completed ? '$surface' : '$backgroundPress'}
+                      borderColor={set.completed ? '$onPrimary' : '$borderColor'}
+                      color={set.completed ? '$color' : '$color'}
+                      opacity={set.completed ? 0.9 : 1}
+                    />
+                  </YStack>
 
-                {/* Complete Button */}
-                <YStack width={40} items="center">
+                  {/* Reps Input */}
+                  <YStack flex={1} items="center">
+                    <Input
+                      width="100%"
+                      size="$3"
+                      py="$0"
+                      px="$3"
+                      placeholder="reps"
+                      keyboardType="numeric"
+                      value={set.reps?.toString() || ''}
+                      onChangeText={(text) => {
+                        if (text.trim() === '') {
+                          onUpdateSet('reps', undefined as any)
+                          return
+                        }
+                        const reps = Number.parseInt(text)
+                        if (!Number.isNaN(reps)) onUpdateSet('reps', reps)
+                      }}
+                      bg={set.completed ? '$surface' : '$backgroundPress'}
+                      borderColor={set.completed ? '$onPrimary' : '$borderColor'}
+                      color={set.completed ? '$color' : '$color'}
+                      opacity={set.completed ? 0.9 : 1}
+                    />
+                  </YStack>
+
+                  {/* Complete Button */}
+                  <YStack width={40} items="center">
+                    <Button
+                      size="$3"
+                      width={40}
+                      circular
+                      bg={set.completed ? '$primary' : '$backgroundPress'}
+                      borderColor={set.completed ? '$primary' : '$borderColor'}
+                      onPress={onToggleComplete}
+                      icon={set.completed ? <Check size={16} color="$onPrimary" /> : undefined}
+                    />
+                  </YStack>
+                </XStack>
+                <XStack justify="flex-end">
                   <Button
                     size="$3"
-                    width={40}
-                    circular
-                    bg={set.completed ? '$primary' : '$backgroundPress'}
-                    borderColor={set.completed ? '$primary' : '$borderColor'}
-                    onPress={onToggleComplete}
-                    icon={set.completed ? <Check size={16} color="$onPrimary" /> : undefined}
-                  />
-                </YStack>
-              </XStack>
+                    height={48}
+                    accessibilityLabel={`Delete set ${index + 1}`}
+                    accessibilityHint="You can undo this for a few seconds."
+                    icon={<Trash2 size={18} color="$red10" />}
+                    color="$red10"
+                    onPress={deleteSet}
+                  >
+                    Delete
+                  </Button>
+                </XStack>
+              </YStack>
             </Animated.View>
           </GestureDetector>
         </YStack>

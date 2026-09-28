@@ -1,7 +1,8 @@
 import { YStack, XStack, Text, Button } from 'tamagui'
 import { StyleSheet } from 'react-native'
 import { useEffect, memo, useState, useRef } from 'react'
-import { Check } from '@tamagui/lucide-icons'
+import { Check, Trash2 } from '@tamagui/lucide-icons'
+import { useToastController } from '@tamagui/toast'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -20,7 +21,7 @@ interface CardioSessionSetRowProps {
   previousDuration?: number | null
   onUpdateDuration: (seconds: number) => void
   onToggleComplete: () => void
-  onDelete: () => void
+  onDelete: () => () => void
 }
 
 // Format raw digits to live M:SS display as user types
@@ -84,8 +85,18 @@ export const CardioSessionSetRow = memo(
     onToggleComplete,
     onDelete,
   }: CardioSessionSetRowProps) {
+    const toast = useToastController()
     const translateX = useSharedValue(0)
     const [displaySeconds, setDisplaySeconds] = useState(set.durationSeconds ?? 0)
+
+    const deleteInterval = () => {
+      const undo = onDelete()
+      toast.show('Interval deleted', {
+        duration: 5000,
+        message: 'Tap Undo to restore its value.',
+        customData: { undo },
+      })
+    }
 
     useEffect(() => {
       translateX.value = 0
@@ -100,7 +111,7 @@ export const CardioSessionSetRow = memo(
       .onEnd(() => {
         if (translateX.value < SWIPE_THRESHOLD) {
           translateX.value = withSpring(0)
-          runOnJS(onDelete)()
+          runOnJS(deleteInterval)()
         } else {
           translateX.value = withSpring(0)
         }
@@ -126,55 +137,70 @@ export const CardioSessionSetRow = memo(
           </Animated.View>
           <GestureDetector gesture={gesture}>
             <Animated.View style={[styles.row, animatedStyle]}>
-              <XStack
-                items="center"
-                gap="$2"
-                bg={set.completed ? '$primary' : '$surface'}
-                p="$1"
-                opacity={set.completed ? 0.8 : 1}
-              >
-                {/* Set Number */}
-                <YStack flex={1} items="center">
-                  <Text
-                    fontSize="$4"
-                    fontWeight="600"
-                    color={set.completed ? '$onPrimary' : '$color'}
-                  >
-                    {index + 1}
-                  </Text>
-                </YStack>
-                {/* Previous Duration */}
-                <YStack flex={1} items="center">
-                  <Text fontSize="$3" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
-                    {previousDuration != null ? formatSeconds(previousDuration) : '-'}
-                  </Text>
-                </YStack>
-                {/* Duration Input */}
-                <YStack flex={2} items="center">
-                  <SmartTimeInput
-                    seconds={displaySeconds}
-                    onChangeSeconds={(secs) => {
-                      // optimistic local update
-                      setDisplaySeconds(secs)
-                      // persist via parent
-                      onUpdateDuration(secs)
-                    }}
-                    placeholder="0:00"
-                  />
-                </YStack>
-                {/* Complete Button */}
-                <YStack width={40} items="center">
+              <YStack gap="$1">
+                <XStack
+                  items="center"
+                  gap="$2"
+                  bg={set.completed ? '$primary' : '$surface'}
+                  p="$1"
+                  opacity={set.completed ? 0.8 : 1}
+                >
+                  {/* Set Number */}
+                  <YStack flex={1} items="center">
+                    <Text
+                      fontSize="$4"
+                      fontWeight="600"
+                      color={set.completed ? '$onPrimary' : '$color'}
+                    >
+                      {index + 1}
+                    </Text>
+                  </YStack>
+                  {/* Previous Duration */}
+                  <YStack flex={1} items="center">
+                    <Text fontSize="$3" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
+                      {previousDuration != null ? formatSeconds(previousDuration) : '-'}
+                    </Text>
+                  </YStack>
+                  {/* Duration Input */}
+                  <YStack flex={2} items="center">
+                    <SmartTimeInput
+                      seconds={displaySeconds}
+                      onChangeSeconds={(secs) => {
+                        // optimistic local update
+                        setDisplaySeconds(secs)
+                        // persist via parent
+                        onUpdateDuration(secs)
+                      }}
+                      placeholder="0:00"
+                    />
+                  </YStack>
+                  {/* Complete Button */}
+                  <YStack width={40} items="center">
+                    <Button
+                      size="$3"
+                      width={40}
+                      circular
+                      bg={set.completed ? '$primary' : '$backgroundPress'}
+                      borderColor={set.completed ? '$primary' : '$borderColor'}
+                      onPress={onToggleComplete}
+                      icon={set.completed ? <Check size={16} color="$onPrimary" /> : undefined}
+                    />
+                  </YStack>
+                </XStack>
+                <XStack justify="flex-end">
                   <Button
                     size="$3"
-                    width={40}
-                    circular
-                    bg={set.completed ? '$primary' : '$backgroundPress'}
-                    borderColor={set.completed ? '$primary' : '$borderColor'}
-                    onPress={onToggleComplete}
-                    icon={set.completed ? <Check size={16} color="$onPrimary" /> : undefined}
-                  />
-                </YStack>
-              </XStack>
+                    height={48}
+                    accessibilityLabel={`Delete interval ${index + 1}`}
+                    accessibilityHint="You can undo this for a few seconds."
+                    icon={<Trash2 size={18} color="$red10" />}
+                    color="$red10"
+                    onPress={deleteInterval}
+                  >
+                    Delete
+                  </Button>
+                </XStack>
+              </YStack>
             </Animated.View>
           </GestureDetector>
         </YStack>

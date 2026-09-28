@@ -17,7 +17,7 @@ interface WorkoutSessionExerciseProps {
   ) => void
   onToggleSetComplete: (exerciseId: string, setId: string) => void
   onAddSet: (exerciseId: string) => void
-  onRemoveSet: (exerciseId: string, setIndex: number) => void
+  onRemoveSet: (exerciseId: string, setIndex: number) => () => void
   onStartRestTimer: (setId: string) => void
 }
 
