@@ -60,7 +60,7 @@ export default function ExerciseEditor({
         {/* Exercise Header */}
         <XStack items="center" gap="$2">
           <YStack flex={1} style={{ minWidth: 0 }}>
-            <Text fontSize="$5" fontWeight="600" color="$color">
+            <Text fontSize="$6" fontWeight="600" color="$color">
               {exercise.name}
             </Text>
             <Text fontSize="$3" color="$colorSubtle">
