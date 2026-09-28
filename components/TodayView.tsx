@@ -1,6 +1,13 @@
 import React, { useMemo } from 'react'
-import { YStack, XStack, Text, Card, Circle } from 'tamagui'
-import { Calendar, Clock, Zap, Check, Circle as CircleIcon } from '@tamagui/lucide-icons'
+import { YStack, XStack, Text, Circle } from 'tamagui'
+import {
+  Calendar,
+  ChevronRight,
+  Clock,
+  Zap,
+  Check,
+  Circle as CircleIcon,
+} from '@tamagui/lucide-icons'
 import { useActiveRoutine } from '../features/routines'
 import { useWorkouts } from '../features/workouts'
 import { useAuth } from '../contexts/AuthContext'
@@ -49,17 +56,6 @@ const RestDayView: React.FC = () => (
   </YStack>
 )
 
-const NoActiveRoutineView: React.FC = () => (
-  <YStack gap="$3">
-    <Text fontSize="$5" fontWeight="700" color="$color">
-      No active routine
-    </Text>
-    <Text fontSize="$3" color="$color10">
-      Create or select a routine to see your plan for today.
-    </Text>
-  </YStack>
-)
-
 // ============================================================================
 // Sequential Today View
 // ============================================================================
@@ -82,6 +78,8 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onPress }) => {
         pressStyle={{ scale: 0.96, opacity: 0.8 }}
         animation="quick"
         cursor="pointer"
+        accessibilityRole="button"
+        accessibilityLabel={`View workout ${workout.title}`}
         onPress={onPress}
       >
         <XStack
@@ -104,6 +102,12 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onPress }) => {
             {exercises} exercises
           </Text>
         </YStack>
+        <XStack items="center" gap="$1">
+          <Text fontSize="$2" color="$primary" fontWeight="600">
+            View workout
+          </Text>
+          <ChevronRight size={16} color="$primary" />
+        </XStack>
       </XStack>
     </XStack>
   )
@@ -141,55 +145,41 @@ const SequentialTodayView: React.FC<SequentialTodayViewProps> = ({
   return (
     <YStack gap="$3">
       <TodayHeader todayFormatted={todayFormatted} />
-      <Card
-        bg="$surface"
-        borderColor="$borderColor"
-        borderWidth={1}
-        rounded="$4"
-        p="$4"
-        elevation={2}
-        animation="quick"
-        pressStyle={{ scale: 0.995 }}
-        hoverStyle={{ elevation: 4 }}
-      >
-        <YStack gap="$4">
-          <YStack gap="$3">
-            <XStack justify="space-between" items="center">
-              <Text
-                fontSize="$3"
-                color="$colorSubtle"
-                fontWeight="600"
-                textTransform="uppercase"
-                letterSpacing={0.5}
-              >
-                {todayInfo.isWorkoutDay ? "Today's Workout" : 'Rest Day'}
-              </Text>
-              <Text
-                fontSize="$2"
-                color={todayInfo.isWorkoutDay ? '$primary' : '$green8'}
-                fontWeight="600"
-                textTransform="uppercase"
-              >
-                {todayInfo.isWorkoutDay ? 'Active' : 'Recovery'}
-              </Text>
-            </XStack>
+      <YStack gap="$3">
+        <XStack justify="space-between" items="center">
+          <Text
+            fontSize="$3"
+            color="$colorSubtle"
+            fontWeight="600"
+            textTransform="uppercase"
+            letterSpacing={0.5}
+          >
+            {todayInfo.isWorkoutDay ? "Today's Workout" : 'Rest Day'}
+          </Text>
+          <Text
+            fontSize="$2"
+            color={todayInfo.isWorkoutDay ? '$primary' : '$green8'}
+            fontWeight="600"
+            textTransform="uppercase"
+          >
+            {todayInfo.isWorkoutDay ? 'Active' : 'Recovery'}
+          </Text>
+        </XStack>
 
-            {todayInfo.isWorkoutDay && todayInfo.workout ? (
-              <WorkoutCard
-                workout={todayInfo.workout}
-                onPress={() =>
-                  router.push({
-                    pathname: '/(tabs)/(workouts)',
-                    params: { focusId: todayInfo.workout!.id },
-                  })
-                }
-              />
-            ) : (
-              <RestDayView />
-            )}
-          </YStack>
-        </YStack>
-      </Card>
+        {todayInfo.isWorkoutDay && todayInfo.workout ? (
+          <WorkoutCard
+            workout={todayInfo.workout}
+            onPress={() =>
+              router.push({
+                pathname: '/(tabs)/(workouts)',
+                params: { focusId: todayInfo.workout!.id },
+              })
+            }
+          />
+        ) : (
+          <RestDayView />
+        )}
+      </YStack>
     </YStack>
   )
 }
@@ -220,6 +210,8 @@ const WorkoutChecklistItem: React.FC<WorkoutChecklistItemProps> = ({
     pressStyle={{ scale: 0.98, opacity: 0.8 }}
     animation="quick"
     cursor="pointer"
+    accessibilityRole="button"
+    accessibilityLabel={`View workout ${workout.title}`}
     onPress={onPress}
   >
     <Circle
@@ -245,6 +237,12 @@ const WorkoutChecklistItem: React.FC<WorkoutChecklistItemProps> = ({
         {workout?.workoutTemplate.exercises.length} exercises
       </Text>
     </YStack>
+    <XStack items="center" gap="$1">
+      <Text fontSize="$2" color="$primary" fontWeight="600">
+        View workout
+      </Text>
+      <ChevronRight size={16} color="$primary" />
+    </XStack>
   </XStack>
 )
 
@@ -285,71 +283,57 @@ const WeeklyCompletionTodayView: React.FC<WeeklyCompletionTodayViewProps> = ({
   return (
     <YStack gap="$3">
       <TodayHeader todayFormatted={todayFormatted} />
-      <Card
-        bg="$surface"
-        borderColor="$borderColor"
-        borderWidth={1}
-        rounded="$4"
-        p="$4"
-        elevation={2}
-        animation="quick"
-        pressStyle={{ scale: 0.995 }}
-        hoverStyle={{ elevation: 4 }}
-      >
-        <YStack gap="$4">
-          <YStack gap="$3">
-            <XStack justify="space-between" items="center">
-              <Text
-                fontSize="$3"
-                color="$colorSubtle"
-                fontWeight="600"
-                textTransform="uppercase"
-                letterSpacing={0.5}
-              >
-                {allComplete ? 'All Done!' : 'Choose Your Workout'}
-              </Text>
-              <Text fontSize="$2" color="$primary" fontWeight="600" textTransform="uppercase">
-                {completedCount}/{totalWorkouts} done
-              </Text>
-            </XStack>
+      <YStack gap="$3">
+        <XStack justify="space-between" items="center">
+          <Text
+            fontSize="$3"
+            color="$colorSubtle"
+            fontWeight="600"
+            textTransform="uppercase"
+            letterSpacing={0.5}
+          >
+            {allComplete ? 'All Done!' : 'Choose Your Workout'}
+          </Text>
+          <Text fontSize="$2" color="$primary" fontWeight="600" textTransform="uppercase">
+            {completedCount}/{totalWorkouts} done
+          </Text>
+        </XStack>
 
-            {allComplete ? (
-              <YStack gap="$2" items="center" py="$2">
-                <Text fontSize="$4" fontWeight="600" color="$green10">
-                  🎉 Week complete!
-                </Text>
-                <Text fontSize="$2" color="$color10">
-                  Great job! You've finished all workouts for this week.
-                </Text>
-              </YStack>
-            ) : (
-              <YStack gap="$2">
-                <Text fontSize="$2" color="$color10">
-                  {weeklyWorkouts.length} remaining this week:
-                </Text>
-                {weeklyWorkouts.slice(0, 3).map((workout) => (
-                  <WorkoutChecklistItem
-                    key={workout?.id}
-                    workout={workout}
-                    isCompleted={false}
-                    onPress={() =>
-                      router.push({
-                        pathname: '/(tabs)/(workouts)',
-                        params: { focusId: workout?.id },
-                      })
-                    }
-                  />
-                ))}
-                {weeklyWorkouts.length > 3 && (
-                  <Text fontSize="$2" color="$color10" style={{ textAlign: 'center' }}>
-                    +{weeklyWorkouts.length - 3} more workouts
-                  </Text>
-                )}
-              </YStack>
+        {allComplete ? (
+          <YStack gap="$2" items="center" py="$2">
+            <Text fontSize="$4" fontWeight="600" color="$green10">
+              🎉 Week complete!
+            </Text>
+            <Text fontSize="$2" color="$color10">
+              Great job! You've finished all workouts for this week.
+            </Text>
+          </YStack>
+        ) : (
+          <YStack gap="$2">
+            <Text fontSize="$2" color="$color10">
+              {weeklyWorkouts.length} remaining this week:
+            </Text>
+            {weeklyWorkouts.slice(0, 3).map((workout) => (
+              <WorkoutChecklistItem
+                key={workout?.id}
+                workout={workout}
+                isCompleted={false}
+                onPress={() =>
+                  router.push({
+                    pathname: '/(tabs)/(workouts)',
+                    params: { focusId: workout?.id },
+                  })
+                }
+              />
+            ))}
+            {weeklyWorkouts.length > 3 && (
+              <Text fontSize="$2" color="$color10" style={{ textAlign: 'center' }}>
+                +{weeklyWorkouts.length - 3} more workouts
+              </Text>
             )}
           </YStack>
-        </YStack>
-      </Card>
+        )}
+      </YStack>
     </YStack>
   )
 }
@@ -374,27 +358,7 @@ export const TodayView: React.FC = () => {
   // Get completed workout IDs from user's streak data
   const completedWorkoutIds = user?.streak?.weeklyCompletedWorkoutIds ?? []
 
-  // No active routine
-  if (!activeRoutine) {
-    return (
-      <YStack gap="$3">
-        <TodayHeader todayFormatted={todayFormatted} />
-        <Card
-          bg="$surface"
-          borderColor="$borderColor"
-          borderWidth={1}
-          rounded="$4"
-          p="$4"
-          elevation={2}
-          animation="quick"
-          pressStyle={{ scale: 0.995 }}
-          hoverStyle={{ elevation: 4 }}
-        >
-          <NoActiveRoutineView />
-        </Card>
-      </YStack>
-    )
-  }
+  if (!activeRoutine) return null
 
   // Determine routine type and render appropriate view
   const routineType = activeRoutine.routineType ?? 'SEQUENTIAL'

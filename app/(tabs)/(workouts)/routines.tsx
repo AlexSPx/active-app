@@ -200,7 +200,6 @@ export default function RoutinesTab() {
               setRefreshing(false)
             }
           }}
-          onCreateRoutine={openCreate}
         />
       </YStack>
 

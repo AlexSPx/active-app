@@ -17,7 +17,6 @@ export interface WorkoutListProps {
   listHeader?: React.ReactElement
   refreshing?: boolean
   onRefresh?: () => void
-  onCreateWorkout?: () => void
   focusId?: string
 }
 
@@ -33,7 +32,6 @@ export const WorkoutList = memo(
     listHeader,
     refreshing,
     onRefresh,
-    onCreateWorkout,
     focusId,
   }: WorkoutListProps) {
     const listRef = useRef<any>(null)
@@ -81,8 +79,6 @@ export const WorkoutList = memo(
               title="No workouts yet"
               description="Start a new workout to track your progress."
               icon={Dumbbell}
-              actionLabel={onCreateWorkout ? 'Create Workout' : undefined}
-              onAction={onCreateWorkout}
             />
           }
           ItemSeparatorComponent={() => <View height={12} />}

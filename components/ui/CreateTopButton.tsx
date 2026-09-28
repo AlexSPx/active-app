@@ -12,27 +12,28 @@ export function CreateTopButton({ label, onPress }: CreateTopButtonProps) {
       borderWidth={1.5}
       borderColor="$borderColor"
       borderStyle="dashed"
+      width="100%"
       py={15}
       bg="transparent"
       onPress={onPress}
       pressStyle={{ opacity: 0.86 }}
-      style={{ borderRadius: 14 }}
+      rounded="$4"
     >
       <XStack items="center" justify="center" gap="$2.5">
         <XStack
           width={22}
           height={22}
           borderWidth={1.5}
-          borderColor="$colorMuted"
+          borderColor="$colorSubtle"
           items="center"
           justify="center"
           style={{ borderRadius: 999 }}
         >
-          <Text fontSize={17} color="$colorMuted" lineHeight={17} mt={-2}>
+          <Text fontSize={17} color="$colorSubtle" lineHeight={17} mt={-2}>
             +
           </Text>
         </XStack>
-        <Text fontSize="$4" fontWeight="500" color="$colorMuted">
+        <Text fontSize="$4" fontWeight="600" color="$color">
           {label}
         </Text>
       </XStack>

@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react'
-import { YStack, XStack, Text, Circle, Button } from 'tamagui'
+import { YStack, XStack, Text, Circle } from 'tamagui'
 import { Check, Circle as CircleIcon } from '@tamagui/lucide-icons'
 import type { Routine, RoutinePatternItem } from 'types/routine'
 import type { ApiWorkout } from 'types/api'
@@ -201,11 +201,7 @@ const WorkoutChecklistItem: React.FC<WorkoutChecklistItemProps> = ({
       items="center"
       justify="center"
     >
-      {isCompleted ? (
-        <Check size={16} color="white" />
-      ) : (
-        <CircleIcon size={16} color="$color8" />
-      )}
+      {isCompleted ? <Check size={16} color="white" /> : <CircleIcon size={16} color="$color8" />}
     </Circle>
     <Text
       flex={1}
@@ -230,7 +226,6 @@ const WeeklyCompletionView: React.FC<WeeklyCompletionViewProps> = ({
   workouts,
   weekRange,
 }) => {
-
   const { user } = useAuth()
 
   // Get unique workouts from the pattern
@@ -296,55 +291,6 @@ const WeeklyCompletionView: React.FC<WeeklyCompletionViewProps> = ({
 }
 
 // ============================================================================
-// No Active Routine View
-// ============================================================================
-
-const NoActiveRoutineView: React.FC<{ weekRange: string }> = ({ weekRange }) => (
-  <YStack gap="$3">
-    <WeekHeader weekRange={weekRange} />
-    <XStack
-      bg="$surface"
-      borderColor="$borderColor"
-      borderWidth={1}
-      rounded="$4"
-      p="$4"
-      gap="$1"
-      elevation={2}
-      opacity={0.45}
-      pointerEvents="none"
-    >
-      {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => (
-        <DayView key={index} day={day} date={index + 1} />
-      ))}
-    </XStack>
-    <YStack
-      mt="$3"
-      bg="$surface"
-      borderColor="$borderColor"
-      borderWidth={1}
-      rounded="$6"
-      p="$4"
-      gap="$3"
-    >
-      <Text fontSize="$5" fontWeight="700" color="$color">
-        No active routine
-      </Text>
-      <Text fontSize="$3" color="$color10">
-        Create or select a routine to see your week at a glance.
-      </Text>
-      <XStack gap="$2" justify="center">
-        <Button bg="$primary" onPress={() => router.push('/routines/new')}>
-          <Text>Create Routine</Text>
-        </Button>
-        <Button variant="outlined" onPress={() => router.push('/(tabs)/(workouts)/routines')}>
-          <Text>Manage Routines</Text>
-        </Button>
-      </XStack>
-    </YStack>
-  </YStack>
-)
-
-// ============================================================================
 // Loading View
 // ============================================================================
 
@@ -406,18 +352,8 @@ export const WeeklyView: React.FC = () => {
     return <LoadingWeekView />
   }
 
-  // No active routine
   if (!activeRoutine) {
-    return (
-      <YStack gap="$3">
-        <NoActiveRoutineView weekRange={weekRange} />
-        {error && (
-          <Text color="$red10" fontSize="$3">
-            {error}
-          </Text>
-        )}
-      </YStack>
-    )
+    return null
   }
 
   // Determine routine type and render appropriate view
@@ -426,17 +362,9 @@ export const WeeklyView: React.FC = () => {
   return (
     <YStack gap="$3">
       {routineType === 'WEEKLY_COMPLETION' ? (
-        <WeeklyCompletionView
-          routine={activeRoutine}
-          workouts={workouts}
-          weekRange={weekRange}
-        />
+        <WeeklyCompletionView routine={activeRoutine} workouts={workouts} weekRange={weekRange} />
       ) : (
-        <SequentialWeekView
-          routine={activeRoutine}
-          workouts={workouts}
-          weekRange={weekRange}
-        />
+        <SequentialWeekView routine={activeRoutine} workouts={workouts} weekRange={weekRange} />
       )}
       {error && (
         <Text color="$red10" fontSize="$3">
