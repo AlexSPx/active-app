@@ -100,7 +100,8 @@ export const WorkoutCard = memo(
                   textTransform={isInRoutine ? 'none' : 'uppercase'}
                   color={isInRoutine ? '$secondary' : '$colorMuted'}
                 >
-                  {summary.topLabel} · {workout.workoutTemplate.exercises.length} exercises
+                  {summary.topLabel} · {workout.workoutTemplate.exercises.length}{' '}
+                  {workout.workoutTemplate.exercises.length === 1 ? 'exercise' : 'exercises'}
                 </Text>
                 <Text fontSize={21} lineHeight={25} fontWeight="700" color="$color">
                   {workout.title}
@@ -191,7 +192,7 @@ export const WorkoutCard = memo(
                   <Text color="$color" fontWeight="600">
                     {summary.totalSets}
                   </Text>{' '}
-                  sets
+                  {summary.totalSets === 1 ? 'set' : 'sets'}
                 </Text>
               </XStack>
             </XStack>

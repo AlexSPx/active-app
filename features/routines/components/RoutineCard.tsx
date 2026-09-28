@@ -44,7 +44,7 @@ export const RoutineCard = memo(function RoutineCard({
     return {
       restDays,
       workoutDays,
-      typeLabel: isWeeklyCompletion ? 'Weekly' : 'Sequential',
+      typeLabel: isWeeklyCompletion ? 'Days of the week' : 'Repeating cycle',
       visibleDays,
       hiddenCount,
     }

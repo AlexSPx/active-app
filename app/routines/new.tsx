@@ -11,7 +11,6 @@ import {
   ScrollView,
 } from 'tamagui'
 import { useNavigation, router } from 'expo-router'
-import { Calendar, ListChecks } from '@tamagui/lucide-icons'
 import { useToastController } from '@tamagui/toast'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -286,7 +285,7 @@ export default function NewRoutinePage() {
                 <Button
                   flex={1}
                   size="$4"
-                  icon={Calendar}
+                  px="$1"
                   bg={routineType === 'SEQUENTIAL' ? '$backgroundAccent' : '$backgroundHover'}
                   borderWidth={1}
                   borderColor={routineType === 'SEQUENTIAL' ? '$primary' : '$borderColor'}
@@ -296,14 +295,15 @@ export default function NewRoutinePage() {
                   <Text
                     color={routineType === 'SEQUENTIAL' ? '$primary' : '$color'}
                     fontWeight={routineType === 'SEQUENTIAL' ? '600' : '500'}
+                    fontSize="$2"
                   >
-                    Sequential
+                    Repeating cycle
                   </Text>
                 </Button>
                 <Button
                   flex={1}
                   size="$4"
-                  icon={ListChecks}
+                  px="$1"
                   bg={
                     routineType === 'WEEKLY_COMPLETION' ? '$backgroundAccent' : '$backgroundHover'
                   }
@@ -315,15 +315,16 @@ export default function NewRoutinePage() {
                   <Text
                     color={routineType === 'WEEKLY_COMPLETION' ? '$primary' : '$color'}
                     fontWeight={routineType === 'WEEKLY_COMPLETION' ? '600' : '500'}
+                    fontSize="$2"
                   >
-                    Weekly
+                    Days of the week
                   </Text>
                 </Button>
               </XStack>
               <Text fontSize="$2" color="$color11">
                 {routineType === 'SEQUENTIAL'
-                  ? 'Days repeat in a fixed cycle, regardless of the calendar.'
-                  : 'Complete all workouts within a week (Mon-Sun) in any order.'}
+                  ? 'Repeating cycle: days repeat in order, regardless of weekdays.'
+                  : 'Days of the week: finish all workouts Monday–Sunday in any order.'}
               </Text>
             </YStack>
 

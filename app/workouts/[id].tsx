@@ -242,7 +242,10 @@ export default function WorkoutDetailScreen() {
                           py="$1"
                           rounded="$2"
                         >
-                          {exercise.reps?.length || exercise.durationSeconds?.length || 0} sets
+                          {exercise.reps?.length || exercise.durationSeconds?.length || 0}{' '}
+                          {(exercise.reps?.length || exercise.durationSeconds?.length || 0) === 1
+                            ? 'set'
+                            : 'sets'}
                         </Text>
                         <Text
                           fontSize="$2"
