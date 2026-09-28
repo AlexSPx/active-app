@@ -1,4 +1,5 @@
 import React, { useCallback, useState, useEffect } from 'react'
+import { KeyboardAvoidingView, Platform } from 'react-native'
 import { YStack, Text, Input, Button, Separator, View, TextArea, ScrollView } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 import { useRouter } from 'expo-router'
@@ -278,34 +279,39 @@ export default function NewWorkoutScreen() {
   )
 
   return (
-    <View flex={1} bg="$background" p="$4">
-      {selectedExercises.length > 0 ? (
-        <FlashList
-          data={selectedExercises}
-          renderItem={renderExerciseEditor}
-          keyExtractor={(item) => item.id}
-          style={{ flex: 1 }}
-          contentInsetAdjustmentBehavior="automatic"
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          ItemSeparatorComponent={() => <View height="$4" />}
-          ListHeaderComponent={ListHeaderComponent}
-          ListHeaderComponentStyle={{ marginBottom: 16 }}
-          ListFooterComponent={ListFooterComponent}
-          showsVerticalScrollIndicator={false}
-        />
-      ) : (
-        <ScrollView
-          flex={1}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <YStack gap="$4">
-            <ListHeaderComponent />
-            <ListFooterComponent />
-          </YStack>
-        </ScrollView>
-      )}
-    </View>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View flex={1} bg="$background" p="$4">
+        {selectedExercises.length > 0 ? (
+          <FlashList
+            data={selectedExercises}
+            renderItem={renderExerciseEditor}
+            keyExtractor={(item) => item.id}
+            style={{ flex: 1 }}
+            contentInsetAdjustmentBehavior="automatic"
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+            ItemSeparatorComponent={() => <View height="$4" />}
+            ListHeaderComponent={ListHeaderComponent}
+            ListHeaderComponentStyle={{ marginBottom: 16 }}
+            ListFooterComponent={ListFooterComponent}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <ScrollView
+            flex={1}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <YStack gap="$4">
+              <ListHeaderComponent />
+              <ListFooterComponent />
+            </YStack>
+          </ScrollView>
+        )}
+      </View>
+    </KeyboardAvoidingView>
   )
 }
