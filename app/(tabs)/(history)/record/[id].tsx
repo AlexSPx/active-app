@@ -143,7 +143,9 @@ export default function RecordDetailScreen() {
           </XStack>
           <View width={1} height="100%" bg="$borderColor" mx="$3" />
           <XStack flex={1} items="center" justify="center">
-            <Text color="$colorSubtle">{totalSets} sets</Text>
+            <Text color="$colorSubtle">
+              {totalSets} {totalSets === 1 ? 'set' : 'sets'}
+            </Text>
           </XStack>
         </XStack>
 

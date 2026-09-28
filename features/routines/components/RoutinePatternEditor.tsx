@@ -126,7 +126,7 @@ function DayRow({
       p="$3"
       rounded="$4"
       borderWidth={1}
-      borderColor={isWorkout ? '$primary' : isRest ? '$secondary' : '$borderColor'}
+      borderColor={isWorkout ? '$primary' : '$borderColor'}
       gap="$2"
       width="100%"
     >
@@ -182,19 +182,19 @@ function DayRow({
             flex={1}
             size="$4"
             icon={Moon}
-            bg={isRest ? '$secondary' : '$backgroundHover'}
-            borderWidth={isRest ? 0 : 1}
+            bg={isRest ? '$backgroundStrong' : '$backgroundHover'}
+            borderWidth={1}
             borderColor="$borderColor"
             onPress={() => onSetDayType(index, 'REST')}
             pressStyle={{
-              bg: isRest ? '$secondaryPress' : '$surfacePress',
+              bg: isRest ? '$backgroundStrong' : '$surfacePress',
               scale: 0.97,
             }}
             hoverStyle={{
-              bg: isRest ? '$secondaryHover' : '$surfaceHover',
+              bg: isRest ? '$backgroundStrong' : '$surfaceHover',
             }}
           >
-            <Text color={isRest ? '$onSecondary' : '$color'} fontWeight={isRest ? '600' : '500'}>
+            <Text color="$color" fontWeight={isRest ? '600' : '500'}>
               Rest
             </Text>
           </Button>

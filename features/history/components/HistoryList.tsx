@@ -19,6 +19,7 @@ export type HistoryListItem = {
 
 type Props = {
   data: HistoryListItem[]
+  onCreateWorkout: () => void
   onViewableItemsChanged: any
   viewabilityConfig: any
   onPressItem?: (item: HistoryListItem) => void
@@ -32,6 +33,7 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
   (
     {
       data,
+      onCreateWorkout,
       onViewableItemsChanged,
       viewabilityConfig,
       onPressItem,
@@ -48,6 +50,9 @@ const HistoryList = forwardRef<FlashListRef<any>, Props>(
           title="No history yet"
           description="Complete your first workout to see it here."
           icon={History}
+          actionLabel="Create workout"
+          onAction={onCreateWorkout}
+          alignTop
         />
       )
     }

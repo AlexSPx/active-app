@@ -16,6 +16,7 @@ import { useWidgetStore } from '../../stores/widgetStore'
 export default function HomeScreen() {
   const router = useRouter()
   const [showWidgetManager, setShowWidgetManager] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(() => new Date())
   const {
     activeRoutine,
     loading: activeRoutineLoading,
@@ -85,59 +86,60 @@ export default function HomeScreen() {
       ) : canShowPlan ? (
         <>
           <YStack p="$4" pt="$0">
-            <WeeklyView />
+            <TodayView selectedDate={selectedDate} />
           </YStack>
           <YStack p="$4" pt="$0">
-            <TodayView />
+            <WeeklyView selectedDate={selectedDate} onSelectDate={setSelectedDate} />
           </YStack>
         </>
       ) : (
         <EmptyState {...setupState} />
       )}
 
-      {/* Progress Widgets Section */}
-      <YStack pt="$0" pb="$4">
-        {sortedWidgets.length > 0 ? (
-          <YStack px="$4">
-            <XStack items="center" justify="space-between" mb="$3">
-              <Text fontSize="$5" fontWeight="600">
+      {hasWorkouts && (
+        <YStack pt="$0" pb="$4">
+          {sortedWidgets.length > 0 ? (
+            <YStack px="$4">
+              <XStack items="center" justify="space-between" mb="$3">
+                <Text fontSize="$5" fontWeight="600">
+                  Progress Tracking
+                </Text>
+                <Button
+                  size="$3"
+                  variant="outlined"
+                  onPress={() => setShowWidgetManager(true)}
+                  bg="$backgroundAccent"
+                  borderColor="$borderAccent"
+                  pressStyle={{ bg: '$backgroundAccentPress' }}
+                >
+                  <Plus size={16} color="$primary" />
+                  <Text color="$primary" fontWeight="500">
+                    Add Widget
+                  </Text>
+                </Button>
+              </XStack>
+              <YStack>
+                {sortedWidgets.map((widget) => (
+                  <ProgressionWidget key={widget.id} config={widget} onRemove={removeWidget} />
+                ))}
+              </YStack>
+            </YStack>
+          ) : (
+            <>
+              <Text px="$4" fontSize="$5" fontWeight="600" mb="$3">
                 Progress Tracking
               </Text>
-              <Button
-                size="$3"
-                variant="outlined"
-                onPress={() => setShowWidgetManager(true)}
-                bg="$backgroundAccent"
-                borderColor="$borderAccent"
-                pressStyle={{ bg: '$backgroundAccentPress' }}
-              >
-                <Plus size={16} color="$primary" />
-                <Text color="$primary" fontWeight="500">
-                  Add Widget
-                </Text>
-              </Button>
-            </XStack>
-            <YStack>
-              {sortedWidgets.map((widget) => (
-                <ProgressionWidget key={widget.id} config={widget} onRemove={removeWidget} />
-              ))}
-            </YStack>
-          </YStack>
-        ) : (
-          <>
-            <Text px="$4" fontSize="$5" fontWeight="600" mb="$3">
-              Progress Tracking
-            </Text>
-            <EmptyState
-              title="No widgets yet"
-              description="Add a widget to track an exercise metric over time."
-              icon={BarChart2}
-              actionLabel="Add widget"
-              onAction={() => setShowWidgetManager(true)}
-            />
-          </>
-        )}
-      </YStack>
+              <EmptyState
+                title="No widgets yet"
+                description="Add a widget to track an exercise metric over time."
+                icon={BarChart2}
+                actionLabel="Add widget"
+                onAction={() => setShowWidgetManager(true)}
+              />
+            </>
+          )}
+        </YStack>
+      )}
 
       {/* Widget Manager Modal */}
       <WidgetManager isVisible={showWidgetManager} onClose={() => setShowWidgetManager(false)} />
