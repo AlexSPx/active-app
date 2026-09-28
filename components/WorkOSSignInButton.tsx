@@ -17,7 +17,7 @@ interface WorkOSSignInButtonProps {
   label?: string
 }
 
-const redirectScheme = 'activenext'
+const redirectScheme = process.env.NODE_ENV === 'development' ? 'dev.activenext' : 'activenext'
 
 // Generate appropriate redirect URI based on platform
 const getRedirectUri = () => {
@@ -31,23 +31,29 @@ const getRedirectUri = () => {
   })
 }
 
-export const WorkOSSignInButton = ({ onSuccess, label = 'Sign in with WorkOS' }: WorkOSSignInButtonProps) => {
+export const WorkOSSignInButton = ({
+  onSuccess,
+  label = 'Sign in with WorkOS',
+}: WorkOSSignInButtonProps) => {
   const { loginWithWorkOS } = useAuthStore()
   const router = useRouter()
   const redirectUri = getRedirectUri()
 
-  const handleLogin = useCallback(async (code: string) => {
-    try {
-      await loginWithWorkOS(code)
-      if (onSuccess) {
-        onSuccess(code)
+  const handleLogin = useCallback(
+    async (code: string) => {
+      try {
+        await loginWithWorkOS(code)
+        if (onSuccess) {
+          onSuccess(code)
+        }
+        router.replace('/(tabs)')
+      } catch (error) {
+        console.error('WorkOS Login Failed:', error)
+        Alert.alert('Login Failed', 'Could not complete login with WorkOS.')
       }
-      router.replace('/(tabs)')
-    } catch (error) {
-      console.error('WorkOS Login Failed:', error)
-      Alert.alert('Login Failed', 'Could not complete login with WorkOS.')
-    }
-  }, [loginWithWorkOS, onSuccess, router])
+    },
+    [loginWithWorkOS, onSuccess, router]
+  )
 
   // Native auth using expo-auth-session
   const [request, response, promptAsync] = useAuthRequest(
@@ -81,24 +87,24 @@ export const WorkOSSignInButton = ({ onSuccess, label = 'Sign in with WorkOS' }:
     const handleMessage = (event: MessageEvent) => {
       // Verify origin
       if (event.origin !== window.location.origin) return
-      
+
       if (event.data?.type === 'workos-auth-callback') {
         console.log('WorkOS: Received callback message', event.data)
         const { code, error, state: returnedState } = event.data
-        
+
         // Validate state to prevent CSRF attacks
         const savedState = sessionStorage.getItem('workos_auth_state')
         sessionStorage.removeItem('workos_auth_state') // Clean up
 
         // Extract original state if it contains flow type
         const receivedState = returnedState?.split('|')[0] || returnedState
-        
+
         if (!savedState || savedState !== receivedState) {
           console.error('WorkOS: State mismatch - possible CSRF attack')
           Alert.alert('Authentication Error', 'Security validation failed. Please try again.')
           return
         }
-        
+
         if (error) {
           console.error('WorkOS OAuth error:', error)
           Alert.alert('Authentication Error', 'Failed to sign in with WorkOS.')
@@ -115,15 +121,15 @@ export const WorkOSSignInButton = ({ onSuccess, label = 'Sign in with WorkOS' }:
   const handleWebAuth = () => {
     console.log('WorkOS: web auth handler called')
     const clientId = process.env.EXPO_PUBLIC_WORKOS_CLIENT_ID || ''
-    
+
     // Generate cryptographically secure state for CSRF protection
     const array = new Uint8Array(16)
     crypto.getRandomValues(array)
-    const state = Array.from(array, b => b.toString(16).padStart(2, '0')).join('')
-    
+    const state = Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('')
+
     // Save state to sessionStorage for validation when callback returns
     sessionStorage.setItem('workos_auth_state', state)
-    
+
     const authUrl = new URL(discovery.authorizationEndpoint)
     authUrl.searchParams.set('client_id', clientId)
     authUrl.searchParams.set('redirect_uri', redirectUri)
@@ -133,7 +139,7 @@ export const WorkOSSignInButton = ({ onSuccess, label = 'Sign in with WorkOS' }:
     // state is added below with flow type appended
 
     console.log('WorkOS: Opening auth URL', authUrl.toString())
-    
+
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
 
     if (isMobile) {
@@ -148,7 +154,7 @@ export const WorkOSSignInButton = ({ onSuccess, label = 'Sign in with WorkOS' }:
       const height = 600
       const left = window.screenX + (window.outerWidth - width) / 2
       const top = window.screenY + (window.outerHeight - height) / 2
-      
+
       window.open(
         authUrl.toString(),
         'workos-auth',
