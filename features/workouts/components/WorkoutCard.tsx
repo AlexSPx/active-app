@@ -129,8 +129,9 @@ export const WorkoutCard = memo(
                     <Popover.Trigger asChild>
                       <Button
                         unstyled
-                        width={28}
-                        height={28}
+                        width={48}
+                        height={48}
+                        accessibilityLabel={`More actions for ${workout.title}`}
                         bg="$backgroundStrong"
                         justify="center"
                         items="center"
