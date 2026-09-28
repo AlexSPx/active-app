@@ -19,7 +19,7 @@ let _initPromise: Promise<SQLite.SQLiteDatabase> = new Promise((resolve) => {
  * (SyncEngine, repos, etc).
  */
 export function setSharedDatabase(db: SQLite.SQLiteDatabase) {
-  if (_db) return
+  if (_db === db) return
   _db = db
   if (_dbResolver) {
     _dbResolver(db)
@@ -32,7 +32,7 @@ export function setSharedDatabase(db: SQLite.SQLiteDatabase) {
  * call this before the provider is ready will wait for the Promise.
  */
 export async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
-  return _initPromise
+  return _db ?? _initPromise
 }
 
 /**
