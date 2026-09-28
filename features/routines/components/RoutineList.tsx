@@ -1,6 +1,6 @@
 import { FlashList } from '@shopify/flash-list'
 import { memo } from 'react'
-import { View, YStack, Text, Button } from 'tamagui'
+import { View } from 'tamagui'
 import type { Routine } from '../../../types/routine'
 import { RoutineCard } from './RoutineCard'
 import { EmptyState } from '../../../components/ui/EmptyState'
@@ -15,7 +15,6 @@ export interface RoutineListProps {
   listHeader?: React.ReactElement
   refreshing?: boolean
   onRefresh?: () => void
-  onCreateRoutine?: () => void
   onStartFromToday?: (routineId: string) => void
   disableActions?: boolean
 }
@@ -31,7 +30,6 @@ export const RoutineList = memo(function RoutineList({
   listHeader,
   refreshing,
   onRefresh,
-  onCreateRoutine,
   disableActions,
 }: RoutineListProps) {
   const renderRoutine = ({ item: routine }: { item: Routine }) => {
@@ -65,8 +63,6 @@ export const RoutineList = memo(function RoutineList({
             title="No routines yet"
             description="Create your first routine to get started with your training."
             icon={ClipboardList}
-            actionLabel={onCreateRoutine ? 'Create Routine' : undefined}
-            onAction={onCreateRoutine}
           />
         }
         ItemSeparatorComponent={() => <View height={12} />}

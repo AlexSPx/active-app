@@ -148,7 +148,6 @@ export default function WorkoutsInnerTab() {
           onDeleteWorkout={handleDeleteWorkout}
           refreshing={loading}
           onRefresh={refetch}
-          onCreateWorkout={navigateToNewWorkout}
           onWorkoutPress={(workout) => router.push(`/workouts/${workout.id}`)}
         />
       </YStack>
