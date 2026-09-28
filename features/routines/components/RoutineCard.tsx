@@ -1,16 +1,7 @@
 import { memo, useCallback, useMemo, useState } from 'react'
 import { Card, YStack, XStack, Text, Button, Separator, Portal } from 'tamagui'
 import { Popover } from '@tamagui/popover'
-import {
-  MoreHorizontal,
-  Edit3,
-  Trash2,
-  CheckCircle2,
-  Calendar,
-  Dumbbell,
-  Coffee,
-  ListChecks,
-} from '@tamagui/lucide-icons'
+import { MoreHorizontal, Edit3, Trash2, CheckCircle2, Calendar } from '@tamagui/lucide-icons'
 import type { Routine } from '../../../types/routine'
 import { Pressable, StyleSheet } from 'react-native'
 import { haptics } from '../../../utils/haptics'
@@ -51,10 +42,8 @@ export const RoutineCard = memo(function RoutineCard({
     const hiddenCount = Math.max(0, totalDays - visibleDays.length)
 
     return {
-      totalDays,
       restDays,
       workoutDays,
-      topLabel: isWeeklyCompletion ? 'Weekly completion' : 'Sequential cycle',
       typeLabel: isWeeklyCompletion ? 'Weekly' : 'Sequential',
       visibleDays,
       hiddenCount,
@@ -88,7 +77,7 @@ export const RoutineCard = memo(function RoutineCard({
     <Card
       key={routine.id}
       bg="$surface"
-      borderColor={isActive ? '$secondary' : '$borderColor'}
+      borderColor="$borderColor"
       borderWidth={1}
       borderRadius={20}
       p={0}
@@ -98,22 +87,40 @@ export const RoutineCard = memo(function RoutineCard({
       onPress={onPress && !disabled ? () => onPress(routine) : undefined}
     >
       <YStack>
-        {isActive && <YStack height={3} bg="$secondary" />}
-        <YStack p={20} gap={16}>
+        <YStack p={16} gap={12}>
           <XStack justify="space-between" items="flex-start" gap="$3">
             <YStack flex={1} gap="$1.5">
-              <Text
-                fontSize={11}
-                fontWeight="600"
-                letterSpacing={1}
-                textTransform="uppercase"
-                color={isActive ? '$secondary' : '$colorMuted'}
-              >
-                {summary.topLabel} · {summary.totalDays} days
-              </Text>
-              <Text fontSize={21} lineHeight={25} fontWeight="700" color="$color">
-                {routine.name}
-              </Text>
+              <XStack items="center" gap="$2" flexWrap="wrap">
+                <Text
+                  fontSize={21}
+                  lineHeight={25}
+                  fontWeight="700"
+                  color="$color"
+                  style={{ flexShrink: 1 }}
+                >
+                  {routine.name}
+                </Text>
+                {isActive && (
+                  <XStack
+                    items="center"
+                    gap="$1.5"
+                    px="$2"
+                    py="$1"
+                    bg="$backgroundStrong"
+                    borderColor="$borderColor"
+                    borderWidth={1}
+                    rounded="$10"
+                    accessible
+                    accessibilityRole="text"
+                    accessibilityLabel="Active routine"
+                  >
+                    <CheckCircle2 size={14} color="$green10" />
+                    <Text fontSize={12} fontWeight="600" color="$color">
+                      Active
+                    </Text>
+                  </XStack>
+                )}
+              </XStack>
               {routine.description ? (
                 <Text fontSize={13} color="$colorSubtle" numberOfLines={2}>
                   {routine.description}
@@ -143,8 +150,9 @@ export const RoutineCard = memo(function RoutineCard({
                   <Popover.Trigger asChild>
                     <Button
                       unstyled
-                      width={28}
-                      height={28}
+                      width={48}
+                      height={48}
+                      accessibilityLabel={`More actions for ${routine.name}`}
                       bg="$backgroundStrong"
                       justify="center"
                       items="center"
@@ -217,47 +225,11 @@ export const RoutineCard = memo(function RoutineCard({
             )}
           </XStack>
 
-          <XStack gap={18} items="center" flexWrap="wrap">
-            <XStack items="center" gap={5}>
-              <Calendar size={13} color="$colorMuted" />
-              <Text fontSize={13} color="$colorMuted">
-                <Text color="$color" fontWeight="600">
-                  {summary.totalDays}
-                </Text>{' '}
-                days
-              </Text>
-            </XStack>
-            <XStack items="center" gap={5}>
-              <Dumbbell size={13} color="$colorMuted" />
-              <Text fontSize={13} color="$colorMuted">
-                <Text color="$color" fontWeight="600">
-                  {summary.workoutDays}
-                </Text>{' '}
-                workouts
-              </Text>
-            </XStack>
-            <XStack items="center" gap={5}>
-              <Coffee size={13} color="$colorMuted" />
-              <Text fontSize={13} color="$colorMuted">
-                <Text color="$color" fontWeight="600">
-                  {summary.restDays}
-                </Text>{' '}
-                rest
-              </Text>
-            </XStack>
-            <XStack items="center" gap={5}>
-              {summary.typeLabel === 'Weekly' ? (
-                <ListChecks size={13} color="$colorMuted" />
-              ) : (
-                <Calendar size={13} color="$colorMuted" />
-              )}
-              <Text fontSize={13} color="$colorMuted">
-                <Text color="$color" fontWeight="600">
-                  {summary.typeLabel}
-                </Text>
-              </Text>
-            </XStack>
-          </XStack>
+          <Text fontSize={13} color="$colorSubtle">
+            {summary.typeLabel} · {summary.workoutDays}{' '}
+            {summary.workoutDays === 1 ? 'workout' : 'workouts'} · {summary.restDays}{' '}
+            {summary.restDays === 1 ? 'rest day' : 'rest days'}
+          </Text>
 
           <XStack flexWrap="wrap" gap={6}>
             {summary.visibleDays.map((day) => (
@@ -284,7 +256,7 @@ export const RoutineCard = memo(function RoutineCard({
             )}
           </XStack>
 
-          {onActivate && (
+          {onActivate && !isActive && (
             <Button
               unstyled
               width="100%"
@@ -292,24 +264,16 @@ export const RoutineCard = memo(function RoutineCard({
               justify="center"
               items="center"
               opacity={disabled ? 0.6 : 1}
-              disabled={disabled || isActive}
-              onPress={isActive ? undefined : handleActivate}
+              disabled={disabled}
+              onPress={handleActivate}
               pressStyle={{ opacity: 0.88 }}
               style={{ borderRadius: 12 }}
-              bg={isActive ? '$secondary' : '$primary'}
+              bg="$primary"
             >
               <XStack items="center" gap={8}>
-                <CheckCircle2
-                  size={18}
-                  color={isActive ? '$onSecondary' : '$onPrimary'}
-                  fill={isActive ? '$onSecondary' : '$onPrimary'}
-                />
-                <Text
-                  fontSize={14}
-                  fontWeight="600"
-                  color={isActive ? '$onSecondary' : '$onPrimary'}
-                >
-                  {isActive ? 'Currently active routine' : 'Set active routine'}
+                <CheckCircle2 size={18} color="$onPrimary" fill="$onPrimary" />
+                <Text fontSize={14} fontWeight="600" color="$onPrimary">
+                  Set active routine
                 </Text>
               </XStack>
             </Button>

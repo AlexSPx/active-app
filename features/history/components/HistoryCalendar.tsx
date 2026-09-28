@@ -41,16 +41,32 @@ export function HistoryCalendar({
   const calendarDays: DayCell[] = generateCalendar(monthDate, selectedDate)
 
   return (
-    <YStack px="$4" mb="$1" pt="$4" pb="$2" boxShadow="$md" gap="$1">
+    <YStack mb="$1" pt="$4" pb="$2" boxShadow="$md" gap="$1">
       <XStack justify="space-between" items="center">
-        <Button unstyled onPress={() => onMonthChange(addMonths(monthDate, -1))}>
+        <Button
+          unstyled
+          width={48}
+          height={48}
+          justify="center"
+          items="center"
+          accessibilityLabel="Previous month"
+          onPress={() => onMonthChange(addMonths(monthDate, -1))}
+        >
           <ChevronLeft color="$color" />
         </Button>
         <Text fontSize="$4" fontWeight="700" color="$color">
           {formatMonthYear(monthDate)}
         </Text>
         <XStack items="center" gap="$2">
-          <Button unstyled onPress={() => onMonthChange(addMonths(monthDate, 1))}>
+          <Button
+            unstyled
+            width={48}
+            height={48}
+            justify="center"
+            items="center"
+            accessibilityLabel="Next month"
+            onPress={() => onMonthChange(addMonths(monthDate, 1))}
+          >
             <ChevronRight color="$color" />
           </Button>
           <Button size="$2" variant="outlined" onPress={onToggleCollapsed}>
@@ -117,7 +133,7 @@ export function HistoryCalendar({
                         scrollToWeek(day.date)
                       }}
                       width="100%"
-                      height={40}
+                      height={48}
                       items="center"
                       justify="center"
                     >
