@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { YStack, XStack, Text, Button, Input, ScrollView, Sheet } from 'tamagui'
+import { YStack, XStack, Text, Button, Input, ScrollView, Sheet, getTokenValue } from 'tamagui'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Search, X, Plus, Check, ArrowUp, ArrowDown } from '@tamagui/lucide-icons'
 import { useWidgetStore, getMetricLabel, type ProgressionMetric } from '../stores/widgetStore'
 import { useExerciseSearch } from '../features/exercises'
@@ -20,6 +21,7 @@ const METRICS: { key: ProgressionMetric; help: string }[] = [
 ]
 
 export function WidgetManager({ isVisible, mode, onModeChange, onClose }: WidgetManagerProps) {
+  const insets = useSafeAreaInsets()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedMetric, setSelectedMetric] = useState<ProgressionMetric>('maxWeight')
   const [selectedExercise, setSelectedExercise] = useState<{ id: string; name: string } | null>(
@@ -77,6 +79,7 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
       snapPointsMode="percent"
       snapPoints={[90]}
       dismissOnSnapToBottom
+      moveOnKeyboardChange
     >
       <Sheet.Overlay bg="$color" opacity={0.2} />
       <Sheet.Handle bg="$colorMuted" />
@@ -85,6 +88,7 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
         borderTopLeftRadius="$sheet"
         borderTopRightRadius="$sheet"
         p="$page"
+        pb={insets.bottom + getTokenValue('$page', 'space')}
         gap="$field"
       >
         <XStack items="center" justify="space-between" gap="$field">
@@ -111,7 +115,11 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
             <X size="$icon" color="$colorSubtle" />
           </Button>
         </XStack>
-        <Sheet.ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <Sheet.ScrollView
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
           <YStack gap="$field" pb="$card">
             {mode === 'manage' ? (
               <>

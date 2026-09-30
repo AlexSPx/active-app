@@ -9,6 +9,7 @@ jest.mock('tamagui', () => {
     Sheet[name] = primitive(`Sheet.${name}`)
   return {
     Sheet,
+    getTokenValue: () => 20,
     Button: primitive('Button'),
     Input: primitive('Input'),
     ScrollView: primitive('ScrollView'),
@@ -17,6 +18,7 @@ jest.mock('tamagui', () => {
     YStack: primitive('YStack'),
   }
 })
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: jest.fn() }))
 jest.mock('@tamagui/lucide-icons', () => {
   const Icon = () => null
   return { Search: Icon, X: Icon, Plus: Icon, Check: Icon, ArrowUp: Icon, ArrowDown: Icon }
@@ -30,6 +32,7 @@ jest.mock('../../components/ProgressionWidget', () => {
   const React = require('react')
   return { ProgressionWidget: (props) => React.createElement('ProgressionWidget', props) }
 })
+const { useSafeAreaInsets } = require('react-native-safe-area-context')
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 const { useExerciseSearch } = require('../../features/exercises')
@@ -62,6 +65,7 @@ function render(mode = 'add') {
 }
 beforeEach(async () => {
   jest.clearAllMocks()
+  useSafeAreaInsets.mockReturnValue({ top: 0, right: 0, bottom: 0, left: 0 })
   await useWidgetStore.persist.clearStorage()
   useWidgetStore.getState().reset()
   useExerciseSearch.mockReturnValue({
@@ -153,4 +157,18 @@ test('removal respects persisted positions even if array order differs', () => {
     [third, 0],
     [first, 1],
   ])
+})
+
+test('keeps both sheet footers above system navigation and enables native keyboard handling', () => {
+  useSafeAreaInsets.mockReturnValue({ top: 0, right: 0, bottom: 24, left: 0 })
+  const renderer = render()
+  expect(renderer.root.findByType('Sheet.Frame').props.pb).toBe(44)
+  expect(renderer.root.findByType('Sheet').props.moveOnKeyboardChange).toBe(true)
+  expect(renderer.root.findByType('Sheet.ScrollView').props.keyboardShouldPersistTaps).toBe(
+    'handled'
+  )
+  expect(renderer.root.findByType('Sheet.ScrollView').props.keyboardDismissMode).toBe('on-drag')
+  useSafeAreaInsets.mockReturnValue({ top: 0, right: 0, bottom: 0, left: 0 })
+  act(() => renderer.update(React.createElement(WidgetManager, { ...props, mode: 'manage' })))
+  expect(renderer.root.findByType('Sheet.Frame').props.pb).toBe(20)
 })
