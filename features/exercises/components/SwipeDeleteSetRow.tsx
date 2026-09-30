@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { StyleSheet } from 'react-native'
 import { Text, YStack, getTokenValue } from 'tamagui'
 import Animated, {
   runOnJS,
@@ -28,22 +29,24 @@ export function SwipeDeleteSetRow({
       translateX.value = withSpring(0)
     })
   const animatedStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }] }))
+  const deleteStyle = useAnimatedStyle(() => ({ opacity: translateX.value < 0 ? 1 : 0 }))
 
   return (
     <GestureHandlerRootView>
       <YStack overflow="hidden" rounded="$day" mb="$compact">
-        <YStack
-          position="absolute"
-          inset={0}
-          bg="$destructive"
-          justify="center"
-          items="flex-end"
-          px="$field"
+        <Animated.View
+          style={[StyleSheet.absoluteFillObject, deleteStyle]}
+          pointerEvents="none"
+          accessible={false}
+          accessibilityElementsHidden
+          importantForAccessibility="no-hide-descendants"
         >
-          <Text color="$surface" fontSize="$caption">
-            Delete
-          </Text>
-        </YStack>
+          <YStack flex={1} bg="$destructive" justify="center" items="flex-end" px="$field">
+            <Text color="$surface" fontSize="$caption">
+              Delete
+            </Text>
+          </YStack>
+        </Animated.View>
         <GestureDetector gesture={gesture}>
           <Animated.View style={animatedStyle}>{children}</Animated.View>
         </GestureDetector>
