@@ -1,4 +1,4 @@
-import type { WorkoutSet, WorkoutExercise } from '../types/workout'
+import type { Exercise, WorkoutSet, WorkoutExercise } from '../types/workout'
 import type {
   WorkoutExercise as CreateWorkoutExercise,
   TemplateExercise,
@@ -167,11 +167,15 @@ export const apiWorkoutToEditableExercises = (workout: ApiWorkout): CreateWorkou
  */
 export const validateWorkoutData = (
   name: string,
-  exercises: CreateWorkoutExercise[]
+  exercises: CreateWorkoutExercise[],
+  notes = ''
 ): string | null => {
   if (!name.trim()) {
     return 'Workout name is required'
   }
+
+  if (name.length > 100) return 'Keep the workout name within 100 characters.'
+  if (notes.length > 1000) return 'Keep notes within 1,000 characters.'
 
   if (exercises.length === 0) {
     return 'At least one exercise is required'
@@ -183,7 +187,7 @@ export const validateWorkoutData = (
     }
     if (exercise.category === 'CARDIO') {
       for (const set of exercise.sets) {
-        if (set.durationSeconds == null || set.durationSeconds <= 0) {
+        if (!Number.isInteger(set.durationSeconds) || (set.durationSeconds ?? 0) <= 0) {
           return `All cardio intervals must have a positive duration in "${exercise.name}"`
         }
       }
@@ -193,14 +197,44 @@ export const validateWorkoutData = (
       if (set.reps == null || set.weight == null) {
         return `All sets must have reps and weight in "${exercise.name}"`
       }
-      if ((set.reps ?? 0) <= 0) {
-        return `All sets must have positive reps in "${exercise.name}"`
+      if (!Number.isInteger(set.reps) || (set.reps ?? 0) <= 0) {
+        return `All sets must have whole, positive reps in "${exercise.name}"`
       }
-      if ((set.weight ?? 0) < 0) {
-        return `Weight cannot be negative in "${exercise.name}"`
+      if (!Number.isFinite(set.weight) || (set.weight ?? 0) < 0) {
+        return `Enter a finite weight of 0 or more in "${exercise.name}"`
       }
     }
   }
 
   return null
+}
+
+/** Picker changes remain local until Done; reselecting restores the original targets. */
+export const toggleExerciseSelection = (
+  pending: WorkoutExercise[],
+  exercise: Exercise,
+  original: WorkoutExercise[]
+): WorkoutExercise[] => {
+  if (pending.some((item) => item.id === exercise.id)) {
+    return pending.filter((item) => item.id !== exercise.id)
+  }
+  const existing = original.find((item) => item.id === exercise.id)
+  return [
+    ...pending,
+    existing ?? {
+      ...exercise,
+      sets: [
+        exercise.category === 'CARDIO'
+          ? { reps: null, weight: null, durationSeconds: 0 }
+          : { reps: null, weight: null },
+      ],
+    },
+  ]
+}
+
+export const parseWorkoutDuration = (text: string): number | null => {
+  const match = /^(\d+):([0-5]\d)$/.exec(text.trim())
+  if (!match) return null
+  const seconds = Number(match[1]) * 60 + Number(match[2])
+  return Number.isSafeInteger(seconds) ? seconds : null
 }

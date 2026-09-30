@@ -1,14 +1,7 @@
-import { Text, YStack, XStack, Button } from 'tamagui'
-import { StyleSheet } from 'react-native'
-import { memo, useEffect } from 'react'
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  runOnJS,
-} from 'react-native-reanimated'
-import { GestureDetector, Gesture, GestureHandlerRootView } from 'react-native-gesture-handler'
-import SmartTimeInput from '../../../components/ui/SmartTimeInput'
+import { Input, Text, XStack } from 'tamagui'
+import { useEffect, useState } from 'react'
+import { SwipeDeleteSetRow } from './SwipeDeleteSetRow'
+import { parseWorkoutDuration } from '../../../utils/workoutUtils'
 
 interface CardioEditorSetRowProps {
   index: number
@@ -16,92 +9,57 @@ interface CardioEditorSetRowProps {
   onChange: (seconds: number | null) => void
   onDelete: () => void
 }
+const formatDuration = (seconds?: number | null) =>
+  seconds == null ? '' : `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 
-const SWIPE_THRESHOLD = -80
-
-export const CardioEditorSetRow = memo(function CardioEditorSetRow({
+export function CardioEditorSetRow({
   index,
   durationSeconds,
   onChange,
   onDelete,
 }: CardioEditorSetRowProps) {
-  const translateX = useSharedValue(0)
-
+  const [duration, setDuration] = useState(formatDuration(durationSeconds))
   useEffect(() => {
-    translateX.value = 0
-  }, [index, translateX])
-
-  const gesture = Gesture.Pan()
-    .onUpdate((e) => {
-      if (e.translationX < 0) translateX.value = e.translationX
-    })
-    .onEnd(() => {
-      if (translateX.value < SWIPE_THRESHOLD) {
-        translateX.value = withSpring(0)
-        runOnJS(onDelete)()
-      } else {
-        translateX.value = withSpring(0)
-      }
-    })
-
-  const animatedStyle = useAnimatedStyle(() => ({ transform: [{ translateX: translateX.value }] }))
-  const deleteStyle = useAnimatedStyle(() => ({
-    opacity: translateX.value < SWIPE_THRESHOLD ? 1 : 0,
-  }))
-
+    setDuration((current) =>
+      parseWorkoutDuration(current) === durationSeconds ? current : formatDuration(durationSeconds)
+    )
+  }, [durationSeconds, index])
   return (
-    <GestureHandlerRootView>
-      <YStack style={styles.container}>
-        <Animated.View
-          style={[StyleSheet.absoluteFillObject, styles.deleteBackground, deleteStyle]}
+    <SwipeDeleteSetRow onDelete={onDelete}>
+      <XStack items="center" gap="$compact" bg="$surface">
+        <Text
+          width="$icon"
+          text="center"
+          fontSize="$caption"
+          color="$colorSubtle"
+          accessibilityLabel={`Interval ${index + 1}`}
+          accessibilityHint="Swipe left or use the Delete action to remove this interval."
+          accessibilityActions={[{ name: 'delete', label: 'Delete interval' }]}
+          onAccessibilityAction={(event) => {
+            if (event.nativeEvent.actionName === 'delete') onDelete()
+          }}
         >
-          <Text color="white" fontSize="$4">
-            🗑️
-          </Text>
-        </Animated.View>
-        <GestureDetector gesture={gesture}>
-          <Animated.View style={[styles.row, animatedStyle]}>
-            <XStack items="center" gap="$2" bg="$surface" p="$1" r="$2">
-              <YStack flex={1} items="center">
-                <Text fontSize="$4" fontWeight="600" color="$color">
-                  {index + 1}
-                </Text>
-              </YStack>
-              <YStack flex={2} items="center">
-                <SmartTimeInput
-                  seconds={typeof durationSeconds === 'number' ? durationSeconds : 0}
-                  onChangeSeconds={(secs) => onChange(Number.isFinite(secs) ? secs : null)}
-                  placeholder="0:00"
-                  size="$4"
-                  height={48}
-                  fontSize="$4"
-                  accessibilityLabel={`Interval ${index + 1} duration in minutes and seconds`}
-                />
-              </YStack>
-            </XStack>
-          </Animated.View>
-        </GestureDetector>
-      </YStack>
-    </GestureHandlerRootView>
+          {index + 1}
+        </Text>
+        <Input
+          flex={1}
+          value={duration}
+          onChangeText={(text) => {
+            setDuration(text)
+            onChange(parseWorkoutDuration(text))
+          }}
+          height="$touch"
+          rounded="$day"
+          px="$compact"
+          fontSize="$body"
+          text="center"
+          placeholder="0:00"
+          bg="$backgroundStrong"
+          borderColor="$borderColor"
+          accessibilityLabel={`Interval ${index + 1} duration in minutes and seconds`}
+        />
+      </XStack>
+    </SwipeDeleteSetRow>
   )
-})
-
-const styles = StyleSheet.create({
-  container: {
-    width: '100%',
-    marginBottom: 4,
-    position: 'relative',
-    overflow: 'hidden',
-    borderRadius: 8,
-  },
-  deleteBackground: {
-    backgroundColor: '#FF3B30',
-    justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingRight: 20,
-    borderRadius: 8,
-  },
-  row: { borderRadius: 8, width: '100%' },
-})
-
+}
 export default CardioEditorSetRow
