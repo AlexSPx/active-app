@@ -1,13 +1,13 @@
 import { FlashList } from '@shopify/flash-list'
 import { memo } from 'react'
-import { View } from 'tamagui'
+import { View, YStack, Text, getTokenValue } from 'tamagui'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Routine } from '../../../types/routine'
 import { RoutineCard } from './RoutineCard'
-import { EmptyState } from '../../../components/ui/EmptyState'
-import { ClipboardList } from '@tamagui/lucide-icons'
 export interface RoutineListProps {
   routines: Routine[]
   activeRoutineId?: string | null
+  workoutTitleById?: Record<string, string>
   onActivate: (routineId: string) => void
   onEditRoutine?: (routine: Routine) => void
   onDeleteRoutine?: (routineId: string) => void
@@ -22,6 +22,7 @@ export interface RoutineListProps {
 export const RoutineList = memo(function RoutineList({
   routines,
   activeRoutineId,
+  workoutTitleById,
   onActivate,
   onEditRoutine,
   onDeleteRoutine,
@@ -32,10 +33,12 @@ export const RoutineList = memo(function RoutineList({
   onRefresh,
   disableActions,
 }: RoutineListProps) {
+  const insets = useSafeAreaInsets()
   const renderRoutine = ({ item: routine }: { item: Routine }) => {
     return (
       <RoutineCard
         routine={routine}
+        workoutTitleById={workoutTitleById}
         isActive={routine.id === activeRoutineId}
         onActivate={onActivate}
         onEdit={onEditRoutine}
@@ -48,24 +51,30 @@ export const RoutineList = memo(function RoutineList({
   }
 
   return (
-    <View flex={1}>
+    <View flex={1} width="100%" maxW="$content" self="center">
       <FlashList
         data={routines}
         renderItem={renderRoutine}
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
-        contentContainerStyle={{ paddingBottom: 48, paddingHorizontal: 20 }}
+        contentContainerStyle={{
+          paddingBottom: getTokenValue('$section', 'space') + insets.bottom,
+          paddingHorizontal: getTokenValue('$page', 'space'),
+        }}
         ListHeaderComponent={listHeader}
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListEmptyComponent={
-          <EmptyState
-            title="No routines yet"
-            description="Create your first routine to get started with your training."
-            icon={ClipboardList}
-          />
+          <YStack py="$section" gap="$2">
+            <Text fontSize="$cardTitle" fontWeight="600">
+              No routines yet
+            </Text>
+            <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+              Create a routine to arrange workouts and rest days.
+            </Text>
+          </YStack>
         }
-        ItemSeparatorComponent={() => <View height={12} />}
+        ItemSeparatorComponent={() => <View height={getTokenValue('$field', 'space')} />}
         showsVerticalScrollIndicator={false}
       />
     </View>

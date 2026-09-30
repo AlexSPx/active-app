@@ -2,9 +2,8 @@ import { FlashList } from '@shopify/flash-list'
 import { memo, useEffect, useRef } from 'react'
 import type { ApiWorkout } from '../../../types/api'
 import { WorkoutCard } from './WorkoutCard'
-import { View } from 'tamagui'
-import { EmptyState } from '../../../components/ui/EmptyState'
-import { Dumbbell } from '@tamagui/lucide-icons'
+import { View, YStack, Text, getTokenValue } from 'tamagui'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export interface WorkoutListProps {
   workouts: ApiWorkout[]
@@ -20,86 +19,76 @@ export interface WorkoutListProps {
   focusId?: string
 }
 
-export const WorkoutList = memo(
-  function WorkoutList({
-    workouts,
-    onStartWorkout,
-    isWorkoutRunning,
-    routineNameByWorkoutId,
-    onEditWorkout,
-    onDeleteWorkout,
-    onWorkoutPress,
-    listHeader,
-    refreshing,
-    onRefresh,
-    focusId,
-  }: WorkoutListProps) {
-    const listRef = useRef<any>(null)
+export const WorkoutList = memo(function WorkoutList({
+  workouts,
+  onStartWorkout,
+  isWorkoutRunning,
+  routineNameByWorkoutId,
+  onEditWorkout,
+  onDeleteWorkout,
+  onWorkoutPress,
+  listHeader,
+  refreshing,
+  onRefresh,
+  focusId,
+}: WorkoutListProps) {
+  const listRef = useRef<any>(null)
+  const insets = useSafeAreaInsets()
 
-    useEffect(() => {
-      if (!focusId || !workouts?.length) return
-      const index = workouts.findIndex((w) => w.id === focusId)
-      if (index >= 0) {
-        const t = setTimeout(() => {
-          try {
-            listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 })
-          } catch {}
-        }, 50)
-        return () => clearTimeout(t)
-      }
-    }, [focusId, workouts])
-    const renderWorkout = ({ item: workout }: { item: ApiWorkout }) => {
-      return (
-        <WorkoutCard
-          workout={workout}
-          onStartWorkout={() => onStartWorkout(workout)}
-          isWorkoutRunning={isWorkoutRunning}
-          routineName={routineNameByWorkoutId?.[workout.id]}
-          onEdit={onEditWorkout ? () => onEditWorkout(workout) : undefined}
-          onDelete={onDeleteWorkout ? () => onDeleteWorkout(workout.id) : undefined}
-          onPress={onWorkoutPress}
-        />
-      )
+  useEffect(() => {
+    if (!focusId || !workouts?.length) return
+    const index = workouts.findIndex((w) => w.id === focusId)
+    if (index >= 0) {
+      const t = setTimeout(() => {
+        try {
+          listRef.current?.scrollToIndex({ index, animated: true, viewPosition: 0.5 })
+        } catch {}
+      }, 50)
+      return () => clearTimeout(t)
     }
-
+  }, [focusId, workouts])
+  const renderWorkout = ({ item: workout }: { item: ApiWorkout }) => {
     return (
-      <View flex={1}>
-        <FlashList
-          ref={listRef}
-          data={workouts}
-          renderItem={renderWorkout}
-          keyExtractor={(item) => item.id}
-          style={{ flex: 1 }}
-          contentContainerStyle={{ paddingBottom: 48, paddingHorizontal: 20 }}
-          ListHeaderComponent={listHeader}
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          ListEmptyComponent={
-            <EmptyState
-              title="No workouts yet"
-              description="Start a new workout to track your progress."
-              icon={Dumbbell}
-            />
-          }
-          ItemSeparatorComponent={() => <View height={12} />}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
-    )
-  },
-  (prevProps, nextProps) => {
-    // Only re-render if workouts array or running state has changed
-    return (
-      prevProps.workouts.length === nextProps.workouts.length &&
-      prevProps.workouts.every((workout, index) => workout.id === nextProps.workouts[index]?.id) &&
-      prevProps.workouts.every(
-        (workout) =>
-          prevProps.routineNameByWorkoutId?.[workout.id] ===
-          nextProps.routineNameByWorkoutId?.[workout.id]
-      ) &&
-      prevProps.isWorkoutRunning === nextProps.isWorkoutRunning &&
-      prevProps.refreshing === nextProps.refreshing &&
-      prevProps.focusId === nextProps.focusId
+      <WorkoutCard
+        workout={workout}
+        onStartWorkout={() => onStartWorkout(workout)}
+        isWorkoutRunning={isWorkoutRunning}
+        routineName={routineNameByWorkoutId?.[workout.id]}
+        onEdit={onEditWorkout ? () => onEditWorkout(workout) : undefined}
+        onDelete={onDeleteWorkout ? () => onDeleteWorkout(workout.id) : undefined}
+        onPress={onWorkoutPress}
+      />
     )
   }
-)
+
+  return (
+    <View flex={1} width="100%" maxW="$content" self="center">
+      <FlashList
+        ref={listRef}
+        data={workouts}
+        renderItem={renderWorkout}
+        keyExtractor={(item) => item.id}
+        style={{ flex: 1 }}
+        contentContainerStyle={{
+          paddingBottom: getTokenValue('$section', 'space') + insets.bottom,
+          paddingHorizontal: getTokenValue('$page', 'space'),
+        }}
+        ListHeaderComponent={listHeader}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        ListEmptyComponent={
+          <YStack py="$section" gap="$2">
+            <Text fontSize="$cardTitle" fontWeight="600">
+              No workouts yet
+            </Text>
+            <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+              Create a workout with your exercises, sets and reps.
+            </Text>
+          </YStack>
+        }
+        ItemSeparatorComponent={() => <View height={getTokenValue('$field', 'space')} />}
+        showsVerticalScrollIndicator={false}
+      />
+    </View>
+  )
+})

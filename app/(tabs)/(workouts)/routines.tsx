@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { BackHandler, Platform } from 'react-native'
 import { useNavigation, router } from 'expo-router'
 import { YStack, Button, Text, XStack, Dialog } from 'tamagui'
@@ -13,12 +13,18 @@ import {
   useRoutineMutations,
   useActiveRoutine,
 } from '../../../features/routines'
+import { useWorkouts } from '../../../features/workouts'
 import type { Routine } from '../../../types/routine'
 import { posthog } from '../../../services/posthog'
 import { CreateTopButton } from '../../../components/ui/CreateTopButton'
 
 export default function RoutinesTab() {
   const navigation = useNavigation()
+  const { workouts } = useWorkouts()
+  const workoutTitleById = useMemo(
+    () => Object.fromEntries(workouts.map((workout) => [workout.id, workout.title])),
+    [workouts]
+  )
 
   const { routines, loading, error, refetch, isStale: routinesStale } = useRoutines()
   const { deleteRoutine, activateRoutine, updateRoutine, loading: mutating } = useRoutineMutations()
@@ -128,7 +134,7 @@ export default function RoutinesTab() {
     return (
       <YStack flex={1} justify="center" items="center" bg="$background">
         <LoadingSpinner />
-        <Text mt="$4" color="$color11">
+        <Text mt="$4" color="$colorSubtle">
           Loading routines...
         </Text>
       </YStack>
@@ -137,7 +143,7 @@ export default function RoutinesTab() {
 
   if (error) {
     return (
-      <YStack flex={1} justify="center" items="center" bg="$background" p="$4">
+      <YStack flex={1} justify="center" items="center" bg="$background" p="$page">
         <ErrorDisplay message={error} />
         <Button mt="$4" onPress={() => refetch()}>
           Try Again
@@ -150,24 +156,31 @@ export default function RoutinesTab() {
   const DeleteConfirmContent = (
     <YStack gap="$3" items="center">
       <XStack items="center" gap="$2">
-        <AlertTriangle size="$1" color="$secondary" />
-        <Text fontSize="$6" fontWeight="700">
+        <AlertTriangle size="$1" color="$destructive" />
+        <Text fontSize="$sectionTitle" fontWeight="700">
           Delete routine
         </Text>
       </XStack>
-      <Text color="$color10">Are you sure? This will permanently delete this routine.</Text>
+      <Text color="$colorSubtle">Are you sure? This will permanently delete this routine.</Text>
       <YStack mt="$2" gap="$3" width="100%">
         <Button
-          bg="$red4"
-          color="$red11"
-          size="$5"
+          bg="$destructive"
+          color="$onPrimary"
+          minH="$action"
+          rounded="$button"
           iconAfter={Trash2}
           disabled={mutating}
           onPress={confirmDelete}
         >
-          <Text>{mutating ? 'Deleting…' : 'Delete routine'}</Text>
+          <Text color="$onPrimary">{mutating ? 'Deleting…' : 'Delete routine'}</Text>
         </Button>
-        <Button bg="$blue4" color="$blue12" size="$5" onPress={() => setConfirmOpen(false)}>
+        <Button
+          bg="$backgroundStrong"
+          color="$color"
+          minH="$action"
+          rounded="$button"
+          onPress={() => setConfirmOpen(false)}
+        >
           <Text>Cancel</Text>
         </Button>
       </YStack>
@@ -179,6 +192,7 @@ export default function RoutinesTab() {
       <YStack flex={1}>
         <RoutineList
           routines={routines}
+          workoutTitleById={workoutTitleById}
           activeRoutineId={activeRoutine?.id ?? null}
           onActivate={handleActivate}
           onEditRoutine={openEdit}
@@ -187,7 +201,15 @@ export default function RoutinesTab() {
           onStartFromToday={handleStartFromToday}
           disableActions={mutating}
           listHeader={
-            <YStack mt="$1" mb="$3">
+            <YStack gap="$card" mb="$page">
+              <YStack gap="$1">
+                <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
+                  Your routines
+                </Text>
+                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                  {routines.length} saved {routines.length === 1 ? 'routine' : 'routines'}
+                </Text>
+              </YStack>
               <CreateTopButton label="Create routine" onPress={openCreate} />
             </YStack>
           }
@@ -216,13 +238,13 @@ export default function RoutinesTab() {
             />
             <Dialog.Content
               bordered
-              elevate
+              rounded="$menu"
               key="content"
               animation={['quick', { opacity: { overshootClamping: true } }]}
-              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              enterStyle={{ opacity: 0 }}
+              exitStyle={{ opacity: 0 }}
               bg="$surface"
-              p="$4"
+              p="$page"
             >
               {DeleteConfirmContent}
             </Dialog.Content>
@@ -236,9 +258,14 @@ export default function RoutinesTab() {
           dismissOnOverlayPress={!mutating}
           snapPointsMode="fit"
         >
-          <Sheet.Overlay animation="slow" style={{ backgroundColor: 'transparent' }} />
+          <Sheet.Overlay animation="slow" bg="$backgroundTransparent" />
           <Sheet.Handle bg="$surface" />
-          <Sheet.Frame bg="$surface" borderTopLeftRadius="$6" borderTopRightRadius="$6" p="$4">
+          <Sheet.Frame
+            bg="$surface"
+            borderTopLeftRadius="$sheet"
+            borderTopRightRadius="$sheet"
+            p="$page"
+          >
             {DeleteConfirmContent}
           </Sheet.Frame>
         </Sheet>

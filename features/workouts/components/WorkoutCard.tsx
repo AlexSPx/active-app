@@ -1,5 +1,5 @@
 import { YStack, XStack, Text, Card, Button, Portal } from 'tamagui'
-import { MoreHorizontal, Edit3, Trash2, Clock, Dumbbell, Play } from '@tamagui/lucide-icons'
+import { MoreHorizontal, Edit3, Trash2, Play } from '@tamagui/lucide-icons'
 import { Popover } from '@tamagui/popover'
 import { useCallback, memo, useState, useMemo } from 'react'
 import { Pressable, StyleSheet } from 'react-native'
@@ -16,269 +16,220 @@ export interface WorkoutCardProps {
   onPress?: (workout: ApiWorkout) => void
 }
 
-export const WorkoutCard = memo(
-  function WorkoutCard({
-    workout,
-    onStartWorkout,
-    isWorkoutRunning,
-    routineName,
-    onEdit,
-    onDelete,
-    onPress,
-  }: WorkoutCardProps) {
-    const [menuOpen, setMenuOpen] = useState(false)
+export const WorkoutCard = memo(function WorkoutCard({
+  workout,
+  onStartWorkout,
+  isWorkoutRunning,
+  routineName,
+  onEdit,
+  onDelete,
+  onPress,
+}: WorkoutCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false)
 
-    const handleStartWorkout = useCallback(() => {
-      haptics.medium()
-      onStartWorkout(workout)
-    }, [onStartWorkout, workout])
+  const handleStartWorkout = useCallback(() => {
+    if (isWorkoutRunning) return
+    haptics.medium()
+    onStartWorkout(workout)
+  }, [isWorkoutRunning, onStartWorkout, workout])
 
-    const normalizedRoutineName = routineName?.trim() || ''
-    const isInRoutine = normalizedRoutineName.length > 0
+  const normalizedRoutineName = routineName?.trim() || ''
+  const isInRoutine = normalizedRoutineName.length > 0
 
-    const summary = useMemo(() => {
-      let totalSets = 0
-      let estimatedDurationSeconds = 0
+  const summary = useMemo(() => {
+    let totalSets = 0
+    let estimatedDurationSeconds = 0
 
-      for (const exercise of workout.workoutTemplate.exercises) {
-        if (exercise.category === 'CARDIO') {
-          const durations = Array.isArray(exercise.durationSeconds) ? exercise.durationSeconds : []
-          totalSets += durations.length
-          estimatedDurationSeconds += durations.reduce((sum, duration) => sum + duration, 0)
-          continue
-        }
-
-        const sets = exercise.reps?.length || 0
-        totalSets += sets
-        estimatedDurationSeconds += sets * 150
+    for (const exercise of workout.workoutTemplate.exercises) {
+      if (exercise.category === 'CARDIO') {
+        const durations = Array.isArray(exercise.durationSeconds) ? exercise.durationSeconds : []
+        totalSets += durations.length
+        estimatedDurationSeconds += durations.reduce((sum, duration) => sum + duration, 0)
+        continue
       }
 
-      const exerciseNames = workout.workoutTemplate.exercises.map((exercise) =>
-        exercise.exerciseTitle.trim()
-      )
-      const visibleExercises = exerciseNames.slice(0, 4)
-      const hiddenCount = Math.max(0, exerciseNames.length - visibleExercises.length)
+      const sets = exercise.reps?.length || 0
+      totalSets += sets
+      estimatedDurationSeconds += sets * 150
+    }
 
-      const firstCategory = workout.workoutTemplate.exercises[0]?.category
-      const categoryLabel = firstCategory
-        ? firstCategory
-            .replace(/_/g, ' ')
-            .toLowerCase()
-            .replace(/\b\w/g, (char) => char.toUpperCase())
-        : 'Workout'
+    const exerciseNames = workout.workoutTemplate.exercises.map((exercise) =>
+      exercise.exerciseTitle.trim()
+    )
+    const visibleExercises = exerciseNames.slice(0, 4)
+    const hiddenCount = Math.max(0, exerciseNames.length - visibleExercises.length)
 
-      return {
-        totalSets,
-        approxMinutes: Math.max(5, Math.round(estimatedDurationSeconds / 60)),
-        visibleExercises,
-        hiddenCount,
-        topLabel: isInRoutine ? normalizedRoutineName : categoryLabel,
-      }
-    }, [isInRoutine, normalizedRoutineName, workout.workoutTemplate.exercises])
+    const firstCategory = workout.workoutTemplate.exercises[0]?.category
+    const categoryLabel = firstCategory
+      ? firstCategory
+          .replace(/_/g, ' ')
+          .toLowerCase()
+          .replace(/\b\w/g, (char) => char.toUpperCase())
+      : 'Workout'
 
-    return (
-      <Card
-        key={workout.id}
-        bg="$surface"
-        borderColor="$borderColor"
-        borderWidth={1}
-        borderRadius={20}
-        p={0}
-        overflow="hidden"
-        pressStyle={{ scale: 0.99, opacity: 0.96 }}
-        onPress={onPress ? () => onPress(workout) : undefined}
-      >
-        <YStack>
-          {isInRoutine && <YStack height={3} bg="$secondary" />}
-          <YStack p={20} gap={16}>
-            <XStack justify="space-between" items="flex-start" gap="$3">
-              <YStack flex={1} gap="$1">
-                <Text
-                  fontSize={11}
-                  fontWeight="600"
-                  letterSpacing={isInRoutine ? 0.2 : 1}
-                  textTransform={isInRoutine ? 'none' : 'uppercase'}
-                  color={isInRoutine ? '$secondary' : '$colorMuted'}
-                >
-                  {summary.topLabel} · {workout.workoutTemplate.exercises.length}{' '}
-                  {workout.workoutTemplate.exercises.length === 1 ? 'exercise' : 'exercises'}
-                </Text>
-                <Text fontSize={21} lineHeight={25} fontWeight="700" color="$color">
-                  {workout.title}
-                </Text>
-              </YStack>
+    return {
+      totalSets,
+      approxMinutes: Math.max(5, Math.round(estimatedDurationSeconds / 60)),
+      visibleExercises,
+      hiddenCount,
+      topLabel: isInRoutine ? normalizedRoutineName : categoryLabel,
+    }
+  }, [isInRoutine, normalizedRoutineName, workout.workoutTemplate.exercises])
 
-              {(onEdit || onDelete) && (
-                <>
-                  {menuOpen && (
-                    <Portal>
-                      <Pressable
-                        style={[StyleSheet.absoluteFillObject, { zIndex: 1 }]}
-                        onPress={() => setMenuOpen(false)}
-                      />
-                    </Portal>
-                  )}
-                  <Popover
-                    open={menuOpen}
-                    onOpenChange={(open) => {
-                      if (open) haptics.light()
-                      setMenuOpen(open)
-                    }}
-                    size="$2"
-                    placement="bottom-end"
-                  >
-                    <Popover.Trigger asChild>
-                      <Button
-                        unstyled
-                        width={48}
-                        height={48}
-                        accessibilityLabel={`More actions for ${workout.title}`}
-                        bg="$backgroundStrong"
-                        justify="center"
-                        items="center"
-                        pressStyle={{ opacity: 0.85 }}
-                        style={{ borderRadius: 8 }}
-                      >
-                        <MoreHorizontal size={14} color="$colorMuted" />
-                      </Button>
-                    </Popover.Trigger>
-                    <Popover.Content
-                      p="$2"
-                      bg="$surface"
-                      borderColor="$borderColor"
-                      borderWidth={1}
-                      elevate
-                    >
-                      <YStack width={160} gap="$1">
-                        {onEdit && (
-                          <Popover.Close asChild>
-                            <Button size="$3" chromeless onPress={() => onEdit?.(workout)}>
-                              <XStack items="center" gap="$2" justify="flex-start" width="100%">
-                                <Edit3 size={14} color="$color" />
-                                <Text color="$color">Edit</Text>
-                              </XStack>
-                            </Button>
-                          </Popover.Close>
-                        )}
-                        {onDelete && (
-                          <Popover.Close asChild>
-                            <Button size="$3" chromeless onPress={() => onDelete?.(workout.id)}>
-                              <XStack items="center" gap="$2" justify="flex-start" width="100%">
-                                <Trash2 size={14} color="$red10" />
-                                <Text color="$red10">Delete</Text>
-                              </XStack>
-                            </Button>
-                          </Popover.Close>
-                        )}
-                      </YStack>
-                    </Popover.Content>
-                  </Popover>
-                </>
-              )}
-            </XStack>
-
-            <XStack gap={18} items="center">
-              <XStack items="center" gap={5}>
-                <Clock size={13} color="$colorMuted" />
-                <Text fontSize={13} color="$colorMuted">
-                  <Text color="$color" fontWeight="600">
-                    ~{summary.approxMinutes} min
-                  </Text>
-                </Text>
-              </XStack>
-              <XStack items="center" gap={5}>
-                <Dumbbell size={13} color="$colorMuted" />
-                <Text fontSize={13} color="$colorMuted">
-                  <Text color="$color" fontWeight="600">
-                    {summary.totalSets}
-                  </Text>{' '}
-                  {summary.totalSets === 1 ? 'set' : 'sets'}
-                </Text>
-              </XStack>
-            </XStack>
-
-            <XStack flexWrap="wrap" gap={6}>
-              {summary.visibleExercises.map((exerciseName, index) => (
-                <XStack
-                  key={`${workout.id}-${exerciseName}-${index}`}
-                  py={5}
-                  px={11}
-                  bg="$backgroundStrong"
-                  borderColor="$borderColor"
-                  borderWidth={1}
-                  style={{ borderRadius: 8 }}
-                >
-                  <Text fontSize={12} color="$colorSubtle">
-                    {exerciseName}
-                  </Text>
-                </XStack>
-              ))}
-              {summary.hiddenCount > 0 && (
-                <XStack py={5} px={4}>
-                  <Text fontSize={12} color="$colorMuted">
-                    +{summary.hiddenCount}
-                  </Text>
-                </XStack>
-              )}
-            </XStack>
-
-            <Button
-              unstyled
-              width="100%"
-              py={14}
-              justify="center"
-              items="center"
-              opacity={isWorkoutRunning ? 0.6 : 1}
-              disabled={isWorkoutRunning}
-              onPress={handleStartWorkout}
-              pressStyle={{ opacity: 0.88 }}
-              style={{
-                borderRadius: 12,
-              }}
-              bg={isWorkoutRunning ? '$secondary' : '$primary'}
+  return (
+    <Card
+      key={workout.id}
+      bg="$surface"
+      borderColor="$borderColor"
+      borderWidth={1}
+      borderRadius="$card"
+      p={0}
+      overflow="hidden"
+    >
+      <YStack>
+        <YStack p="$card" gap="$card">
+          <XStack justify="space-between" items="flex-start" gap="$3">
+            <YStack
+              flex={1}
+              minH="$touch"
+              gap="$1"
+              onPress={onPress ? () => onPress(workout) : undefined}
+              accessibilityRole={onPress ? 'button' : undefined}
+              accessibilityLabel={onPress ? `View workout ${workout.title}` : undefined}
+              pressStyle={onPress ? { opacity: 0.75 } : undefined}
             >
-              <XStack items="center" gap={8}>
-                <XStack
-                  width={30}
-                  height={30}
-                  justify="center"
-                  items="center"
-                  style={{ borderRadius: 999 }}
+              <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600" color="$color">
+                {workout.title}
+              </Text>
+              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                {summary.topLabel}
+              </Text>
+            </YStack>
+
+            {(onEdit || onDelete) && (
+              <>
+                {menuOpen && (
+                  <Portal>
+                    <Pressable
+                      style={[StyleSheet.absoluteFillObject, { zIndex: 1 }]}
+                      onPress={() => setMenuOpen(false)}
+                    />
+                  </Portal>
+                )}
+                <Popover
+                  open={menuOpen}
+                  onOpenChange={(open) => {
+                    if (open) haptics.light()
+                    setMenuOpen(open)
+                  }}
+                  size="$2"
+                  placement="bottom-end"
                 >
-                  <Play
-                    size={20}
-                    color={isWorkoutRunning ? '$color' : '$onSecondary'}
-                    fill={isWorkoutRunning ? '$color' : '$onSecondary'}
-                  />
-                </XStack>
-                <Text
-                  fontSize={14}
-                  fontWeight="600"
-                  color={isWorkoutRunning ? '$color' : '$onSecondary'}
-                >
-                  {isWorkoutRunning ? 'Workout in Progress' : 'Start workout'}
-                </Text>
-              </XStack>
-            </Button>
-          </YStack>
+                  <Popover.Trigger asChild>
+                    <Button
+                      unstyled
+                      width="$touch"
+                      height="$touch"
+                      accessibilityLabel={`More actions for ${workout.title}`}
+                      bg="$backgroundTransparent"
+                      justify="center"
+                      items="center"
+                      pressStyle={{ opacity: 0.85 }}
+                      rounded="$control"
+                    >
+                      <MoreHorizontal size="$iconSmall" color="$colorSubtle" />
+                    </Button>
+                  </Popover.Trigger>
+                  <Popover.Content
+                    p="$2"
+                    bg="$surface"
+                    borderColor="$borderColor"
+                    borderWidth={1}
+                    rounded="$menu"
+                  >
+                    <YStack minW="$12" gap="$1">
+                      {onEdit && (
+                        <Popover.Close asChild>
+                          <Button minH="$touch" chromeless onPress={() => onEdit?.(workout)}>
+                            <XStack items="center" gap="$2" justify="flex-start" width="100%">
+                              <Edit3 size="$iconSmall" color="$color" />
+                              <Text color="$color" fontSize="$caption">
+                                Edit
+                              </Text>
+                            </XStack>
+                          </Button>
+                        </Popover.Close>
+                      )}
+                      {onDelete && (
+                        <Popover.Close asChild>
+                          <Button minH="$touch" chromeless onPress={() => onDelete?.(workout.id)}>
+                            <XStack items="center" gap="$2" justify="flex-start" width="100%">
+                              <Trash2 size="$iconSmall" color="$destructive" />
+                              <Text color="$destructive" fontSize="$caption">
+                                Delete
+                              </Text>
+                            </XStack>
+                          </Button>
+                        </Popover.Close>
+                      )}
+                    </YStack>
+                  </Popover.Content>
+                </Popover>
+              </>
+            )}
+          </XStack>
+
+          <XStack gap="$3" items="center" flexWrap="wrap">
+            <XStack items="center" gap="$1.5">
+              <Text fontSize="$caption" color="$colorSubtle">
+                {workout.workoutTemplate.exercises.length}{' '}
+                {workout.workoutTemplate.exercises.length === 1 ? 'exercise' : 'exercises'}
+              </Text>
+            </XStack>
+            <XStack items="center" gap="$1.5">
+              <Text fontSize="$caption" color="$colorSubtle">
+                {summary.totalSets} {summary.totalSets === 1 ? 'set' : 'sets'}
+              </Text>
+            </XStack>
+            <XStack items="center" gap="$1.5">
+              <Text fontSize="$caption" color="$colorSubtle">
+                ~{summary.approxMinutes} min
+              </Text>
+            </XStack>
+          </XStack>
+          <Text fontSize="$caption" color="$colorSubtle" lineHeight="$caption">
+            {summary.visibleExercises.join(' · ')}
+            {summary.hiddenCount > 0 ? ` · +${summary.hiddenCount} more` : ''}
+          </Text>
+
+          <Button
+            width="100%"
+            minH="$action"
+            height="auto"
+            py="$3"
+            rounded="$button"
+            opacity={isWorkoutRunning ? 0.5 : 1}
+            disabled={isWorkoutRunning}
+            onPress={handleStartWorkout}
+            pressStyle={{ opacity: 0.85 }}
+            bg={isWorkoutRunning ? '$backgroundHover' : '$primary'}
+          >
+            <Play
+              size="$icon"
+              color={isWorkoutRunning ? '$colorSubtle' : '$onPrimary'}
+              aria-hidden
+            />
+            <Text
+              fontSize="$caption"
+              fontWeight="700"
+              color={isWorkoutRunning ? '$colorSubtle' : '$onPrimary'}
+              shrink={1}
+            >
+              {isWorkoutRunning ? 'Workout in Progress' : 'Start workout'}
+            </Text>
+          </Button>
         </YStack>
-      </Card>
-    )
-  },
-  (prevProps, nextProps) => {
-    // Only re-render if relevant props have changed
-    return (
-      prevProps.workout.id === nextProps.workout.id &&
-      prevProps.workout.title === nextProps.workout.title &&
-      prevProps.workout.workoutTemplate.exercises.length ===
-        nextProps.workout.workoutTemplate.exercises.length &&
-      prevProps.workout.workoutTemplate.exercises.every(
-        (exercise, index) =>
-          exercise.exerciseTitle ===
-          nextProps.workout.workoutTemplate.exercises[index]?.exerciseTitle
-      ) &&
-      prevProps.routineName === nextProps.routineName &&
-      prevProps.isWorkoutRunning === nextProps.isWorkoutRunning
-    )
-  }
-)
+      </YStack>
+    </Card>
+  )
+})
