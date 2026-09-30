@@ -1,6 +1,13 @@
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 
+jest.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 80 }))
+jest.mock('react-native', () => ({
+  Platform: { OS: 'android' },
+  KeyboardAvoidingView: (props) =>
+    require('react').createElement('KeyboardAvoidingView', props, props.children),
+}))
+
 jest.mock('tamagui', () => {
   const React = require('react')
   const components = Object.fromEntries(
@@ -231,4 +238,32 @@ test('controlled time-zone selector stages registration without updating profile
   expect(settings.setTimeZone).not.toHaveBeenCalled()
   expect(update).not.toHaveBeenCalled()
   await act(async () => view.unmount())
+})
+
+test('Settings keyboard avoidance includes footer and uses the native header offset on both platforms', async () => {
+  const { SettingsPage } = jest.requireActual('../../components/settings/SettingsPage')
+  const { Platform } = require('react-native')
+  for (const [platform, behavior] of [
+    ['android', 'height'],
+    ['ios', 'padding'],
+  ]) {
+    Platform.OS = platform
+    let view
+    await act(async () => {
+      view = create(
+        React.createElement(
+          SettingsPage,
+          { title: 'Body measurements', footer: React.createElement('SaveFooter') },
+          React.createElement('Form')
+        )
+      )
+    })
+    const avoider = view.root.findByType('KeyboardAvoidingView')
+    expect(avoider.props.behavior).toBe(behavior)
+    expect(avoider.props.keyboardVerticalOffset).toBe(80)
+    expect(avoider.findAllByType('SaveFooter')).toHaveLength(1)
+    expect(view.root.findByType('ScrollView').findAllByType('SaveFooter')).toHaveLength(0)
+    await act(async () => view.unmount())
+  }
+  Platform.OS = 'android'
 })
