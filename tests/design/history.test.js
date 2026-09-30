@@ -282,6 +282,6 @@ test('empty history keeps its calendar and refreshable list with a useful workou
   ).toBe(true)
   expect(tree.root.findByType('FlashList').props.onRefresh).toEqual(expect.any(Function))
   pressLabel(tree, 'Choose a workout')
-  expect(mockPush).toHaveBeenCalledWith('/workouts')
+  expect(mockPush).toHaveBeenCalledWith('/(tabs)/(workouts)')
   act(() => tree.unmount())
 })
