@@ -3,7 +3,8 @@ import { Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import { useNavigation, usePreventRemove } from '@react-navigation/native'
 import { useHeaderHeight } from '@react-navigation/elements'
 import { Stack, useRouter } from 'expo-router'
-import { Button, Input, ScrollView, Text, TextArea, XStack, YStack } from 'tamagui'
+import { Button, Input, ScrollView, Text, TextArea, XStack, YStack, getTokenValue } from 'tamagui'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ExerciseEditor } from '../../exercises'
 import { validateWorkoutData } from '../../../utils/workoutUtils'
 import type { WorkoutExercise, WorkoutSet } from '../../../types/workout'
@@ -42,6 +43,7 @@ export function WorkoutDraftEditor({
   const router = useRouter()
   const navigation = useNavigation()
   const headerHeight = useHeaderHeight()
+  const insets = useSafeAreaInsets()
   const [name, setName] = useState(initialName)
   const [notes, setNotes] = useState(initialNotes)
   useEffect(() => {
@@ -226,7 +228,8 @@ export function WorkoutDraftEditor({
           borderTopWidth="$0.5"
           bg="$background"
           px="$page"
-          py="$field"
+          pt="$field"
+          pb={Math.max(insets.bottom, getTokenValue('$field', 'space'))}
         >
           <YStack width="100%" maxW="$content" self="center" gap="$compact">
             <Text
