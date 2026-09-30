@@ -70,7 +70,9 @@ export const useWidgetStore = create<WidgetStore>()(
 
       removeWidget: (widgetId: string) => {
         const state = get()
-        const updatedWidgets = state.widgets.filter((w) => w.id !== widgetId)
+        const updatedWidgets = state.widgets
+          .filter((w) => w.id !== widgetId)
+          .sort((a, b) => a.position - b.position)
 
         // Reorder remaining widgets to fill gaps
         const reorderedWidgets = updatedWidgets.map((widget, index) => ({
@@ -145,11 +147,11 @@ export const useWidgetStore = create<WidgetStore>()(
 export const getMetricLabel = (metric: ProgressionMetric): string => {
   switch (metric) {
     case 'oneRm':
-      return '1RM'
+      return 'Est. 1RM'
     case 'volume':
       return 'Volume'
     case 'maxWeight':
-      return 'Max Weight'
+      return 'Max weight'
     default:
       return metric
   }
@@ -161,7 +163,7 @@ export const getMetricUnit = (metric: ProgressionMetric): string => {
     case 'maxWeight':
       return 'kg'
     case 'volume':
-      return 'kg'
+      return 'kg·reps'
     default:
       return ''
   }
