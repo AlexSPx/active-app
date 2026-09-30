@@ -53,17 +53,16 @@ function WorkoutPicker({
       dismissOnSnapToBottom
     >
       <Sheet.Overlay bg="$backgroundTransparent" />
-      <Sheet.Handle bg="$colorMuted" />
-      <Sheet.Frame
-        bg="$background"
-        borderTopLeftRadius="$sheet"
-        borderTopRightRadius="$sheet"
-        px="$page"
-        pt={insets.top + pagePadding}
-        pb={insets.bottom + pagePadding}
-      >
+      <Sheet.Frame bg="$background" borderTopLeftRadius="$sheet" borderTopRightRadius="$sheet">
+        <Sheet.Handle bg="$colorMuted" position="absolute" top={insets.top} left="$0" right="$0" />
         <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-          <YStack flex={1} gap="$field">
+          <YStack
+            flex={1}
+            gap="$field"
+            px="$page"
+            pt={insets.top + pagePadding}
+            pb={insets.bottom + pagePadding}
+          >
             <XStack items="center" justify="space-between">
               <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
                 {single ? 'Choose a workout' : 'Add workouts'}
