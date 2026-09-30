@@ -132,9 +132,19 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                       bg={selected ? '$primary' : '$trainingMuted'}
                       rounded="$block"
                       justify="center"
-                      p="$compact"
+                      items="center"
+                      overflow="hidden"
                     >
-                      <Text fontSize="$1" color="$onPrimary" text="center" numberOfLines={4}>
+                      <Text
+                        position="absolute"
+                        width="$6"
+                        rotate="-90deg"
+                        fontSize="$boardLabel"
+                        lineHeight="$boardLabel"
+                        color={selected ? '$onPrimary' : '$onTrainingMuted'}
+                        text="center"
+                        numberOfLines={2}
+                      >
                         {workout?.title ?? 'Workout'}
                       </Text>
                     </YStack>
