@@ -127,7 +127,7 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
               {...rest}
             >
               <Theme name={activeTheme === 'dark' ? 'dark' : 'light'}>
-              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+              <ThemeProvider value={activeTheme === 'dark' ? DarkTheme : DefaultTheme}>
                 <PortalProvider>
                   {/* <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" /> */}
 

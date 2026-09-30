@@ -1,39 +1,39 @@
 import { defaultConfig } from '@tamagui/config/v4'
-import { createTamagui } from 'tamagui'
+import { createFont, createTamagui, createTokens } from 'tamagui'
 
-// Semantic fitness theme with cohesive naming
+// Semantic roles from docs/design-previews/workouts-routines/DESIGN.md.
 const fitnessTheme = {
   // Background colors
-  background: '#0B0D10',
-  backgroundHover: '#171A20',
+  background: '#0F141B',
+  backgroundHover: '#202A36',
   backgroundPress: '#20242C',
-  backgroundFocus: '#171A20',
-  backgroundStrong: '#171A20',
+  backgroundFocus: '#202A36',
+  backgroundStrong: '#202A36',
   backgroundTransparent: 'transparent',
 
   // Surface colors (cards, panels)
-  surface: '#11141A',
+  surface: '#171E27',
   surfaceHover: '#1A1E26',
   surfacePress: '#202630',
   surfaceFocus: '#1A1E26',
 
   // Accent colors
-  backgroundAccent: '#101A31',
+  backgroundAccent: '#1A3051',
   backgroundAccentHover: '#162340',
   backgroundAccentPress: '#1B2A4C',
   backgroundAccentFocus: '#162340',
 
   // Text colors
-  color: '#F7F8FA',
-  colorHover: '#F7F8FA',
-  colorPress: '#F7F8FA',
-  colorFocus: '#F7F8FA',
+  color: '#E8EDF4',
+  colorHover: '#E8EDF4',
+  colorPress: '#E8EDF4',
+  colorFocus: '#E8EDF4',
   colorTransparent: 'transparent',
-  colorSubtle: '#A0A7B4',
-  colorMuted: '#747C89',
+  colorSubtle: '#A3ADBC',
+  colorMuted: '#8894A5',
 
   // Border colors
-  borderColor: '#282E38',
+  borderColor: '#2A3544',
   borderColorHover: '#343B47',
   borderColorPress: '#343B47',
   borderColorFocus: '#4D8DFF',
@@ -47,7 +47,9 @@ const fitnessTheme = {
   primaryHover: '#6BA0FF',
   primaryPress: '#2F6FED',
   primaryFocus: '#6BA0FF',
-  onPrimary: '#FFFFFF',
+  onPrimary: '#0F141B',
+  trainingMuted: '#739BE8',
+  destructive: '#FF6B7A',
 
   // Secondary theme (Orange/Amber)
   secondary: '#FFB24D',
@@ -66,7 +68,7 @@ const fitnessTheme = {
   // Legacy color scale (for compatibility)
   color1: '#0B0D10',
   color2: '#11141A',
-  color3: '#171A20',
+  color3: '#202A36',
   color4: '#20242C',
   color5: '#282E38',
   color6: '#343B47',
@@ -74,7 +76,7 @@ const fitnessTheme = {
   color8: '#A0A7B4',
   color9: '#C4CAD3',
   color10: '#A0A7B4',
-  color11: '#F7F8FA',
+  color11: '#E8EDF4',
   color12: '#FFFFFF',
 
   // Themed color scales
@@ -161,6 +163,7 @@ const lightTheme = {
   primaryPress: '#1B4CAD',
   primaryFocus: '#245FDB',
   onPrimary: '#FFFFFF',
+  destructive: '#D70015',
 
   // Secondary theme (Orange/Amber)
   secondary: '#FF9500',
@@ -258,9 +261,82 @@ const animations = createAnimations({
   },
 })
 
+// Keep the default scales for existing screens; previews use these named roles.
+const tokens = createTokens({
+  ...defaultConfig.tokens,
+  radius: {
+    ...defaultConfig.tokens.radius,
+    card: 20,
+    menu: 16,
+    button: 14,
+    control: 12,
+    day: 10,
+    badge: 8,
+    block: 6,
+    sheet: 24,
+  },
+  space: {
+    ...defaultConfig.tokens.space,
+    page: 20,
+    card: 16,
+    section: 24,
+    field: 12,
+    compact: 4,
+  },
+  size: {
+    ...defaultConfig.tokens.size,
+    content: 720,
+    touch: 44,
+    action: 48,
+    setRow: 32,
+    day: 96,
+    icon: 18,
+    iconSmall: 16,
+  },
+})
+
+const bodyFont = createFont({
+  ...defaultConfig.fonts.body,
+  size: {
+    ...defaultConfig.fonts.body.size,
+    screenTitle: 24,
+    cardTitle: 20,
+    sectionTitle: 21,
+    exerciseTitle: 15,
+    metric: 29,
+    body: 14,
+    caption: 12,
+    header: 18,
+  },
+  lineHeight: {
+    ...defaultConfig.fonts.body.lineHeight,
+    screenTitle: 32,
+    cardTitle: 26,
+    sectionTitle: 28,
+    exerciseTitle: 22,
+    metric: 36,
+    body: 22,
+    caption: 20,
+    header: 26,
+  },
+  weight: {
+    ...defaultConfig.fonts.body.weight,
+    screenTitle: '600',
+    cardTitle: '600',
+    sectionTitle: '600',
+    exerciseTitle: '600',
+    metric: '600',
+    body: '400',
+    caption: '400',
+    header: '700',
+  },
+})
+
 export const config = createTamagui({
   ...defaultConfig,
   animations,
+  tokens,
+  fonts: { ...defaultConfig.fonts, body: bodyFont },
   themes: {
     ...defaultConfig.themes,
     dark: fitnessTheme,

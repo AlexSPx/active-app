@@ -1,4 +1,5 @@
-import { Button, Text, XStack } from 'tamagui'
+import { Button, Text } from 'tamagui'
+import { Plus } from '@tamagui/lucide-icons'
 
 export interface CreateTopButtonProps {
   label: string
@@ -8,35 +9,19 @@ export interface CreateTopButtonProps {
 export function CreateTopButton({ label, onPress }: CreateTopButtonProps) {
   return (
     <Button
-      unstyled
-      borderWidth={1.5}
-      borderColor="$borderColor"
-      borderStyle="dashed"
       width="100%"
-      py={15}
-      bg="transparent"
+      minH="$action"
+      height="auto"
+      py="$3"
+      bg="$primary"
+      rounded="$button"
       onPress={onPress}
-      pressStyle={{ opacity: 0.86 }}
-      rounded="$4"
+      pressStyle={{ opacity: 0.85 }}
     >
-      <XStack items="center" justify="center" gap="$2.5">
-        <XStack
-          width={22}
-          height={22}
-          borderWidth={1.5}
-          borderColor="$colorSubtle"
-          items="center"
-          justify="center"
-          style={{ borderRadius: 999 }}
-        >
-          <Text fontSize={17} color="$colorSubtle" lineHeight={17} mt={-2}>
-            +
-          </Text>
-        </XStack>
-        <Text fontSize="$4" fontWeight="600" color="$color">
-          {label}
-        </Text>
-      </XStack>
+      <Plus size="$icon" color="$onPrimary" aria-hidden />
+      <Text fontSize="$3" fontWeight="700" color="$onPrimary" shrink={1}>
+        {label}
+      </Text>
     </Button>
   )
 }
