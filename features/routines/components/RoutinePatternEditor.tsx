@@ -1,311 +1,362 @@
-import { useCallback, useState } from 'react'
-import { YStack, XStack, Text, Button, Separator } from 'tamagui'
-import { Plus, Trash2, ChevronDown, Dumbbell, Moon, Calendar } from '@tamagui/lucide-icons'
-import type { RoutinePatternItem, RoutineDayType } from '../../../types/routine'
-import { router } from 'expo-router'
-import { Popover } from '@tamagui/popover'
-import { Pressable, StyleSheet } from 'react-native'
+import { useState } from 'react'
+import { YStack, XStack, Text, Button, ScrollView } from 'tamagui'
+import type { RoutinePatternItem } from '../../../types/routine'
 import { useWorkouts } from '../../workouts'
-import type { ApiWorkout } from '../../../types/api'
-import { FlashList } from '@shopify/flash-list'
+import { RoutineEditorSheet } from './RoutineEditorSheet'
+import { applyWorkoutSelection, reindexPattern, workoutMetadata } from '../routineDraft'
+import { syncEngine } from '../../../lib/sync'
 
 export interface RoutinePatternEditorProps {
   pattern: RoutinePatternItem[]
   onChange: (pattern: RoutinePatternItem[]) => void
   hideRestOption?: boolean
+  routineName?: string
 }
 
 export function RoutinePatternEditor({
-  pattern,
+  pattern: rawPattern,
   onChange,
   hideRestOption,
+  routineName,
 }: RoutinePatternEditorProps) {
-  const { workouts } = useWorkouts()
-
-  const setDayType = useCallback(
-    (index: number, dayType: RoutineDayType) => {
-      const next = pattern.map((p, i) =>
-        i === index ? { ...p, dayType, workoutId: dayType === 'REST' ? null : p.workoutId } : p
-      )
-      onChange(reindex(next))
-    },
-    [onChange, pattern]
-  )
-
-  const setWorkout = useCallback(
-    (index: number, workoutId: string | null) => {
-      const next = pattern.map((p, i) => (i === index ? { ...p, workoutId } : p))
-      onChange(reindex(next))
-    },
-    [onChange, pattern]
-  )
-
-  const addDay = useCallback(() => {
-    const next: RoutinePatternItem[] = [
-      ...pattern,
-      { dayIndex: pattern.length + 1, dayType: 'WORKOUT', workoutId: null },
-    ]
-    onChange(reindex(next))
-  }, [onChange, pattern])
-
-  const removeDay = useCallback(
-    (index: number) => {
-      const next = pattern.filter((_, i) => i !== index)
-      onChange(reindex(next))
-    },
-    [onChange, pattern]
-  )
-
-  const workoutTitle = useCallback(
-    (id: string | null) => workouts.find((w) => w.id === id)?.title ?? 'Select workout',
-    [workouts]
-  )
-
-  return (
-    <FlashList
-      data={pattern}
-      keyExtractor={(_, index) => String(index)}
-      style={{ width: '100%', alignSelf: 'stretch' }}
-      contentContainerStyle={{ paddingBottom: 8 }}
-      renderItem={({ item, index }) => (
-        <XStack width="100%" justify="center" mb="$2">
-          <DayRow
-            index={index}
-            item={item}
-            onSetDayType={setDayType}
-            onSetWorkout={setWorkout}
-            onRemove={removeDay}
-            workouts={workouts}
-            workoutTitle={workoutTitle}
-            hideRestOption={hideRestOption}
-          />
-        </XStack>
-      )}
-      ListFooterComponent={
-        <XStack justify="center" width="100%">
-          <Button mt="$2" width="100%" size="$4" icon={Plus} onPress={addDay}>
-            <Text>Add day</Text>
-          </Button>
-        </XStack>
-      }
-    />
-  )
-}
-
-function reindex(items: RoutinePatternItem[]): RoutinePatternItem[] {
-  return items.map((it, idx) => ({ ...it, dayIndex: idx + 1 }))
-}
-
-function DayRow({
-  index,
-  item,
-  onSetDayType,
-  onSetWorkout,
-  onRemove,
-  workouts,
-  workoutTitle,
-  hideRestOption,
-}: {
-  index: number
-  item: RoutinePatternItem
-  onSetDayType: (index: number, v: RoutineDayType) => void
-  onSetWorkout: (index: number, id: string | null) => void
-  onRemove: (index: number) => void
-  workouts: ApiWorkout[]
-  workoutTitle: (id: string | null) => string
-  hideRestOption?: boolean
-}) {
-  const [menuOpen, setMenuOpen] = useState(false)
-
-  const isWorkout = item.dayType === 'WORKOUT'
-  const isRest = item.dayType === 'REST'
-
-  return (
-    <YStack
-      bg="$surface"
-      p="$3"
-      rounded="$4"
-      borderWidth={1}
-      borderColor={isWorkout ? '$primary' : '$borderColor'}
-      gap="$2"
-      width="100%"
-    >
-      {/* Header */}
-      <XStack justify="space-between" items="center">
-        <XStack items="center" gap="$2">
-          <Calendar size={18} color="$colorSubtle" />
-          <Text fontSize="$5" fontWeight="600" color="$color">
-            Day {index + 1}
-          </Text>
-        </XStack>
+  const { workouts, loading, error } = useWorkouts()
+  const pattern = rawPattern.map((day) => ({
+    ...day,
+    workoutId: day.workoutId ? syncEngine.resolveId('workouts', day.workoutId) : null,
+  }))
+  const [selectedDay, setSelectedDay] = useState(0)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [menu, setMenu] = useState<number | null>(null)
+  const index = Math.min(selectedDay, Math.max(0, pattern.length - 1))
+  const day = pattern[index]
+  const workout = workouts.find((item) => item.id === day?.workoutId)
+  const training = pattern.filter((item) => item.dayType === 'WORKOUT').length
+  const update = (next: RoutinePatternItem[]) => onChange(reindexPattern(next))
+  const move = (from: number, to: number) => {
+    if (to < 0 || to >= pattern.length) return
+    const next = [...pattern]
+    ;[next[from], next[to]] = [next[to], next[from]]
+    update(next)
+    setSelectedDay(to)
+    setMenu(null)
+  }
+  const remove = (from: number) => {
+    update(pattern.filter((_, itemIndex) => itemIndex !== from))
+    setSelectedDay(Math.max(0, Math.min(from, pattern.length - 2)))
+    setMenu(null)
+  }
+  const actions = (itemIndex: number) =>
+    menu === itemIndex && (
+      <YStack bg="$surface" rounded="$menu" p="$compact" borderWidth={1} borderColor="$borderColor">
         <Button
-          size="$4"
-          width={48}
-          height={48}
           chromeless
-          icon={Trash2}
-          accessibilityLabel={`Remove day ${index + 1}`}
-          onPress={() => onRemove(index)}
-          color="$red10"
-          hoverStyle={{ bg: '$red2' }}
-          pressStyle={{ bg: '$red3' }}
-        />
-      </XStack>
+          minH="$touch"
+          justify="flex-start"
+          disabled={itemIndex === 0}
+          onPress={() => move(itemIndex, itemIndex - 1)}
+        >
+          Move {hideRestOption ? 'up' : 'earlier'}
+        </Button>
+        <Button
+          chromeless
+          minH="$touch"
+          justify="flex-start"
+          disabled={itemIndex === pattern.length - 1}
+          onPress={() => move(itemIndex, itemIndex + 1)}
+        >
+          Move {hideRestOption ? 'down' : 'later'}
+        </Button>
+        {hideRestOption && (
+          <Button
+            chromeless
+            minH="$touch"
+            justify="flex-start"
+            onPress={() => {
+              const next = [...pattern]
+              next.splice(itemIndex + 1, 0, { ...pattern[itemIndex] })
+              update(next)
+              setMenu(null)
+            }}
+          >
+            Repeat workout
+          </Button>
+        )}
+        <Button
+          chromeless
+          minH="$touch"
+          justify="flex-start"
+          color="$destructive"
+          onPress={() => remove(itemIndex)}
+        >
+          Remove {hideRestOption ? 'workout' : 'day'}
+        </Button>
+      </YStack>
+    )
+  const more = (itemIndex: number, label: string) => (
+    <Button
+      chromeless
+      width="$touch"
+      height="$touch"
+      color="$colorSubtle"
+      accessibilityLabel={`More actions for ${label}`}
+      accessibilityState={{ expanded: menu === itemIndex }}
+      onPress={() => setMenu(menu === itemIndex ? null : itemIndex)}
+    >
+      ···
+    </Button>
+  )
 
-      {/* Day Type Selection */}
-      {!hideRestOption && (
-        <XStack gap="$3" flex={1}>
-          <Button
-            flex={1}
-            size="$4"
-            icon={Dumbbell}
-            bg={isWorkout ? '$primary' : '$backgroundHover'}
-            borderWidth={isWorkout ? 0 : 1}
-            borderColor="$borderColor"
-            onPress={() => onSetDayType(index, 'WORKOUT')}
-            pressStyle={{
-              bg: isWorkout ? '$primaryPress' : '$surfacePress',
-              scale: 0.97,
-            }}
-            hoverStyle={{
-              bg: isWorkout ? '$primaryHover' : '$surfaceHover',
-            }}
-          >
-            <Text
-              color={isWorkout ? '$onPrimary' : '$color'}
-              fontWeight={isWorkout ? '600' : '500'}
-            >
-              Workout
-            </Text>
-          </Button>
-          <Button
-            flex={1}
-            size="$4"
-            icon={Moon}
-            bg={isRest ? '$backgroundStrong' : '$backgroundHover'}
-            borderWidth={1}
-            borderColor="$borderColor"
-            onPress={() => onSetDayType(index, 'REST')}
-            pressStyle={{
-              bg: isRest ? '$backgroundStrong' : '$surfacePress',
-              scale: 0.97,
-            }}
-            hoverStyle={{
-              bg: isRest ? '$backgroundStrong' : '$surfaceHover',
-            }}
-          >
-            <Text color="$color" fontWeight={isRest ? '600' : '500'}>
-              Rest
-            </Text>
-          </Button>
-        </XStack>
+  return (
+    <YStack gap="$field">
+      {error && (
+        <Text color="$destructive" fontSize="$caption">
+          {error}
+        </Text>
       )}
-
-      {/* Workout Selection */}
-      {isWorkout && (
+      {hideRestOption ? (
         <>
-          {menuOpen && (
-            <Pressable
-              style={[StyleSheet.absoluteFillObject, { zIndex: 1 }]}
-              onPress={() => setMenuOpen(false)}
-            />
+          <XStack items="center" justify="space-between">
+            <Text fontSize="$sectionTitle" lineHeight="$sectionTitle" fontWeight="600">
+              Weekly workouts
+            </Text>
+            <Button chromeless color="$primary" minH="$touch" onPress={() => setPickerOpen(true)}>
+              + Add
+            </Button>
+          </XStack>
+          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+            {pattern.length} {pattern.length === 1 ? 'session' : 'sessions'} · Any order ·
+            Monday–Sunday
+          </Text>
+          {!pattern.length && (
+            <YStack gap="$compact">
+              <Text fontSize="$header" fontWeight="600">
+                No workouts yet
+              </Text>
+              <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+                Choose the sessions you want to complete each week.
+              </Text>
+            </YStack>
           )}
-          <YStack gap="$2">
-            <Popover open={menuOpen} onOpenChange={setMenuOpen} size="$2" placement="bottom">
-              <Popover.Trigger asChild>
+          {pattern.map((item, itemIndex) => {
+            const assigned = workouts.find((candidate) => candidate.id === item.workoutId)
+            return (
+              <YStack key={itemIndex} borderBottomWidth={1} borderColor="$borderColor" pb="$field">
+                <XStack items="center" gap="$field">
+                  <Text color="$colorSubtle" fontSize="$caption">
+                    {itemIndex + 1}
+                  </Text>
+                  <YStack flex={1} gap="$compact">
+                    <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
+                      {assigned?.title ?? 'Choose a saved workout'}
+                    </Text>
+                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                      {assigned ? workoutMetadata(assigned) : 'Workout unavailable'}
+                    </Text>
+                  </YStack>
+                  {more(itemIndex, assigned?.title ?? `session ${itemIndex + 1}`)}
+                </XStack>
+                {actions(itemIndex)}
+              </YStack>
+            )
+          })}
+          <Button
+            minH="$action"
+            rounded="$button"
+            bg="$backgroundHover"
+            color="$primary"
+            onPress={() => setPickerOpen(true)}
+          >
+            + Add workouts
+          </Button>
+        </>
+      ) : pattern.length ? (
+        <>
+          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+            {pattern.length} days · {training} training · {pattern.length - training} rest
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <XStack gap="$compact">
+              {pattern.map((item, itemIndex) => (
                 <Button
-                  size="$4"
-                  iconAfter={ChevronDown}
-                  bg={item.workoutId ? '$backgroundAccent' : '$backgroundHover'}
+                  key={itemIndex}
+                  width="$touch"
+                  height="$day"
+                  rounded="$day"
+                  p="$compact"
+                  bg={index === itemIndex ? '$backgroundAccent' : '$backgroundHover'}
                   borderWidth={1}
-                  borderColor={item.workoutId ? '$borderAccent' : '$borderColor'}
-                  hoverStyle={{
-                    bg: item.workoutId ? '$backgroundAccentHover' : '$surfaceHover',
-                  }}
-                  pressStyle={{
-                    scale: 0.98,
+                  borderColor={index === itemIndex ? '$primary' : '$backgroundTransparent'}
+                  accessibilityLabel={`Day ${itemIndex + 1}: ${item.dayType === 'REST' ? 'Rest' : (workouts.find((candidate) => candidate.id === item.workoutId)?.title ?? 'Choose workout')}`}
+                  accessibilityState={{ selected: index === itemIndex }}
+                  onPress={() => {
+                    setSelectedDay(itemIndex)
+                    setMenu(null)
                   }}
                 >
-                  <Text
-                    color={item.workoutId ? '$primary' : '$colorSubtle'}
-                    fontWeight={item.workoutId ? '500' : '400'}
-                  >
-                    {workoutTitle(item.workoutId)}
-                  </Text>
-                </Button>
-              </Popover.Trigger>
-              <Popover.Content
-                p="$2"
-                bg="$surface"
-                borderColor="$borderColor"
-                borderWidth={1}
-                elevate
-                shadowRadius={8}
-                shadowOpacity={0.2}
-              >
-                <YStack width={280} height={300} gap="$1">
-                  {workouts.map((w) => (
-                    <Popover.Close asChild key={w.id}>
-                      <Button
-                        size="$3"
-                        chromeless
-                        onPress={() => onSetWorkout(index, w.id)}
-                        hoverStyle={{
-                          bg: '$backgroundHover',
-                        }}
-                        pressStyle={{
-                          bg: '$surfacePress',
-                        }}
+                  <YStack height="100%" width="100%" gap="$compact">
+                    <Text fontSize="$caption" color="$colorSubtle" text="center">
+                      {itemIndex + 1}
+                    </Text>
+                    <YStack
+                      flex={1}
+                      rounded="$block"
+                      justify="center"
+                      items="center"
+                      bg={
+                        item.dayType === 'REST'
+                          ? '$backgroundTransparent'
+                          : item.workoutId
+                            ? '$primary'
+                            : '$surface'
+                      }
+                    >
+                      <Text
+                        color={
+                          item.dayType === 'REST'
+                            ? '$colorMuted'
+                            : item.workoutId
+                              ? '$onPrimary'
+                              : '$primary'
+                        }
+                        fontSize="$body"
+                        fontWeight="600"
                       >
-                        <XStack width="100%" justify="flex-start">
-                          <Text fontSize="$4">{w.title}</Text>
-                        </XStack>
-                      </Button>
-                    </Popover.Close>
-                  ))}
-                  {workouts.length === 0 && (
-                    <YStack width="100%" items="center" gap="$2" px="$3" py="$2">
-                      <Text color="$colorSubtle" text="center">
-                        Create a workout template before assigning this day.
+                        {item.dayType === 'REST' ? '—' : item.workoutId ? 'T' : '+'}
                       </Text>
-                      <Popover.Close asChild>
-                        <Button
-                          size="$4"
-                          bg="$primary"
-                          onPress={() => router.push('/workouts/new?returnTo=routine')}
-                        >
-                          <Text color="$onPrimary" fontWeight="600">
-                            Create workout
-                          </Text>
-                        </Button>
-                      </Popover.Close>
                     </YStack>
-                  )}
-                  {item.workoutId && workouts.length > 0 && (
-                    <>
-                      <Separator my="$1" borderColor="$borderColor" />
-                      <Popover.Close asChild>
-                        <Button
-                          size="$3"
-                          chromeless
-                          onPress={() => onSetWorkout(index, null)}
-                          hoverStyle={{
-                            bg: '$red2',
-                          }}
-                        >
-                          <XStack width="100%" justify="flex-start">
-                            <Text color="$red10">Clear selection</Text>
-                          </XStack>
-                        </Button>
-                      </Popover.Close>
-                    </>
-                  )}
-                </YStack>
-              </Popover.Content>
-            </Popover>
+                  </YStack>
+                </Button>
+              ))}
+            </XStack>
+          </ScrollView>
+          <Text fontSize="$caption" color="$colorSubtle">
+            T · Training — · Rest
+          </Text>
+          <YStack borderTopWidth={1} borderColor="$borderColor" gap="$field">
+            <XStack items="center" justify="space-between">
+              <Text fontSize="$header" fontWeight="600">
+                Day {index + 1}
+              </Text>
+              {more(index, `day ${index + 1}`)}
+            </XStack>
+            {actions(index)}
+            <XStack bg="$backgroundHover" rounded="$menu" p="$compact" gap="$compact">
+              {(['WORKOUT', 'REST'] as const).map((type) => (
+                <Button
+                  key={type}
+                  flex={1}
+                  minH="$touch"
+                  rounded="$control"
+                  bg={day.dayType === type ? '$surface' : '$backgroundTransparent'}
+                  color={day.dayType === type ? '$primary' : '$colorSubtle'}
+                  accessibilityState={{ selected: day.dayType === type }}
+                  onPress={() =>
+                    update(
+                      pattern.map((item, itemIndex) =>
+                        itemIndex === index ? { ...item, dayType: type } : item
+                      )
+                    )
+                  }
+                >
+                  {type === 'WORKOUT' ? 'Training' : 'Rest'}
+                </Button>
+              ))}
+            </XStack>
+            {day.dayType === 'REST' ? (
+              <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+                Rest day. No workout scheduled.
+              </Text>
+            ) : (
+              <Button
+                height="auto"
+                minH="$action"
+                chromeless
+                px="$0"
+                onPress={() => setPickerOpen(true)}
+              >
+                <XStack width="100%" items="center" gap="$field">
+                  <YStack flex={1} gap="$compact">
+                    <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
+                      {workout?.title ?? 'Choose a workout'}
+                    </Text>
+                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                      {workout ? workoutMetadata(workout) : 'From your saved workouts'}
+                    </Text>
+                  </YStack>
+                  <Text color="$primary" fontSize="$caption">
+                    {workout ? 'Change' : 'Choose'} →
+                  </Text>
+                </XStack>
+              </Button>
+            )}
           </YStack>
+          <Button
+            minH="$action"
+            rounded="$button"
+            bg="$backgroundHover"
+            color="$primary"
+            onPress={() => {
+              update([
+                ...pattern,
+                { dayIndex: pattern.length + 1, dayType: 'WORKOUT', workoutId: null },
+              ])
+              setSelectedDay(pattern.length)
+              setMenu(null)
+            }}
+          >
+            + Add day
+          </Button>
+          <Text fontSize="$caption" color="$colorSubtle">
+            After day {pattern.length}, repeat from day 1.
+          </Text>
         </>
+      ) : (
+        <YStack gap="$field">
+          <Text fontSize="$header" fontWeight="600">
+            No days yet
+          </Text>
+          <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+            Add training and rest days in the order you want them to repeat.
+          </Text>
+          <Button
+            minH="$action"
+            rounded="$button"
+            bg="$backgroundHover"
+            color="$primary"
+            onPress={() => {
+              update([{ dayIndex: 1, dayType: 'WORKOUT', workoutId: null }])
+              setSelectedDay(0)
+            }}
+          >
+            + Add first day
+          </Button>
+        </YStack>
       )}
+      <RoutineEditorSheet
+        open={pickerOpen && !loading}
+        onOpenChange={setPickerOpen}
+        workouts={workouts}
+        single={!hideRestOption}
+        selected={
+          hideRestOption
+            ? pattern.flatMap((item) => (item.workoutId ? [item.workoutId] : []))
+            : day?.workoutId
+              ? [day.workoutId]
+              : []
+        }
+        context={`${routineName?.trim() || 'your new routine'} · ${hideRestOption ? 'Any order' : `Day ${index + 1}`}`}
+        onApply={(selection) => {
+          if (hideRestOption) update(applyWorkoutSelection(pattern, selection))
+          else
+            update(
+              pattern.map((item, itemIndex) =>
+                itemIndex === index
+                  ? { ...item, dayType: 'WORKOUT', workoutId: selection[0] ?? null }
+                  : item
+              )
+            )
+        }}
+      />
     </YStack>
   )
 }
