@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router'
-import { useTheme, YStack } from 'tamagui'
+import { getConfig, getVariableValue, useTheme, YStack } from 'tamagui'
 import { Dumbbell, History, Home, Settings as SettingsIcon } from '@tamagui/lucide-icons'
 import { RunningWorkoutFloat } from '../../features/workout-session'
 
@@ -23,7 +23,7 @@ export default function TabLayout() {
           headerTitleStyle: {
             color: theme.color.val,
             fontWeight: '700',
-            fontSize: 20,
+            fontSize: getVariableValue(getConfig().fonts.body.size.header),
           },
         }}
       >
@@ -54,6 +54,7 @@ export default function TabLayout() {
           name="settings"
           options={{
             title: 'Settings',
+            headerShown: false,
             tabBarIcon: ({ color }) => <SettingsIcon color={color as any} />,
           }}
         />
