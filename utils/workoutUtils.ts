@@ -4,8 +4,25 @@ import type {
   TemplateExercise,
   CreateWorkoutRequest,
 } from '../types/workout'
-import type { ApiWorkout, UpdateWorkoutRequest } from '../types/api'
+import type { ApiWorkout, ApiWorkoutExercise, UpdateWorkoutRequest } from '../types/api'
 import type { WorkoutRecord, WorkoutRecordExercise } from '../types/api'
+
+export function summarizeWorkoutExercises(exercises: ApiWorkoutExercise[], restSeconds: number) {
+  let strengthSets = 0
+  let intervals = 0
+  let cardioSeconds = 0
+  for (const exercise of exercises) {
+    if (exercise.category === 'CARDIO') {
+      intervals += exercise.durationSeconds?.length ?? 0
+      cardioSeconds += exercise.durationSeconds?.reduce((sum, seconds) => sum + seconds, 0) ?? 0
+    } else strengthSets += exercise.reps?.length ?? 0
+  }
+  return {
+    strengthSets,
+    intervals,
+    estimatedMinutes: Math.ceil((strengthSets * (90 + restSeconds) + cardioSeconds) / 60),
+  }
+}
 
 export const calculateSetVolume = (set: WorkoutSet): number => {
   const reps = set.reps ?? 0
