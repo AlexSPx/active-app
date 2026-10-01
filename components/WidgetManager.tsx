@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Keyboard } from 'react-native'
 import { YStack, XStack, Text, Button, Input, ScrollView, Sheet, getTokenValue } from 'tamagui'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Search, X, Plus, Check, ArrowUp, ArrowDown } from '@tamagui/lucide-icons'
@@ -75,7 +76,12 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
     <Sheet
       modal
       open={isVisible}
-      onOpenChange={(open) => !open && onClose()}
+      onOpenChange={(open) => {
+        if (!open) {
+          Keyboard.dismiss()
+          onClose()
+        }
+      }}
       snapPointsMode="percent"
       snapPoints={[90]}
       dismissOnSnapToBottom
@@ -110,7 +116,10 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
             p="$0"
             rounded="$control"
             accessibilityLabel="Close widget manager"
-            onPress={onClose}
+            onPress={() => {
+              Keyboard.dismiss()
+              onClose()
+            }}
           >
             <X size="$icon" color="$colorSubtle" />
           </Button>
@@ -235,6 +244,8 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
                     value={searchQuery}
                     accessibilityLabel="Search exercises"
                     placeholder="Search exercises"
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
                     onChangeText={(value) => {
                       setSearchQuery(value)
                       if (value.trim()) void searchExercises(value)
@@ -273,9 +284,10 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
                           }
                           accessibilityRole="button"
                           accessibilityState={{ selected: selectedExercise?.id === exercise.id }}
-                          onPress={() =>
+                          onPress={() => {
+                            Keyboard.dismiss()
                             setSelectedExercise({ id: exercise.id, name: exercise.name })
-                          }
+                          }}
                         >
                           <Text
                             flex={1}
