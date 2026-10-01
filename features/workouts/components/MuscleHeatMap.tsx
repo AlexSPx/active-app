@@ -1,10 +1,9 @@
-import { memo, useState, useMemo } from 'react'
-import { XStack, YStack, Text, Button } from 'tamagui'
-import Body from 'react-native-body-highlighter'
+import { memo, useState } from 'react'
+import { XStack, YStack, Text, Circle, getTokenValue, useTheme } from 'tamagui'
+import Body, { type ExtendedBodyPart, type Slug } from 'react-native-body-highlighter'
 import type { MuscleGroup } from '../../../types/api'
 
-const muscleToSlug: Record<MuscleGroup, string[]> = {
-  // Front muscles
+const muscleToSlug: Partial<Record<MuscleGroup, Slug[]>> = {
   CHEST: ['chest'],
   BICEPS: ['biceps'],
   ABDOMINALS: ['abs'],
@@ -13,9 +12,6 @@ const muscleToSlug: Record<MuscleGroup, string[]> = {
   SHOULDERS: ['deltoids'],
   NECK: ['neck'],
   ADDUCTORS: ['adductors'],
-  ABDUCTORS: ['adductors'],
-
-  // Back muscles
   TRAPS: ['trapezius'],
   MIDDLE_BACK: ['upper-back'],
   LOWER_BACK: ['lower-back'],
@@ -25,15 +21,42 @@ const muscleToSlug: Record<MuscleGroup, string[]> = {
   GLUTES: ['gluteal'],
   CALVES: ['calves'],
 }
-
-const HEAT_MAP_COLORS = [
-  '#f0f0f0',  // 0: not targeted
-  '#ffcccc',  // 1: very light
-  '#ff9999',  // 2: light  
-  '#ff6666',  // 3: medium
-  '#ff3333',  // 4: high
-  '#cc0000',  // 5+: very high
+// The diagram's neutral parts have baked-in colors, so supply every part's theme color.
+const bodySlugs: Slug[] = [
+  'abs',
+  'adductors',
+  'ankles',
+  'biceps',
+  'calves',
+  'chest',
+  'deltoids',
+  'feet',
+  'forearm',
+  'gluteal',
+  'hamstring',
+  'hands',
+  'hair',
+  'head',
+  'knees',
+  'lower-back',
+  'neck',
+  'obliques',
+  'quadriceps',
+  'tibialis',
+  'trapezius',
+  'triceps',
+  'upper-back',
 ]
+const normalize = (muscle: string) =>
+  muscle
+    .trim()
+    .replace(/[\s-]+/g, '_')
+    .toUpperCase()
+const label = (muscle: string) =>
+  muscle
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/^./, (char) => char.toUpperCase())
 
 interface MuscleHeatMapProps {
   primaryMuscles: string[]
@@ -44,122 +67,85 @@ interface MuscleHeatMapProps {
 export const MuscleHeatMap = memo(function MuscleHeatMap({
   primaryMuscles,
   secondaryMuscles,
-  scale = 1.2,
+  scale = 1,
 }: MuscleHeatMapProps) {
-  const [side, setSide] = useState<'front' | 'back'>('front')
-
-  const { bodyParts, maxIntensity } = useMemo(() => {
-    const muscleScoreMap = new Map<string, number>()
-
-    for (const muscle of secondaryMuscles) {
-      const slugs = muscleToSlug[muscle.replace(/[\s-]+/g, '_').toUpperCase() as MuscleGroup]
-      if (slugs) {
-        slugs.forEach(slug => {
-          const current = muscleScoreMap.get(slug) || 0
-          muscleScoreMap.set(slug, current + 1)
-        })
-      }
+  const theme = useTheme()
+  const diagramWidth = getTokenValue('$muscleDiagram', 'size')
+  const [width, setWidth] = useState(0)
+  const primary = [...new Set(primaryMuscles.map(normalize).filter(Boolean))]
+  const supporting = [...new Set(secondaryMuscles.map(normalize).filter(Boolean))].filter(
+    (muscle) => !primary.includes(muscle)
+  )
+  const groups = [
+    { muscles: primary, title: 'Primary', color: '$primary' },
+    { muscles: supporting, title: 'Supporting', color: '$trainingMuted' },
+  ] as const
+  const parts = new Map<Slug, ExtendedBodyPart>(
+    bodySlugs.map((slug) => [slug, { slug, color: theme.borderColor.val }])
+  )
+  for (const [muscles, color] of [
+    [supporting, theme.trainingMuted.val],
+    [primary, theme.primary.val],
+  ] as const) {
+    for (const muscle of muscles) {
+      for (const slug of muscleToSlug[muscle as MuscleGroup] ?? []) parts.set(slug, { slug, color })
     }
-
-    for (const muscle of primaryMuscles) {
-      const slugs = muscleToSlug[muscle.replace(/[\s-]+/g, '_').toUpperCase() as MuscleGroup]
-      if (slugs) {
-        slugs.forEach(slug => {
-          const current = muscleScoreMap.get(slug) || 0
-          muscleScoreMap.set(slug, current + 2)
-        })
-      }
-    }
-
-    const scores = Array.from(muscleScoreMap.values())
-    const max = scores.length > 0 ? Math.max(...scores) : 0
-
-    const parts = Array.from(muscleScoreMap.entries()).map(([slug, score]) => {
-      const normalizedIntensity = max > 0 
-        ? Math.ceil((score / max) * 5)
-        : 1
-      return {
-        slug: slug as any,
-        intensity: Math.min(normalizedIntensity, 5),
-      }
-    })
-
-    return { bodyParts: parts, maxIntensity: max }
-  }, [primaryMuscles, secondaryMuscles])
-
-  if (bodyParts.length === 0) {
-    return (
-      <YStack p="$4" items="center">
-        <Text color="$colorSubtle" fontSize="$3">
-          No muscle data available
-        </Text>
-      </YStack>
-    )
   }
-
+  if (!primary.length && !supporting.length)
+    return (
+      <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+        No muscle groups listed for these exercises.
+      </Text>
+    )
+  const diagramScale = Math.min(
+    scale,
+    diagramWidth / 200,
+    width ? (width - getTokenValue('$field', 'space')) / 400 : diagramWidth / 200
+  )
   return (
-    <YStack gap="$4" items="center" width="100%">
-      {/* Toggle Buttons */}
-      <XStack gap="$2" bg="$backgroundFocus" p="$1" rounded="$4">
-        <Button
-          size="$3"
-          bg={side === 'front' ? '$primary' : 'transparent'}
-          color={side === 'front' ? 'white' : '$colorSubtle'}
-          onPress={() => setSide('front')}
-          pressStyle={{ opacity: 0.8 }}
-        >
-          Front
-        </Button>
-        <Button
-          size="$3"
-          bg={side === 'back' ? '$primary' : 'transparent'}
-          color={side === 'back' ? 'white' : '$colorSubtle'}
-          onPress={() => setSide('back')}
-          pressStyle={{ opacity: 0.8 }}
-        >
-          Back
-        </Button>
-      </XStack>
-
-      {/* Body View */}
-      <YStack items="center">
-        <Body
-          data={bodyParts}
-          side={side}
-          scale={scale}
-          colors={HEAT_MAP_COLORS}
-        />
+    <YStack gap="$field">
+      <YStack gap="$compact">
+        {groups.map(({ muscles, title, color }) => (
+          <XStack key={title} gap="$field" items="flex-start">
+            <XStack width="$day" gap="$compact" items="center">
+              <Circle size="$iconSmall" bg={color} aria-hidden />
+              <Text fontSize="$caption" lineHeight="$caption" color="$color" fontWeight="600">
+                {title}
+              </Text>
+            </XStack>
+            <Text flex={1} fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+              {muscles.map(label).join(' · ') || 'None listed'}
+            </Text>
+          </XStack>
+        ))}
       </YStack>
-
-      {/* Legend - now shows intensity scale */}
-      <XStack justify="center" gap="$3" flexWrap="wrap">
-        <XStack items="center" gap="$1">
-          <YStack
-            width={12}
-            height={12}
-            style={{ borderRadius: 2 }}
-            bg={HEAT_MAP_COLORS[1] as any}
-          />
-          <Text fontSize="$1" color="$colorSubtle">Low</Text>
-        </XStack>
-        <XStack items="center" gap="$1">
-          <YStack
-            width={12}
-            height={12}
-            style={{ borderRadius: 2 }}
-            bg={HEAT_MAP_COLORS[3] as any}
-          />
-          <Text fontSize="$1" color="$colorSubtle">Med</Text>
-        </XStack>
-        <XStack items="center" gap="$1">
-          <YStack
-            width={12}
-            height={12}
-            style={{ borderRadius: 2 }}
-            bg={HEAT_MAP_COLORS[5] as any}
-          />
-          <Text fontSize="$1" color="$colorSubtle">High</Text>
-        </XStack>
+      <XStack
+        gap="$field"
+        justify="center"
+        onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
+      >
+        {(['front', 'back'] as const).map((side) => (
+          <YStack key={side} flex={1} minW={0} items="center" gap="$compact">
+            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+              {side === 'front' ? 'Front' : 'Back'}
+            </Text>
+            <YStack
+              accessible
+              accessibilityRole="image"
+              accessibilityLabel={`${side === 'front' ? 'Front' : 'Back'} muscle diagram. Primary: ${primary.map(label).join(', ') || 'none listed'}. Supporting: ${supporting.map(label).join(', ') || 'none listed'}.`}
+            >
+              <YStack importantForAccessibility="no-hide-descendants" aria-hidden>
+                <Body
+                  data={[...parts.values()]}
+                  side={side}
+                  scale={diagramScale}
+                  border={theme.background.val}
+                  defaultFill={theme.borderColor.val}
+                />
+              </YStack>
+            </YStack>
+          </YStack>
+        ))}
       </XStack>
     </YStack>
   )
