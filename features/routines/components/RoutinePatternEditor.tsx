@@ -66,21 +66,6 @@ export function RoutinePatternEditor({
         >
           Move {hideRestOption ? 'down' : 'later'}
         </Button>
-        {hideRestOption && (
-          <Button
-            chromeless
-            minH="$touch"
-            justify="flex-start"
-            onPress={() => {
-              const next = [...pattern]
-              next.splice(itemIndex + 1, 0, { ...pattern[itemIndex] })
-              update(next)
-              setMenu(null)
-            }}
-          >
-            Repeat workout
-          </Button>
-        )}
         <Button
           chromeless
           minH="$touch"
