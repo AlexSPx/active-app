@@ -8,7 +8,7 @@ import { SettingsPage } from '../../../components/settings/SettingsPage'
 export default function PermissionsScreen() {
   const { user } = useAuth()
   const { updateUserProfile, isUpdating, error } = useUpdateUser()
-  const [frequency, setFrequency] = useState(user?.notificationPreferences.schedule?.length ?? 1)
+  const [frequency, setFrequency] = useState(user?.notificationPreferences?.schedule?.length ?? 1)
   const changeFrequency = async (value: number) => {
     const updated = await updateUserProfile({ notificationFrequency: value })
     if (updated) setFrequency(value)

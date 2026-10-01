@@ -32,6 +32,11 @@ jest.mock('tamagui', () => {
 jest.mock('../../components/settings/SettingsPage', () => ({
   SettingsPage: (props) => require('react').createElement('Page', {}, props.children, props.footer),
 }))
+jest.mock('../../contexts/AuthContext', () => ({ useAuth: jest.fn() }))
+jest.mock('../../components/NotificationPermissions', () => ({
+  __esModule: true,
+  default: () => null,
+}))
 jest.mock('@tamagui/lucide-icons', () => ({ Check: () => null, ChevronDown: () => null }))
 jest.mock('@vvo/tzdb', () => ({ timeZonesNames: ['Europe/Sofia', 'America/New_York'] }))
 jest.mock('expo-linking', () => ({ openURL: jest.fn() }))
@@ -266,4 +271,29 @@ test('Settings keyboard avoidance includes footer and uses the native header off
     await act(async () => view.unmount())
   }
   Platform.OS = 'android'
+})
+
+test('reminder frequency accepts missing legacy preferences and preserves explicit Off', async () => {
+  const { useAuth } = require('../../contexts/AuthContext')
+  const PermissionsScreen = require('../../app/(tabs)/settings/permissions').default
+  for (const [user, expected] of [
+    [null, '1 / day'],
+    [{ email: 'legacy@example.com' }, '1 / day'],
+    [{ notificationPreferences: null }, '1 / day'],
+    [{ notificationPreferences: {} }, '1 / day'],
+    [{ notificationPreferences: { schedule: [] } }, 'Off'],
+    [{ notificationPreferences: { schedule: ['09:00', '18:00'] } }, '2 / day'],
+  ]) {
+    useAuth.mockReturnValue({ user })
+    let view
+    await act(async () => {
+      view = create(React.createElement(PermissionsScreen))
+    })
+    const selected = view.root
+      .findAllByType('Button')
+      .find((button) => button.props.accessibilityState?.checked)
+    expect(selected.props.children).toBe(expected)
+    expect(update).not.toHaveBeenCalled()
+    await act(async () => view.unmount())
+  }
 })
