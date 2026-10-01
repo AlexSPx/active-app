@@ -49,6 +49,7 @@ const fitnessTheme = {
   primaryFocus: '#6BA0FF',
   onPrimary: '#0F141B',
   trainingMuted: '#739BE8',
+  onTrainingMuted: '#0F141B',
   destructive: '#FF6B7A',
 
   // Secondary theme (Orange/Amber)
@@ -164,6 +165,7 @@ const lightTheme = {
   primaryFocus: '#245FDB',
   onPrimary: '#FFFFFF',
   destructive: '#D70015',
+  onTrainingMuted: '#202531',
 
   // Secondary theme (Orange/Amber)
   secondary: '#FF9500',
@@ -307,6 +309,7 @@ const bodyFont = createFont({
     body: 14,
     caption: 12,
     header: 18,
+    boardLabel: 11,
   },
   lineHeight: {
     ...defaultConfig.fonts.body.lineHeight,
@@ -318,6 +321,7 @@ const bodyFont = createFont({
     body: 22,
     caption: 20,
     header: 26,
+    boardLabel: 14,
   },
   weight: {
     ...defaultConfig.fonts.body.weight,
@@ -329,6 +333,7 @@ const bodyFont = createFont({
     body: '400',
     caption: '400',
     header: '700',
+    boardLabel: '600',
   },
 })
 
