@@ -27,8 +27,6 @@ import { remapRunningWorkoutId } from '../features/workout-session/stores/runnin
 // Track which DB instances have already been hydrated to avoid double-runs
 const hydratedDbs = new WeakSet<object>()
 
-
-
 /**
  * Inner component that has access to SQLiteContext.
  * Initializes the SyncEngine, registers the shared DB handle, and
@@ -48,8 +46,9 @@ function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
 
       remapRunningWorkoutId(oldId, newId)
       for (const queryKey of [queryKeys.workouts.all, queryKeys.routines.all]) {
-        queryClient.setQueriesData({ queryKey }, (data) =>
-          replaceQueuedIdReferences(data, oldId, newId).value
+        queryClient.setQueriesData(
+          { queryKey },
+          (data) => replaceQueuedIdReferences(data, oldId, newId).value
         )
       }
     })
@@ -92,8 +91,6 @@ function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-
-
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   const colorScheme = useColorScheme()
   const theme = useSettingsStore((s) => s.theme)
@@ -117,50 +114,39 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
 
   return (
     <SafeAreaProvider>
-      <SQLiteProvider databaseName="active.db" onInit={migrateDbIfNeeded}>
-        <QueryClientProvider client={queryClient}>
-        <PostHogProvider client={posthog}>
-          <SyncEngineBootstrap>
-            <TamaguiProvider
-              config={config}
-              defaultTheme={activeTheme === 'dark' ? 'dark' : 'light'}
-              {...rest}
-            >
-              <Theme name={activeTheme === 'dark' ? 'dark' : 'light'}>
-              <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-                <PortalProvider>
-                  {/* <FloatingDevTools apps={TOOLS} actions={{}} environment="local" userRole="admin" /> */}
-
-                  <ToastProvider
-                    swipeDirection="horizontal"
-                    duration={6000}
-                    native={
-                      [
-                        // uncomment the next line to do native toasts on mobile. NOTE: it'll require you making a dev build and won't work with Expo Go
-                        // 'mobile'
-                      ]
-                    }
-                  >
-                    {children}
-                    <CurrentToast />
-                    <ToastViewport top="$8" left={0} right={0} />
-                    {congratsVisible && payload && (
-                      <FinishedWorkoutCongrats
-                      data={payload.record}
-                        streak={payload.streak}
-                        visible={congratsVisible}
-                        onClose={hideFinishedCongrats}
-                      />
-                    )}
-                  </ToastProvider>
-                </PortalProvider>
-              </ThemeProvider>
-              </Theme>
-            </TamaguiProvider>
-          </SyncEngineBootstrap>
-        </PostHogProvider>
-      </QueryClientProvider>
-      </SQLiteProvider>
+      <TamaguiProvider
+        config={config}
+        defaultTheme={activeTheme === 'dark' ? 'dark' : 'light'}
+        {...rest}
+      >
+        <Theme name={activeTheme === 'dark' ? 'dark' : 'light'}>
+          <ThemeProvider value={activeTheme === 'dark' ? DarkTheme : DefaultTheme}>
+            <SQLiteProvider databaseName="active.db" onInit={migrateDbIfNeeded}>
+              <QueryClientProvider client={queryClient}>
+                <PostHogProvider client={posthog}>
+                  <SyncEngineBootstrap>
+                    <PortalProvider>
+                      <ToastProvider swipeDirection="horizontal" duration={6000} native={[]}>
+                        {children}
+                        <CurrentToast />
+                        <ToastViewport top="$8" left={0} right={0} />
+                        {congratsVisible && payload && (
+                          <FinishedWorkoutCongrats
+                            data={payload.record}
+                            streak={payload.streak}
+                            visible={congratsVisible}
+                            onClose={hideFinishedCongrats}
+                          />
+                        )}
+                      </ToastProvider>
+                    </PortalProvider>
+                  </SyncEngineBootstrap>
+                </PostHogProvider>
+              </QueryClientProvider>
+            </SQLiteProvider>
+          </ThemeProvider>
+        </Theme>
+      </TamaguiProvider>
     </SafeAreaProvider>
   )
 }
