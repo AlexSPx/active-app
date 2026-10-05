@@ -17,7 +17,7 @@ import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { StartWorkoutButton } from '../../components/ui/StartWorkoutButton'
 import { useSettingsStore } from '../../features/settings'
 import { useWorkoutIdRemap } from '../../features/workouts/hooks/useWorkoutIdRemap'
-import { formatSeconds } from '../../utils/workoutUtils'
+import { formatSeconds, summarizeWorkoutExercises } from '../../utils/workoutUtils'
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -31,25 +31,9 @@ export default function WorkoutDetailScreen() {
   const { restTimerEnabled, restTimerDefaultSeconds } = useSettingsStore()
   const workout = workouts.find((item) => item.id === id)
   const exercises = workout?.workoutTemplate.exercises ?? []
-  const strengthSets = exercises.reduce(
-    (sum, exercise) => sum + (exercise.category === 'CARDIO' ? 0 : (exercise.reps?.length ?? 0)),
-    0
-  )
-  const intervals = exercises.reduce(
-    (sum, exercise) =>
-      sum + (exercise.category === 'CARDIO' ? (exercise.durationSeconds?.length ?? 0) : 0),
-    0
-  )
-  const cardioSeconds = exercises.reduce(
-    (sum, exercise) =>
-      sum +
-      (exercise.category === 'CARDIO'
-        ? (exercise.durationSeconds?.reduce((total, seconds) => total + seconds, 0) ?? 0)
-        : 0),
-    0
-  )
-  const estimatedMinutes = Math.ceil(
-    (strengthSets * (90 + (restTimerEnabled ? restTimerDefaultSeconds : 0)) + cardioSeconds) / 60
+  const { strengthSets, intervals, estimatedMinutes } = summarizeWorkoutExercises(
+    exercises,
+    restTimerEnabled ? restTimerDefaultSeconds : 0
   )
   const setsLabel = [
     strengthSets && `${strengthSets} ${strengthSets === 1 ? 'set' : 'sets'}`,

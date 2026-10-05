@@ -71,11 +71,13 @@ jest.mock('../../services/notificationService', () => ({
   registerPushNotifications: async () => {},
 }))
 jest.mock('../../services/posthog', () => ({ posthog: {} }))
-jest.mock('../../lib/queryClient', () => ({ queryClient: {} }))
+jest.mock('../../lib/queryClient', () => ({ queryClient: { setQueriesData: jest.fn() } }))
 jest.mock('../../lib/sync', () => ({
-  syncEngine: { onIdRemap: () => () => {}, init: async () => {}, destroy: () => {} },
+  syncEngine: { onIdRemap: jest.fn(() => () => {}), init: async () => {}, destroy: () => {} },
 }))
-jest.mock('../../lib/sync/queuePayloadRemap', () => ({ replaceQueuedIdReferences: jest.fn() }))
+jest.mock('../../lib/sync/queuePayloadRemap', () =>
+  jest.requireActual('../../lib/sync/queuePayloadRemap')
+)
 jest.mock('../../lib/sync/hydrate', () => ({ hydrateFromServer: jest.fn() }))
 jest.mock('../../lib/db/connection', () => ({ setSharedDatabase: jest.fn() }))
 jest.mock('../../features/workout-session/stores/runningWorkoutStore', () => ({
@@ -110,5 +112,30 @@ test('live appearance changes update both themes through the memoized database p
   expect(probe()).toMatchObject({ appearance: 'light', navigationDark: false })
   await act(async () => useSettingsStore.getState().setTheme('system'))
   expect(probe()).toMatchObject({ appearance: 'dark', navigationDark: true })
+  await act(async () => view.unmount())
+})
+
+test('routine ID remaps update list and active caches without changing running workouts', async () => {
+  const { syncEngine } = require('../../lib/sync')
+  const { queryClient } = require('../../lib/queryClient')
+  const { queryKeys } = require('../../lib/queryKeys')
+  const {
+    remapRunningWorkoutId,
+  } = require('../../features/workout-session/stores/runningWorkoutStore')
+  let view
+  await act(async () => {
+    view = create(React.createElement(Provider, {}, React.createElement(ThemeProbe)))
+  })
+  queryClient.setQueriesData.mockClear()
+  const listener = syncEngine.onIdRemap.mock.calls.at(-1)[0]
+  listener('routines', 'local-routine', 'server-routine')
+  expect(queryClient.setQueriesData).toHaveBeenCalledTimes(1)
+  const [filter, rewrite] = queryClient.setQueriesData.mock.calls[0]
+  expect(filter).toEqual({ queryKey: queryKeys.routines.all })
+  expect(rewrite([{ id: 'local-routine', pattern: [] }])).toEqual([
+    { id: 'server-routine', pattern: [] },
+  ])
+  expect(rewrite({ id: 'local-routine' })).toEqual({ id: 'server-routine' })
+  expect(remapRunningWorkoutId).not.toHaveBeenCalled()
   await act(async () => view.unmount())
 })

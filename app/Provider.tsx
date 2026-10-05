@@ -42,10 +42,14 @@ function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
   // On mount: init SyncEngine (drains leftover queue from previous session)
   useEffect(() => {
     const unsubscribeIdRemap = syncEngine.onIdRemap((tableName, oldId, newId) => {
-      if (tableName !== 'workouts') return
+      if (tableName !== 'workouts' && tableName !== 'routines') return
 
-      remapRunningWorkoutId(oldId, newId)
-      for (const queryKey of [queryKeys.workouts.all, queryKeys.routines.all]) {
+      if (tableName === 'workouts') remapRunningWorkoutId(oldId, newId)
+      const affectedQueries =
+        tableName === 'workouts'
+          ? [queryKeys.workouts.all, queryKeys.routines.all]
+          : [queryKeys.routines.all]
+      for (const queryKey of affectedQueries) {
         queryClient.setQueriesData(
           { queryKey },
           (data) => replaceQueuedIdReferences(data, oldId, newId).value
