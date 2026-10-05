@@ -12,54 +12,59 @@ export default function WorkoutsLayout() {
 
   return (
     <YStack flex={1} bg="$background">
-      <XStack
-        mt={12}
-        mx={20}
-        mb={20}
-        bg="$surface"
-        p={4}
-        gap={4}
-        borderColor="$borderColor"
-        borderWidth={1}
-        style={{ borderRadius: 12 }}
-      >
-        <Button
-          unstyled
-          flex={1}
-          py={9}
-          bg={current === 'workouts' ? '$backgroundStrong' : 'transparent'}
-          onPress={() => router.replace({ pathname: '/(tabs)/(workouts)' })}
-          pressStyle={{ opacity: 0.9 }}
-          style={{ borderRadius: 9 }}
+      <YStack width="100%" maxW="$content" self="center" px="$page">
+        <XStack
+          mt="$card"
+          mb="$section"
+          bg="$backgroundStrong"
+          p="$compact"
+          gap="$compact"
+          rounded="$menu"
         >
-          <Text
-            fontSize={14}
-            fontWeight="500"
-            color={current === 'workouts' ? '$color' : '$colorMuted'}
-            style={{ textAlign: 'center' }}
+          <Button
+            unstyled
+            flex={1}
+            minH="$touch"
+            py="$2"
+            bg={current === 'workouts' ? '$surface' : '$backgroundTransparent'}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: current === 'workouts' }}
+            onPress={() => router.replace({ pathname: '/(tabs)/(workouts)' })}
+            pressStyle={{ opacity: 0.9 }}
+            rounded="$control"
           >
-            Workouts
-          </Text>
-        </Button>
-        <Button
-          unstyled
-          flex={1}
-          py={9}
-          bg={current === 'routines' ? '$backgroundStrong' : 'transparent'}
-          onPress={() => router.replace({ pathname: '/(tabs)/(workouts)/routines' })}
-          pressStyle={{ opacity: 0.9 }}
-          style={{ borderRadius: 9 }}
-        >
-          <Text
-            fontSize={14}
-            fontWeight="500"
-            color={current === 'routines' ? '$color' : '$colorMuted'}
-            style={{ textAlign: 'center' }}
+            <Text
+              fontSize="$caption"
+              fontWeight="600"
+              color={current === 'workouts' ? '$primary' : '$colorSubtle'}
+              text="center"
+            >
+              Workouts
+            </Text>
+          </Button>
+          <Button
+            unstyled
+            flex={1}
+            minH="$touch"
+            py="$2"
+            bg={current === 'routines' ? '$surface' : '$backgroundTransparent'}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: current === 'routines' }}
+            onPress={() => router.replace({ pathname: '/(tabs)/(workouts)/routines' })}
+            pressStyle={{ opacity: 0.9 }}
+            rounded="$control"
           >
-            Routines
-          </Text>
-        </Button>
-      </XStack>
+            <Text
+              fontSize="$caption"
+              fontWeight="600"
+              color={current === 'routines' ? '$primary' : '$colorSubtle'}
+              text="center"
+            >
+              Routines
+            </Text>
+          </Button>
+        </XStack>
+      </YStack>
 
       <YStack flex={1}>
         <Slot />
