@@ -1,300 +1,240 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
-import { YStack, Text, ScrollView, XStack, Button, Separator, Card, View } from 'tamagui'
 import {
-  Play,
-  Edit3,
-  ArrowLeft,
-  Clock,
-  Dumbbell,
-  Target,
-  ChevronRight,
-} from '@tamagui/lucide-icons'
+  YStack,
+  Text,
+  ScrollView,
+  XStack,
+  Button,
+  getTokenValue,
+  useTheme,
+  getConfig,
+  getVariableValue,
+} from 'tamagui'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useWorkouts, useWorkoutManagement, MuscleHeatMap } from '../../features/workouts'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
-import { useMemo } from 'react'
+import { StartWorkoutButton } from '../../components/ui/StartWorkoutButton'
 import { useSettingsStore } from '../../features/settings'
 import { useWorkoutIdRemap } from '../../features/workouts/hooks/useWorkoutIdRemap'
+import { formatSeconds } from '../../utils/workoutUtils'
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
+  const theme = useTheme()
+  const insets = useSafeAreaInsets()
   const { workouts, loading, error } = useWorkouts()
-  const { startWorkout } = useWorkoutManagement()
+  const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
+  const running = isWorkoutRunning()
   useWorkoutIdRemap(id)
-
-  const {
-    restTimerEnabled,
-    restTimerDefaultSeconds,
-    setRestTimerEnabled,
-    setRestTimerDefaultSeconds,
-  } = useSettingsStore()
-
-  const workout = useMemo(() => workouts.find((w) => w.id === id), [workouts, id])
-
-  // TODO: Use workout records to calculate stats
-  const workoutStats = useMemo(() => {
-    if (!workout) return { exercises: 0, sets: 0, estimatedTime: 0 }
-
-    const exercises = workout.workoutTemplate.exercises.length
-    const sets = workout.workoutTemplate.exercises.reduce((sum, e) => {
-      if (e.category === 'CARDIO') return sum + (e.durationSeconds?.length || 0)
-      return sum + (e.reps?.length || 0)
-    }, 0)
-    const restTime = restTimerEnabled ? restTimerDefaultSeconds / 60 : 0
-    const estimatedSetTime = 1.5 + restTime
-    const estimatedTime = sets * estimatedSetTime
-
-    return { exercises, sets, estimatedTime }
-  }, [workout])
-
-  // Aggregate muscles from all exercises
-  const muscleGroups = useMemo(() => {
-    if (!workout) return { primary: [], secondary: [] }
-
-    const primary = new Set<string>()
-    const secondary = new Set<string>()
-
-    workout.workoutTemplate.exercises.forEach((exercise) => {
-      exercise.primaryMuscles?.forEach((m) => primary.add(m))
-      exercise.secondaryMuscles?.forEach((m) => secondary.add(m))
-    })
-
-    return {
-      primary: Array.from(primary) as any[],
-      secondary: Array.from(secondary) as any[],
-    }
-  }, [workout])
-
-  if (loading && !workout) {
-    return (
-      <YStack flex={1} justify="center" items="center" bg="$background">
-        <LoadingSpinner />
-        <Text mt="$3" color="$colorSubtle" fontSize="$3">
-          Loading workout...
-        </Text>
-      </YStack>
-    )
-  }
-
-  if (error || !workout) {
-    return (
-      <YStack flex={1} justify="center" items="center" bg="$background" p="$4">
-        <ErrorDisplay message={error || 'Workout not found'} />
-        <Button mt="$4" onPress={() => router.back()}>
-          Go Back
-        </Button>
-      </YStack>
-    )
-  }
+  const { restTimerEnabled, restTimerDefaultSeconds } = useSettingsStore()
+  const workout = workouts.find((item) => item.id === id)
+  const exercises = workout?.workoutTemplate.exercises ?? []
+  const strengthSets = exercises.reduce(
+    (sum, exercise) => sum + (exercise.category === 'CARDIO' ? 0 : (exercise.reps?.length ?? 0)),
+    0
+  )
+  const intervals = exercises.reduce(
+    (sum, exercise) =>
+      sum + (exercise.category === 'CARDIO' ? (exercise.durationSeconds?.length ?? 0) : 0),
+    0
+  )
+  const cardioSeconds = exercises.reduce(
+    (sum, exercise) =>
+      sum +
+      (exercise.category === 'CARDIO'
+        ? (exercise.durationSeconds?.reduce((total, seconds) => total + seconds, 0) ?? 0)
+        : 0),
+    0
+  )
+  const estimatedMinutes = Math.ceil(
+    (strengthSets * (90 + (restTimerEnabled ? restTimerDefaultSeconds : 0)) + cardioSeconds) / 60
+  )
+  const setsLabel = [
+    strengthSets && `${strengthSets} ${strengthSets === 1 ? 'set' : 'sets'}`,
+    intervals && `${intervals} ${intervals === 1 ? 'interval' : 'intervals'}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
-    <>
+    <YStack flex={1} bg="$background">
       <Stack.Screen
         options={{
-          headerTitle: workout.title,
-          headerBackTitle: 'Back',
-          headerTransparent: false,
+          title: 'Workout',
+          headerBackTitle: 'Workouts',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: theme.background.val },
+          headerTintColor: theme.primary.val,
+          headerTitleStyle: {
+            color: theme.color.val,
+            fontSize: getVariableValue(getConfig().fonts.body.size.header),
+            fontWeight: '700',
+          },
+          headerRight: workout
+            ? () => (
+                <Button
+                  chromeless
+                  minH="$touch"
+                  color="$primary"
+                  fontSize="$caption"
+                  onPress={() =>
+                    router.push({ pathname: '/workouts/edit', params: { id: workout.id } })
+                  }
+                >
+                  Edit
+                </Button>
+              )
+            : undefined,
         }}
       />
-
-      <ScrollView flex={1} bg="$background" showsVerticalScrollIndicator={false}>
-        <YStack p="$4" gap="$5">
-          {/* Stats Cards */}
-          <XStack gap="$3" flexWrap="wrap">
-            <Card
-              flex={1}
-              minWidth={100}
-              p="$3"
-              bg="$surface"
-              bordered
-              animation="bouncy"
-              enterStyle={{ scale: 0.9, opacity: 0 }}
-            >
-              <XStack items="center" gap="$2">
-                <Dumbbell size={18} color="$primary" />
-                <YStack>
-                  <Text fontSize="$6" fontWeight="bold" color="$color">
-                    {workoutStats.exercises}
+      {loading && !workout ? (
+        <YStack flex={1} items="center" justify="center" gap="$field">
+          <LoadingSpinner />
+          <Text fontSize="$body" color="$colorSubtle">
+            Loading workout…
+          </Text>
+        </YStack>
+      ) : !workout ? (
+        <YStack flex={1} p="$page" items="center" justify="center" gap="$field">
+          <ErrorDisplay message={error || 'Workout not found'} />
+          <Button
+            bg="$backgroundHover"
+            minH="$action"
+            rounded="$button"
+            onPress={() => router.back()}
+          >
+            Go back
+          </Button>
+        </YStack>
+      ) : (
+        <>
+          <ScrollView
+            flex={1}
+            showsVerticalScrollIndicator={false}
+            contentInsetAdjustmentBehavior="automatic"
+          >
+            <YStack p="$page" gap="$section" width="100%" maxW="$content" self="center">
+              <YStack gap="$field">
+                <Text
+                  accessibilityRole="header"
+                  fontSize="$screenTitle"
+                  lineHeight="$screenTitle"
+                  fontWeight="600"
+                >
+                  {workout.title}
+                </Text>
+                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                  {exercises.length} {exercises.length === 1 ? 'exercise' : 'exercises'}
+                  {setsLabel ? ` · ${setsLabel}` : ''}
+                  {estimatedMinutes ? ` · ~${estimatedMinutes} min` : ''}
+                </Text>
+                {!!workout.notes?.trim() && (
+                  <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+                    {workout.notes.trim()}
                   </Text>
-                  <Text fontSize="$2" color="$colorSubtle">
+                )}
+              </YStack>
+              <YStack gap="$field">
+                <Text
+                  accessibilityRole="header"
+                  fontSize="$sectionTitle"
+                  lineHeight="$sectionTitle"
+                  fontWeight="600"
+                >
+                  Muscle groups
+                </Text>
+                <MuscleHeatMap
+                  primaryMuscles={exercises.flatMap((exercise) => exercise.primaryMuscles ?? [])}
+                  secondaryMuscles={exercises.flatMap(
+                    (exercise) => exercise.secondaryMuscles ?? []
+                  )}
+                />
+              </YStack>
+              <YStack gap="$field">
+                <XStack justify="space-between" items="center">
+                  <Text
+                    accessibilityRole="header"
+                    fontSize="$sectionTitle"
+                    lineHeight="$sectionTitle"
+                    fontWeight="600"
+                  >
                     Exercises
                   </Text>
-                </YStack>
-              </XStack>
-            </Card>
-            <Card
-              flex={1}
-              minWidth={100}
-              p="$3"
-              bg="$surface"
-              bordered
-              animation="bouncy"
-              enterStyle={{ scale: 0.9, opacity: 0 }}
-            >
-              <XStack items="center" gap="$2">
-                <Target size={18} color="$secondary" />
-                <YStack>
-                  <Text fontSize="$6" fontWeight="bold" color="$color">
-                    {workoutStats.sets}
+                  <Text fontSize="$caption" color="$colorSubtle">
+                    In workout order
                   </Text>
-                  <Text fontSize="$2" color="$colorSubtle">
-                    Total Sets
+                </XStack>
+                {exercises.map((exercise, index) => {
+                  const cardio = exercise.category === 'CARDIO'
+                  const count = cardio
+                    ? (exercise.durationSeconds?.length ?? 0)
+                    : (exercise.reps?.length ?? 0)
+                  const muscles = (exercise.primaryMuscles ?? [])
+                    .map((muscle) => muscle.replace(/[_-]/g, ' ').toLowerCase())
+                    .join(' · ')
+                  return (
+                    <YStack
+                      key={`${exercise.exerciseId}-${index}`}
+                      gap="$compact"
+                      pb="$field"
+                      borderBottomWidth={1}
+                      borderColor="$borderColor"
+                    >
+                      <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
+                        {index + 1}.{' '}
+                        {exercise.exerciseTitle?.trim() || exercise.exerciseId.replace(/_/g, ' ')}
+                      </Text>
+                      <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                        {count}{' '}
+                        {cardio
+                          ? count === 1
+                            ? 'interval'
+                            : 'intervals'
+                          : count === 1
+                            ? 'set'
+                            : 'sets'}
+                        {cardio && count
+                          ? ` · ${exercise.durationSeconds?.map((seconds) => formatSeconds(seconds)).join(' / ')}`
+                          : ''}
+                        {muscles ? ` · ${muscles}` : ''}
+                      </Text>
+                    </YStack>
+                  )
+                })}
+                {!exercises.length && (
+                  <Text fontSize="$body" color="$colorSubtle">
+                    No exercises in this workout yet. Edit it to add exercises.
                   </Text>
-                </YStack>
-              </XStack>
-            </Card>
-            <Card
-              flex={1}
-              minWidth={100}
-              p="$3"
-              bg="$surface"
-              bordered
-              animation="bouncy"
-              enterStyle={{ scale: 0.9, opacity: 0 }}
-            >
-              <XStack items="center" gap="$2">
-                <Clock size={18} color="$green10" />
-                <YStack>
-                  <Text fontSize="$6" fontWeight="bold" color="$color">
-                    ~{workoutStats.estimatedTime}
-                  </Text>
-                  <Text fontSize="$2" color="$colorSubtle">
-                    Minutes
-                  </Text>
-                </YStack>
-              </XStack>
-            </Card>
-          </XStack>
-
-          {/* Notes Section */}
-          {workout.notes && (
-            <Card p="$3" bg="$surface" bordered>
-              <Text fontSize="$3" color="$colorSubtle" fontStyle="italic">
-                "{workout.notes}"
-              </Text>
-            </Card>
-          )}
-
-          {/* Muscle Heat Map Section */}
-          <YStack gap="$3">
-            <XStack items="center" gap="$2">
-              <Target size={20} color="$primary" />
-              <Text fontSize="$5" fontWeight="600" color="$color">
-                Targeted Muscles
-              </Text>
-            </XStack>
-            <Separator />
-            <YStack items="center" py="$2">
-              <MuscleHeatMap
-                primaryMuscles={muscleGroups.primary}
-                secondaryMuscles={muscleGroups.secondary}
-                scale={1}
+                )}
+              </YStack>
+            </YStack>
+          </ScrollView>
+          <YStack
+            px="$page"
+            pt="$field"
+            pb={Math.max(insets.bottom, getTokenValue('$page', 'space'))}
+            borderTopWidth={1}
+            borderColor="$borderColor"
+          >
+            <YStack width="100%" maxW="$content" self="center" gap="$compact">
+              {running && (
+                <Text fontSize="$caption" color="$colorSubtle">
+                  Finish your current workout before starting another.
+                </Text>
+              )}
+              <StartWorkoutButton
+                isWorkoutRunning={running}
+                disabled={!exercises.length}
+                onPress={() => {
+                  if (!running && exercises.length) startWorkout(workout)
+                }}
               />
             </YStack>
           </YStack>
-
-          {/* Exercises List */}
-          <YStack gap="$3">
-            <XStack items="center" gap="$2">
-              <Dumbbell size={20} color="$primary" />
-              <Text fontSize="$5" fontWeight="600" color="$color">
-                Exercises
-              </Text>
-            </XStack>
-            <Separator />
-
-            {workout.workoutTemplate.exercises.map((exercise, index) => (
-              <Card
-                key={`${exercise.exerciseId}-${index}`}
-                p="$3"
-                bg="$surface"
-                bordered
-                pressStyle={{ scale: 0.98, opacity: 0.9 }}
-                animation="quick"
-              >
-                <XStack justify="space-between" items="center">
-                  <XStack items="center" gap="$3" flex={1}>
-                    {/* Exercise Number Badge */}
-                    <YStack
-                      width={32}
-                      height={32}
-                      bg="$primary"
-                      rounded="$10"
-                      justify="center"
-                      items="center"
-                    >
-                      <Text fontSize="$3" fontWeight="bold" color="white">
-                        {index + 1}
-                      </Text>
-                    </YStack>
-
-                    <YStack flex={1}>
-                      <Text fontSize="$4" fontWeight="600" color="$color" numberOfLines={1}>
-                        {exercise.exerciseTitle?.trim() || exercise.exerciseId.replace(/_/g, ' ')}
-                      </Text>
-                      <XStack gap="$2" mt="$1" flexWrap="wrap">
-                        <Text
-                          fontSize="$2"
-                          color="$colorSubtle"
-                          bg="$backgroundFocus"
-                          px="$2"
-                          py="$1"
-                          rounded="$2"
-                        >
-                          {exercise.reps?.length || exercise.durationSeconds?.length || 0}{' '}
-                          {(exercise.reps?.length || exercise.durationSeconds?.length || 0) === 1
-                            ? 'set'
-                            : 'sets'}
-                        </Text>
-                        <Text
-                          fontSize="$2"
-                          color="$colorSubtle"
-                          bg="$backgroundFocus"
-                          px="$2"
-                          py="$1"
-                          rounded="$2"
-                        >
-                          {exercise.category}
-                        </Text>
-                      </XStack>
-                    </YStack>
-                  </XStack>
-                  <ChevronRight size={20} color="$colorSubtle" />
-                </XStack>
-              </Card>
-            ))}
-          </YStack>
-
-          {/* Spacer for button */}
-          <View height={80} />
-        </YStack>
-      </ScrollView>
-
-      {/* Floating Action Button */}
-      <YStack
-        position="absolute"
-        b={0}
-        l={0}
-        r={0}
-        p="$4"
-        bg="$background"
-        borderTopWidth={1}
-        borderTopColor="$borderColor"
-      >
-        <Button
-          size="$5"
-          bg="$primary"
-          color="white"
-          icon={Play}
-          onPress={() => startWorkout(workout)}
-          animation="bouncy"
-          pressStyle={{ scale: 0.95 }}
-          elevation="$2"
-        >
-          Start Workout
-        </Button>
-      </YStack>
-    </>
+        </>
+      )}
+    </YStack>
   )
 }

@@ -294,6 +294,7 @@ const tokens = createTokens({
     day: 96,
     icon: 18,
     iconSmall: 16,
+    muscleDiagram: 144,
   },
 })
 
