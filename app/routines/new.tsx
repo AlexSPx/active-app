@@ -361,7 +361,10 @@ export default function NewRoutinePage() {
                     <Switch
                       checked={value}
                       onCheckedChange={onChange}
-                      bg={value ? '$primary' : '$red8'}
+                      bg={value ? '$primary' : '$backgroundHover'}
+                      borderWidth={1}
+                      borderColor={value ? '$primary' : '$borderColor'}
+                      accessibilityLabel="Set this routine as active"
                     >
                       <Switch.Thumb animation="bouncy" />
                     </Switch>
