@@ -1,172 +1,175 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { YStack, XStack, Text, Button, Separator } from 'tamagui'
-import { Bell, Check, Clock, AlertTriangle, ChevronRight } from '@tamagui/lucide-icons'
+import { useCallback, useState } from 'react'
+import { Button, Paragraph, Text, XStack, YStack } from 'tamagui'
 import * as Notifications from 'expo-notifications'
-import { Platform, NativeModules, Alert, AppState } from 'react-native'
+import { AppState, NativeModules, Platform } from 'react-native'
 import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
-import * as Haptics from 'expo-haptics'
 import { useFocusEffect } from 'expo-router'
 import { registerPushNotifications } from '../services/notificationService'
 
 interface NotificationPermissionsProps {
   onStatusChange?: (status: { notifications: boolean; alarms: boolean }) => void
+  summaryOnly?: boolean
 }
 
-export default function NotificationPermissions({ onStatusChange }: NotificationPermissionsProps) {
-  const [notificationsAllowed, setNotificationsAllowed] = useState(false)
-  const [alarmsAllowed, setAlarmsAllowed] = useState(false)
-
-  const getExactAlarmPermissionModule = () => {
-    const module =
-      NativeModules.ExactAlarm ??
-      NativeModules.ExactAlarmPermission ??
-      null
-
-    if (!module) {
-      return null
-    }
-
-    if (typeof module.canScheduleExactAlarms === 'function') {
-      return () => module.canScheduleExactAlarms()
-    }
-
-    if (typeof module.hasExactAlarmPermission === 'function') {
-      return () => module.hasExactAlarmPermission()
-    }
-
-    return null
-  }
-
-  const checkPermissions = async () => {
-    // 1. Check Standard Notifications
-    const settings = await Notifications.getPermissionsAsync()
-    const notifAllowed = settings.granted || settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
-    setNotificationsAllowed(notifAllowed)
-
-    // 2. Check Exact Alarms (Android only)
-    let alarmAllowed = true
-    if (Platform.OS === 'android') {
-      try {
-        const checkExactAlarmPermission = getExactAlarmPermissionModule()
-
-        if (checkExactAlarmPermission) {
-          alarmAllowed = await checkExactAlarmPermission()
-        } else {
-          // Fallback if module missing (for example, stale dev client)
-          console.warn('Exact alarm native module missing')
-        }
-      } catch (e) {
-        console.warn('Failed to check exact alarm', e)
-        alarmAllowed = false
+export default function NotificationPermissions({
+  onStatusChange,
+  summaryOnly = false,
+}: NotificationPermissionsProps) {
+  const [notifications, setNotifications] = useState<boolean | null>(null)
+  const [alarms, setAlarms] = useState<boolean | null>(null)
+  const [alarmUnavailable, setAlarmUnavailable] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const checkPermissions = useCallback(async () => {
+    try {
+      const settings = await Notifications.getPermissionsAsync()
+      const allowed =
+        settings.granted ||
+        settings.ios?.status === Notifications.IosAuthorizationStatus.PROVISIONAL
+      setNotifications(allowed)
+      let alarmAllowed: boolean | null = true
+      if (Platform.OS === 'android') {
+        const module = NativeModules.ExactAlarm ?? NativeModules.ExactAlarmPermission
+        if (typeof module?.canScheduleExactAlarms === 'function')
+          alarmAllowed = await module.canScheduleExactAlarms()
+        else if (typeof module?.hasExactAlarmPermission === 'function')
+          alarmAllowed = await module.hasExactAlarmPermission()
+        else alarmAllowed = null
       }
+      setAlarms(alarmAllowed)
+      setAlarmUnavailable(alarmAllowed === null)
+      setError(null)
+      onStatusChange?.({ notifications: allowed, alarms: alarmAllowed === true })
+      if (allowed && !summaryOnly) registerPushNotifications().catch(console.error)
+    } catch {
+      setError('Unable to check permissions. Review access in device settings.')
     }
-    setAlarmsAllowed(alarmAllowed)
-
-    if (notifAllowed) {
-      registerPushNotifications().catch((error) => {
-        console.error('Failed to register push notifications after permission check:', error)
-      })
-    }
-
-    // Notify parent
-    onStatusChange?.({ notifications: notifAllowed, alarms: alarmAllowed })
-  }
+  }, [onStatusChange, summaryOnly])
 
   useFocusEffect(
     useCallback(() => {
-      checkPermissions()
-      
-      const subscription = AppState.addEventListener('change', (nextAppState) => {
-        if (nextAppState === 'active') {
-          checkPermissions()
-        }
+      void checkPermissions()
+      const subscription = AppState.addEventListener('change', (state) => {
+        if (state === 'active') void checkPermissions()
       })
-
-      return () => {
-        subscription.remove()
-      }
-    }, [])
+      return () => subscription.remove()
+    }, [checkPermissions])
   )
 
-  const requestNotificationPermission = async () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    const { granted } = await Notifications.requestPermissionsAsync({
-      ios: {
-        allowAlert: true,
-        allowBadge: true,
-        allowSound: true,
-      },
-    })
-    if (granted) {
-        checkPermissions()
-    } else {
-        Alert.alert('Permission Required', 'Please enable notifications in your device settings to receive updates.')
+  const openNotifications = async () => {
+    try {
+      const current = await Notifications.getPermissionsAsync()
+      if (!current.granted && current.canAskAgain) {
+        await Notifications.requestPermissionsAsync({
+          ios: { allowAlert: true, allowBadge: true, allowSound: true },
+        })
+        await checkPermissions()
+      } else await Linking.openSettings()
+    } catch {
+      setError('Unable to open notification settings. Try again.')
     }
   }
-
-  const openAlarmSettings = () => {
-    Haptics.selectionAsync()
-    if (Platform.OS === 'android') {
-        const action = 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM'
-        const alarmSettingsUri = `package:${Application.applicationId ?? ''}`
-        Linking.sendIntent(action, [{ key: 'data', value: alarmSettingsUri }])
+  const openAlarms = async () => {
+    try {
+      await Linking.sendIntent('android.settings.REQUEST_SCHEDULE_EXACT_ALARM', [
+        { key: 'data', value: `package:${Application.applicationId ?? ''}` },
+      ])
+    } catch {
+      setError('Unable to open alarm settings. Try again.')
     }
   }
+  if (summaryOnly)
+    return (
+      <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+        {error
+          ? 'Review device access'
+          : notifications === null || (Platform.OS === 'android' && alarms === null)
+            ? alarmUnavailable
+              ? 'Alarm access unavailable · Review access'
+              : 'Checking device access…'
+            : notifications && alarms
+              ? Platform.OS === 'android'
+                ? 'Notifications and alarms allowed'
+                : 'Notifications allowed'
+              : 'Permission needed · Review access'}
+      </Text>
+    )
 
   return (
-    <YStack gap="$4">
-      {/* Standard Notifications */}
-      <YStack bg="$color2" p="$4" rounded="$6" gap="$3">
-        <XStack justify="space-between" items="center">
-          <XStack gap="$3" items="center" flex={1}>
-            <YStack bg="$blue3" p="$2" rounded="$4">
-              <Bell size={20} color="$blue9" />
-            </YStack>
-            <YStack flex={1}>
-              <Text fontWeight="600">Notifications</Text>
-              <Text fontSize="$2" color="$color11">Updates & general alerts</Text>
-            </YStack>
+    <YStack gap="$section">
+      {[
+        {
+          title: 'Notifications',
+          allowed: notifications,
+          description: 'Receive training reminders and app updates.',
+          onPress: openNotifications,
+        },
+        ...(Platform.OS === 'android'
+          ? [
+              {
+                title: 'Alarms & reminders',
+                allowed: alarms,
+                description:
+                  'Allow precise timer alerts, including when Active is in the background.',
+                onPress: openAlarms,
+              },
+            ]
+          : []),
+      ].map((permission) => (
+        <YStack key={permission.title} gap="$field">
+          <XStack items="center" justify="space-between" gap="$field">
+            <Text fontSize="$body" fontWeight="600" flex={1}>
+              {permission.title}
+            </Text>
+            <Text
+              fontSize="$caption"
+              color={permission.allowed === false ? '$destructive' : '$colorSubtle'}
+              bg="$backgroundStrong"
+              px="$2"
+              py="$compact"
+              rounded="$badge"
+            >
+              {permission.allowed === null
+                ? permission.title === 'Alarms & reminders' && alarmUnavailable
+                  ? 'Unavailable'
+                  : 'Checking…'
+                : permission.allowed
+                  ? 'Allowed'
+                  : 'Not allowed'}
+            </Text>
           </XStack>
-          {notificationsAllowed ? (
-            <YStack bg="$green3" p="$1.5" rounded="$10">
-              <Check size={16} color="$green9" />
-            </YStack>
-          ) : (
-            <Button size="$3" bg="$blue9" color="white" onPress={requestNotificationPermission}>Allow</Button>
+          <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+            {permission.description}
+          </Paragraph>
+          {permission.title === 'Alarms & reminders' && (
+            <Text fontSize="$caption" color="$colorMuted">
+              Android only
+            </Text>
           )}
-        </XStack>
-      </YStack>
-
-      {/* Alarms & Reminders (Android Only) */}
-      {Platform.OS === 'android' && (
-        <YStack bg="$color2" p="$4" rounded="$6" gap="$3">
-          <XStack justify="space-between" items="center">
-            <XStack gap="$3" items="center" flex={1}>
-              <YStack bg={alarmsAllowed ? "$green3" : "$surfaceHover"} p="$2" rounded="$4">
-                {alarmsAllowed ? <Clock size={20} color="$green9" /> : <AlertTriangle size={20} color="$secondary" />}
-              </YStack>
-              <YStack flex={1}>
-                <Text fontWeight="600">Alarms & Reminders</Text>
-                <Text fontSize="$2" color="$color11">Precise timers</Text>
-              </YStack>
-            </XStack>
-            {alarmsAllowed ? (
-              <YStack bg="$green3" p="$1.5" rounded="$10">
-                <Check size={16} color="$green9" />
-              </YStack>
-            ) : (
-              <Button 
-                size="$3" 
-                bg="$secondary" 
-                color="white" 
-                onPress={openAlarmSettings}
-              >
-                Allow
-              </Button>
-            )}
-          </XStack>
+          <Button
+            chromeless
+            self="flex-start"
+            color="$primary"
+            minH="$touch"
+            onPress={permission.onPress}
+          >
+            {permission.allowed
+              ? 'Manage in device settings ↗'
+              : permission.allowed === false
+                ? 'Allow access ↗'
+                : 'Review device settings ↗'}
+          </Button>
         </YStack>
+      ))}
+      {!!error && (
+        <Paragraph fontSize="$caption" color="$destructive" accessibilityLiveRegion="polite">
+          {error}
+        </Paragraph>
+      )}
+      {notifications === false && (
+        <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+          Reminders won’t arrive until notifications are allowed. Your reminder preference is kept.
+        </Paragraph>
       )}
     </YStack>
   )
