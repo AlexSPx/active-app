@@ -1,4 +1,4 @@
-import { YStack, Text, Card, XStack, View } from 'tamagui'
+import { YStack, Text, XStack, View } from 'tamagui'
 import { FlashList } from '@shopify/flash-list'
 import { memo, useCallback } from 'react'
 import type { Exercise } from '../../../types/workout'
@@ -26,7 +26,7 @@ export const ExerciseList = memo(function ExerciseList({
 }: ExerciseListProps) {
   const renderExercise = useCallback(
     ({ item: exercise }: { item: Exercise }) => (
-      <ExerciseCard
+      <ExerciseRow
         exercise={exercise}
         onSelect={onExerciseSelect}
         isSelected={selectedExerciseIds.has(exercise.id)}
@@ -69,47 +69,47 @@ export const ExerciseList = memo(function ExerciseList({
   )
 })
 
-interface ExerciseCardProps {
+interface ExerciseRowProps {
   exercise: Exercise
   onSelect: (exercise: Exercise) => void
   isSelected: boolean
 }
 
-const ExerciseCard = memo(function ExerciseCard({
+const ExerciseRow = memo(function ExerciseRow({
   exercise,
   onSelect,
   isSelected,
-}: ExerciseCardProps) {
+}: ExerciseRowProps) {
   const handlePress = useCallback(() => {
     onSelect(exercise)
   }, [onSelect, exercise])
 
+  const muscle = exercise.primaryMuscles[0] || 'Other'
+
   return (
-    <Card
+    <XStack
       p="$3"
-      mb="$2"
-      bg={isSelected ? '$backgroundAccent' : '$surface'}
-      borderColor={isSelected ? '$primary' : '$borderColor'}
-      borderWidth={isSelected ? 2 : 1}
+      bg={isSelected ? '$backgroundAccent' : '$background'}
+      borderBottomWidth={1}
+      borderColor="$borderColor"
       pressStyle={{
-        scale: 0.98,
-        backgroundColor: isSelected ? '$backgroundAccentHover' : '$surfaceHover',
+        background: isSelected ? '$backgroundAccentHover' : '$surfaceHover',
       }}
+      cursor="pointer"
+      accessibilityRole="checkbox"
+      accessibilityLabel={`${exercise.name}, ${muscle}${exercise.equipment ? `, Equipment: ${exercise.equipment}` : ''}`}
+      accessibilityState={{ checked: isSelected }}
       onPress={handlePress}
     >
-      <XStack justify="space-between" verticalAlign="center" gap="$3">
+      <XStack flex={1} justify="space-between" items="center" gap="$3">
         <YStack flex={1} gap="$1">
-          <Text fontSize="$5" fontWeight="700" color="$color">
+          <Text fontSize="$4" fontWeight="700" color="$color">
             {exercise.name}
           </Text>
-          <Text fontSize="$3" color={isSelected ? '$colorMuted' : '$colorSubtle'}>
-            {exercise.primaryMuscles[0] || 'Other'}
+          <Text fontSize="$2" color={isSelected ? '$colorMuted' : '$colorSubtle'}>
+            {muscle}
+            {exercise.equipment ? ` · ${exercise.equipment}` : ''}
           </Text>
-          {exercise.equipment && (
-            <Text fontSize="$2" color={isSelected ? '$colorMuted' : '$colorSubtle'}>
-              Equipment: {exercise.equipment}
-            </Text>
-          )}
         </YStack>
         {isSelected && (
           <Text fontSize="$5" color="$primary" fontWeight="bold">
@@ -117,6 +117,6 @@ const ExerciseCard = memo(function ExerciseCard({
           </Text>
         )}
       </XStack>
-    </Card>
+    </XStack>
   )
 })

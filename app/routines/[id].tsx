@@ -178,9 +178,9 @@ export default function RoutineDetailScreen() {
 
     // Routine type tip
     tips.push({
-      message: isWeekly 
-        ? `Complete ${basicStats.workoutDays} workouts each week in any order.`
-        : `${basicStats.totalDays}-day cycle repeats continuously.`,
+      message: isWeekly
+        ? `Days of the week: finish all ${basicStats.workoutDays} ${basicStats.workoutDays === 1 ? 'workout' : 'workouts'} Monday–Sunday in any order.`
+        : `Repeating cycle: the ${basicStats.totalDays}-day pattern repeats continuously.`,
       type: 'info',
       icon: isWeekly ? <ListChecks size={16} color="$blue10" /> : <RotateCcw size={16} color="$blue10" />
     })
@@ -252,10 +252,14 @@ export default function RoutineDetailScreen() {
                 >
                   {isWeeklyCompletion ? <ListChecks size={14} color="$green10" /> : <Calendar size={14} color="$blue10" />}
                   <Text fontSize="$2" fontWeight="700" color={isWeeklyCompletion ? '$green10' : '$blue10'} textTransform="uppercase">
-                    {isWeeklyCompletion ? 'Weekly' : 'Sequential'}
+                    {isWeeklyCompletion ? 'Days of the week' : 'Repeating cycle'}
                   </Text>
                 </XStack>
-                <Text fontSize="$2" color="$colorSubtle">{basicStats.totalDays}-day cycle</Text>
+                <Text fontSize="$2" color="$colorSubtle">
+                  {isWeeklyCompletion
+                    ? `${basicStats.workoutDays} ${basicStats.workoutDays === 1 ? 'workout' : 'workouts'} this week`
+                    : `${basicStats.totalDays}-day cycle`}
+                </Text>
               </XStack>
 
               {routine.description && (
@@ -315,7 +319,9 @@ export default function RoutineDetailScreen() {
                 )}
               </XStack>
               {detailedStats && (
-                <Text fontSize="$2" color="$colorSubtle">{detailedStats.totalSets} total sets</Text>
+                <Text fontSize="$2" color="$colorSubtle">
+                  {detailedStats.totalSets} total {detailedStats.totalSets === 1 ? 'set' : 'sets'}
+                </Text>
               )}
             </XStack>
           </Card>
@@ -374,7 +380,7 @@ export default function RoutineDetailScreen() {
             <XStack items="center" gap="$2">
               <Dumbbell size={18} color="$primary" />
               <Text fontSize="$4" fontWeight="700" color="$color">
-                {isWeeklyCompletion ? 'Weekly Workouts' : 'Schedule'}
+                {isWeeklyCompletion ? 'Workouts this week' : 'Repeating cycle'}
               </Text>
             </XStack>
             <Separator />
@@ -418,7 +424,10 @@ export default function RoutineDetailScreen() {
                             {item.workout.title}
                           </Text>
                           <Text fontSize="$2" color="$colorSubtle">
-                            {item.workout.workoutTemplate.exercises.length} exercises
+                            {item.workout.workoutTemplate.exercises.length}{' '}
+                            {item.workout.workoutTemplate.exercises.length === 1
+                              ? 'exercise'
+                              : 'exercises'}
                           </Text>
                         </>
                       ) : (

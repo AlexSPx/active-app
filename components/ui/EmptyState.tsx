@@ -8,6 +8,7 @@ interface EmptyStateProps {
   actionLabel?: string
   onAction?: () => void
   iconColor?: string
+  alignTop?: boolean
 }
 
 export function EmptyState({
@@ -17,9 +18,17 @@ export function EmptyState({
   actionLabel,
   onAction,
   iconColor = '$color11',
+  alignTop = false,
 }: EmptyStateProps) {
   return (
-    <YStack flex={1} items="center" justify="center" py="$8" px="$4" gap="$3">
+    <YStack
+      flex={1}
+      items="center"
+      justify={alignTop ? 'flex-start' : 'center'}
+      py={alignTop ? '$4' : '$8'}
+      px="$4"
+      gap="$3"
+    >
       {Icon && (
         <YStack
           bg="$backgroundStrong"

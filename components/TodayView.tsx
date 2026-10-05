@@ -1,48 +1,42 @@
 import React, { useMemo } from 'react'
 import { YStack, XStack, Text, Circle } from 'tamagui'
-import {
-  Calendar,
-  ChevronRight,
-  Clock,
-  Zap,
-  Check,
-  Circle as CircleIcon,
-} from '@tamagui/lucide-icons'
+import { ChevronRight, Clock, Moon, Check, Circle as CircleIcon } from '@tamagui/lucide-icons'
 import { useActiveRoutine } from '../features/routines'
 import { useWorkouts } from '../features/workouts'
 import { useAuth } from '../contexts/AuthContext'
 import type { Routine, RoutinePatternItem } from '../types/routine'
 import type { ApiWorkout } from '../types/api'
 import { router } from 'expo-router'
-import { routinePatternIndex } from '../utils/date'
+import { routinePatternIndex, sameDay } from '../utils/date'
 
 // ============================================================================
 // Shared Components
 // ============================================================================
 
 interface TodayHeaderProps {
-  todayFormatted: string
+  label: string
 }
 
-const TodayHeader: React.FC<TodayHeaderProps> = ({ todayFormatted }) => (
-  <XStack justify="space-between" items="center">
+const TodayHeader: React.FC<TodayHeaderProps> = ({ label }) => (
+  <XStack items="center">
     <Text fontSize="$5" fontWeight="700" color="$color">
-      Today
+      {label}
     </Text>
-    <XStack items="center" gap="$2">
-      <Calendar size={16} color="$colorSubtle" />
-      <Text fontSize="$3" color="$colorSubtle" fontWeight="500">
-        {todayFormatted}
-      </Text>
-    </XStack>
   </XStack>
 )
 
 const RestDayView: React.FC = () => (
   <YStack gap="$3">
     <XStack items="center" gap="$3">
-      <XStack width={36} height={36} bg="$green8" rounded="$3" items="center" justify="center">
-        <Zap size={18} color="white" />
+      <XStack
+        width={36}
+        height={36}
+        bg="$backgroundHover"
+        rounded="$3"
+        items="center"
+        justify="center"
+      >
+        <Moon size={18} color="$colorSubtle" />
       </XStack>
       <YStack flex={1}>
         <Text fontSize="$4" fontWeight="600" color="$color">
@@ -99,7 +93,7 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onPress }) => {
             {workout?.title}
           </Text>
           <Text fontSize="$2" color="$colorSubtle" fontWeight="500">
-            {exercises} exercises
+            {exercises} {exercises === 1 ? 'exercise' : 'exercises'}
           </Text>
         </YStack>
         <XStack items="center" gap="$1">
@@ -116,23 +110,21 @@ const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onPress }) => {
 interface SequentialTodayViewProps {
   routine: Routine
   workouts: ApiWorkout[]
-  todayFormatted: string
+  selectedDate: Date
 }
 
 const SequentialTodayView: React.FC<SequentialTodayViewProps> = ({
   routine,
   workouts,
-  todayFormatted,
+  selectedDate,
 }) => {
-  const currentDate = new Date()
-
   const todayInfo = useMemo(() => {
     if (!routine.pattern || routine.pattern.length === 0) {
       return { isWorkoutDay: false, workout: null as ApiWorkout | null }
     }
 
     const len = routine.pattern.length
-    const idx = routinePatternIndex(routine.startDate, len, currentDate)
+    const idx = routinePatternIndex(routine.startDate, len, selectedDate)
     const pat: RoutinePatternItem | undefined = routine.pattern[idx]
 
     if (!pat || pat.dayType !== 'WORKOUT' || !pat.workoutId) {
@@ -140,11 +132,15 @@ const SequentialTodayView: React.FC<SequentialTodayViewProps> = ({
     }
     const workout = workouts.find((w) => w.id === pat.workoutId) || null
     return { isWorkoutDay: !!workout, workout }
-  }, [routine, workouts])
+  }, [routine, workouts, selectedDate])
+
+  const selectedDayLabel = sameDay(selectedDate, new Date())
+    ? 'Today'
+    : selectedDate.toLocaleDateString('en-US', { weekday: 'long' })
 
   return (
     <YStack gap="$3">
-      <TodayHeader todayFormatted={todayFormatted} />
+      <TodayHeader label={selectedDayLabel} />
       <YStack gap="$3">
         <XStack justify="space-between" items="center">
           <Text
@@ -154,15 +150,15 @@ const SequentialTodayView: React.FC<SequentialTodayViewProps> = ({
             textTransform="uppercase"
             letterSpacing={0.5}
           >
-            {todayInfo.isWorkoutDay ? "Today's Workout" : 'Rest Day'}
+            {todayInfo.isWorkoutDay ? `${selectedDayLabel}'s Workout` : 'Rest Day'}
           </Text>
           <Text
             fontSize="$2"
-            color={todayInfo.isWorkoutDay ? '$primary' : '$green8'}
+            color={todayInfo.isWorkoutDay ? '$primary' : '$colorSubtle'}
             fontWeight="600"
             textTransform="uppercase"
           >
-            {todayInfo.isWorkoutDay ? 'Active' : 'Recovery'}
+            {todayInfo.isWorkoutDay ? 'Scheduled' : 'Rest'}
           </Text>
         </XStack>
 
@@ -234,7 +230,8 @@ const WorkoutChecklistItem: React.FC<WorkoutChecklistItemProps> = ({
         {workout?.title}
       </Text>
       <Text fontSize="$2" color="$colorSubtle">
-        {workout?.workoutTemplate.exercises.length} exercises
+        {workout.workoutTemplate.exercises.length}{' '}
+        {workout.workoutTemplate.exercises.length === 1 ? 'exercise' : 'exercises'}
       </Text>
     </YStack>
     <XStack items="center" gap="$1">
@@ -249,14 +246,12 @@ const WorkoutChecklistItem: React.FC<WorkoutChecklistItemProps> = ({
 interface WeeklyCompletionTodayViewProps {
   routine: Routine
   workouts: ApiWorkout[]
-  todayFormatted: string
   completedWorkoutIds: string[]
 }
 
 const WeeklyCompletionTodayView: React.FC<WeeklyCompletionTodayViewProps> = ({
   routine,
   workouts,
-  todayFormatted,
   completedWorkoutIds,
 }) => {
   // Get unique workouts from the pattern, excluding completed ones
@@ -282,7 +277,7 @@ const WeeklyCompletionTodayView: React.FC<WeeklyCompletionTodayViewProps> = ({
 
   return (
     <YStack gap="$3">
-      <TodayHeader todayFormatted={todayFormatted} />
+      <TodayHeader label="Today" />
       <YStack gap="$3">
         <XStack justify="space-between" items="center">
           <Text
@@ -342,18 +337,10 @@ const WeeklyCompletionTodayView: React.FC<WeeklyCompletionTodayViewProps> = ({
 // Main Wrapper Component
 // ============================================================================
 
-export const TodayView: React.FC = () => {
+export const TodayView: React.FC<{ selectedDate: Date }> = ({ selectedDate }) => {
   const { activeRoutine } = useActiveRoutine()
   const { workouts } = useWorkouts()
   const { user } = useAuth()
-
-  const todayFormatted = useMemo(() => {
-    return new Date().toLocaleDateString('en-US', {
-      weekday: 'long',
-      month: 'long',
-      day: 'numeric',
-    })
-  }, [])
 
   // Get completed workout IDs from user's streak data
   const completedWorkoutIds = user?.streak?.weeklyCompletedWorkoutIds ?? []
@@ -368,17 +355,12 @@ export const TodayView: React.FC = () => {
       <WeeklyCompletionTodayView
         routine={activeRoutine}
         workouts={workouts}
-        todayFormatted={todayFormatted}
         completedWorkoutIds={completedWorkoutIds}
       />
     )
   }
 
   return (
-    <SequentialTodayView
-      routine={activeRoutine}
-      workouts={workouts}
-      todayFormatted={todayFormatted}
-    />
+    <SequentialTodayView routine={activeRoutine} workouts={workouts} selectedDate={selectedDate} />
   )
 }

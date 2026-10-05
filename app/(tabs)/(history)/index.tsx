@@ -44,13 +44,13 @@ export default function HistoryPage() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [monthDate, setMonthDate] = useState<Date>(new Date())
   const [collapsed, setCollapsed] = useState<boolean>(true)
-  
+
   const { deleteWorkoutRecord, loading: deleting } = useWorkoutMutations()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
 
   const handleDeleteRecord = (item: any) => {
-    // The id we pass to HistoryList is just `record.id` or fallback, but the API needs the `recordId` matching the DB. 
+    // The id we pass to HistoryList is just `record.id` or fallback, but the API needs the `recordId` matching the DB.
     // Wait, the item.id returned from `converted` is exactly `record.id`.
     setPendingDeleteId(item.id)
     setConfirmOpen(true)
@@ -175,7 +175,10 @@ export default function HistoryPage() {
           Delete record
         </Text>
       </XStack>
-      <Text color="$color10">Are you sure? This will permanently delete this workout record and all associated exercise sets.</Text>
+      <Text color="$color10">
+        Are you sure? This will permanently delete this workout record and all associated exercise
+        sets.
+      </Text>
       <YStack mt="$2" gap="$3" width="100%">
         <Button
           bg="$red4"
@@ -215,6 +218,7 @@ export default function HistoryPage() {
         <HistoryList
           ref={listRef}
           data={allWorkoutsSorted}
+          onCreateWorkout={() => router.push('/workouts/new')}
           onViewableItemsChanged={onViewableItemsChangedRef.current}
           viewabilityConfig={viewabilityConfigRef.current}
           refreshing={refreshing}

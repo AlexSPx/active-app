@@ -96,7 +96,8 @@ export default function RunningWorkoutFloat() {
                   </Text>
                 </XStack>
                 <Text fontSize="$3" color="$green11">
-                  {runningWorkout.completedExercises}/{runningWorkout.exercises.length} exercises
+                  {runningWorkout.completedExercises}/{runningWorkout.exercises.length}{' '}
+                  {runningWorkout.exercises.length === 1 ? 'exercise' : 'exercises'}
                 </Text>
               </XStack>
               <XStack flex={1} items="center" justify="space-between">

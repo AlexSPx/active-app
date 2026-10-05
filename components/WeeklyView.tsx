@@ -1,12 +1,12 @@
 import React, { useCallback, useMemo } from 'react'
-import { YStack, XStack, Text, Circle } from 'tamagui'
+import { YStack, XStack, Text, Circle, ScrollView } from 'tamagui'
 import { Check, Circle as CircleIcon } from '@tamagui/lucide-icons'
 import type { Routine, RoutinePatternItem } from 'types/routine'
 import type { ApiWorkout } from 'types/api'
 import { useWorkouts } from '../features/workouts'
 import { useActiveRoutine } from '../features/routines'
 import { router } from 'expo-router'
-import { routinePatternIndex } from '../utils/date'
+import { routinePatternIndex, sameDay } from '../utils/date'
 import { useAuth } from 'contexts/AuthContext'
 
 // ============================================================================
@@ -34,71 +34,68 @@ const WeekHeader: React.FC<WeekHeaderProps> = ({ weekRange }) => (
 
 interface DayViewProps {
   day: string
-  date: number
+  date: Date
   isToday?: boolean
+  isSelected?: boolean
   hasWorkout?: boolean
-  label?: string
+  onPress: () => void
 }
 
 const DayView: React.FC<DayViewProps> = ({
   day,
   date,
   isToday = false,
+  isSelected = false,
   hasWorkout = false,
-  label,
+  onPress,
 }) => (
   <YStack items="center" gap="$2" flex={1}>
     <Text
       fontSize="$2"
-      color={isToday ? '$primary' : '$colorSubtle'}
-      fontWeight={isToday ? 900 : 400}
+      color={isToday || isSelected ? '$primary' : '$colorSubtle'}
+      fontWeight={isToday || isSelected ? 700 : 400}
       textTransform="uppercase"
       letterSpacing={0.5}
     >
       {day}
     </Text>
-    <YStack items="center" gap="$1">
-      <Circle
-        size={42}
-        bg={isToday ? '$primary' : hasWorkout ? '$success' : 'transparent'}
-        borderColor={isToday ? '$primary' : hasWorkout ? '$success' : '$borderColor'}
-        borderWidth={isToday || hasWorkout ? 2 : 1}
-        items="center"
-        justify="center"
-        pressStyle={{ scale: 0.96 }}
-        hoverStyle={{ opacity: 0.8 }}
-      >
-        <Text
-          fontSize="$4"
-          fontWeight="600"
-          color={isToday || hasWorkout ? '$onPrimary' : '$color'}
-        >
-          {date}
-        </Text>
-      </Circle>
-    </YStack>
-    {label ? (
-      <Text fontSize="$2" color="$color10" numberOfLines={1}>
-        {label}
+    <Circle
+      size={48}
+      bg={isSelected ? '$backgroundAccent' : 'transparent'}
+      borderColor={isSelected ? '$primary' : isToday ? '$primary' : '$borderColor'}
+      borderWidth={isSelected || isToday ? 2 : 1}
+      items="center"
+      justify="center"
+      pressStyle={{ scale: 0.96 }}
+      hoverStyle={{ opacity: 0.8 }}
+      cursor="pointer"
+      accessibilityRole="button"
+      accessibilityLabel={`Select ${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}, ${hasWorkout ? 'scheduled workout' : 'rest day'}`}
+      accessibilityState={{ selected: isSelected }}
+      onPress={onPress}
+    >
+      <Text fontSize="$4" fontWeight="600" color={isSelected ? '$primary' : '$color'}>
+        {date.getDate()}
       </Text>
-    ) : null}
+      {hasWorkout && <Circle size={4} bg="$primary" position="absolute" b={5} aria-hidden />}
+    </Circle>
   </YStack>
 )
 
 interface SequentialWeekViewProps {
   routine: Routine
-  workouts: ApiWorkout[]
   weekRange: string
+  selectedDate: Date
+  onSelectDate: (date: Date) => void
 }
 
 const SequentialWeekView: React.FC<SequentialWeekViewProps> = ({
   routine,
-  workouts,
   weekRange,
+  selectedDate,
+  onSelectDate,
 }) => {
   const today = new Date()
-  const currentDate = today.getDate()
-
   // Calculate the start of the current week (Monday)
   const startOfWeek = useMemo(() => {
     const start = new Date(today)
@@ -125,42 +122,49 @@ const SequentialWeekView: React.FC<SequentialWeekViewProps> = ({
 
     const pat = mapDateToPattern(date)
     const isWorkout = pat?.dayType === 'WORKOUT'
-    const workoutTitle = isWorkout
-      ? (workouts.find((w) => w.id === pat?.workoutId)?.title ?? 'Workout')
-      : 'Rest'
-
     return {
       day,
-      date: date.getDate(),
-      isToday: date.getDate() === currentDate && date.getMonth() === today.getMonth(),
+      date,
+      isToday: sameDay(date, today),
+      isSelected: sameDay(date, selectedDate),
       hasWorkout: isWorkout,
-      label: workoutTitle,
     }
   })
 
   return (
     <YStack gap="$3">
       <WeekHeader weekRange={weekRange} />
-      <XStack
-        bg="$surface"
-        borderColor="$borderColor"
-        borderWidth={1}
-        rounded="$4"
-        p="$4"
-        gap="$1"
-        elevation={2}
-      >
-        {weekData.map((dayData, index) => (
-          <DayView
-            key={index}
-            day={dayData.day}
-            date={dayData.date}
-            isToday={dayData.isToday}
-            hasWorkout={dayData.hasWorkout}
-            label={dayData.label}
-          />
-        ))}
-      </XStack>
+      <ScrollView horizontal width="100%" showsHorizontalScrollIndicator>
+        <XStack
+          width={396}
+          bg="$surface"
+          borderColor="$borderColor"
+          borderWidth={1}
+          rounded="$4"
+          p="$4"
+          gap={4}
+          elevation={2}
+        >
+          {weekData.map((dayData, index) => (
+            <DayView
+              key={index}
+              day={dayData.day}
+              date={dayData.date}
+              isToday={dayData.isToday}
+              isSelected={dayData.isSelected}
+              hasWorkout={dayData.hasWorkout}
+              onPress={() => onSelectDate(dayData.date)}
+            />
+          ))}
+        </XStack>
+      </ScrollView>
+      <Text px="$1" fontSize="$3" fontWeight="600" color="$colorSubtle">
+        {selectedDate.toLocaleDateString('en-US', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+        })}
+      </Text>
     </YStack>
   )
 }
@@ -252,15 +256,7 @@ const WeeklyCompletionView: React.FC<WeeklyCompletionViewProps> = ({
   return (
     <YStack gap="$3">
       <WeekHeader weekRange={weekRange} />
-      <YStack
-        bg="$surface"
-        borderColor="$borderColor"
-        borderWidth={1}
-        rounded="$4"
-        p="$4"
-        gap="$3"
-        elevation={2}
-      >
+      <YStack gap="$3">
         <XStack justify="space-between" items="center">
           <Text fontSize="$3" color="$colorSubtle" fontWeight="600" textTransform="uppercase">
             Complete any order
@@ -321,7 +317,12 @@ const LoadingWeekView: React.FC = () => (
 // Main Wrapper Component
 // ============================================================================
 
-export const WeeklyView: React.FC = () => {
+interface WeeklyViewProps {
+  selectedDate: Date
+  onSelectDate: (date: Date) => void
+}
+
+export const WeeklyView: React.FC<WeeklyViewProps> = ({ selectedDate, onSelectDate }) => {
   const { workouts } = useWorkouts()
   const { activeRoutine, loading, error } = useActiveRoutine()
 
@@ -364,7 +365,12 @@ export const WeeklyView: React.FC = () => {
       {routineType === 'WEEKLY_COMPLETION' ? (
         <WeeklyCompletionView routine={activeRoutine} workouts={workouts} weekRange={weekRange} />
       ) : (
-        <SequentialWeekView routine={activeRoutine} workouts={workouts} weekRange={weekRange} />
+        <SequentialWeekView
+          routine={activeRoutine}
+          weekRange={weekRange}
+          selectedDate={selectedDate}
+          onSelectDate={onSelectDate}
+        />
       )}
       {error && (
         <Text color="$red10" fontSize="$3">
