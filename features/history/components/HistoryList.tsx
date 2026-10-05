@@ -1,10 +1,10 @@
 import { forwardRef } from 'react'
-import { Button, Card, Separator, Text, View, XStack, YStack } from 'tamagui'
-import { Timer as TimerIcon, Dumbbell, Trophy, BarChart2, History } from '@tamagui/lucide-icons'
-import { EmptyState } from '../../../components/ui/EmptyState'
+import { Button, Card, Text, View, XStack, YStack } from 'tamagui'
+import { ArrowRight } from '@tamagui/lucide-icons'
 import { FlashList } from '@shopify/flash-list'
 import type { FlashListRef } from '@shopify/flash-list'
 import { formatWeekRange, startOfWeek } from './date'
+import { formatSeconds } from '../../../utils/workoutUtils'
 
 export type HistoryListItem = {
   id: string
@@ -13,6 +13,9 @@ export type HistoryListItem = {
   duration: number
   totalSets: number
   totalVolume: number
+  strengthSets: number
+  intervals: number
+  exerciseNames: string[]
   prOneRm?: boolean
   prVolume?: boolean
 }
@@ -20,171 +23,150 @@ export type HistoryListItem = {
 type Props = {
   data: HistoryListItem[]
   onCreateWorkout: () => void
-  onViewableItemsChanged: any
-  viewabilityConfig: any
-  onPressItem?: (item: HistoryListItem) => void
-  onLongPressItem?: (item: HistoryListItem) => void
+  onPressItem: (item: HistoryListItem) => void
   refreshing?: boolean
   onRefresh?: () => void
-  listHeader?: React.ReactElement
 }
 
-const HistoryList = forwardRef<FlashListRef<any>, Props>(
-  (
-    {
-      data,
-      onCreateWorkout,
-      onViewableItemsChanged,
-      viewabilityConfig,
-      onPressItem,
-      onLongPressItem,
-      refreshing,
-      onRefresh,
-      listHeader,
-    },
-    ref
-  ) => {
-    if (data.length === 0) {
-      return (
-        <EmptyState
-          title="No history yet"
-          description="Complete your first workout to see it here."
-          icon={History}
-          actionLabel="Create workout"
-          onAction={onCreateWorkout}
-          alignTop
-        />
-      )
-    }
-
-    const formatDuration = (secs: number) => {
-      const s = Math.max(0, Math.floor(secs || 0))
-      const h = Math.floor(s / 3600)
-      const m = Math.floor((s % 3600) / 60)
-      const ss = s % 60
-      if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`
-      return `${m}:${String(ss).padStart(2, '0')}`
-    }
-
-    return (
-      <FlashList
-        ref={ref}
-        data={data}
-        keyExtractor={(item) => item.id}
-        onViewableItemsChanged={onViewableItemsChanged}
-        viewabilityConfig={viewabilityConfig}
-        refreshing={refreshing}
-        onRefresh={onRefresh}
-        ListHeaderComponent={listHeader}
-        ItemSeparatorComponent={() => <View height={8} />}
-        renderItem={({ item, index }) => {
-          const isNewWeek =
-            index > 0 &&
-            startOfWeek(item.date).getTime() !== startOfWeek(data[index - 1].date).getTime()
-          const showHeader = index === 0 || isNewWeek
-          const finishHour = item.date.toLocaleTimeString([], { hour: 'numeric' })
-          return (
-            <YStack>
-              {showHeader && (
-                <XStack items="center" my="$2" gap="$2">
-                  <Separator flex={1} />
-                  <Text fontSize="$2" color="$color10">
-                    {formatWeekRange(item.date)}
-                  </Text>
-                  <Separator flex={1} />
-                </XStack>
-              )}
-              <XStack gap="$3">
-                {/* Timeline column with finish hour and vertical line */}
-                <YStack
-                  width={56}
-                  items="center"
-                  position="relative"
-                  style={{ alignSelf: 'stretch' }}
-                >
-                  <Text fontSize="$2" color="$color10" mb="$1">
-                    {finishHour}
-                  </Text>
-                  <View position="absolute" t={18} b={-8} width={2} bg="$borderColor" />
-                </YStack>
-                <Card
+const HistoryList = forwardRef<FlashListRef<HistoryListItem>, Props>(
+  ({ data, onCreateWorkout, onPressItem, refreshing, onRefresh }, ref) => (
+    <FlashList
+      ref={ref}
+      data={data}
+      keyExtractor={(item) => item.id}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      ListHeaderComponent={
+        <YStack pt="$section" gap="$compact">
+          <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600" color="$color">
+            Your history
+          </Text>
+          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+            {data.length} completed {data.length === 1 ? 'session' : 'sessions'}
+          </Text>
+        </YStack>
+      }
+      ListEmptyComponent={
+        <YStack py="$section" gap="$field">
+          <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600" color="$color">
+            No history yet
+          </Text>
+          <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+            Complete your first workout to see your recorded sets here.
+          </Text>
+          <Button
+            unstyled
+            minH="$action"
+            bg="$primary"
+            rounded="$button"
+            items="center"
+            justify="center"
+            onPress={onCreateWorkout}
+          >
+            <Text fontSize="$body" lineHeight="$body" fontWeight="600" color="$onPrimary">
+              Choose a workout
+            </Text>
+          </Button>
+        </YStack>
+      }
+      ListFooterComponent={<View py="$field" />}
+      ItemSeparatorComponent={() => <View py="$2" />}
+      renderItem={({ item, index }) => {
+        const showHeader =
+          index === 0 ||
+          startOfWeek(item.date).getTime() !== startOfWeek(data[index - 1].date).getTime()
+        return (
+          <YStack>
+            {showHeader && (
+              <Text
+                mt="$section"
+                mb="$field"
+                fontSize="$caption"
+                lineHeight="$caption"
+                fontWeight="600"
+                color="$colorSubtle"
+              >
+                {formatWeekRange(item.date)}
+              </Text>
+            )}
+            <Card
+              p="$card"
+              rounded="$card"
+              bg="$surface"
+              borderWidth="$0.5"
+              borderColor="$borderColor"
+              gap="$compact"
+              accessible
+              accessibilityRole="button"
+              accessibilityLabel={`View ${item.name}, ${item.date.toLocaleDateString()}`}
+              onPress={() => onPressItem(item)}
+              pressStyle={{ bg: '$surfacePress' }}
+            >
+              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                {item.date.toLocaleDateString([], {
+                  weekday: 'short',
+                  day: 'numeric',
+                  month: 'short',
+                })}{' '}
+                · {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </Text>
+              <XStack gap="$field" minH="$touch" items="flex-start">
+                <Text
                   flex={1}
-                  p="$3"
-                  bg="$surface"
-                  borderColor="$borderColor"
-                  borderWidth="$0.5"
-                  width="100%"
-                  pressStyle={{ bg: '#111111' }}
-                  animation="quick"
-                  onPress={() => onPressItem?.(item)}
-                  onLongPress={() => onLongPressItem?.(item)}
+                  fontSize="$cardTitle"
+                  lineHeight="$cardTitle"
+                  fontWeight="600"
+                  color="$color"
                 >
-                  <YStack gap="$2">
-                    <XStack justify="space-between" items="center">
-                      <XStack gap="$2">
-                        <Text fontSize="$5" fontWeight="700" color="$color">
-                          {item.name}
-                        </Text>
-                        <XStack gap="$2" justify="flex-end">
-                          {item.prOneRm && (
-                            <XStack
-                              width={24}
-                              height={24}
-                              bg="$primary"
-                              rounded="$2"
-                              items="center"
-                              justify="center"
-                            >
-                              <Trophy size={14} color="$color" strokeWidth={2.5} />
-                            </XStack>
-                          )}
-                          {item.prVolume && (
-                            <XStack
-                              width={24}
-                              height={24}
-                              bg="$primary"
-                              rounded="$2"
-                              items="center"
-                              justify="center"
-                            >
-                              <BarChart2 size={14} color="$color" strokeWidth={2.5} />
-                            </XStack>
-                          )}
-                        </XStack>
-                      </XStack>
-                    </XStack>
-                    <XStack items="center">
-                      <XStack flex={1} items="center" justify="center" gap="$1">
-                        <TimerIcon size={14} color="$colorSubtle" />
-                        <Text fontWeight="700" color="$color">
-                          {formatDuration(item.duration)}
-                        </Text>
-                      </XStack>
-                      <View width={1} height={18} bg="$borderColor" mx="$3" />
-                      <XStack flex={1} items="center" justify="center" gap="$1">
-                        <Dumbbell size={14} color="$colorSubtle" />
-                        <Text fontWeight="700" color="$color">
-                          {item.totalVolume.toLocaleString()}
-                        </Text>
-                        <Text color="$colorSubtle">kg</Text>
-                      </XStack>
-                      <View width={1} height={18} bg="$borderColor" mx="$3" />
-                      <XStack flex={1} items="center" justify="center" gap="$1">
-                        <Text fontWeight="700" color="$color">
-                          {item.totalSets}
-                        </Text>
-                        <Text color="$colorSubtle">sets</Text>
-                      </XStack>
-                    </XStack>
-                  </YStack>
-                </Card>
+                  {item.name}
+                </Text>
+                <ArrowRight size="$iconSmall" color="$primary" />
               </XStack>
-            </YStack>
-          )
-        }}
-      />
-    )
-  }
+              <XStack flexWrap="wrap" gap="$field" mt="$compact">
+                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                  {formatSeconds(item.duration)}
+                </Text>
+                {item.strengthSets > 0 && (
+                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                    {item.strengthSets} sets
+                  </Text>
+                )}
+                {item.intervals > 0 && (
+                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                    {item.intervals} intervals
+                  </Text>
+                )}
+                {item.strengthSets > 0 && (
+                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                    {item.totalVolume.toLocaleString()} kg volume
+                  </Text>
+                )}
+              </XStack>
+              <Text mt="$compact" fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                {item.exerciseNames.join(' · ')}
+              </Text>
+              {(item.prOneRm || item.prVolume) && (
+                <Text
+                  self="flex-start"
+                  mt="$compact"
+                  px="$2"
+                  py="$compact"
+                  rounded="$badge"
+                  bg="$backgroundAccent"
+                  color="$primary"
+                  fontSize="$caption"
+                  lineHeight="$caption"
+                  fontWeight="600"
+                >
+                  Personal record
+                </Text>
+              )}
+            </Card>
+          </YStack>
+        )
+      }}
+    />
+  )
 )
 
 export default HistoryList
