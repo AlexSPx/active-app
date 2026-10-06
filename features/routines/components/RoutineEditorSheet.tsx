@@ -1,186 +1,191 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
-import { Sheet } from '@tamagui/sheet'
-import { YStack, XStack, Text, Input, Button } from 'tamagui'
-import type {
-  Routine,
-  RoutinePatternItem,
-  CreateRoutineRequest,
-  UpdateRoutineRequest,
-} from '../../../types/routine'
-import { RoutinePatternEditor } from './RoutinePatternEditor'
-import { useRoutineMutations } from '../hooks/useRoutineMutations'
-import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
-import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
+import { useState } from 'react'
+import { Keyboard, KeyboardAvoidingView } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Sheet, YStack, XStack, Text, Input, Button, ScrollView, getTokenValue } from 'tamagui'
+import { router } from 'expo-router'
+import type { ApiWorkout } from '../../../types/api'
+import { toggleWorkoutSelection, workoutMetadata } from '../routineDraft'
+import { syncEngine } from '../../../lib/sync'
 
 export interface RoutineEditorSheetProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  routine?: Routine | null
-  onSaved?: (routine: Routine) => void
+  workouts: ApiWorkout[]
+  selected: string[]
+  single: boolean
+  context: string
+  onApply: (selection: string[]) => void
 }
 
-export function RoutineEditorSheet({
+export function RoutineEditorSheet(props: RoutineEditorSheetProps) {
+  // Remount the picker when opened: pending choices are discarded on Cancel.
+  return props.open ? <WorkoutPicker {...props} /> : null
+}
+
+function WorkoutPicker({
   open,
   onOpenChange,
-  routine,
-  onSaved,
+  workouts,
+  selected,
+  single,
+  context,
+  onApply,
 }: RoutineEditorSheetProps) {
-  const isEdit = !!routine
-  const [name, setName] = useState('')
-  const [description, setDescription] = useState('')
-  const [active, setActive] = useState(false)
-  const [pattern, setPattern] = useState<RoutinePatternItem[]>([])
-
-  const { createRoutine, updateRoutine, loading, error, clearError } = useRoutineMutations()
-
-  useEffect(() => {
-    if (open) {
-      if (routine) {
-        setName(routine.name)
-        setDescription(routine.description ?? '')
-        setActive(false) // do not auto-toggle active on edit unless user chooses
-        setPattern(
-          routine.pattern.map((p) => ({
-            dayIndex: p.dayIndex,
-            dayType: p.dayType,
-            workoutId: p.workoutId,
-          }))
-        )
-      } else {
-        setName('')
-        setDescription('')
-        setActive(false)
-        setPattern([{ dayIndex: 1, dayType: 'WORKOUT', workoutId: null }])
-      }
-    } else {
-      // clear when closing
-      clearError()
-    }
-  }, [open, routine, clearError])
-
-  const canSave = useMemo(() => {
-    if (!name.trim()) return false
-    if (pattern.length === 0) return false
-    // For workout days ensure a workout is selected
-    for (const p of pattern) {
-      if (p.dayType === 'WORKOUT' && !p.workoutId) return false
-    }
-    return true
-  }, [name, pattern])
-
-  const handleSave = useCallback(async () => {
-    if (!canSave) return
-    if (isEdit && routine) {
-      const payload: UpdateRoutineRequest = {
-        name: name.trim(),
-        description: description.trim() || null,
-        pattern: pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
-        active: active || undefined,
-      }
-      const updated = await updateRoutine(routine.id, payload)
-      if (updated) {
-        onSaved?.(updated)
-        onOpenChange(false)
-      }
-    } else {
-      const payload: CreateRoutineRequest = {
-        name: name.trim(),
-        description: description.trim() || undefined,
-        pattern: pattern.map((p, idx) => ({ ...p, dayIndex: idx + 1 })),
-        active,
-      }
-      const created = await createRoutine(payload)
-      if (created) {
-        onSaved?.(created)
-        onOpenChange(false)
-      }
-    }
-  }, [
-    active,
-    canSave,
-    createRoutine,
-    description,
-    isEdit,
-    name,
-    onOpenChange,
-    onSaved,
-    pattern,
-    routine,
-    updateRoutine,
-  ])
-
+  const insets = useSafeAreaInsets()
+  const pagePadding = getTokenValue('$page', 'space')
+  const changeOpen = (next: boolean) => {
+    if (!next) Keyboard.dismiss()
+    onOpenChange(next)
+  }
+  const [pending, setPending] = useState(selected)
+  const [query, setQuery] = useState('')
+  const selection = pending.map((id) => syncEngine.resolveId('workouts', id))
+  const results = workouts.filter((workout) =>
+    workout.title.toLowerCase().includes(query.trim().toLowerCase())
+  )
   return (
     <Sheet
       open={open}
-      onOpenChange={onOpenChange}
+      onOpenChange={changeOpen}
       modal
-      dismissOnOverlayPress={!loading}
-      snapPointsMode="fit"
+      snapPointsMode="percent"
+      snapPoints={[100]}
+      dismissOnSnapToBottom
     >
-      <Sheet.Overlay animation="lazy" style={{ backgroundColor: 'transparent' }} />
-      <Sheet.Handle bg="$surface" />
-      <Sheet.Frame bg="$surface" borderTopLeftRadius="$6" borderTopRightRadius="$6" p="$4">
-        <YStack gap="$3">
-          <Text fontSize="$6" fontWeight="700">
-            {isEdit ? 'Edit Routine' : 'Create Routine'}
-          </Text>
-
-          {error && <ErrorDisplay message={error} />}
-
-          <YStack gap="$2">
-            <Text fontSize="$3" color="$color10">
-              Name
+      <Sheet.Overlay bg="$backgroundTransparent" />
+      <Sheet.Frame bg="$background" borderTopLeftRadius="$sheet" borderTopRightRadius="$sheet">
+        <Sheet.Handle bg="$colorMuted" position="absolute" top={insets.top} left="$0" right="$0" />
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
+          <YStack
+            flex={1}
+            gap="$field"
+            px="$page"
+            pt={insets.top + pagePadding}
+            pb={insets.bottom + pagePadding}
+          >
+            <XStack items="center" justify="space-between">
+              <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
+                {single ? 'Choose a workout' : 'Add workouts'}
+              </Text>
+              <Button chromeless minH="$touch" color="$primary" onPress={() => changeOpen(false)}>
+                Cancel
+              </Button>
+            </XStack>
+            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+              For {context}
             </Text>
-            <Input value={name} onChangeText={setName} placeholder="Routine name" />
-          </YStack>
-
-          <YStack gap="$2">
-            <Text fontSize="$3" color="$color10">
-              Description
+            <Text fontSize="$caption" fontWeight="600">
+              Search saved workouts
             </Text>
             <Input
-              value={description}
-              onChangeText={setDescription}
-              placeholder="Optional description"
+              accessibilityLabel="Search saved workouts"
+              value={query}
+              onChangeText={setQuery}
+              returnKeyType="done"
+              onSubmitEditing={Keyboard.dismiss}
+              placeholder="Search by workout name"
+              rounded="$control"
+              minH="$action"
+              bg="$surface"
+              fontSize="$body"
             />
-          </YStack>
-
-          <XStack items="center" gap="$2">
-            <Button size="$2" onPress={() => setActive((v) => !v)} variant="outlined">
-              {active ? 'Active: Yes' : 'Active: No'}
-            </Button>
-            <Text color="$color10">Set as active routine</Text>
-          </XStack>
-
-          <YStack gap="$2" mt="$2">
-            <Text fontSize="$5" fontWeight="700">
-              Pattern
+            <Text fontSize="$caption" color="$colorSubtle">
+              {results.length} {results.length === 1 ? 'workout' : 'workouts'}
+              {query ? ' found' : ' saved'}
             </Text>
-            <RoutinePatternEditor pattern={pattern} onChange={setPattern} />
+            <ScrollView flex={1} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
+              <YStack gap="$compact">
+                {results.map((workout) => {
+                  const checked = selection.includes(workout.id)
+                  return (
+                    <Button
+                      key={workout.id}
+                      height="auto"
+                      minH="$action"
+                      p="$field"
+                      rounded="$control"
+                      bg={checked ? '$backgroundAccent' : '$background'}
+                      borderWidth={1}
+                      borderColor={checked ? '$primary' : '$borderColor'}
+                      accessibilityRole={single ? 'radio' : 'checkbox'}
+                      accessibilityState={{ checked }}
+                      onPress={() =>
+                        setPending(toggleWorkoutSelection(selection, workout.id, single))
+                      }
+                    >
+                      <XStack width="100%" items="center" gap="$field">
+                        <YStack flex={1} gap="$compact">
+                          <Text
+                            fontSize="$exerciseTitle"
+                            lineHeight="$exerciseTitle"
+                            fontWeight="600"
+                          >
+                            {workout.title}
+                          </Text>
+                          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                            {workoutMetadata(workout)}
+                          </Text>
+                          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                            {workout.workoutTemplate.exercises
+                              .map((exercise) => exercise.exerciseTitle)
+                              .join(' · ')}
+                          </Text>
+                        </YStack>
+                        <Text color={checked ? '$primary' : '$colorMuted'} fontSize="$header">
+                          {checked ? '✓' : '○'}
+                        </Text>
+                      </XStack>
+                    </Button>
+                  )
+                })}
+                {!results.length && (
+                  <YStack py="$section" gap="$field">
+                    <Text fontSize="$header" fontWeight="600">
+                      {workouts.length ? 'No matching workouts' : 'No saved workouts yet'}
+                    </Text>
+                    <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+                      {workouts.length
+                        ? 'Try a different workout name.'
+                        : 'Create a workout before adding it to your routine.'}
+                    </Text>
+                  </YStack>
+                )}
+                <Button
+                  bg="$backgroundHover"
+                  rounded="$button"
+                  minH="$action"
+                  color="$primary"
+                  onPress={() => {
+                    changeOpen(false)
+                    router.push('/workouts/new?returnTo=routine')
+                  }}
+                >
+                  Create workout ↗
+                </Button>
+              </YStack>
+            </ScrollView>
+            <YStack borderTopWidth={1} borderColor="$borderColor" pt="$field" gap="$field">
+              <Text fontSize="$caption" color="$colorSubtle">
+                {single
+                  ? 'Choose one workout for this training day.'
+                  : `${pending.length} selected across all searches.`}
+              </Text>
+              <Button
+                bg={single && !pending.length ? '$backgroundHover' : '$primary'}
+                color={single && !pending.length ? '$colorMuted' : '$onPrimary'}
+                rounded="$button"
+                minH="$action"
+                disabled={single && !pending.length}
+                onPress={() => {
+                  onApply(selection)
+                  changeOpen(false)
+                }}
+              >
+                {single ? 'Done' : `Done · ${pending.length} selected`}
+              </Button>
+            </YStack>
           </YStack>
-
-          <XStack gap="$3" mt="$3">
-            <Button
-              flex={1}
-              bg="$blue4"
-              color="$blue12"
-              onPress={() => onOpenChange(false)}
-              disabled={loading}
-            >
-              Cancel
-            </Button>
-            <Button flex={1} bg="$primary" onPress={handleSave} disabled={!canSave || loading}>
-              {loading ? (
-                <XStack items="center" gap="$2">
-                  <LoadingSpinner size="small" />
-                  <Text>Saving…</Text>
-                </XStack>
-              ) : (
-                <Text>{isEdit ? 'Save Changes' : 'Create Routine'}</Text>
-              )}
-            </Button>
-          </XStack>
-        </YStack>
+        </KeyboardAvoidingView>
       </Sheet.Frame>
     </Sheet>
   )

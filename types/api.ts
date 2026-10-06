@@ -82,7 +82,7 @@ export interface User {
   streak?: UserStreak
   measurements?: UserMeasurements | null
   registrationCompleted: boolean
-  notificationPreferences: UserNotifications
+  notificationPreferences?: UserNotifications | null
 }
 
 export interface UserNotifications {

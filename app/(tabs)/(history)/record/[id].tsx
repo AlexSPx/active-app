@@ -1,15 +1,11 @@
-import { useLocalSearchParams } from 'expo-router'
-
-import { Text, YStack, XStack, Separator, View, ScrollView } from 'tamagui'
-import {
-  Calendar as CalendarIcon,
-  Timer as TimerIcon,
-  Dumbbell,
-  Trophy,
-  BarChart2,
-} from '@tamagui/lucide-icons'
-import { useMemo } from 'react'
-import { useWorkoutRecords } from '../../../../features/workouts'
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Button, Dialog, Text, YStack, XStack, View, ScrollView } from 'tamagui'
+import { Popover } from '@tamagui/popover'
+import { Sheet } from '@tamagui/sheet'
+import { MoreHorizontal } from '@tamagui/lucide-icons'
+import { useMemo, useState } from 'react'
+import { Platform } from 'react-native'
+import { useWorkoutRecords, useWorkoutMutations } from '../../../../features/workouts'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../../components/ui/ErrorDisplay'
 import {
@@ -18,213 +14,458 @@ import {
   isCardioExerciseRecord,
   formatSeconds,
 } from '../../../../utils/workoutUtils'
+import { parseServerUtcDate } from '../../../../utils/date'
+import { recordDurationSeconds } from '../../../../features/history/components/record'
 
 export default function RecordDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
+  const router = useRouter()
   const { workoutRecords, loading, error, refetch } = useWorkoutRecords()
-
+  const {
+    deleteWorkoutRecord,
+    loading: deleting,
+    error: deleteError,
+    clearError,
+  } = useWorkoutMutations()
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [confirmOpen, setConfirmOpen] = useState(false)
   const record = useMemo(
-    () => workoutRecords.find((r) => (r.id ?? `${r.workoutId}-${r.createdAt}`) === id),
+    () => workoutRecords.find((item) => (item.id ?? `${item.workoutId}-${item.createdAt}`) === id),
     [workoutRecords, id]
   )
 
-  if (loading) {
+  const confirmDelete = async () => {
+    if (!record?.id || deleting) return
+    if (await deleteWorkoutRecord(record.id)) {
+      setConfirmOpen(false)
+      router.replace('/(tabs)/(history)')
+    }
+  }
+  const openConfirmation = () => {
+    setMenuOpen(false)
+    clearError()
+    setConfirmOpen(true)
+  }
+
+  if (loading)
     return (
-      <YStack flex={1} justify="center" items="center" bg="$background">
+      <YStack flex={1} justify="center" items="center" bg="$background" gap="$field">
         <LoadingSpinner />
-        <Text mt="$4" color="$color11">
+        <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
           Loading record…
         </Text>
       </YStack>
     )
-  }
-
-  if (error) {
+  if (error)
     return (
-      <View flex={1} bg="$background" p="$4">
+      <View flex={1} bg="$background" p="$page">
         <ErrorDisplay title="Failed to load record" message={error} onRetry={refetch} />
       </View>
     )
-  }
-
-  if (!record) {
+  if (!record)
     return (
-      <YStack flex={1} items="center" justify="center" bg="$background" p="$4" gap="$2">
-        <Text color="$color11" fontSize="$6" fontWeight="700">
+      <YStack flex={1} bg="$background" p="$page" gap="$field" justify="center">
+        <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600" color="$color">
           Record not found
         </Text>
-        <Text color="$color10">It may have been deleted or not yet synced.</Text>
+        <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+          It may have been deleted or not yet synced.
+        </Text>
       </YStack>
     )
-  }
 
-  const date = new Date(record.createdAt)
+  const date = parseServerUtcDate(record.createdAt)
   const totalSets = countSetsForRecord(record)
+  const strengthSets = record.exerciseRecords.reduce((sum, ex) => sum + (ex.reps?.length || 0), 0)
+  const intervals = totalSets - strengthSets
   const totalVolume = computeVolumeForRecord(record)
-  const totalDurationSeconds = record.exerciseRecords.reduce((sum, ex) => {
-    const ds = ex.durationSeconds?.reduce((a, b) => a + (b || 0), 0) ?? 0
-    return sum + ds
-  }, 0)
-  // If per-exercise duration is not available, compute from startTime -> createdAt
-  let computedDurationSecs = totalDurationSeconds
-  if (!computedDurationSecs && record.startTime) {
-    try {
-      // Parse startTime as LocalDateTime (no timezone), including optional milliseconds
-      const [dPart, tPart] = record.startTime.split('T')
-      const [y, m, d] = dPart.split('-').map((v) => parseInt(v, 10))
-      const [hhRaw, mmRaw, ssMsRaw] = tPart.split(':')
-      const hh = parseInt(hhRaw, 10) || 0
-      const mm = parseInt(mmRaw, 10) || 0
-      const [ssRaw, msRaw] = (ssMsRaw || '0').split('.')
-      const ss = parseInt(ssRaw, 10) || 0
-      const ms = parseInt(msRaw || '0', 10) || 0
-      const start = new Date(y, (m || 1) - 1, d || 1, hh, mm, ss, ms)
-
-      // createdAt may lack timezone; try UTC and local
-      const createdAtStr = record.createdAt
-      const hasTz = /Z$/i.test(createdAtStr) || /[+-]\d{2}:?\d{2}$/.test(createdAtStr)
-      const createdUtc = new Date(hasTz ? createdAtStr : `${createdAtStr}Z`)
-      let createdLocal = createdUtc
-      if (!hasTz) {
-        const [cd, ct] = createdAtStr.split('T')
-        const [cy, cm, cdn] = cd.split('-').map((v) => parseInt(v, 10))
-        const [chhRaw, cmmRaw, cssMsRaw] = ct.split(':')
-        const chh = parseInt(chhRaw, 10) || 0
-        const cmm = parseInt(cmmRaw, 10) || 0
-        const [cssRaw, cmsRaw] = (cssMsRaw || '0').split('.')
-        const css = parseInt(cssRaw, 10) || 0
-        const cms = parseInt(cmsRaw || '0', 10) || 0
-        createdLocal = new Date(cy, (cm || 1) - 1, cdn || 1, chh, cmm, css, cms)
-      }
-
-      const diffs = [
-        createdUtc.getTime() - start.getTime(),
-        createdLocal.getTime() - start.getTime(),
-      ]
-      const positives = diffs.filter((d) => d >= 0)
-      const chosen = positives.length > 0 ? Math.min(...positives) : Math.max(...diffs)
-      computedDurationSecs = Math.max(0, Math.floor(chosen / 1000))
-    } catch {}
-  }
-  const durationLabel = computedDurationSecs > 0 ? formatSeconds(computedDurationSecs) : '—'
+  const duration = recordDurationSeconds(record)
+  const confirmContent = (
+    <YStack gap="$field">
+      {Platform.OS === 'web' ? (
+        <Dialog.Title
+          fontSize="$sectionTitle"
+          lineHeight="$sectionTitle"
+          fontWeight="600"
+          color="$color"
+        >
+          Delete this record?
+        </Dialog.Title>
+      ) : (
+        <Text
+          accessibilityRole="header"
+          fontSize="$sectionTitle"
+          lineHeight="$sectionTitle"
+          fontWeight="600"
+          color="$color"
+        >
+          Delete this record?
+        </Text>
+      )}
+      <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+        {record.workoutTitle} · {date.toLocaleDateString([], { day: 'numeric', month: 'long' })}.
+        Its recorded sets and notes will be removed.
+      </Text>
+      {!!deleteError && (
+        <Text accessibilityRole="alert" fontSize="$body" lineHeight="$body" color="$destructive">
+          {deleteError}
+        </Text>
+      )}
+      <Button
+        unstyled
+        disabled={deleting}
+        minH="$action"
+        bg="$destructive"
+        rounded="$button"
+        items="center"
+        justify="center"
+        onPress={confirmDelete}
+      >
+        <Text fontSize="$body" lineHeight="$body" fontWeight="600" color="$onPrimary">
+          {deleting ? 'Deleting…' : 'Delete record'}
+        </Text>
+      </Button>
+      <Button
+        unstyled
+        disabled={deleting}
+        minH="$action"
+        bg="$backgroundStrong"
+        rounded="$button"
+        items="center"
+        justify="center"
+        onPress={() => setConfirmOpen(false)}
+      >
+        <Text fontSize="$body" lineHeight="$body" fontWeight="600" color="$color">
+          Keep record
+        </Text>
+      </Button>
+    </YStack>
+  )
 
   return (
-    <ScrollView flex={1} bg="$background">
-      <YStack px="$4" py="$3" gap="$3">
-        {/* Header Title */}
-        <YStack gap="$1">
-          <Text fontSize="$7" fontWeight="700" color="$color">
+    <YStack flex={1} bg="$background">
+      <Stack.Screen
+        options={{
+          headerRight: () =>
+            record.id ? (
+              <Popover open={menuOpen} onOpenChange={setMenuOpen} placement="bottom-end">
+                <Popover.Trigger asChild>
+                  <Button
+                    unstyled
+                    width="$touch"
+                    height="$touch"
+                    rounded="$control"
+                    items="center"
+                    justify="center"
+                    accessibilityLabel="Session actions"
+                  >
+                    <MoreHorizontal size="$iconSmall" color="$colorSubtle" />
+                  </Button>
+                </Popover.Trigger>
+                <Popover.Content
+                  bg="$surface"
+                  p="$compact"
+                  rounded="$menu"
+                  borderWidth="$0.5"
+                  borderColor="$borderColor"
+                >
+                  <Button
+                    unstyled
+                    minH="$touch"
+                    px="$field"
+                    rounded="$control"
+                    justify="center"
+                    onPress={openConfirmation}
+                  >
+                    <Text fontSize="$body" lineHeight="$body" color="$destructive">
+                      Delete record
+                    </Text>
+                  </Button>
+                </Popover.Content>
+              </Popover>
+            ) : null,
+        }}
+      />
+      <ScrollView flex={1}>
+        <YStack width="100%" maxW="$content" self="center" px="$page" py="$section">
+          <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600" color="$color">
             {record.workoutTitle}
           </Text>
-          <XStack items="center" gap="$2">
-            <CalendarIcon size={16} color="$colorSubtle" />
-            <Text color="$colorSubtle">
-              {date.toLocaleDateString([], { month: 'long', day: '2-digit', year: 'numeric' })}{' '}
-              {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </Text>
+          <Text mt="$field" fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+            {date.toLocaleDateString([], {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </Text>
+          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+            Finished at {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+          <XStack
+            py="$card"
+            my="$section"
+            borderTopWidth="$0.5"
+            borderBottomWidth="$0.5"
+            borderColor="$borderColor"
+          >
+            <YStack flex={1} pr="$field" gap="$compact">
+              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                Duration
+              </Text>
+              <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600" color="$color">
+                {duration > 0 ? formatSeconds(duration) : '—'}
+              </Text>
+            </YStack>
+            <YStack
+              flex={1}
+              px="$field"
+              gap="$compact"
+              borderLeftWidth="$0.5"
+              borderColor="$borderColor"
+            >
+              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                {strengthSets > 0 ? (intervals > 0 ? 'Sets / intervals' : 'Sets') : 'Intervals'}
+              </Text>
+              <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600" color="$color">
+                {strengthSets > 0
+                  ? intervals > 0
+                    ? `${strengthSets} / ${intervals}`
+                    : strengthSets
+                  : intervals}
+              </Text>
+            </YStack>
+            <YStack
+              flex={1}
+              pl="$field"
+              gap="$compact"
+              borderLeftWidth="$0.5"
+              borderColor="$borderColor"
+            >
+              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                Volume · kg × reps
+              </Text>
+              <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600" color="$color">
+                {strengthSets > 0 ? totalVolume.toLocaleString() : '—'}
+              </Text>
+            </YStack>
           </XStack>
-          {record.notes ? (
-            <Text color="$color10" numberOfLines={2}>
-              {record.notes}
-            </Text>
-          ) : null}
-        </YStack>
-
-        {/* Stats Row */}
-        <XStack items="center" py="$2">
-          <XStack flex={1} items="center" justify="center" gap="$2">
-            <TimerIcon size={16} color="$colorSubtle" />
-            <Text color="$colorSubtle">{durationLabel}</Text>
-          </XStack>
-          <View width={1} height="100%" bg="$borderColor" mx="$3" />
-          <XStack flex={1} items="center" justify="center" gap="$2">
-            <Dumbbell size={16} color="$colorSubtle" />
-            <Text color="$colorSubtle">{totalVolume.toLocaleString()} kg</Text>
-          </XStack>
-          <View width={1} height="100%" bg="$borderColor" mx="$3" />
-          <XStack flex={1} items="center" justify="center">
-            <Text color="$colorSubtle">
-              {totalSets} {totalSets === 1 ? 'set' : 'sets'}
-            </Text>
-          </XStack>
-        </XStack>
-
-        <Separator />
-
-        {/* Exercises List */}
-        <YStack>
-          {record.exerciseRecords.map((ex, idx) => (
-            <YStack key={`${ex.exerciseName}-${idx}`} py="$3">
-              <XStack items="center" gap="$2" mb="$2" flexWrap="wrap">
-                <Text fontSize="$5" fontWeight="700" color="$color">
-                  {ex.exerciseName}
-                </Text>
-                {ex.achievedTotalVolumeValue && ex.achievedTotalVolumeValue > 0 && (
-                  <XStack
-                    items="center"
-                    gap={6}
-                    px={8}
-                    py={2}
-                    bg="$primary"
-                    style={{ borderRadius: 8 }}
-                  >
-                    <BarChart2 size={12} color="$color" />
-                    <Text color="$color" fontSize="$2" fontWeight="700">
-                      {ex.achievedTotalVolumeValue.toLocaleString()} kg
+          <Text
+            mb="$field"
+            fontSize="$sectionTitle"
+            lineHeight="$sectionTitle"
+            fontWeight="600"
+            color="$color"
+          >
+            Recorded exercises
+          </Text>
+          <YStack gap="$field">
+            {record.exerciseRecords.map((ex, index) => {
+              const cardio = isCardioExerciseRecord(ex)
+              const rows = cardio ? ex.durationSeconds || [] : ex.reps || []
+              const volume =
+                ex.reps?.reduce((sum, reps, i) => sum + reps * (ex.weight?.[i] || 0), 0) || 0
+              const oneRm = (ex.achievedOneRmValue ?? 0) > 0
+              const volumePr = (ex.achievedTotalVolumeValue ?? 0) > 0
+              return (
+                <YStack
+                  key={`${ex.exerciseName}-${index}`}
+                  bg="$surface"
+                  p="$card"
+                  rounded="$card"
+                  borderWidth="$0.5"
+                  borderColor="$borderColor"
+                  gap="$compact"
+                >
+                  <Text fontSize="$header" lineHeight="$header" fontWeight="600" color="$color">
+                    {ex.exerciseName}
+                  </Text>
+                  <Text mb="$field" fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                    {rows.length}{' '}
+                    {cardio
+                      ? rows.length === 1
+                        ? 'recorded interval'
+                        : 'recorded intervals'
+                      : 'sets'}
+                    {!cardio ? ` · ${volume.toLocaleString()} kg volume` : ''}
+                  </Text>
+                  <XStack pb="$compact" gap="$field">
+                    <Text flex={1} fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                      {cardio ? 'Interval' : 'Set'}
+                    </Text>
+                    {!cardio && (
+                      <Text
+                        flex={1}
+                        text="right"
+                        fontSize="$caption"
+                        lineHeight="$caption"
+                        color="$colorSubtle"
+                      >
+                        Weight · kg
+                      </Text>
+                    )}
+                    <Text
+                      flex={1}
+                      text="right"
+                      fontSize="$caption"
+                      lineHeight="$caption"
+                      color="$colorSubtle"
+                    >
+                      {cardio ? 'Duration' : 'Reps'}
                     </Text>
                   </XStack>
-                )}
-              </XStack>
-              <YStack gap="$1">
-                {/* Strength sets */}
-                {ex.reps && ex.reps.length > 0
-                  ? ex.reps.map((r, i) => (
-                      <XStack key={i} justify="space-between" items="center">
-                        <XStack items="center" gap={6}>
-                          <Text color="$colorSubtle">Set {i + 1}</Text>
-                          {typeof ex.achievedOneRmSetIndex === 'number' &&
-                            ex.achievedOneRmSetIndex === i &&
-                            (ex.achievedOneRmValue ?? 0) > 0 && (
-                              <XStack
-                                items="center"
-                                gap={6}
-                                px={8}
-                                py={2}
-                                bg="$primary"
-                                style={{ borderRadius: 8 }}
-                              >
-                                <Trophy size={12} color="$color" />
-                                <Text color="$color" fontSize="$2" fontWeight="700">
-                                  {Number(ex.achievedOneRmValue).toLocaleString()} kg
-                                </Text>
-                              </XStack>
-                            )}
-                        </XStack>
-                        <Text color="$color">
-                          {r} reps @ {(ex.weight?.[i] ?? 0).toLocaleString()} kg
+                  {rows.map((value, i) => (
+                    <XStack
+                      key={i}
+                      minH="$setRow"
+                      items="center"
+                      gap="$field"
+                      borderTopWidth="$0.5"
+                      borderColor="$borderColor"
+                    >
+                      <XStack flex={1} gap="$compact" items="center">
+                        <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+                          {i + 1}
                         </Text>
+                        {!cardio && oneRm && ex.achievedOneRmSetIndex === i && (
+                          <Text
+                            accessibilityLabel="Personal record set"
+                            px="$compact"
+                            rounded="$badge"
+                            bg="$backgroundAccent"
+                            color="$primary"
+                            fontSize="$caption"
+                            lineHeight="$caption"
+                          >
+                            PR
+                          </Text>
+                        )}
                       </XStack>
-                    ))
-                  : null}
-                {/* Cardio/time intervals (only show if cardio) */}
-                {isCardioExerciseRecord(ex) &&
-                  ex.durationSeconds?.map((ds, i) => (
-                    <XStack key={i} justify="space-between" items="center">
-                      <Text color="$colorSubtle">Interval {i + 1}</Text>
-                      <Text color="$color">{formatSeconds(ds)}</Text>
+                      {!cardio && (
+                        <Text
+                          flex={1}
+                          text="right"
+                          fontSize="$body"
+                          lineHeight="$body"
+                          color="$color"
+                        >
+                          {(ex.weight?.[i] ?? 0).toLocaleString()}
+                        </Text>
+                      )}
+                      <Text
+                        flex={1}
+                        text="right"
+                        fontSize="$body"
+                        lineHeight="$body"
+                        color="$color"
+                      >
+                        {cardio ? formatSeconds(value) : value}
+                      </Text>
                     </XStack>
                   ))}
-              </YStack>
-              {ex.notes ? (
-                <Text mt="$2" color="$color10">
-                  Notes: {ex.notes}
-                </Text>
-              ) : null}
-              {idx < record.exerciseRecords.length - 1 ? <Separator mt="$3" /> : null}
+                  {rows.length === 0 && (
+                    <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+                      No recorded sets.
+                    </Text>
+                  )}
+                  {(oneRm || volumePr) && (
+                    <YStack mt="$field" gap="$compact">
+                      <Text
+                        self="flex-start"
+                        px="$2"
+                        py="$compact"
+                        rounded="$badge"
+                        bg="$backgroundAccent"
+                        color="$primary"
+                        fontSize="$caption"
+                        lineHeight="$caption"
+                        fontWeight="600"
+                      >
+                        Personal record
+                      </Text>
+                      {oneRm && (
+                        <Text fontSize="$caption" lineHeight="$caption" color="$primary">
+                          Est. 1RM record · {ex.achievedOneRmValue?.toLocaleString()} kg
+                        </Text>
+                      )}
+                      {volumePr && (
+                        <Text fontSize="$caption" lineHeight="$caption" color="$primary">
+                          Volume record · {ex.achievedTotalVolumeValue?.toLocaleString()} kg
+                        </Text>
+                      )}
+                    </YStack>
+                  )}
+                  {!!ex.notes && (
+                    <Text mt="$field" fontSize="$body" lineHeight="$body" color="$colorSubtle">
+                      {ex.notes}
+                    </Text>
+                  )}
+                </YStack>
+              )
+            })}
+          </YStack>
+          {!!record.notes && (
+            <YStack mt="$section" gap="$field">
+              <Text
+                fontSize="$sectionTitle"
+                lineHeight="$sectionTitle"
+                fontWeight="600"
+                color="$color"
+              >
+                Session notes
+              </Text>
+              <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+                {record.notes}
+              </Text>
             </YStack>
-          ))}
+          )}
         </YStack>
-      </YStack>
-    </ScrollView>
+      </ScrollView>
+      {Platform.OS === 'web' ? (
+        <Dialog
+          modal
+          open={confirmOpen}
+          onOpenChange={(open) => {
+            if (!deleting) setConfirmOpen(open)
+          }}
+        >
+          <Dialog.Portal>
+            <Dialog.Overlay />
+            <Dialog.Content
+              accessibilityLabel="Delete this record?"
+              bg="$surface"
+              p="$section"
+              rounded="$sheet"
+              borderWidth="$0.5"
+              borderColor="$borderColor"
+              maxW="$content"
+            >
+              {confirmContent}
+            </Dialog.Content>
+          </Dialog.Portal>
+        </Dialog>
+      ) : (
+        <Sheet
+          open={confirmOpen}
+          onOpenChange={(open) => {
+            if (!deleting) setConfirmOpen(open)
+          }}
+          modal
+          dismissOnOverlayPress={!deleting}
+          snapPointsMode="fit"
+        >
+          <Sheet.Overlay bg="$background" />
+          <Sheet.Handle bg="$colorMuted" />
+          <Sheet.Frame
+            bg="$surface"
+            borderTopLeftRadius="$sheet"
+            borderTopRightRadius="$sheet"
+            p="$section"
+          >
+            {confirmContent}
+          </Sheet.Frame>
+        </Sheet>
+      )}
+    </YStack>
   )
 }

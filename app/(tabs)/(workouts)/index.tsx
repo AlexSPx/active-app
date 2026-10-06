@@ -84,7 +84,7 @@ export default function WorkoutsInnerTab() {
     return (
       <YStack flex={1} justify="center" items="center" bg="$background">
         <LoadingSpinner />
-        <Text mt="$4" color="$color11">
+        <Text mt="$4" color="$colorSubtle">
           Loading workouts...
         </Text>
       </YStack>
@@ -93,7 +93,7 @@ export default function WorkoutsInnerTab() {
 
   if (error) {
     return (
-      <YStack flex={1} justify="center" items="center" bg="$background" p="$4">
+      <YStack flex={1} justify="center" items="center" bg="$background" p="$page">
         <ErrorDisplay message={error} />
         <Button mt="$4" onPress={refetch}>
           Try Again
@@ -106,24 +106,31 @@ export default function WorkoutsInnerTab() {
   const DeleteConfirmContent = (
     <YStack gap="$3" items="center">
       <XStack items="center" gap="$2">
-        <AlertTriangle size="$1" color="$secondary" />
-        <Text fontSize="$6" fontWeight="700">
+        <AlertTriangle size="$1" color="$destructive" />
+        <Text fontSize="$sectionTitle" fontWeight="700">
           Delete workout
         </Text>
       </XStack>
-      <Text color="$color10">Are you sure? This will permanently delete this workout.</Text>
+      <Text color="$colorSubtle">Are you sure? This will permanently delete this workout.</Text>
       <YStack mt="$2" gap="$3" width="100%">
         <Button
-          bg="$red4"
-          color="$red11"
-          size="$5"
+          bg="$destructive"
+          color="$onPrimary"
+          minH="$action"
+          rounded="$button"
           iconAfter={Trash2}
           disabled={deleting}
           onPress={confirmDelete}
         >
           {deleting ? 'Deleting…' : 'Delete workout'}
         </Button>
-        <Button bg="$blue4" color="$blue12" size="$5" onPress={() => setConfirmOpen(false)}>
+        <Button
+          bg="$backgroundStrong"
+          color="$color"
+          minH="$action"
+          rounded="$button"
+          onPress={() => setConfirmOpen(false)}
+        >
           <Text>Cancel</Text>
         </Button>
       </YStack>
@@ -141,7 +148,15 @@ export default function WorkoutsInnerTab() {
           onEditWorkout={handleEditWorkout}
           focusId={(params.focusId as string) || undefined}
           listHeader={
-            <YStack mt="$1" mb="$3">
+            <YStack gap="$card" mb="$page">
+              <YStack gap="$1">
+                <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
+                  Your workouts
+                </Text>
+                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                  {workouts.length} saved {workouts.length === 1 ? 'workout' : 'workouts'}
+                </Text>
+              </YStack>
               <CreateTopButton label="Create workout" onPress={navigateToNewWorkout} />
             </YStack>
           }
@@ -165,13 +180,13 @@ export default function WorkoutsInnerTab() {
             />
             <Dialog.Content
               bordered
-              elevate
+              rounded="$menu"
               key="content"
               animation={['quick', { opacity: { overshootClamping: true } }]}
-              enterStyle={{ x: 0, y: -20, opacity: 0, scale: 0.9 }}
-              exitStyle={{ x: 0, y: 10, opacity: 0, scale: 0.95 }}
+              enterStyle={{ opacity: 0 }}
+              exitStyle={{ opacity: 0 }}
               bg="$surface"
-              p="$4"
+              p="$page"
             >
               {DeleteConfirmContent}
             </Dialog.Content>
@@ -185,9 +200,14 @@ export default function WorkoutsInnerTab() {
           dismissOnOverlayPress={!deleting}
           snapPointsMode="fit"
         >
-          <Sheet.Overlay animation="slow" style={{ backgroundColor: 'transparent' }} />
+          <Sheet.Overlay animation="slow" bg="$backgroundTransparent" />
           <Sheet.Handle bg="$surface" />
-          <Sheet.Frame bg="$surface" borderTopLeftRadius="$6" borderTopRightRadius="$6" p="$4">
+          <Sheet.Frame
+            bg="$surface"
+            borderTopLeftRadius="$sheet"
+            borderTopRightRadius="$sheet"
+            p="$page"
+          >
             {DeleteConfirmContent}
           </Sheet.Frame>
         </Sheet>
