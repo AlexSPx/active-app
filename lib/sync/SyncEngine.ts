@@ -83,6 +83,9 @@ const MAX_BACKOFF_MS = 60_000
 
 export class SyncEngine {
   private db: SQLiteDatabase | null = null
+  private initialized = false
+  private uploadsEnabled = true
+  private enableAfterInit = false
   private isProcessing = false
   private appStateSubscription: { remove(): void } | null = null
   // ponytail: one save/remap lock; split per table only if contention appears.
@@ -114,6 +117,7 @@ export class SyncEngine {
    */
   async init(db: SQLiteDatabase, options: InitOptions = {}): Promise<void> {
     this.db = db
+    this.initialized = false
 
     // Ensure pragmas on this handle
     await db.execAsync('PRAGMA foreign_keys = ON;')
@@ -129,16 +133,30 @@ export class SyncEngine {
 
     // Listen to app-state transitions (process queue on resume)
     this.appStateSubscription = this.deps.addAppStateListener(this.handleAppStateChange)
+    this.initialized = true
 
     // Drain any jobs left over from a previous session
-    if (options.processOnInit !== false) {
+    if (options.processOnInit !== false || this.enableAfterInit) {
+      this.enableAfterInit = false
       this.processQueue()
     }
+  }
+
+  setUploadsEnabled(enabled: boolean): void {
+    this.uploadsEnabled = enabled
+    if (!enabled) {
+      this.enableAfterInit = false
+      return
+    }
+    if (this.initialized) this.processQueue()
+    else this.enableAfterInit = true
   }
 
   destroy(): void {
     this.appStateSubscription?.remove()
     this.appStateSubscription = null
+    this.initialized = false
+    this.enableAfterInit = false
   }
 
   // -----------------------------------------------------------------------
@@ -233,7 +251,7 @@ export class SyncEngine {
   // -----------------------------------------------------------------------
 
   async processQueue(): Promise<void> {
-    if (this.isProcessing || !this.db) return
+    if (this.isProcessing || !this.db || !this.initialized || !this.uploadsEnabled) return
 
     // Network check
     try {
@@ -245,6 +263,8 @@ export class SyncEngine {
       // If we can't determine network state, skip processing
       return
     }
+
+    if (!this.uploadsEnabled) return
 
     this.isProcessing = true
     this.emit('sync:start')
@@ -264,6 +284,7 @@ export class SyncEngine {
       }
 
       for (const job of pendingJobs) {
+        if (!this.uploadsEnabled) break
         const success = await this.processJob(job)
         if (!success) {
           // Stop processing on first failure to preserve ordering
@@ -299,6 +320,11 @@ export class SyncEngine {
       )
       if (!currentJob) {
         return true
+      }
+
+      if (!this.uploadsEnabled) {
+        await this.db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'pending', job.id)
+        return false
       }
 
       const methodName = currentJob.endpoint as keyof SyncApi

@@ -11,6 +11,33 @@ jest.mock('../../services/posthog', () => ({
 const { createApi, makeJob, runQueue, FakeDb } = require('../helpers/syncTestUtils')
 
 describe('SyncEngine queue remapping', () => {
+  it('persists local jobs while uploads are disabled and drains them after validation', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const api = createApi()
+    const engine = new SyncEngine({
+      api,
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    const db = new FakeDb()
+    engine.setUploadsEnabled(false)
+
+    const initialization = engine.init(db, { processOnInit: false })
+    await engine.enqueue({ apiMethod: 'createWorkout', payload: { title: 'Offline' } })
+    await initialization
+
+    expect(db.jobs).toHaveLength(1)
+    expect(api.createWorkout).not.toHaveBeenCalled()
+
+    const drained = new Promise((resolve) => engine.on('sync:complete', resolve))
+    engine.setUploadsEnabled(true)
+    await drained
+
+    expect(db.jobs).toHaveLength(0)
+    expect(api.createWorkout).toHaveBeenCalledTimes(1)
+    engine.destroy()
+  })
+
   it('serializes record saves behind an in-flight ID remap', async () => {
     const { SyncEngine } = require('../../lib/sync/SyncEngine')
     const engine = new SyncEngine({

@@ -30,10 +30,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Initialize auth state on mount
   useEffect(() => {
-    // Attach global 401 handler -> triggers logout
+    // A server 401 invalidates remote access, but cached local profile access remains.
     authRepository.setUnauthorizedHandler(() => {
-      // fire and forget; store handles clearing
-      useAuthStore.getState().logout()
+      useAuthStore.getState().markServerSessionInvalid()
     })
 
     initializeAuth().catch((error) => {

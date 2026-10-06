@@ -135,6 +135,25 @@ class FakeDb {
   }
 
   async runAsync(sql, ...params) {
+    if (
+      sql ===
+      'INSERT INTO sync_queue (id, endpoint, method, payload, local_table, local_id, idempotency_key)\n       VALUES (?, ?, ?, ?, ?, ?, ?)'
+    ) {
+      const [id, endpoint, method, payload, localTable, localId, idempotencyKey] = params
+      this.jobs.push({
+        id,
+        endpoint,
+        method,
+        payload,
+        local_table: localTable,
+        local_id: localId,
+        idempotency_key: idempotencyKey,
+        retry_count: 0,
+        status: 'pending',
+      })
+      return
+    }
+
     if (sql === 'INSERT OR REPLACE INTO id_remaps (table_name, old_id, new_id) VALUES (?, ?, ?)') {
       const [tableName, oldId, newId] = params
       this.idRemaps.set(`${tableName}:${oldId}`, {
