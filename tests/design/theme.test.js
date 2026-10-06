@@ -60,7 +60,7 @@ jest.mock('../../stores/uiStore', () => ({
     select({ finishedCongrats: { visible: false }, hideFinishedCongrats: () => {} }),
 }))
 jest.mock('../../stores/authStore', () => ({
-  useAuthStore: (select) => select({ isAuthenticated: false, user: null }),
+  useAuthStore: (select) => select({ isStartupReady: true, isAuthenticated: false, user: null }),
 }))
 jest.mock('../../components/FinishedWorkoutCongrats', () => ({
   __esModule: true,
@@ -73,7 +73,12 @@ jest.mock('../../services/notificationService', () => ({
 jest.mock('../../services/posthog', () => ({ posthog: {} }))
 jest.mock('../../lib/queryClient', () => ({ queryClient: { setQueriesData: jest.fn() } }))
 jest.mock('../../lib/sync', () => ({
-  syncEngine: { onIdRemap: jest.fn(() => () => {}), init: async () => {}, destroy: () => {} },
+  syncEngine: {
+    onIdRemap: jest.fn(() => () => {}),
+    init: async () => {},
+    destroy: () => {},
+    setUploadsEnabled: jest.fn(),
+  },
 }))
 jest.mock('../../lib/sync/queuePayloadRemap', () =>
   jest.requireActual('../../lib/sync/queuePayloadRemap')

@@ -34,13 +34,20 @@ const hydratedDbs = new WeakSet<object>()
  */
 function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
   const db = useSQLiteContext()
+  const isStartupReady = useAuthStore((s) => s.isStartupReady)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const userId = useAuthStore((s) => s.user?.id)
+  const serverSession = useAuthStore((s) => s.serverSession)
+  const startupError = useAuthStore((s) => s.startupError)
 
   // Always keep the singleton reference pointing at the live handle
   setSharedDatabase(db)
 
-  // On mount: init SyncEngine (drains leftover queue from previous session)
+  // Initialize the local queue after startup and migrations, even without a valid server session.
   useEffect(() => {
+    syncEngine.setUploadsEnabled(false)
+    if (!isStartupReady || startupError) return
+
     const unsubscribeIdRemap = syncEngine.onIdRemap((tableName, oldId, newId) => {
       if (tableName !== 'workouts' && tableName !== 'routines') return
 
@@ -56,21 +63,35 @@ function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
         )
       }
     })
-    syncEngine.init(db).catch(console.error)
+    syncEngine.init(db, { processOnInit: false }).catch(console.error)
     return () => {
+      syncEngine.setUploadsEnabled(false)
       unsubscribeIdRemap()
       syncEngine.destroy()
     }
-  }, [db])
+  }, [db, isStartupReady, startupError])
+
+  useEffect(() => {
+    syncEngine.setUploadsEnabled(
+      isStartupReady && !startupError && isAuthenticated && !!userId && serverSession === 'valid'
+    )
+  }, [isAuthenticated, isStartupReady, serverSession, startupError, userId])
 
   // Whenever auth state transitions to authenticated, hydrate and invalidate
   const prevAuthRef = useRef<boolean | null>(null)
   useEffect(() => {
+    if (!isStartupReady || startupError) return
+
+    if (!isAuthenticated || !userId || serverSession !== 'valid') {
+      prevAuthRef.current = false
+      return
+    }
+
     const wasAuthenticated = prevAuthRef.current
     prevAuthRef.current = isAuthenticated
 
-    // Skip: not authenticated, or already was authenticated before this render
-    if (!isAuthenticated || wasAuthenticated === true) return
+    // Skip if this DB was already hydrated for the current authenticated state.
+    if (wasAuthenticated === true) return
 
     // Skip if this exact DB handle was already hydrated (prevents double-fires on re-renders)
     if (hydratedDbs.has(db)) {
@@ -90,7 +111,7 @@ function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
         hydratedDbs.delete(db)
         console.warn('[SyncEngineBootstrap] Hydration failed (offline?):', err?.message)
       })
-  }, [isAuthenticated, db])
+  }, [isAuthenticated, isStartupReady, serverSession, startupError, userId, db])
 
   return <>{children}</>
 }
@@ -98,8 +119,11 @@ function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   const colorScheme = useColorScheme()
   const theme = useSettingsStore((s) => s.theme)
+  const isStartupReady = useAuthStore((s) => s.isStartupReady)
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const userId = useAuthStore((s) => s.user?.id)
+  const serverSession = useAuthStore((s) => s.serverSession)
+  const startupError = useAuthStore((s) => s.startupError)
   const finishedCongrats = useUiStore((s) => s.finishedCongrats)
   const hideFinishedCongrats = useUiStore((s) => s.hideFinishedCongrats)
   const congratsVisible = finishedCongrats.visible && !!finishedCongrats.payload
@@ -112,9 +136,10 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
   }, [])
 
   useEffect(() => {
-    if (!isAuthenticated || !userId) return
+    if (!isStartupReady || startupError || !isAuthenticated || !userId || serverSession !== 'valid')
+      return
     registerPushNotifications().catch(() => {})
-  }, [isAuthenticated, userId])
+  }, [isAuthenticated, isStartupReady, serverSession, startupError, userId])
 
   return (
     <SafeAreaProvider>

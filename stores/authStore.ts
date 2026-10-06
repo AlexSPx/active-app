@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 import { useSettingsStore } from '../features/settings'
+import { useRunningWorkoutStore } from '../features/workout-session/stores/runningWorkoutStore'
 import { resetAllStores } from '../utils/storeReset'
 import { clearDatabase } from '../lib/db/connection'
 import { AuthRepository, UserRepository } from 'lib/repositories'
@@ -13,23 +14,54 @@ import { posthog } from '../services/posthog'
 const isWeb = Platform.OS === 'web'
 const authRepository = new AuthRepository()
 const userRepository = new UserRepository()
+let authPersistenceReady = false
+let authSessionGeneration = 0
+
+const authStorage = createJSONStorage(() => ({
+  getItem: (name) => AsyncStorage.getItem(name),
+  setItem: (name, value) => (authPersistenceReady ? AsyncStorage.setItem(name, value) : undefined),
+  removeItem: (name) => AsyncStorage.removeItem(name),
+}))
 
 function clearAuthState(set: (partial: Partial<AuthState>) => void) {
   set({
+    startupError: null,
     isAuthenticated: false,
     user: null,
     token: null,
     refreshToken: null,
     isLoading: false,
+    isProfileLoading: false,
+    profileError: null,
+    serverSession: 'unknown',
     error: null,
   })
 }
 
-async function persistSession(response: { token: string; refreshToken: string }) {
-  if (isWeb) return
+async function waitForHydration(store: {
+  persist: { hasHydrated: () => boolean; rehydrate: () => Promise<void> | void }
+}): Promise<unknown> {
+  if (!store.persist.hasHydrated()) {
+    try {
+      await store.persist.rehydrate()
+    } catch (error) {
+      return error
+    }
+  }
+  return store.persist.hasHydrated() ? undefined : new Error('Could not restore saved data')
+}
+
+async function persistSession(
+  response: { token: string; refreshToken: string },
+  generation: number
+): Promise<boolean> {
+  if (generation !== authSessionGeneration) return false
+  if (isWeb) return true
 
   await authRepository.setToken(response.token)
+  if (generation !== authSessionGeneration) return false
   await authRepository.setRefreshToken(response.refreshToken)
+  return generation === authSessionGeneration
 }
 
 function syncUserToSettings(user: User) {
@@ -55,11 +87,17 @@ function syncUserToSettings(user: User) {
 
 interface AuthState {
   // State
+  isStartupReady: boolean
+  startupError: string | null
+  // Local access remains available when the remote session cannot be checked.
   isAuthenticated: boolean
+  serverSession: 'unknown' | 'valid' | 'invalid'
   user: User | null
   token: string | null
   refreshToken: string | null
   isLoading: boolean
+  isProfileLoading: boolean
+  profileError: string | null
   error: string | null
 
   // Actions
@@ -78,123 +116,145 @@ interface AuthState {
   setUser: (user: User | null) => void
   setToken: (token: string | null) => void
   setRefreshToken: (token: string | null) => void
+  markServerSessionInvalid: () => void
+}
+
+function beginAuthenticatedSession(
+  set: (partial: Partial<AuthState>) => void,
+  response: { token: string; refreshToken: string }
+) {
+  authSessionGeneration += 1
+  set({
+    isAuthenticated: true,
+    isLoading: false,
+    user: null,
+    token: isWeb ? null : response.token,
+    refreshToken: isWeb ? null : response.refreshToken,
+    serverSession: 'unknown',
+    isProfileLoading: false,
+    profileError: null,
+    startupError: null,
+  })
+}
+
+async function fetchProfileAfterLogin(get: () => AuthState) {
+  try {
+    await get().fetchUser()
+  } catch {
+    // The credential exchange succeeded; AuthGuard presents the profile retry state.
+  }
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       // Initial state
+      isStartupReady: false,
+      startupError: null,
       isAuthenticated: false,
+      serverSession: 'unknown',
       user: null,
       token: null,
       refreshToken: null,
       isLoading: false,
+      isProfileLoading: false,
+      profileError: null,
       error: null,
 
       // Actions
       loginWithWorkOS: async (code: string) => {
+        const generation = authSessionGeneration
         try {
           console.log('Handling WorkOS login on ' + (isWeb ? 'web' : 'native'))
 
           set({ isLoading: true, error: null })
 
           const response = await authRepository.loginWithWorkOS(code)
-          await persistSession(response)
+          if (!(await persistSession(response, generation))) return
 
-          set({
-            isAuthenticated: true,
-            isLoading: false,
-            token: isWeb ? null : response.token,
-            refreshToken: isWeb ? null : response.refreshToken,
-          })
-
-          await get().fetchUser()
+          beginAuthenticatedSession(set, response)
+          await fetchProfileAfterLogin(get)
           posthog.capture('user_logged_in', { method: 'workos' })
         } catch (error) {
           const apiError = error as ApiError
-          clearAuthState(set)
-          set({ error: apiError.message || 'WorkOS login failed' })
+          if (generation === authSessionGeneration) {
+            set({ isLoading: false, error: apiError.message || 'WorkOS login failed' })
+          }
           throw error
         }
       },
       login: async (credentials: LoginRequest) => {
+        const generation = authSessionGeneration
         try {
           set({ isLoading: true, error: null })
 
           // Call login API
           const response = await authRepository.login(credentials)
-          await persistSession(response)
+          if (!(await persistSession(response, generation))) return
 
-          // Update state
-          set({
-            isAuthenticated: true,
-            isLoading: false,
-            token: isWeb ? null : response.token,
-            refreshToken: isWeb ? null : response.refreshToken,
-          })
-
-          // Fetch user data
-          await get().fetchUser()
+          beginAuthenticatedSession(set, response)
+          await fetchProfileAfterLogin(get)
 
           posthog.capture('user_logged_in', { method: 'email' })
         } catch (error) {
           const apiError = error as ApiError
-          clearAuthState(set)
-          set({ error: apiError.message || 'Login failed' })
+          if (generation === authSessionGeneration) {
+            set({ isLoading: false, error: apiError.message || 'Login failed' })
+          }
           throw error
         }
       },
 
       register: async (payload) => {
+        const generation = authSessionGeneration
         try {
           set({ isLoading: true, error: null })
 
           const response = await authRepository.register(payload)
-          await persistSession(response)
+          if (!(await persistSession(response, generation))) return
 
-          set({
-            isAuthenticated: true,
-            isLoading: false,
-            token: isWeb ? null : response.token,
-            refreshToken: isWeb ? null : response.refreshToken,
-          })
-
-          await get().fetchUser()
+          beginAuthenticatedSession(set, response)
+          await fetchProfileAfterLogin(get)
 
           posthog.capture('user_signed_up')
           posthog.capture('user_logged_in')
         } catch (error) {
           const apiError = error as ApiError
-          clearAuthState(set)
-          set({ error: apiError.message || 'Registration failed' })
+          if (generation === authSessionGeneration) {
+            set({ isLoading: false, error: apiError.message || 'Registration failed' })
+          }
           throw error
         }
       },
 
       loginWithGoogle: async (idToken: string) => {
+        const generation = authSessionGeneration
         try {
           set({ isLoading: true, error: null })
           const response = await authRepository.loginWithGoogle(idToken)
-          await persistSession(response)
+          if (!(await persistSession(response, generation))) return
 
-          set({
-            isAuthenticated: true,
-            isLoading: false,
-            token: isWeb ? null : response.token,
-            refreshToken: isWeb ? null : response.refreshToken,
-          })
-          await get().fetchUser()
+          beginAuthenticatedSession(set, response)
+          await fetchProfileAfterLogin(get)
           posthog.capture('user_logged_in', { method: 'google' })
         } catch (error) {
           const apiError = error as ApiError
-          clearAuthState(set)
-          set({ error: apiError.message || 'Google login failed' })
+          if (generation === authSessionGeneration) {
+            set({ isLoading: false, error: apiError.message || 'Google login failed' })
+          }
           throw error
         }
       },
 
       logout: async () => {
+        authSessionGeneration += 1
+        clearAuthState(set)
         try {
+          await Promise.allSettled([
+            authRepository.removeToken(),
+            authRepository.removeRefreshToken(),
+          ])
+
           // Clear all stores and caches first
           await resetAllStores()
 
@@ -210,51 +270,59 @@ export const useAuthStore = create<AuthState>()(
       },
 
       fetchUser: async () => {
+        const generation = authSessionGeneration
         try {
-          set({ isLoading: true, error: null })
+          set({ isProfileLoading: true, profileError: null, serverSession: 'unknown' })
 
           const user = await userRepository.getCurrentUser()
+          if (generation !== authSessionGeneration) return
 
           set({
             user,
-            isLoading: false,
+            isProfileLoading: false,
+            profileError: null,
+            serverSession: 'valid',
           })
 
           syncUserToSettings(user)
         } catch (error) {
+          if (generation !== authSessionGeneration) throw error
           const apiError = error as ApiError
-
-          // If unauthorized, clear auth state
-          if (apiError.status === 401) {
-            await get().logout()
-          } else {
-            set({
-              isLoading: false,
-              error: apiError.message || 'Failed to fetch user data',
-            })
-          }
+          set({
+            isProfileLoading: false,
+            profileError: apiError.message || 'Failed to fetch user data',
+            serverSession:
+              apiError.status === 401
+                ? 'invalid'
+                : apiError.status == null
+                  ? get().serverSession
+                  : 'unknown',
+          })
           throw error
         }
       },
 
       updateUser: async (payload: UpdateUserRequest) => {
+        const generation = authSessionGeneration
         try {
           set({ isLoading: true, error: null })
           const updated = await userRepository.updateCurrentUser(payload)
+          if (generation !== authSessionGeneration) return null
           // Merge with existing state (server returns full user shape)
-          set({ user: updated, isLoading: false })
+          set({ user: updated, isLoading: false, serverSession: 'valid' })
 
           syncUserToSettings(updated)
           return updated
         } catch (error) {
+          if (generation !== authSessionGeneration) return null
           const apiError = error as ApiError
           set({
             isLoading: false,
             error: apiError.message || 'Failed to update user',
           })
-          // If unauthorized, force logout
+          // A rejected remote session does not erase the local profile or data.
           if (apiError.status === 401) {
-            await get().logout()
+            set({ serverSession: 'invalid' })
             return null
           }
           throw error
@@ -269,10 +337,11 @@ export const useAuthStore = create<AuthState>()(
       setUser: (user: User | null) => set({ user }),
       setToken: (token: string | null) => set({ token, isAuthenticated: !!token }),
       setRefreshToken: (refreshToken: string | null) => set({ refreshToken }),
+      markServerSessionInvalid: () => set({ serverSession: 'invalid' }),
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: authStorage,
       // Only persist essential data
       partialize: (state) => ({
         token: state.token,
@@ -284,23 +353,73 @@ export const useAuthStore = create<AuthState>()(
   )
 )
 
-// Initialize auth state on app start
-export const initializeAuth = async () => {
-  const token = await authRepository.getToken()
-  const refreshToken = await authRepository.getRefreshToken()
-  const { setToken, setRefreshToken, fetchUser } = useAuthStore.getState()
+// Restore local state first; server profile validation continues in the background.
+let initializationPromise: Promise<void> | null = null
 
-  if (token) {
-    setToken(token)
-    if (refreshToken) {
-      setRefreshToken(refreshToken)
+export function initializeAuth(retry = false): Promise<void> {
+  if (retry) {
+    initializationPromise = null
+    useAuthStore.setState({ isStartupReady: false, startupError: null })
+  }
+  if (!initializationPromise) initializationPromise = initializeAuthState()
+  return initializationPromise
+}
+
+async function initializeAuthState(): Promise<void> {
+  const generation = authSessionGeneration
+  let shouldRefreshProfile = false
+  try {
+    const hydrationErrors = await Promise.all([
+      waitForHydration(useAuthStore),
+      waitForHydration(useSettingsStore),
+      waitForHydration(useRunningWorkoutStore),
+    ])
+    const hydrationError = hydrationErrors.find(Boolean)
+    if (hydrationError) throw hydrationError
+    authPersistenceReady = true
+    if (generation !== authSessionGeneration) return
+
+    const [token, refreshToken] = isWeb
+      ? [null, null]
+      : await Promise.all([authRepository.getToken(), authRepository.getRefreshToken()])
+    if (generation !== authSessionGeneration) return
+    const state = useAuthStore.getState()
+    const hasCredentials = !!(token || refreshToken)
+
+    if (hasCredentials) {
+      useAuthStore.setState({
+        isAuthenticated: true,
+        token,
+        refreshToken,
+        serverSession: 'unknown',
+      })
+    } else if (!isWeb && state.isAuthenticated && state.user) {
+      // Keep the cached profile usable after credentials expire or disappear.
+      useAuthStore.setState({ token: null, refreshToken: null, serverSession: 'invalid' })
+    } else if (!isWeb) {
+      useAuthStore.setState({
+        isAuthenticated: false,
+        user: null,
+        token: null,
+        refreshToken: null,
+        serverSession: 'unknown',
+      })
     }
-    try {
-      await fetchUser()
-    } catch (error) {
-      console.error('Failed to initialize auth:', error)
-      // If fetching user fails, clear the token
-      await useAuthStore.getState().logout()
+
+    shouldRefreshProfile = hasCredentials || (isWeb && state.isAuthenticated)
+  } catch (error) {
+    console.error('Failed to restore local startup state:', error)
+    if (generation === authSessionGeneration) {
+      useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
     }
+  } finally {
+    useAuthStore.setState({ isStartupReady: true })
+  }
+
+  if (shouldRefreshProfile) {
+    void useAuthStore
+      .getState()
+      .fetchUser()
+      .catch(() => {})
   }
 }

@@ -2,17 +2,23 @@ import { useAuth } from '../contexts/AuthContext'
 import { RootLayoutNav } from '../components/RootLayoutNav'
 import { useEffect } from 'react'
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router'
-import { YStack, Spinner } from 'tamagui'
+import { Button, Text, YStack, Spinner } from 'tamagui'
+import { useAuthStore } from '../stores/authStore'
+import { initializeAuth } from '../stores/authStore'
 
 export function AuthGuard() {
   const { isAuthenticated, user, isLoading } = useAuth()
+  const isStartupReady = useAuthStore((state) => state.isStartupReady)
+  const startupError = useAuthStore((state) => state.startupError)
+  const isProfileLoading = useAuthStore((state) => state.isProfileLoading)
+  const retryProfile = useAuthStore((state) => state.fetchUser)
   const router = useRouter()
   const segments = useSegments()
   const navigationState = useRootNavigationState()
 
   useEffect(() => {
     // Wait until the root navigation is mounted to avoid navigating before mount
-    if (!navigationState?.key) return
+    if (!navigationState?.key || !isStartupReady) return
 
     const inWelcomeGroup = segments[0] === 'welcome'
     const inLegalGroup = segments[0] === 'legal'
@@ -35,12 +41,49 @@ export function AuthGuard() {
         router.replace('/(tabs)' as any)
       }
     }
-  }, [isAuthenticated, segments, navigationState?.key, user])
+  }, [isAuthenticated, isStartupReady, segments, navigationState?.key, user])
 
-  if (isLoading || isAuthenticated == null) {
+  if (!isStartupReady || isAuthenticated == null || (isLoading && !isAuthenticated)) {
     return (
       <YStack flex={1} items="center" justify="center" bg="$background">
         <Spinner size="large" color="$blue9" />
+      </YStack>
+    )
+  }
+
+  if (startupError) {
+    return (
+      <YStack flex={1} items="center" justify="center" gap="$4" bg="$background" p="$6">
+        <Text fontSize="$6" fontWeight="700" color="$color12">
+          Local data needs to be restored
+        </Text>
+        <Text color="$color11" style={{ textAlign: 'center' }}>
+          {startupError}
+        </Text>
+        <Button onPress={() => void initializeAuth(true)}>Retry</Button>
+      </YStack>
+    )
+  }
+
+  if (isAuthenticated && !user) {
+    return (
+      <YStack flex={1} items="center" justify="center" gap="$4" bg="$background" p="$6">
+        {isProfileLoading ? (
+          <>
+            <Spinner size="large" color="$blue9" />
+            <Text color="$color11">Restoring your profile…</Text>
+          </>
+        ) : (
+          <>
+            <Text fontSize="$6" fontWeight="700" color="$color12">
+              Your sign-in is saved
+            </Text>
+            <Text color="$color11" style={{ textAlign: 'center' }}>
+              We couldn’t load your profile. Check your connection and try again.
+            </Text>
+            <Button onPress={() => void retryProfile().catch(() => {})}>Retry</Button>
+          </>
+        )}
       </YStack>
     )
   }
