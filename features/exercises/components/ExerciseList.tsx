@@ -47,8 +47,8 @@ export const ExerciseList = memo(function ExerciseList({
 
   if (exercises.length === 0) {
     return (
-      <YStack p="$4">
-        <Text fontSize="$4" color="$colorSubtle">
+      <YStack p="$field">
+        <Text fontSize="$exerciseTitle" color="$colorSubtle">
           {emptyMessage}
         </Text>
       </YStack>
@@ -88,10 +88,14 @@ const ExerciseRow = memo(function ExerciseRow({
 
   return (
     <XStack
-      p="$3"
+      p="$field"
       bg={isSelected ? '$backgroundAccent' : '$background'}
-      borderBottomWidth={1}
-      borderColor="$borderColor"
+      borderBottomWidth="$0.5"
+      borderWidth={isSelected ? '$0.5' : '$0'}
+      rounded={isSelected ? '$control' : '$0'}
+      mb="$compact"
+      minH="$6"
+      borderColor={isSelected ? '$primary' : '$borderColor'}
       pressStyle={{
         background: isSelected ? '$backgroundAccentHover' : '$surfaceHover',
       }}
@@ -101,21 +105,34 @@ const ExerciseRow = memo(function ExerciseRow({
       accessibilityState={{ checked: isSelected }}
       onPress={handlePress}
     >
-      <XStack flex={1} justify="space-between" items="center" gap="$3">
-        <YStack flex={1} gap="$1">
-          <Text fontSize="$4" fontWeight="700" color="$color">
+      <XStack flex={1} justify="space-between" items="center" gap="$field">
+        <YStack flex={1} gap="$compact">
+          <Text fontSize="$exerciseTitle" fontWeight="$exerciseTitle" color="$color">
             {exercise.name}
           </Text>
-          <Text fontSize="$2" color={isSelected ? '$colorMuted' : '$colorSubtle'}>
+          <Text fontSize="$caption" color={isSelected ? '$colorMuted' : '$colorSubtle'}>
             {muscle}
             {exercise.equipment ? ` · ${exercise.equipment}` : ''}
           </Text>
         </YStack>
-        {isSelected && (
-          <Text fontSize="$5" color="$primary" fontWeight="bold">
-            ✓
+        <YStack
+          width="$2"
+          height="$2"
+          rounded="$button"
+          bg={isSelected ? '$primary' : '$surface'}
+          borderColor="$borderColor"
+          borderWidth="$0.5"
+          justify="center"
+          items="center"
+        >
+          <Text
+            fontSize="$body"
+            color={isSelected ? '$onPrimary' : '$colorSubtle'}
+            fontWeight="$header"
+          >
+            {isSelected ? '✓' : '+'}
           </Text>
-        )}
+        </YStack>
       </XStack>
     </XStack>
   )

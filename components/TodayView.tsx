@@ -1,366 +1,67 @@
-import React, { useMemo } from 'react'
-import { YStack, XStack, Text, Circle } from 'tamagui'
-import { ChevronRight, Clock, Moon, Check, Circle as CircleIcon } from '@tamagui/lucide-icons'
+import React from 'react'
+import { YStack, XStack, Text, Button } from 'tamagui'
+import { ArrowRight } from '@tamagui/lucide-icons'
 import { useActiveRoutine } from '../features/routines'
 import { useWorkouts } from '../features/workouts'
-import { useAuth } from '../contexts/AuthContext'
-import type { Routine, RoutinePatternItem } from '../types/routine'
-import type { ApiWorkout } from '../types/api'
 import { router } from 'expo-router'
-import { routinePatternIndex, sameDay } from '../utils/date'
-
-// ============================================================================
-// Shared Components
-// ============================================================================
-
-interface TodayHeaderProps {
-  label: string
-}
-
-const TodayHeader: React.FC<TodayHeaderProps> = ({ label }) => (
-  <XStack items="center">
-    <Text fontSize="$5" fontWeight="700" color="$color">
-      {label}
-    </Text>
-  </XStack>
-)
-
-const RestDayView: React.FC = () => (
-  <YStack gap="$3">
-    <XStack items="center" gap="$3">
-      <XStack
-        width={36}
-        height={36}
-        bg="$backgroundHover"
-        rounded="$3"
-        items="center"
-        justify="center"
-      >
-        <Moon size={18} color="$colorSubtle" />
-      </XStack>
-      <YStack flex={1}>
-        <Text fontSize="$4" fontWeight="600" color="$color">
-          Take a well-deserved break
-        </Text>
-        <Text fontSize="$2" color="$colorSubtle">
-          Recovery is just as important as training
-        </Text>
-      </YStack>
-    </XStack>
-  </YStack>
-)
-
-// ============================================================================
-// Sequential Today View
-// ============================================================================
-
-interface WorkoutCardProps {
-  workout: ApiWorkout
-  onPress: () => void
-}
-
-const WorkoutCard: React.FC<WorkoutCardProps> = ({ workout, onPress }) => {
-  const exercises = workout.workoutTemplate.exercises.length
-
-  return (
-    <XStack borderWidth="$1" rounded="$5" borderColor="$primary">
-      <XStack
-        m="$3"
-        items="center"
-        gap="$3"
-        flex={1}
-        pressStyle={{ scale: 0.96, opacity: 0.8 }}
-        animation="quick"
-        cursor="pointer"
-        accessibilityRole="button"
-        accessibilityLabel={`View workout ${workout.title}`}
-        onPress={onPress}
-      >
-        <XStack
-          width={36}
-          height={36}
-          bg="$primary"
-          rounded="$3"
-          items="center"
-          justify="center"
-          animation="quick"
-          pressStyle={{ scale: 0.9 }}
-        >
-          <Clock size={18} color="white" />
-        </XStack>
-        <YStack flex={1}>
-          <Text fontSize="$5" fontWeight="700" color="$color">
-            {workout?.title}
-          </Text>
-          <Text fontSize="$2" color="$colorSubtle" fontWeight="500">
-            {exercises} {exercises === 1 ? 'exercise' : 'exercises'}
-          </Text>
-        </YStack>
-        <XStack items="center" gap="$1">
-          <Text fontSize="$2" color="$primary" fontWeight="600">
-            View workout
-          </Text>
-          <ChevronRight size={16} color="$primary" />
-        </XStack>
-      </XStack>
-    </XStack>
-  )
-}
-
-interface SequentialTodayViewProps {
-  routine: Routine
-  workouts: ApiWorkout[]
-  selectedDate: Date
-}
-
-const SequentialTodayView: React.FC<SequentialTodayViewProps> = ({
-  routine,
-  workouts,
-  selectedDate,
-}) => {
-  const todayInfo = useMemo(() => {
-    if (!routine.pattern || routine.pattern.length === 0) {
-      return { isWorkoutDay: false, workout: null as ApiWorkout | null }
-    }
-
-    const len = routine.pattern.length
-    const idx = routinePatternIndex(routine.startDate, len, selectedDate)
-    const pat: RoutinePatternItem | undefined = routine.pattern[idx]
-
-    if (!pat || pat.dayType !== 'WORKOUT' || !pat.workoutId) {
-      return { isWorkoutDay: false, workout: null }
-    }
-    const workout = workouts.find((w) => w.id === pat.workoutId) || null
-    return { isWorkoutDay: !!workout, workout }
-  }, [routine, workouts, selectedDate])
-
-  const selectedDayLabel = sameDay(selectedDate, new Date())
-    ? 'Today'
-    : selectedDate.toLocaleDateString('en-US', { weekday: 'long' })
-
-  return (
-    <YStack gap="$3">
-      <TodayHeader label={selectedDayLabel} />
-      <YStack gap="$3">
-        <XStack justify="space-between" items="center">
-          <Text
-            fontSize="$3"
-            color="$colorSubtle"
-            fontWeight="600"
-            textTransform="uppercase"
-            letterSpacing={0.5}
-          >
-            {todayInfo.isWorkoutDay ? `${selectedDayLabel}'s Workout` : 'Rest Day'}
-          </Text>
-          <Text
-            fontSize="$2"
-            color={todayInfo.isWorkoutDay ? '$primary' : '$colorSubtle'}
-            fontWeight="600"
-            textTransform="uppercase"
-          >
-            {todayInfo.isWorkoutDay ? 'Scheduled' : 'Rest'}
-          </Text>
-        </XStack>
-
-        {todayInfo.isWorkoutDay && todayInfo.workout ? (
-          <WorkoutCard
-            workout={todayInfo.workout}
-            onPress={() =>
-              router.push({
-                pathname: '/(tabs)/(workouts)',
-                params: { focusId: todayInfo.workout!.id },
-              })
-            }
-          />
-        ) : (
-          <RestDayView />
-        )}
-      </YStack>
-    </YStack>
-  )
-}
-
-// ============================================================================
-// Weekly Completion Today View
-// ============================================================================
-
-interface WorkoutChecklistItemProps {
-  workout: ApiWorkout
-  isCompleted: boolean
-  onPress: () => void
-}
-
-const WorkoutChecklistItem: React.FC<WorkoutChecklistItemProps> = ({
-  workout,
-  isCompleted,
-  onPress,
-}) => (
-  <XStack
-    bg={isCompleted ? '$green3' : '$surface'}
-    borderColor={isCompleted ? '$green8' : '$primary'}
-    borderWidth={1}
-    rounded="$4"
-    p="$3"
-    gap="$3"
-    items="center"
-    pressStyle={{ scale: 0.98, opacity: 0.8 }}
-    animation="quick"
-    cursor="pointer"
-    accessibilityRole="button"
-    accessibilityLabel={`View workout ${workout.title}`}
-    onPress={onPress}
-  >
-    <Circle
-      size={28}
-      bg={isCompleted ? '$green9' : 'transparent'}
-      borderColor={isCompleted ? '$green9' : '$color8'}
-      borderWidth={2}
-      items="center"
-      justify="center"
-    >
-      {isCompleted ? <Check size={16} color="white" /> : <CircleIcon size={16} color="$color8" />}
-    </Circle>
-    <YStack flex={1}>
-      <Text
-        fontSize="$4"
-        fontWeight="600"
-        color={isCompleted ? '$green11' : '$color'}
-        textDecorationLine={isCompleted ? 'line-through' : 'none'}
-      >
-        {workout?.title}
-      </Text>
-      <Text fontSize="$2" color="$colorSubtle">
-        {workout.workoutTemplate.exercises.length}{' '}
-        {workout.workoutTemplate.exercises.length === 1 ? 'exercise' : 'exercises'}
-      </Text>
-    </YStack>
-    <XStack items="center" gap="$1">
-      <Text fontSize="$2" color="$primary" fontWeight="600">
-        View workout
-      </Text>
-      <ChevronRight size={16} color="$primary" />
-    </XStack>
-  </XStack>
-)
-
-interface WeeklyCompletionTodayViewProps {
-  routine: Routine
-  workouts: ApiWorkout[]
-  completedWorkoutIds: string[]
-}
-
-const WeeklyCompletionTodayView: React.FC<WeeklyCompletionTodayViewProps> = ({
-  routine,
-  workouts,
-  completedWorkoutIds,
-}) => {
-  // Get unique workouts from the pattern, excluding completed ones
-  const weeklyWorkouts = useMemo(() => {
-    const workoutIds = new Set<string>()
-    routine.pattern.forEach((p) => {
-      if (p.dayType === 'WORKOUT' && p.workoutId) {
-        workoutIds.add(p.workoutId)
-      }
-    })
-
-    return Array.from(workoutIds)
-      .filter((id) => !completedWorkoutIds?.includes(id))
-      .map((id) => workouts.find((w) => w.id === id))
-      .filter((w): w is ApiWorkout => w !== null)
-  }, [routine.pattern, workouts, completedWorkoutIds])
-
-  const totalWorkouts = new Set(
-    routine.pattern.filter((p) => p.dayType === 'WORKOUT' && p.workoutId).map((p) => p.workoutId)
-  ).size
-  const completedCount = completedWorkoutIds.length
-  const allComplete = weeklyWorkouts.length === 0
-
-  return (
-    <YStack gap="$3">
-      <TodayHeader label="Today" />
-      <YStack gap="$3">
-        <XStack justify="space-between" items="center">
-          <Text
-            fontSize="$3"
-            color="$colorSubtle"
-            fontWeight="600"
-            textTransform="uppercase"
-            letterSpacing={0.5}
-          >
-            {allComplete ? 'All Done!' : 'Choose Your Workout'}
-          </Text>
-          <Text fontSize="$2" color="$primary" fontWeight="600" textTransform="uppercase">
-            {completedCount}/{totalWorkouts} done
-          </Text>
-        </XStack>
-
-        {allComplete ? (
-          <YStack gap="$2" items="center" py="$2">
-            <Text fontSize="$4" fontWeight="600" color="$green10">
-              🎉 Week complete!
-            </Text>
-            <Text fontSize="$2" color="$color10">
-              Great job! You've finished all workouts for this week.
-            </Text>
-          </YStack>
-        ) : (
-          <YStack gap="$2">
-            <Text fontSize="$2" color="$color10">
-              {weeklyWorkouts.length} remaining this week:
-            </Text>
-            {weeklyWorkouts.slice(0, 3).map((workout) => (
-              <WorkoutChecklistItem
-                key={workout?.id}
-                workout={workout}
-                isCompleted={false}
-                onPress={() =>
-                  router.push({
-                    pathname: '/(tabs)/(workouts)',
-                    params: { focusId: workout?.id },
-                  })
-                }
-              />
-            ))}
-            {weeklyWorkouts.length > 3 && (
-              <Text fontSize="$2" color="$color10" style={{ textAlign: 'center' }}>
-                +{weeklyWorkouts.length - 3} more workouts
-              </Text>
-            )}
-          </YStack>
-        )}
-      </YStack>
-    </YStack>
-  )
-}
-
-// ============================================================================
-// Main Wrapper Component
-// ============================================================================
+import { routinePatternIndex } from '../utils/date'
 
 export const TodayView: React.FC<{ selectedDate: Date }> = ({ selectedDate }) => {
   const { activeRoutine } = useActiveRoutine()
   const { workouts } = useWorkouts()
-  const { user } = useAuth()
-
-  // Get completed workout IDs from user's streak data
-  const completedWorkoutIds = user?.streak?.weeklyCompletedWorkoutIds ?? []
-
-  if (!activeRoutine) return null
-
-  // Determine routine type and render appropriate view
-  const routineType = activeRoutine.routineType ?? 'SEQUENTIAL'
-
-  if (routineType === 'WEEKLY_COMPLETION') {
-    return (
-      <WeeklyCompletionTodayView
-        routine={activeRoutine}
-        workouts={workouts}
-        completedWorkoutIds={completedWorkoutIds}
-      />
-    )
-  }
+  if (!activeRoutine || activeRoutine.routineType === 'WEEKLY_COMPLETION') return null
+  const pattern =
+    activeRoutine.pattern[
+      routinePatternIndex(activeRoutine.startDate, activeRoutine.pattern.length, selectedDate)
+    ]
+  const workout =
+    pattern?.dayType === 'WORKOUT' ? workouts.find((item) => item.id === pattern.workoutId) : null
+  const exercises = workout?.workoutTemplate.exercises ?? []
+  const sets = exercises.reduce(
+    (total, exercise) =>
+      total +
+      (exercise.category === 'CARDIO'
+        ? (exercise.durationSeconds?.length ?? 0)
+        : exercise.reps.length),
+    0
+  )
 
   return (
-    <SequentialTodayView routine={activeRoutine} workouts={workouts} selectedDate={selectedDate} />
+    <XStack pt="$card" borderTopWidth={1} borderColor="$borderColor" items="center" gap="$field">
+      <YStack flex={1} gap="$compact">
+        <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+          {selectedDate.toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'short',
+            day: 'numeric',
+          })}
+        </Text>
+        <Text fontSize="$sectionTitle" lineHeight="$sectionTitle" fontWeight="600">
+          {workout?.title ?? (pattern?.dayType === 'WORKOUT' ? 'Workout unavailable' : 'Rest day')}
+        </Text>
+        <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+          {workout
+            ? `${exercises.length} ${exercises.length === 1 ? 'exercise' : 'exercises'} · ${sets} ${sets === 1 ? 'set' : 'sets'}`
+            : pattern?.dayType === 'WORKOUT'
+              ? 'Choose another session or update your routine.'
+              : 'No workout scheduled for this date.'}
+        </Text>
+      </YStack>
+      {workout && (
+        <Button
+          width="$touch"
+          height="$action"
+          p="$0"
+          rounded="$button"
+          bg="$primary"
+          accessibilityLabel={`View workout ${workout.title}`}
+          onPress={() =>
+            router.push({ pathname: '/(tabs)/(workouts)', params: { focusId: workout.id } })
+          }
+        >
+          <ArrowRight size="$icon" color="$onPrimary" aria-hidden />
+        </Button>
+      )}
+    </XStack>
   )
 }

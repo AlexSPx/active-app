@@ -1,28 +1,15 @@
 import { Button, Text, View, XStack, YStack } from 'tamagui'
 import { ChevronLeft, ChevronRight } from '@tamagui/lucide-icons'
-import {
-  addMonths,
-  endOfWeek,
-  formatMonthYear,
-  DayCell,
-  generateCalendar,
-  sameDay,
-  startOfWeek,
-  toISODate,
-} from './date'
+import { formatMonthYear, generateCalendar, sameDay, startOfWeek, toISODate } from './date'
 
-type Props = {
+export type HistoryCalendarProps = {
   monthDate: Date
   selectedDate: Date
   collapsed: boolean
-  onMonthChange: (d: Date) => void
+  onMonthChange: (date: Date) => void
   onToggleCollapsed: () => void
-  onSelectDate: (d: Date) => void
+  onSelectDate: (date: Date) => void
   workoutDays: Set<string>
-  weekStart: Date
-  weekEnd: Date
-  selectedWeekIndex: number
-  scrollToWeek: (d: Date) => void
 }
 
 export function HistoryCalendar({
@@ -33,146 +20,147 @@ export function HistoryCalendar({
   onToggleCollapsed,
   onSelectDate,
   workoutDays,
-  weekStart,
-  weekEnd,
-  selectedWeekIndex,
-  scrollToWeek,
-}: Props) {
-  const calendarDays: DayCell[] = generateCalendar(monthDate, selectedDate)
+}: HistoryCalendarProps) {
+  const days = generateCalendar(monthDate, selectedDate)
+  const selectedWeek = startOfWeek(selectedDate)
+  const visibleDays = collapsed
+    ? days.filter((day) => sameDay(startOfWeek(day.date), selectedWeek))
+    : days
+  const changeMonth = (offset: number) => {
+    // Use the first day so January 31 cannot skip February.
+    const date = new Date(monthDate.getFullYear(), monthDate.getMonth() + offset, 1)
+    onMonthChange(date)
+    onSelectDate(date)
+  }
 
   return (
-    <YStack mb="$1" pt="$4" pb="$2" boxShadow="$md" gap="$1">
-      <XStack justify="space-between" items="center">
-        <Button
-          unstyled
-          width={48}
-          height={48}
-          justify="center"
-          items="center"
-          accessibilityLabel="Previous month"
-          onPress={() => onMonthChange(addMonths(monthDate, -1))}
+    <YStack py="$field" gap="$compact" borderBottomWidth="$0.5" borderColor="$borderColor">
+      <XStack justify="space-between" items="center" gap="$compact">
+        <Text
+          fontSize="$exerciseTitle"
+          lineHeight="$exerciseTitle"
+          fontWeight="600"
+          color="$color"
+          flex={1}
         >
-          <ChevronLeft color="$color" />
-        </Button>
-        <Text fontSize="$4" fontWeight="700" color="$color">
           {formatMonthYear(monthDate)}
         </Text>
-        <XStack items="center" gap="$2">
+        <XStack items="center">
           <Button
             unstyled
-            width={48}
-            height={48}
-            justify="center"
+            width="$touch"
+            height="$touch"
+            rounded="$control"
             items="center"
-            accessibilityLabel="Next month"
-            onPress={() => onMonthChange(addMonths(monthDate, 1))}
+            justify="center"
+            accessibilityLabel="Previous month"
+            onPress={() => changeMonth(-1)}
           >
-            <ChevronRight color="$color" />
+            <ChevronLeft size="$iconSmall" color="$colorSubtle" />
           </Button>
-          <Button size="$2" variant="outlined" onPress={onToggleCollapsed}>
-            <Text fontSize="$2">{collapsed ? 'Week' : 'Month'}</Text>
+          <Button
+            unstyled
+            width="$touch"
+            height="$touch"
+            rounded="$control"
+            items="center"
+            justify="center"
+            accessibilityLabel="Next month"
+            onPress={() => changeMonth(1)}
+          >
+            <ChevronRight size="$iconSmall" color="$colorSubtle" />
+          </Button>
+          <Button
+            unstyled
+            minH="$touch"
+            px="$field"
+            bg="$backgroundStrong"
+            rounded="$day"
+            items="center"
+            justify="center"
+            accessibilityLabel={collapsed ? 'Expand month calendar' : 'Collapse to selected week'}
+            accessibilityState={{ expanded: !collapsed }}
+            onPress={onToggleCollapsed}
+          >
+            <Text fontSize="$caption" lineHeight="$caption" color="$color" fontWeight="600">
+              {collapsed ? 'Month' : 'Week'}
+            </Text>
           </Button>
         </XStack>
       </XStack>
-      <XStack justify="space-between" px="$1" gap="$0.5">
-        {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
-          <XStack key={`${i}-${d}`} flex={1} items="center" justify="center">
-            <Text fontSize="$2" color="$colorSubtle">
-              {d}
-            </Text>
-          </XStack>
+      <XStack gap="$compact">
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
+          <Text
+            key={day}
+            flex={1}
+            text="center"
+            fontSize="$caption"
+            lineHeight="$caption"
+            color="$colorSubtle"
+          >
+            {day}
+          </Text>
         ))}
       </XStack>
-      <YStack gap="$1">
-        {(collapsed
-          ? [selectedWeekIndex]
-          : Array.from({ length: Math.ceil(calendarDays.length / 7) }, (_, i) => i)
-        ).map((rowIdx) => {
-          const rowDays = calendarDays.slice(rowIdx * 7, rowIdx * 7 + 7)
-          const rowStart = rowDays[0]?.date
-          const isSelectedWeek = rowStart >= weekStart && rowStart <= weekEnd
-          return (
-            <XStack
-              key={rowIdx}
-              justify="space-between"
-              position="relative"
-              rounded="$4"
-              px="$0.5"
-              py="$0.5"
-              gap="$0.5"
-            >
-              {isSelectedWeek && (
-                <View
-                  position="absolute"
-                  t={0}
-                  l={0}
-                  r={0}
-                  b={0}
-                  bg="$primary"
-                  opacity={0.35}
-                  rounded="$4"
-                  pointerEvents="none"
-                />
-              )}
-              {rowDays.map((day) => {
-                const isDisabled = !day.inCurrentMonth
-                const isToday = day.isToday
-                const hasWorkouts = workoutDays.has(toISODate(day.date))
-                return (
-                  <XStack
-                    key={`${day.date.getFullYear()}-${day.date.getMonth()}-${day.date.getDate()}`}
-                    flex={1}
-                    items="center"
-                    justify="center"
+      <YStack gap="$compact">
+        {Array.from({ length: visibleDays.length / 7 }, (_, row) => (
+          <XStack key={row} gap="$compact">
+            {visibleDays.slice(row * 7, row * 7 + 7).map((day) => {
+              const hasWorkouts = workoutDays.has(toISODate(day.date))
+              return (
+                <Button
+                  key={toISODate(day.date)}
+                  unstyled
+                  flex={1}
+                  minW="$0"
+                  minH="$touch"
+                  py="$compact"
+                  gap="$compact"
+                  rounded="$day"
+                  items="center"
+                  justify="center"
+                  borderWidth="$0.5"
+                  borderColor={day.isSelected ? '$primary' : '$backgroundTransparent'}
+                  bg={
+                    day.isSelected
+                      ? '$backgroundAccent'
+                      : day.inCurrentMonth
+                        ? '$backgroundStrong'
+                        : '$backgroundTransparent'
+                  }
+                  accessibilityLabel={`${day.date.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${day.isToday ? ', today' : ''}${hasWorkouts ? ', completed session' : ''}`}
+                  accessibilityState={{ selected: day.isSelected }}
+                  onPress={() => onSelectDate(day.date)}
+                >
+                  <Text
+                    fontSize="$caption"
+                    lineHeight="$caption"
+                    color={
+                      day.isSelected ? '$primary' : day.inCurrentMonth ? '$color' : '$colorSubtle'
+                    }
+                    fontWeight={day.isSelected ? '600' : '400'}
+                    textDecorationLine={day.isToday ? 'underline' : 'none'}
                   >
-                    <Button
-                      unstyled
-                      onPress={() => {
-                        onSelectDate(day.date)
-                        onMonthChange(new Date(day.date))
-                        scrollToWeek(day.date)
-                      }}
-                      width="100%"
-                      height={48}
-                      items="center"
-                      justify="center"
-                    >
-                      <View
-                        width={34}
-                        height={34}
-                        rounded="$4"
-                        items="center"
-                        justify="center"
-                        bg="transparent"
-                      >
-                        {(isToday || hasWorkouts) && (
-                          <View
-                            position="absolute"
-                            t={0}
-                            l={0}
-                            r={0}
-                            b={0}
-                            rounded="$4"
-                            bg="$primary"
-                            opacity={isToday ? 1 : 0.3}
-                            pointerEvents="none"
-                          />
-                        )}
-                        <Text
-                          fontSize="$2"
-                          color={isToday ? '$onPrimary' : isDisabled ? '$color10' : '$color'}
-                        >
-                          {day.date.getDate()}
-                        </Text>
-                      </View>
-                    </Button>
-                  </XStack>
-                )
-              })}
-            </XStack>
-          )
-        })}
+                    {day.date.getDate()}
+                  </Text>
+                  <View
+                    width="$0.5"
+                    height="$0.5"
+                    rounded="$block"
+                    bg={hasWorkouts ? '$primary' : '$backgroundTransparent'}
+                  />
+                </Button>
+              )
+            })}
+          </XStack>
+        ))}
       </YStack>
+      <XStack items="center" gap="$compact" mt="$compact">
+        <View width="$0.5" height="$0.5" rounded="$block" bg="$primary" />
+        <Text flex={1} fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+          Completed session · underlined date is today
+        </Text>
+      </XStack>
     </YStack>
   )
 }

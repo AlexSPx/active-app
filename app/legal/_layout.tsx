@@ -1,31 +1,24 @@
 import { Stack } from 'expo-router'
-import { useTheme } from 'tamagui'
+import { getConfig, getVariableValue, useTheme } from 'tamagui'
 
 export default function LegalLayout() {
   const theme = useTheme()
-  
   return (
     <Stack
       screenOptions={{
-        headerStyle: {
-          backgroundColor: theme.background.val,
+        title: 'Settings',
+        headerBackTitle: 'Settings',
+        headerTitleAlign: 'left',
+        headerStyle: { backgroundColor: theme.background.val },
+        headerTintColor: theme.primary.val,
+        headerTitleStyle: {
+          color: theme.color.val,
+          fontSize: getVariableValue(getConfig().fonts.body.size.header),
+          fontWeight: '700',
         },
-        headerTintColor: theme.color.val,
-        animation: 'slide_from_right',
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: theme.background.val },
       }}
-    >
-      <Stack.Screen
-        name="privacy-policy"
-        options={{
-          title: 'Privacy Policy',
-        }}
-      />
-      <Stack.Screen
-        name="terms-of-service"
-        options={{
-          title: 'Terms of Service',
-        }}
-      />
-    </Stack>
+    />
   )
 }

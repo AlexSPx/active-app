@@ -1,21 +1,24 @@
 import { Stack } from 'expo-router'
-import { useTheme, YStack } from 'tamagui'
+import { getConfig, getVariableValue, useTheme } from 'tamagui'
 
 export default function SettingsStackLayout() {
   const theme = useTheme()
   return (
-    <YStack flex={1} bg="$background">
     <Stack
       screenOptions={{
-        headerShown: false,
+        title: 'Settings',
+        headerBackTitle: 'Settings',
+        headerTitleAlign: 'left',
+        headerStyle: { backgroundColor: theme.background.val },
+        headerTintColor: theme.primary.val,
+        headerTitleStyle: {
+          color: theme.color.val,
+          fontSize: getVariableValue(getConfig().fonts.body.size.header),
+          fontWeight: '700',
+        },
+        headerShadowVisible: false,
+        contentStyle: { backgroundColor: theme.background.val },
       }}
-    >
-      <Stack.Screen name="index" options={{ title: 'Settings' }} />
-      <Stack.Screen name="body" options={{ title: 'Body measurements' }} />
-      <Stack.Screen name="time-zone" options={{ title: 'Time zone' }} />
-      <Stack.Screen name="rest-timer" options={{ title: 'Rest timer' }} />
-      <Stack.Screen name="account" options={{ title: 'Account' }} />
-    </Stack>
-    </YStack>
+    />
   )
 }

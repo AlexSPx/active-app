@@ -1,132 +1,172 @@
-import React from 'react'
-import { YStack, XStack, Text, Button, ScrollView, Sheet, Input } from 'tamagui'
-import { ChevronDown, Check } from '@tamagui/lucide-icons'
-import { useSettingsStore } from '../features/settings'
-import { useUpdateUser } from '../features/settings'
-import { LoadingSpinner } from './ui/LoadingSpinner'
-
-// Cache to avoid re-importing tzdb between openings
-let cachedTimeZones: string[] | null = null
+import React, { useState } from 'react'
+import { Button, Circle, Input, Paragraph, ScrollView, Sheet, Text, XStack, YStack } from 'tamagui'
+import { Check, ChevronDown } from '@tamagui/lucide-icons'
+import { timeZonesNames } from '@vvo/tzdb'
+import { useSettingsStore, useUpdateUser } from '../features/settings'
 
 interface TimeZoneSelectorProps {
   value?: string
   onValueChange?: (tz: string) => void
+  inline?: boolean
 }
 
-export default function TimeZoneSelector({ value, onValueChange }: TimeZoneSelectorProps) {
+const zoneName = (zone: string) => zone.replace(/_/g, ' ').replace(/\//g, ' / ')
+function zoneOffset(zone: string) {
+  try {
+    return new Intl.DateTimeFormat('en', { timeZone: zone, timeZoneName: 'longOffset' })
+      .formatToParts(new Date())
+      .find((part) => part.type === 'timeZoneName')
+      ?.value.replace('GMT', 'UTC')
+  } catch {
+    return 'Offset unavailable'
+  }
+}
+
+export default function TimeZoneSelector({
+  value,
+  onValueChange,
+  inline = false,
+}: TimeZoneSelectorProps) {
   const { timeZone, setTimeZone } = useSettingsStore()
-  const { updateUserProfile } = useUpdateUser()
-  const [open, setOpen] = React.useState(false)
-  const [search, setSearch] = React.useState('')
-  const [loading, setLoading] = React.useState(false)
-  const [timeZones, setTimeZones] = React.useState<string[] | null>(cachedTimeZones)
+  const { updateUserProfile, isUpdating, error } = useUpdateUser()
+  const [open, setOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const current = value ?? timeZone
+  let currentTime = 'unavailable'
+  try {
+    currentTime = new Intl.DateTimeFormat('en-GB', {
+      timeZone: current,
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date())
+  } catch {}
+  const query = search.trim().toLowerCase().replace(/_/g, ' ')
+  const zones = timeZonesNames.filter(
+    (zone) => zoneName(zone).toLowerCase().includes(query) || zone.toLowerCase().includes(query)
+  )
 
-  // Determine current value: controlled (prop) or uncontrolled (store)
-  const currentTimeZone = value !== undefined ? value : timeZone
-
-  // Lazy load tzdb when sheet opens
-  React.useEffect(() => {
-    if (!open || timeZones) return
-    let cancelled = false
-    setLoading(true)
-    import('@vvo/tzdb')
-      .then((mod) => {
-        if (cancelled) return
-        cachedTimeZones = mod.timeZonesNames
-        setTimeZones(cachedTimeZones)
-      })
-      .finally(() => !cancelled && setLoading(false))
-    return () => {
-      cancelled = true
-    }
-  }, [open, timeZones])
-
-  const filteredTimezones = React.useMemo(() => {
-    if (!timeZones) return []
-    if (!search) return timeZones
-    const q = search.toLowerCase()
-    return timeZones.filter((tz) => tz.toLowerCase().includes(q))
-  }, [search, timeZones])
-
-  const handleSelect = async (tz: string) => {
-    if (onValueChange) {
-      onValueChange(tz)
-    } else {
-      setTimeZone(tz)
-      // fire and forget profile update; ignore blanks handled in hook/api
-      try {
-        await updateUserProfile({ timezone: tz })
-      } catch {}
+  const select = async (zone: string) => {
+    if (onValueChange) onValueChange(zone)
+    else {
+      const user = await updateUserProfile({ timezone: zone })
+      if (!user) return
+      setTimeZone(zone)
     }
     setOpen(false)
     setSearch('')
   }
-
+  const choices = (
+    <YStack gap="$field">
+      <Input
+        accessibilityLabel="Search time zones"
+        placeholder="City or region"
+        value={search}
+        onChangeText={setSearch}
+        height="$action"
+        rounded="$control"
+        bg="$surface"
+        borderColor="$borderColor"
+        autoCapitalize="none"
+        autoCorrect={false}
+      />
+      {zones.length === 0 && (
+        <Paragraph fontSize="$body" color="$colorSubtle">
+          No matching time zones. Try a city or region.
+        </Paragraph>
+      )}
+      {zones.map((zone) => (
+        <Button
+          key={zone}
+          unstyled
+          py="$field"
+          minH="$touch"
+          disabled={isUpdating}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: current === zone }}
+          onPress={() => select(zone)}
+          pressStyle={{ bg: '$backgroundPress' }}
+        >
+          <XStack gap="$field" items="center">
+            <Circle
+              size="$icon"
+              borderWidth={1}
+              borderColor={current === zone ? '$primary' : '$borderColor'}
+              bg={current === zone ? '$primary' : '$backgroundTransparent'}
+            >
+              {current === zone && <Check size="$iconSmall" color="$onPrimary" />}
+            </Circle>
+            <YStack flex={1} gap="$compact">
+              <Text fontSize="$body" fontWeight="600">
+                {zoneName(zone)}
+              </Text>
+              <Text fontSize="$caption" color="$colorSubtle">
+                {zoneOffset(zone)}
+              </Text>
+            </YStack>
+            {current === zone && (
+              <Text fontSize="$caption" color="$primary">
+                Selected
+              </Text>
+            )}
+          </XStack>
+        </Button>
+      ))}
+    </YStack>
+  )
   return (
-    <YStack gap="$3">
-      <XStack gap="$2" items="center">
-        <Text fontWeight="700">Current:</Text>
-        <Text>{currentTimeZone}</Text>
-      </XStack>
-
-      <Button width="100%" iconAfter={ChevronDown} onPress={() => setOpen(true)}>
-        {currentTimeZone}
-      </Button>
-
-      <Sheet
-        modal
-        open={open}
-        onOpenChange={setOpen}
-        snapPoints={[85]}
-        dismissOnSnapToBottom
-        animation="medium"
-      >
-        <Sheet.Overlay animation="slow" enterStyle={{ opacity: 0 }} exitStyle={{ opacity: 0 }} />
-        <Sheet.Frame p="$4" gap="$4">
-          <Sheet.Handle />
-          <YStack gap="$3" flex={1}>
-            <Text fontSize="$6" fontWeight="bold">
-              Select Time Zone
+    <YStack gap="$section">
+      <YStack gap="$compact">
+        <Text fontSize="$body" fontWeight="600">
+          {zoneName(current)}
+        </Text>
+        <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+          {zoneOffset(current)} · Local time {currentTime}
+        </Text>
+      </YStack>
+      {!!error && (
+        <Paragraph fontSize="$caption" color="$destructive" accessibilityLiveRegion="polite">
+          {error}
+        </Paragraph>
+      )}
+      {inline ? (
+        <>
+          <YStack gap="$field">
+            <Text fontSize="$body" fontWeight="600">
+              Search time zones
             </Text>
-            <Text fontSize="$2" color="$colorSubtle">
-              {timeZones ? `${timeZones.length} timezones available` : 'Loading timezones…'}
-            </Text>
-            <Input
-              placeholder="Search timezones..."
-              value={search}
-              onChangeText={setSearch}
-              size="$4"
-              disabled={loading || !timeZones}
-            />
-
-            {loading && (
-              <YStack flex={1} items="center" justify="center">
-                <LoadingSpinner text="Loading timezones…" />
-              </YStack>
-            )}
-
-            {!loading && timeZones && (
-              <ScrollView flex={1}>
-                <YStack gap="$2" pb="$4">
-                  {filteredTimezones.map((tz) => (
-                    <Button
-                      key={tz}
-                      size="$4"
-                      chromeless
-                      onPress={() => handleSelect(tz)}
-                      bg={tz === currentTimeZone ? '$backgroundPress' : 'transparent'}
-                      iconAfter={tz === currentTimeZone ? <Check size={16} /> : undefined}
-                    >
-                      <Text>{tz}</Text>
-                    </Button>
-                  ))}
-                </YStack>
-              </ScrollView>
-            )}
+            {choices}
           </YStack>
-        </Sheet.Frame>
-      </Sheet>
+          <Paragraph fontSize="$caption" color="$colorSubtle">
+            Changes apply automatically.
+          </Paragraph>
+        </>
+      ) : (
+        <>
+          <Button
+            height="$action"
+            rounded="$control"
+            iconAfter={<ChevronDown size="$icon" />}
+            onPress={() => setOpen(true)}
+          >
+            {zoneName(current)}
+          </Button>
+          <Sheet modal open={open} onOpenChange={setOpen} snapPoints={[85]} dismissOnSnapToBottom>
+            <Sheet.Overlay />
+            <Sheet.Frame bg="$background" rounded="$sheet" p="$page" gap="$field">
+              <Sheet.Handle />
+              <XStack items="center" justify="space-between">
+                <Text fontSize="$screenTitle" fontWeight="600">
+                  Time zone
+                </Text>
+                <Button chromeless onPress={() => setOpen(false)}>
+                  Cancel
+                </Button>
+              </XStack>
+              <ScrollView keyboardShouldPersistTaps="handled">{choices}</ScrollView>
+            </Sheet.Frame>
+          </Sheet>
+        </>
+      )}
     </YStack>
   )
 }
-
