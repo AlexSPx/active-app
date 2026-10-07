@@ -2,9 +2,8 @@ import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { CreateRoutineRequest, UpdateRoutineRequest, Routine } from '../../../types/routine'
 import type { ApiError } from '../../../types/api'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { useRoutineRepository } from '../../../lib/hooks/useRepository'
-import { useAuthStore } from '../../../stores/authStore'
 
 function toFriendlyError(err: unknown, fallback: string): string {
   const defaultMsg = fallback
@@ -24,8 +23,7 @@ function toFriendlyError(err: unknown, fallback: string): string {
 export function useRoutineMutations() {
   const queryClient = useQueryClient()
   const repo = useRoutineRepository()
-  const ownerId = useAuthStore((state) => state.profileOwnerId)
-  const ownerKeys = queryKeys.forOwner(ownerId)
+  const ownerKeys = useProfileQueryKeys()
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateRoutineRequest) => repo.create(payload),

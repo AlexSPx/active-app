@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { useWorkoutRepository } from '../../../lib/hooks/useRepository'
 import type { ApiWorkout } from '../../../types/api'
-import { useAuthStore } from '../../../stores/authStore'
 
 export interface UseWorkoutReturn {
   workout: ApiWorkout | null
@@ -13,10 +12,10 @@ export interface UseWorkoutReturn {
 
 export function useWorkout(id?: string): UseWorkoutReturn {
   const repo = useWorkoutRepository()
-  const ownerId = useAuthStore((state) => state.profileOwnerId)
+  const ownerKeys = useProfileQueryKeys()
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: queryKeys.forOwner(ownerId).workouts.detail(id || ''),
+    queryKey: ownerKeys.workouts.detail(id || ''),
     enabled: Boolean(id),
     queryFn: async (): Promise<ApiWorkout | null> => {
       if (!id) return null

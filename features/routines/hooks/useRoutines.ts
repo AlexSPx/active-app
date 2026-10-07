@@ -1,8 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { useRoutineRepository } from '../../../lib/hooks/useRepository'
 import type { Routine } from '../../../types/routine'
-import { useAuthStore } from '../../../stores/authStore'
 
 export interface UseRoutinesReturn {
   routines: Routine[]
@@ -14,10 +13,10 @@ export interface UseRoutinesReturn {
 
 export function useRoutines(): UseRoutinesReturn {
   const repo = useRoutineRepository()
-  const ownerId = useAuthStore((state) => state.profileOwnerId)
+  const ownerKeys = useProfileQueryKeys()
 
   const { data, isLoading, error, refetch, isStale } = useQuery({
-    queryKey: queryKeys.forOwner(ownerId).routines.list(),
+    queryKey: ownerKeys.routines.list(),
     queryFn: async () => {
       return repo.getAll()
     },

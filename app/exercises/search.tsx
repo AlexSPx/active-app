@@ -6,8 +6,7 @@ import { useExerciseSearch, ExerciseList } from '../../features/exercises'
 import { toggleExerciseSelection } from '../../utils/workoutUtils'
 import type { Exercise } from '../../types/workout'
 import { useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '../../lib/queryKeys'
-import { useAuthStore } from '../../stores/authStore'
+import { useProfileQueryKeys } from '../../lib/hooks/useProfileQueryKeys'
 
 export default function SearchExerciseScreen() {
   const router = useRouter()
@@ -20,7 +19,7 @@ export default function SearchExerciseScreen() {
   const [search, setSearch] = useState('')
   const [category, setCategory] = useState('All')
   const queryClient = useQueryClient()
-  const ownerId = useAuthStore((state) => state.profileOwnerId)
+  const ownerKeys = useProfileQueryKeys()
   const { exercises, loading, error, hasSearched, searchExercises, clearSearch } =
     useExerciseSearch()
   useEffect(() => {
@@ -144,7 +143,7 @@ export default function SearchExerciseScreen() {
           onExerciseSelect={select}
           onRetry={() =>
             queryClient.invalidateQueries({
-              queryKey: queryKeys.forOwner(ownerId).exercises.search(search.trim()),
+              queryKey: ownerKeys.exercises.search(search.trim()),
             })
           }
           emptyMessage={

@@ -10,8 +10,7 @@ import {
   cancelRestNotification,
 } from '../../../services/notificationService'
 import { queryClient } from '../../../lib/queryClient'
-import { queryKeys } from '../../../lib/queryKeys'
-import { useAuthStore } from '../../../stores/authStore'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 
 export interface UseWorkoutSessionOptions {
   fallbackExercises?: Exercise[]
@@ -64,7 +63,7 @@ export function useWorkoutSession(
   // Rest timer configuration from settings
   const restTimerEnabled = useSettingsStore((s) => s.restTimerEnabled)
   const defaultRestSeconds = useSettingsStore((s) => s.restTimerDefaultSeconds)
-  const ownerId = useAuthStore((state) => state.profileOwnerId)
+  const ownerKeys = useProfileQueryKeys()
   const [restTime, setRestTime] = useState<number>(defaultRestSeconds)
   const [remainingRest, setRemainingRest] = useState<number>(0)
   const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
@@ -334,7 +333,7 @@ export function useWorkoutSession(
   const finishWorkout = async (notes?: string) => {
     const result = await stopWorkout(notes)
     if (result) {
-      queryClient.invalidateQueries({ queryKey: queryKeys.forOwner(ownerId).records.all })
+      queryClient.invalidateQueries({ queryKey: ownerKeys.records.all })
     }
     return result
   }

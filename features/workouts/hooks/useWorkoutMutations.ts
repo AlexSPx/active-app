@@ -1,15 +1,13 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { ApiExercise, CreateWorkoutRequest, UpdateWorkoutRequest } from '../../../types/api'
 import type { Workout } from '../../../types/workout'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { useWorkoutRepository } from '../../../lib/hooks/useRepository'
-import { useAuthStore } from '../../../stores/authStore'
 
 export function useWorkoutMutations() {
   const queryClient = useQueryClient()
   const repo = useWorkoutRepository()
-  const ownerId = useAuthStore((state) => state.profileOwnerId)
-  const ownerKeys = queryKeys.forOwner(ownerId)
+  const ownerKeys = useProfileQueryKeys()
 
   const createMutation = useMutation({
     mutationFn: async ({
