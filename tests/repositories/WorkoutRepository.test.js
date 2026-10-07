@@ -1,6 +1,7 @@
 jest.mock('../../lib/sync', () => ({
   syncEngine: {
     enqueue: jest.fn(async () => undefined),
+    scheduleQueueProcessing: jest.fn(),
     withIdRemapLock: jest.fn((operation) => operation()),
     resolveId: jest.fn((_table, id) => id),
   },
@@ -17,6 +18,15 @@ describe('WorkoutRepository', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     db = new FakeDb()
+    syncEngine.enqueue.mockImplementation(async (_job, transaction, options) => {
+      db.recordTransactionEvent('enqueue', {
+        transactionMatches: transaction === db,
+        options,
+      })
+    })
+    syncEngine.scheduleQueueProcessing.mockImplementation(() =>
+      db.recordTransactionEvent('schedule')
+    )
     repo = new WorkoutRepository(db)
   })
 
@@ -77,12 +87,29 @@ describe('WorkoutRepository', () => {
       is_synced: 0,
     })
 
-    expect(syncEngine.enqueue).toHaveBeenCalledWith({
-      apiMethod: 'createWorkout',
-      payload,
-      localTable: 'workouts',
-      localId: created.id,
-    }, db)
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      {
+        apiMethod: 'createWorkout',
+        payload,
+        localTable: 'workouts',
+        localId: created.id,
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
+    expect(db.transactionEvents.map(({ type }) => type)).toEqual([
+      'begin',
+      'enqueue',
+      'commit',
+      'schedule',
+    ])
+    expect(db.transactionEvents[1]).toMatchObject({
+      inTransaction: true,
+      transactionMatches: true,
+      options: { processAfterInsert: false },
+    })
+    expect(db.transactionEvents[3].inTransaction).toBe(false)
   })
 
   it('updates the local workout row and enqueues updateWorkout', async () => {
@@ -148,10 +175,15 @@ describe('WorkoutRepository', () => {
       },
     })
 
-    expect(syncEngine.enqueue).toHaveBeenCalledWith({
-      apiMethod: 'updateWorkout',
-      payload: ['workout_1', updatePayload],
-    }, db)
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      {
+        apiMethod: 'updateWorkout',
+        payload: ['workout_1', updatePayload],
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
   })
 
   it('resolves remapped IDs for workout updates and deletes', async () => {
@@ -176,14 +208,25 @@ describe('WorkoutRepository', () => {
 
     expect(db.tables.workouts.has('server_workout_4')).toBe(false)
     expect(syncEngine.withIdRemapLock).toHaveBeenCalledTimes(2)
-    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(1, {
-      apiMethod: 'updateWorkout',
-      payload: ['server_workout_4', payload],
-    }, db)
-    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(2, {
-      apiMethod: 'deleteWorkout',
-      payload: ['server_workout_4'],
-    }, db)
+    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(
+      1,
+      {
+        apiMethod: 'updateWorkout',
+        payload: ['server_workout_4', payload],
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(
+      2,
+      {
+        apiMethod: 'deleteWorkout',
+        payload: ['server_workout_4'],
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(2)
   })
 
   it('records a workout locally and enqueues recordWorkout', async () => {
@@ -224,23 +267,83 @@ describe('WorkoutRepository', () => {
       is_synced: 0,
     })
 
-    expect(syncEngine.enqueue).toHaveBeenCalledWith({
-      apiMethod: 'recordWorkout',
-      payload: recordRequest,
-      localTable: 'workout_records',
-      localId: result.workoutRecord.id,
-    }, db)
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      {
+        apiMethod: 'recordWorkout',
+        payload: recordRequest,
+        localTable: 'workout_records',
+        localId: result.workoutRecord.id,
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
   })
 
-  it('removes the local workout record if it cannot be queued', async () => {
+  it('rolls back the local workout and queue if queue insertion fails', async () => {
+    const existingJob = {
+      id: 'existing_job',
+      endpoint: 'createRoutine',
+      payload: '{}',
+      status: 'pending',
+    }
+    db.jobs.push(existingJob)
     const recordRequest = {
       workoutId: 'workout_2',
       exerciseRecords: [],
     }
-    syncEngine.enqueue.mockRejectedValueOnce(new Error('queue unavailable'))
+    syncEngine.enqueue.mockImplementationOnce(async (_job, transaction, options) => {
+      db.recordTransactionEvent('enqueue', {
+        transactionMatches: transaction === db,
+        options,
+      })
+      db.jobs.push({ id: 'partial_job', endpoint: 'recordWorkout', status: 'pending' })
+      throw new Error('queue unavailable')
+    })
 
     await expect(repo.recordWorkout(recordRequest, 'Pull Day')).rejects.toThrow('queue unavailable')
     expect(db.getTableRows('workout_records')).toHaveLength(0)
+    expect(db.jobs).toEqual([existingJob])
+    expect(syncEngine.scheduleQueueProcessing).not.toHaveBeenCalled()
+    expect(db.transactionEvents.map(({ type }) => type)).toEqual(['begin', 'enqueue', 'rollback'])
+    expect(db.transactionEvents[1]).toMatchObject({
+      inTransaction: true,
+      transactionMatches: true,
+      options: { processAfterInsert: false },
+    })
+  })
+
+  it('keeps foreign key checks enabled on the shared mutation connection', async () => {
+    db.enforceForeignKeys = true
+    db.foreignKeysEnabled = true
+    const withTransaction = jest.spyOn(db, 'withTransactionAsync')
+    const withExclusiveTransaction = jest.spyOn(db, 'withExclusiveTransactionAsync')
+    db.tables.workouts.set('workout_with_record', { id: 'workout_with_record' })
+    db.tables.workout_records.set('record_with_history', {
+      id: 'record_with_history',
+      workout_id: 'workout_with_record',
+    })
+
+    await expect(
+      repo.recordWorkout({ workoutId: 'missing_workout', exerciseRecords: [] }, 'Missing')
+    ).rejects.toThrow('FOREIGN KEY constraint failed')
+    await expect(repo.delete('workout_with_record')).rejects.toThrow(
+      'FOREIGN KEY constraint failed'
+    )
+
+    expect(withTransaction).toHaveBeenCalledTimes(2)
+    expect(withExclusiveTransaction).not.toHaveBeenCalled()
+    expect(db.tables.workout_records.has('record_with_history')).toBe(true)
+    expect(db.tables.workout_records.size).toBe(1)
+    expect(db.tables.workouts.has('workout_with_record')).toBe(true)
+    expect(db.jobs).toHaveLength(0)
+    expect(syncEngine.enqueue).not.toHaveBeenCalled()
+    expect(db.transactionEvents.map(({ type, mode }) => [type, mode])).toEqual([
+      ['begin', 'shared'],
+      ['rollback', 'shared'],
+      ['begin', 'shared'],
+      ['rollback', 'shared'],
+    ])
   })
 
   it('uses the remapped workout ID for the saved record and its queue job', async () => {
@@ -256,8 +359,10 @@ describe('WorkoutRepository', () => {
         apiMethod: 'recordWorkout',
         payload: { ...request, workoutId: 'server_workout_2' },
       }),
-      db
+      db,
+      { processAfterInsert: false }
     )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
   })
 
   it('deletes local workout rows and enqueues delete operations', async () => {
@@ -288,13 +393,24 @@ describe('WorkoutRepository', () => {
 
     expect(db.tables.workouts.has('workout_delete')).toBe(false)
     expect(db.tables.workout_records.has('record_delete')).toBe(false)
-    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(1, {
-      apiMethod: 'deleteWorkout',
-      payload: ['workout_delete'],
-    }, db)
-    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(2, {
-      apiMethod: 'deleteWorkoutRecord',
-      payload: ['record_delete'],
-    }, db)
+    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(
+      1,
+      {
+        apiMethod: 'deleteWorkout',
+        payload: ['workout_delete'],
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(
+      2,
+      {
+        apiMethod: 'deleteWorkoutRecord',
+        payload: ['record_delete'],
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(2)
   })
 })

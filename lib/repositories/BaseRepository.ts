@@ -21,11 +21,27 @@ export abstract class BaseRepository {
     return `local_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 10)}`
   }
 
-  /**
-   * Enqueue a sync job for the given operation.
-   */
   protected async enqueueSync(config: SyncJobConfig): Promise<void> {
     await syncEngine.enqueue(config, this.db)
+  }
+
+  protected async commitMutation<T>(
+    mutation: (transaction: SQLiteDatabase) => Promise<{ value: T; job: SyncJobConfig }>
+  ): Promise<T> {
+    return syncEngine.withIdRemapLock(async () => {
+      let value!: T
+      const write = async (transaction: SQLiteDatabase) => {
+        const result = await mutation(transaction)
+        value = result.value
+        await syncEngine.enqueue(result.job, transaction, { processAfterInsert: false })
+      }
+
+      // Keep the configured connection; foreign_keys is per-connection and the exclusive helper opens a new one.
+      await this.db.withTransactionAsync(() => write(this.db))
+
+      syncEngine.scheduleQueueProcessing()
+      return value
+    })
   }
 
   /**

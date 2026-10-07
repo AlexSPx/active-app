@@ -33,6 +33,10 @@ export interface SyncJobConfig {
   localId?: string
 }
 
+interface EnqueueOptions {
+  processAfterInsert?: boolean
+}
+
 export interface SyncJob {
   id: string
   endpoint: string
@@ -99,7 +103,7 @@ export class SyncEngine {
   private retryTimer: ReturnType<typeof setTimeout> | null = null
   private drainRequested = false
   private queueMutationRevision = 0
-  // ponytail: one save/remap lock; split per table only if contention appears.
+  // ponytail: one SQLite write lock; split per table only if contention appears.
   private idRemapLock: Promise<void> = Promise.resolve()
   private remappedIds = new Map<string, string>()
   private idRemapListeners = new Set<IdRemapListener>()
@@ -235,6 +239,10 @@ export class SyncEngine {
     })
   }
 
+  scheduleQueueProcessing(): void {
+    this.processQueueInBackground()
+  }
+
   // -----------------------------------------------------------------------
   // Event Emitter (minimal)
   // -----------------------------------------------------------------------
@@ -292,9 +300,13 @@ export class SyncEngine {
   // -----------------------------------------------------------------------
 
   /**
-   * Insert a new sync job into the queue and immediately attempt processing.
+   * Insert a sync job and process it unless the caller will kick after commit.
    */
-  async enqueue(job: SyncJobConfig, db: SQLiteDatabase | null = this.db): Promise<void> {
+  async enqueue(
+    job: SyncJobConfig,
+    db: SQLiteDatabase | null = this.db,
+    options: EnqueueOptions = {}
+  ): Promise<void> {
     if (!db) {
       console.warn('[SyncEngine] enqueue called before init — ignoring')
       return
@@ -325,7 +337,9 @@ export class SyncEngine {
     this.queueMutationRevision += 1
 
     // Fire-and-forget — errors are handled internally
-    if (scope && this.isCurrentEngine(db, scope)) this.processQueueInBackground()
+    if (options.processAfterInsert !== false && scope && this.isCurrentEngine(db, scope)) {
+      this.processQueueInBackground()
+    }
   }
 
   // -----------------------------------------------------------------------
@@ -440,7 +454,13 @@ export class SyncEngine {
     scope: ProfileScope
   ): Promise<boolean> {
     if (!this.isCurrentEngine(db, scope)) return false
-    await db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'processing', job.id)
+    await this.writeQueue(
+      db,
+      scope,
+      'UPDATE sync_queue SET status = ? WHERE id = ?',
+      'processing',
+      job.id
+    )
     if (!this.isCurrentEngine(db, scope)) {
       await this.resetPending(db, job.id)
       return false
@@ -467,7 +487,7 @@ export class SyncEngine {
 
     if (typeof apiFunc !== 'function') {
       console.error(`[SyncEngine] Unknown API method: ${currentJob.endpoint}`)
-      await this.markDeadLetter(db, currentJob, `Unknown API method: ${currentJob.endpoint}`)
+      await this.markDeadLetter(db, scope, currentJob, `Unknown API method: ${currentJob.endpoint}`)
       return true
     }
 
@@ -478,6 +498,7 @@ export class SyncEngine {
     } catch (error) {
       await this.markDeadLetter(
         db,
+        scope,
         currentJob,
         `Invalid queued payload: ${(error as Error)?.message || 'Invalid JSON'}`
       )
@@ -535,7 +556,7 @@ export class SyncEngine {
       await this.resetPending(db, currentJob.id)
       return false
     }
-    await db.runAsync('DELETE FROM sync_queue WHERE id = ?', currentJob.id)
+    await this.writeQueue(db, scope, 'DELETE FROM sync_queue WHERE id = ?', currentJob.id)
     console.log(`[SyncEngine] ✓ ${currentJob.endpoint}`)
     return true
   }
@@ -746,14 +767,16 @@ export class SyncEngine {
       statusCode !== 429
     ) {
       console.error(`[SyncEngine] Permanent failure [${job.endpoint}]: ${statusCode} ${errorMsg}`)
-      await this.markDeadLetter(db, job, `${statusCode}: ${errorMsg}`)
+      await this.markDeadLetter(db, scope, job, `${statusCode}: ${errorMsg}`)
       return true // continue to next job — this one can't be retried
     }
 
     console.warn(
       `[SyncEngine] Retryable failure [${job.endpoint}] attempt ${newRetryCount}: ${errorMsg}`
     )
-    await db.runAsync(
+    await this.writeQueue(
+      db,
+      scope,
       'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ? WHERE id = ?',
       'failed',
       newRetryCount,
@@ -768,8 +791,15 @@ export class SyncEngine {
     return false
   }
 
-  private async markDeadLetter(db: SQLiteDatabase, job: SyncJob, errorMsg: string): Promise<void> {
-    await db.runAsync(
+  private async markDeadLetter(
+    db: SQLiteDatabase,
+    scope: ProfileScope,
+    job: SyncJob,
+    errorMsg: string
+  ): Promise<void> {
+    await this.writeQueue(
+      db,
+      scope,
       'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ? WHERE id = ?',
       'dead_letter',
       job.retry_count + 1,
@@ -779,7 +809,20 @@ export class SyncEngine {
   }
 
   private async resetPending(db: SQLiteDatabase, jobId: string): Promise<void> {
-    await db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'pending', jobId)
+    await this.withIdRemapLock(() =>
+      db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'pending', jobId)
+    )
+  }
+
+  private async writeQueue(
+    db: SQLiteDatabase,
+    scope: ProfileScope,
+    sql: string,
+    ...params: any[]
+  ): Promise<void> {
+    await this.withIdRemapLock(async () => {
+      if (this.isCurrentEngine(db, scope)) await db.runAsync(sql, ...params)
+    })
   }
 
   // -----------------------------------------------------------------------

@@ -27,6 +27,7 @@ export function useWorkoutMutations() {
         date: new Date(),
       }
     },
+    retry: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
     },
@@ -44,6 +45,7 @@ export function useWorkoutMutations() {
     }): Promise<void> => {
       await repo.update(workoutId, payload, exercises)
     },
+    retry: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
     },
@@ -53,6 +55,7 @@ export function useWorkoutMutations() {
     mutationFn: async (id: string): Promise<void> => {
       await repo.delete(id)
     },
+    retry: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
     },
@@ -62,6 +65,7 @@ export function useWorkoutMutations() {
     mutationFn: async (id: string): Promise<void> => {
       await repo.deleteRecord(id)
     },
+    retry: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ownerKeys.records.all })
     },

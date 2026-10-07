@@ -66,6 +66,92 @@ describe('SyncEngine queue remapping', () => {
     expect(order).toEqual(['remap-start', 'remap-end', 'record-save'])
   })
 
+  it('keeps web queue writes outside a mutation transaction held under the remap lock', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const api = createApi({ deleteWorkout: jest.fn(async () => undefined) })
+    const engine = new SyncEngine({
+      api,
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    const db = new FakeDb({
+      jobs: [makeJob({ id: 'queued-delete', endpoint: 'deleteWorkout', payload: ['workout_1'] })],
+    })
+    await engine.init(db, { processOnInit: false })
+
+    let transactionStarted
+    const transactionOpen = new Promise((resolve) => {
+      transactionStarted = resolve
+    })
+    let releaseTransaction
+    const transactionGate = new Promise((resolve) => {
+      releaseTransaction = resolve
+    })
+    let queueLockRequestedResolve
+    const queueLockRequested = new Promise((resolve) => {
+      queueLockRequestedResolve = resolve
+    })
+    let queueWriteAttemptedResolve
+    const queueWriteAttempted = new Promise((resolve) => {
+      queueWriteAttemptedResolve = resolve
+    })
+
+    let lockCalls = 0
+    const withIdRemapLock = engine.withIdRemapLock.bind(engine)
+    jest.spyOn(engine, 'withIdRemapLock').mockImplementation((operation) => {
+      lockCalls += 1
+      if (lockCalls === 2) queueLockRequestedResolve()
+      return withIdRemapLock(operation)
+    })
+
+    const runAsync = db.runAsync.bind(db)
+    db.runAsync = async (sql, ...params) => {
+      if (sql === 'UPDATE sync_queue SET status = ? WHERE id = ?') {
+        db.recordTransactionEvent('queue-status-write', { status: params[0] })
+        if (params[0] === 'processing') queueWriteAttemptedResolve()
+      }
+      return runAsync(sql, ...params)
+    }
+
+    const mutation = engine.withIdRemapLock(() =>
+      db.withTransactionAsync(async () => {
+        transactionStarted()
+        await transactionGate
+      })
+    )
+    await transactionOpen
+
+    const processing = engine.processQueue()
+    const stateWhileLocked = await Promise.race([
+      queueLockRequested.then(() => 'waiting-for-lock'),
+      queueWriteAttempted.then(() => 'queue-write'),
+      new Promise((resolve) => setTimeout(() => resolve('timeout'), 1000)),
+    ])
+    const statusWhileLocked = db.getJob('queued-delete').status
+    const apiCallsWhileLocked = api.deleteWorkout.mock.calls.length
+    const eventsWhileLocked = db.transactionEvents.map(({ type }) => type)
+
+    releaseTransaction()
+    await Promise.all([mutation, processing])
+
+    expect(stateWhileLocked).toBe('waiting-for-lock')
+    expect(statusWhileLocked).toBe('pending')
+    expect(apiCallsWhileLocked).toBe(0)
+    expect(eventsWhileLocked).toEqual(['begin'])
+    expect(api.deleteWorkout).toHaveBeenCalledWith('workout_1')
+    expect(db.transactionEvents.map(({ type }) => type)).toEqual([
+      'begin',
+      'commit',
+      'queue-status-write',
+    ])
+    expect(db.transactionEvents[2]).toMatchObject({
+      inTransaction: false,
+      status: 'processing',
+    })
+    expect(db.getJob('queued-delete')).toBeNull()
+    engine.destroy()
+  })
+
   it('updates an active session when its workout receives a server id', async () => {
     const { SyncEngine } = require('../../lib/sync/SyncEngine')
     const {

@@ -31,6 +31,8 @@ class FakeDb {
       routines: new Map(),
     }
     this.idRemaps = new Map()
+    this.transactionDepth = 0
+    this.transactionEvents = []
 
     for (const [tableName, ids] of Object.entries(tables)) {
       for (const id of ids) {
@@ -49,7 +51,51 @@ class FakeDb {
   }
 
   async withTransactionAsync(operation) {
-    await operation()
+    return this.runTransaction(operation, 'shared')
+  }
+
+  async withExclusiveTransactionAsync(operation) {
+    return this.runTransaction(operation, 'exclusive')
+  }
+
+  async runTransaction(operation, mode) {
+    const snapshot = {
+      jobs: this.jobs.map((job) => ({ ...job })),
+      idRemaps: new Map(Array.from(this.idRemaps, ([key, value]) => [key, { ...value }])),
+      tables: Object.fromEntries(
+        Object.entries(this.tables).map(([name, table]) => [
+          name,
+          new Map(Array.from(table, ([id, row]) => [id, { ...row }])),
+        ])
+      ),
+    }
+    this.recordTransactionEvent('begin', { mode })
+    this.transactionDepth += 1
+
+    try {
+      const result = await operation(this)
+      this.transactionDepth -= 1
+      this.recordTransactionEvent('commit', { mode })
+      return result
+    } catch (error) {
+      this.jobs = snapshot.jobs
+      this.idRemaps = snapshot.idRemaps
+      for (const [name, rows] of Object.entries(snapshot.tables)) {
+        this.tables[name].clear()
+        for (const [id, row] of rows) this.tables[name].set(id, row)
+      }
+      this.transactionDepth -= 1
+      this.recordTransactionEvent('rollback', { mode })
+      throw error
+    }
+  }
+
+  recordTransactionEvent(type, details = {}) {
+    this.transactionEvents.push({
+      type,
+      inTransaction: this.transactionDepth > 0,
+      ...details,
+    })
   }
 
   async getAllAsync(sql, ...params) {
@@ -206,7 +252,16 @@ class FakeDb {
     }
 
     if (sql === 'DELETE FROM workouts WHERE id = ?') {
-      this.tables.workouts.delete(params[0])
+      const workoutId = params[0]
+      if (
+        this.foreignKeysEnabled &&
+        Array.from(this.tables.workout_records.values()).some(
+          (record) => record.workout_id === workoutId
+        )
+      ) {
+        throw new Error('FOREIGN KEY constraint failed')
+      }
+      this.tables.workouts.delete(workoutId)
       return
     }
 

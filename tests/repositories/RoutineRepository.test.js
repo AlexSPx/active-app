@@ -1,6 +1,7 @@
 jest.mock('../../lib/sync', () => ({
   syncEngine: {
     enqueue: jest.fn(async () => undefined),
+    scheduleQueueProcessing: jest.fn(),
     withIdRemapLock: jest.fn((operation) => operation()),
     resolveId: jest.fn((_table, id) => id),
   },
@@ -18,6 +19,15 @@ describe('RoutineRepository', () => {
     jest.clearAllMocks()
     syncEngine.resolveId.mockImplementation((_table, id) => id)
     db = new FakeDb()
+    syncEngine.enqueue.mockImplementation(async (_job, transaction, options) => {
+      db.recordTransactionEvent('enqueue', {
+        transactionMatches: transaction === db,
+        options,
+      })
+    })
+    syncEngine.scheduleQueueProcessing.mockImplementation(() =>
+      db.recordTransactionEvent('schedule')
+    )
     repo = new RoutineRepository(db)
   })
 
@@ -52,12 +62,17 @@ describe('RoutineRepository', () => {
       is_synced: 0,
     })
 
-    expect(syncEngine.enqueue).toHaveBeenCalledWith({
-      apiMethod: 'createRoutine',
-      payload,
-      localTable: 'routines',
-      localId: created.id,
-    }, db)
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      {
+        apiMethod: 'createRoutine',
+        payload,
+        localTable: 'routines',
+        localId: created.id,
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
   })
 
   it('resolves workout IDs when an open routine form saves after sync remaps them', async () => {
@@ -80,8 +95,10 @@ describe('RoutineRepository', () => {
           { pattern: [{ ...pattern[0], workoutId: 'server_workout_open_form' }] },
         ],
       }),
-      db
+      db,
+      { processAfterInsert: false }
     )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(2)
   })
 
   it('updates the local routine row and enqueues updateRoutine', async () => {
@@ -125,10 +142,15 @@ describe('RoutineRepository', () => {
     })
     expect(row.updated_at).not.toBe('2026-04-24T10:00:00.000Z')
 
-    expect(syncEngine.enqueue).toHaveBeenCalledWith({
-      apiMethod: 'updateRoutine',
-      payload: ['routine_1', updatePayload],
-    }, db)
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      {
+        apiMethod: 'updateRoutine',
+        payload: ['routine_1', updatePayload],
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
   })
 
   it('deactivates other routines when activating one', async () => {
@@ -165,6 +187,7 @@ describe('RoutineRepository', () => {
 
     expect(db.tables.routines.get('routine_a').is_active).toBe(0)
     expect(db.tables.routines.get('routine_b').is_active).toBe(1)
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
   })
 
   it('deletes local routine rows and enqueues deleteRoutine', async () => {
@@ -186,9 +209,14 @@ describe('RoutineRepository', () => {
     await repo.delete('routine_delete')
 
     expect(db.tables.routines.has('routine_delete')).toBe(false)
-    expect(syncEngine.enqueue).toHaveBeenCalledWith({
-      apiMethod: 'deleteRoutine',
-      payload: ['routine_delete'],
-    }, db)
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      {
+        apiMethod: 'deleteRoutine',
+        payload: ['routine_delete'],
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
   })
 })
