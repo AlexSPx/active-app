@@ -35,6 +35,66 @@ export type {
 const isWeb = Platform.OS === 'web'
 const shouldLogApi = process.env.NODE_ENV === 'development'
 
+interface SecureStoreModule {
+  getItemAsync(key: string): Promise<string | null>
+  setItemAsync(key: string, value: string): Promise<void>
+  deleteItemAsync(key: string): Promise<void>
+}
+
+let secureStorePromise: Promise<SecureStoreModule> | null = null
+
+function secureStoreUnavailableError(cause?: unknown): Error & { code: string } {
+  const error = Object.assign(
+    new Error('Secure credential storage is unavailable in this app build'),
+    { code: 'SECURE_STORE_UNAVAILABLE' }
+  )
+  if (cause !== undefined) Object.assign(error, { cause })
+  return error
+}
+
+function loadSecureStore(): Promise<SecureStoreModule> {
+  if (!secureStorePromise) {
+    secureStorePromise = Promise.resolve().then(() => {
+      try {
+        const { requireOptionalNativeModule } = require('expo-modules-core') as {
+          requireOptionalNativeModule(name: string): unknown
+        }
+        if (!requireOptionalNativeModule('ExpoSecureStore')) {
+          throw secureStoreUnavailableError()
+        }
+        // Load only when native credentials are actually used so web remains cookie-only.
+        const secureStore = require('expo-secure-store') as SecureStoreModule
+        if (
+          typeof secureStore.getItemAsync !== 'function' ||
+          typeof secureStore.setItemAsync !== 'function' ||
+          typeof secureStore.deleteItemAsync !== 'function'
+        ) {
+          throw new Error('Expo SecureStore is not available')
+        }
+        return secureStore
+      } catch (error) {
+        if ((error as { code?: string })?.code === 'SECURE_STORE_UNAVAILABLE') throw error
+        throw secureStoreUnavailableError(error)
+      }
+    })
+  }
+  return secureStorePromise
+}
+
+async function removeLegacyCredentialKeys(token: string | null, refreshToken: string | null) {
+  try {
+    await AsyncStorage.multiRemove([config.STORAGE_KEYS.TOKEN, config.STORAGE_KEYS.REFRESH_TOKEN])
+  } catch (error) {
+    await Promise.allSettled([
+      token === null ? Promise.resolve() : AsyncStorage.setItem(config.STORAGE_KEYS.TOKEN, token),
+      refreshToken === null
+        ? Promise.resolve()
+        : AsyncStorage.setItem(config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken),
+    ])
+    throw error
+  }
+}
+
 interface RequestLogContext {
   method: string
   url: string
@@ -63,11 +123,13 @@ class ApiService {
     refreshToken: string,
     generation: number
   ): Promise<boolean> {
+    if (isWeb) return generation === this.credentialGeneration
     return this.serializeCredentialWrite(async () => {
       if (generation !== this.credentialGeneration) return false
-      await AsyncStorage.setItem(config.STORAGE_KEYS.TOKEN, token)
+      const secureStore = await loadSecureStore()
+      await secureStore.setItemAsync(config.STORAGE_KEYS.TOKEN, token)
       if (generation !== this.credentialGeneration) return false
-      await AsyncStorage.setItem(config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken)
+      await secureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken)
       return generation === this.credentialGeneration
     })
   }
@@ -76,6 +138,31 @@ class ApiService {
     return Object.assign(new Error('Authentication changed before the request could be retried'), {
       code: 'AUTH_SESSION_CHANGED',
     })
+  }
+
+  private async removeCredential(key: string): Promise<void> {
+    let secureStore: SecureStoreModule
+    try {
+      secureStore = await loadSecureStore()
+    } catch (error) {
+      if ((error as { code?: string })?.code !== 'SECURE_STORE_UNAVAILABLE') throw error
+      await AsyncStorage.removeItem(key)
+      return
+    }
+    await secureStore.deleteItemAsync(key)
+    await AsyncStorage.removeItem(key)
+  }
+
+  private async getCredential(key: string): Promise<string | null> {
+    if (isWeb) return null
+    try {
+      return await this.serializeCredentialWrite(async () =>
+        (await loadSecureStore()).getItemAsync(key)
+      )
+    } catch (error) {
+      if ((error as { code?: string })?.code === 'SECURE_STORE_UNAVAILABLE') return null
+      throw error
+    }
   }
 
   setUnauthorizedHandler(handler: () => void) {
@@ -107,7 +194,7 @@ class ApiService {
     // On web, authentication is handled via httpOnly cookies
     // On native, we need to include the Bearer token
     if (!isWeb) {
-      const token = await AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN)
+      const token = await this.getToken()
       if (token) {
         headers.Authorization = `Bearer ${token}`
       }
@@ -283,10 +370,10 @@ class ApiService {
           if (!persisted || credentialGeneration !== this.credentialGeneration) {
             throw this.authSessionChangedError()
           }
-          this.onRefreshed(token)
+          this.onRefreshed(token ?? null)
 
           // Retry the original request immediately
-          headers.Authorization = `Bearer ${token}`
+          if (!isWeb && token) headers.Authorization = `Bearer ${token}`
           if (credentialGeneration !== this.credentialGeneration) {
             throw this.authSessionChangedError()
           }
@@ -322,12 +409,12 @@ class ApiService {
             reject(this.authSessionChangedError())
             return
           }
-          if (!token) {
+          if (!isWeb && !token) {
             reject(new Error('Token refresh failed'))
             return
           }
           try {
-            headers.Authorization = `Bearer ${token}`
+            if (!isWeb && token) headers.Authorization = `Bearer ${token}`
             const retryFetchOptions = this.getFetchOptions({ ...options, headers })
             this.logRequest(context)
             const retryResponse = await this.fetchWithTimeout(
@@ -463,39 +550,89 @@ class ApiService {
 
   async setToken(token: string): Promise<void> {
     this.credentialGeneration += 1
+    if (isWeb) return
     await this.serializeCredentialWrite(() =>
-      AsyncStorage.setItem(config.STORAGE_KEYS.TOKEN, token)
+      loadSecureStore().then((secureStore) =>
+        secureStore.setItemAsync(config.STORAGE_KEYS.TOKEN, token)
+      )
     )
   }
 
   async getToken(): Promise<string | null> {
-    return AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN)
+    return this.getCredential(config.STORAGE_KEYS.TOKEN)
   }
 
   async removeToken(): Promise<void> {
     this.credentialGeneration += 1
-    await this.serializeCredentialWrite(() => AsyncStorage.removeItem(config.STORAGE_KEYS.TOKEN))
+    if (isWeb) return
+    await this.serializeCredentialWrite(() => this.removeCredential(config.STORAGE_KEYS.TOKEN))
   }
 
   async setRefreshToken(token: string): Promise<void> {
     this.credentialGeneration += 1
+    if (isWeb) return
     await this.serializeCredentialWrite(() =>
-      AsyncStorage.setItem(config.STORAGE_KEYS.REFRESH_TOKEN, token)
+      loadSecureStore().then((secureStore) =>
+        secureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, token)
+      )
     )
   }
 
   async getRefreshToken(): Promise<string | null> {
-    return AsyncStorage.getItem(config.STORAGE_KEYS.REFRESH_TOKEN)
+    return this.getCredential(config.STORAGE_KEYS.REFRESH_TOKEN)
   }
 
   async removeRefreshToken(): Promise<void> {
     this.credentialGeneration += 1
+    if (isWeb) return
     await this.serializeCredentialWrite(() =>
-      AsyncStorage.removeItem(config.STORAGE_KEYS.REFRESH_TOKEN)
+      this.removeCredential(config.STORAGE_KEYS.REFRESH_TOKEN)
     )
   }
 
-  private onRefreshed(token: string) {
+  async migrateLegacyCredentials(authState: {
+    token: string | null
+    refreshToken: string | null
+  }): Promise<{ token: string | null; refreshToken: string | null }> {
+    if (isWeb) {
+      const [legacyToken, legacyRefreshToken] = await Promise.all([
+        AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN),
+        AsyncStorage.getItem(config.STORAGE_KEYS.REFRESH_TOKEN),
+      ])
+      await removeLegacyCredentialKeys(legacyToken, legacyRefreshToken)
+      return { token: null, refreshToken: null }
+    }
+
+    this.credentialGeneration += 1
+    const generation = this.credentialGeneration
+    return this.serializeCredentialWrite(async () => {
+      if (generation !== this.credentialGeneration) throw this.authSessionChangedError()
+
+      const secureStore = await loadSecureStore()
+      const [storedToken, storedRefreshToken, legacyToken, legacyRefreshToken] = await Promise.all([
+        secureStore.getItemAsync(config.STORAGE_KEYS.TOKEN),
+        secureStore.getItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN),
+        AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN),
+        AsyncStorage.getItem(config.STORAGE_KEYS.REFRESH_TOKEN),
+      ])
+      const token = legacyToken ?? storedToken ?? authState.token
+      const refreshToken = legacyRefreshToken ?? storedRefreshToken ?? authState.refreshToken
+
+      if (generation !== this.credentialGeneration) throw this.authSessionChangedError()
+      if (token) await secureStore.setItemAsync(config.STORAGE_KEYS.TOKEN, token)
+      if (generation !== this.credentialGeneration) throw this.authSessionChangedError()
+      if (refreshToken) {
+        await secureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken)
+      }
+      if (generation !== this.credentialGeneration) throw this.authSessionChangedError()
+
+      await removeLegacyCredentialKeys(legacyToken, legacyRefreshToken)
+
+      return { token, refreshToken }
+    })
+  }
+
+  private onRefreshed(token: string | null) {
     this.refreshSubscribers.forEach((callback) => callback(token))
     this.refreshSubscribers = []
   }

@@ -45,6 +45,7 @@ export default {
     },
     plugins: [
       'expo-sqlite',
+      'expo-secure-store',
       'expo-router',
       'expo-font',
       [
