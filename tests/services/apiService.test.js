@@ -142,6 +142,50 @@ describe('API credential refresh', () => {
     expect(await AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN)).toBe('legacy-access')
   })
 
+  it('only invalidates the session for terminal refresh failures', async () => {
+    await apiService.setToken('access')
+    await apiService.setRefreshToken('refresh')
+    const unauthorizedHandler = jest.fn()
+    apiService.setUnauthorizedHandler(unauthorizedHandler)
+
+    global.fetch
+      .mockResolvedValueOnce(makeResponse(401, { message: 'expired' }))
+      .mockResolvedValueOnce(makeResponse(503, { message: 'unavailable' }))
+    await expect(apiService.getWorkouts()).rejects.toMatchObject({ status: 503 })
+    expect(unauthorizedHandler).not.toHaveBeenCalled()
+
+    global.fetch.mockReset()
+    global.fetch
+      .mockResolvedValueOnce(makeResponse(401, { message: 'expired' }))
+      .mockRejectedValueOnce(new TypeError('Network request failed'))
+    await expect(apiService.getWorkouts()).rejects.toThrow('Network request failed')
+    expect(unauthorizedHandler).not.toHaveBeenCalled()
+
+    global.fetch.mockReset()
+    global.fetch
+      .mockResolvedValueOnce(makeResponse(401, { message: 'expired' }))
+      .mockResolvedValueOnce(
+        makeResponse(200, { token: 'rotated-access', refreshToken: 'rotated-refresh' })
+      )
+      .mockResolvedValueOnce(makeResponse(200, [{ id: 'workout-1' }]))
+    await expect(apiService.getWorkouts()).resolves.toEqual([{ id: 'workout-1' }])
+    expect(await apiService.getRefreshToken()).toBe('rotated-refresh')
+    expect(unauthorizedHandler).not.toHaveBeenCalled()
+
+    global.fetch.mockReset()
+    global.fetch
+      .mockResolvedValueOnce(makeResponse(401, { message: 'expired' }))
+      .mockResolvedValueOnce(makeResponse(401, { message: 'invalid refresh token' }))
+    await expect(apiService.getWorkouts()).rejects.toMatchObject({ status: 401 })
+    expect(unauthorizedHandler).toHaveBeenCalledTimes(1)
+
+    await apiService.removeRefreshToken()
+    global.fetch.mockReset().mockResolvedValueOnce(makeResponse(401, { message: 'expired' }))
+    await expect(apiService.getWorkouts()).rejects.toMatchObject({ status: 401 })
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    expect(unauthorizedHandler).toHaveBeenCalledTimes(2)
+  })
+
   it('surfaces a legacy-key cleanup failure after SecureStore deletion', async () => {
     secureItems.set(config.STORAGE_KEYS.TOKEN, 'secure-access')
     await AsyncStorage.setItem(config.STORAGE_KEYS.TOKEN, 'legacy-access')
