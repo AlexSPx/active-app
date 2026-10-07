@@ -3,6 +3,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 jest.mock('../../utils/storeReset', () => ({ resetAllStores: jest.fn() }))
 jest.mock('../../lib/db/connection', () => ({ clearDatabase: jest.fn() }))
+jest.mock('../../lib/sync', () => ({
+  syncEngine: { pauseAndDrain: (...args) => mockPauseAndDrain(...args) },
+}))
+jest.mock('../../lib/profileStorage', () => ({
+  hydrateProfileStores: (...args) => mockHydrateProfileStores(...args),
+}))
 jest.mock('../../services/posthog', () => ({ posthog: { capture: jest.fn(), reset: jest.fn() } }))
 jest.mock('lib/repositories', () => ({
   AuthRepository: jest.fn(() => ({
@@ -12,6 +18,8 @@ jest.mock('lib/repositories', () => ({
     setRefreshToken: jest.fn(),
     removeToken: jest.fn(),
     removeRefreshToken: jest.fn(),
+    invalidatePendingRequests: (...args) => mockInvalidatePendingRequests(...args),
+    resumePendingRequests: (...args) => mockResumePendingRequests(...args),
     loginWithWorkOS: (...args) => mockLoginWithWorkOS(...args),
   })),
   UserRepository: jest.fn(() => ({
@@ -22,46 +30,22 @@ jest.mock('lib/repositories', () => ({
 jest.mock('../../features/settings', () => ({
   useSettingsStore: Object.assign(() => {}, {
     getState: () => ({ setTimeZone: jest.fn(), setBodyWeight: jest.fn(), setHeight: jest.fn() }),
-    persist: {
-      hasHydrated: () => mockSettingsHydration.hydrated,
-      rehydrate: () => {
-        if (mockSettingsHydration.hydrated) return Promise.resolve()
-        return new Promise((resolve) => {
-          mockSettingsHydration.finish = (error) => {
-            mockSettingsHydration.hydrated = !error
-            resolve()
-          }
-        })
-      },
-    },
-  }),
-}))
-jest.mock('../../features/workout-session/stores/runningWorkoutStore', () => ({
-  useRunningWorkoutStore: Object.assign(() => {}, {
-    persist: {
-      hasHydrated: () => mockRunningHydration.hydrated,
-      rehydrate: () => {
-        if (mockRunningHydration.hydrated) return Promise.resolve()
-        return new Promise((resolve) => {
-          mockRunningHydration.finish = (error) => {
-            mockRunningHydration.hydrated = !error
-            resolve()
-          }
-        })
-      },
-    },
   }),
 }))
 
 const mockGetCurrentUser = jest.fn()
 const mockUpdateCurrentUser = jest.fn()
 const mockLoginWithWorkOS = jest.fn()
+const mockPauseAndDrain = jest.fn()
+const mockInvalidatePendingRequests = jest.fn()
+const mockResumePendingRequests = jest.fn()
+const mockHydrateProfileStores = jest.fn()
 const mockCredentials = { token: null, refreshToken: null }
-const mockSettingsHydration = { hydrated: true, finish: null }
-const mockRunningHydration = { hydrated: true, finish: null }
+const mockProfileHydration = { finish: null }
 const AsyncStorage = require('@react-native-async-storage/async-storage')
 const { resetAllStores } = require('../../utils/storeReset')
 const { clearDatabase } = require('../../lib/db/connection')
+const { LOCAL_PROFILE_OWNER, setActiveProfileOwner, getProfileScope } = require('../../lib/profileScope')
 const { useAuthStore, initializeAuth } = require('../../stores/authStore')
 
 describe('auth profile refresh', () => {
@@ -71,6 +55,8 @@ describe('auth profile refresh', () => {
     await useAuthStore.persist.rehydrate()
     useAuthStore.setState({
       isStartupReady: false,
+      profileOwnerId: LOCAL_PROFILE_OWNER,
+      isProfileTransitioning: false,
       isAuthenticated: false,
       serverSession: 'unknown',
       user: null,
@@ -85,12 +71,14 @@ describe('auth profile refresh', () => {
     mockGetCurrentUser.mockReset()
     mockUpdateCurrentUser.mockReset()
     mockLoginWithWorkOS.mockReset()
+    mockPauseAndDrain.mockReset().mockResolvedValue(undefined)
+    mockInvalidatePendingRequests.mockReset()
+    mockResumePendingRequests.mockReset()
+    mockHydrateProfileStores.mockReset().mockResolvedValue(undefined)
+    setActiveProfileOwner(LOCAL_PROFILE_OWNER)
     mockCredentials.token = null
     mockCredentials.refreshToken = null
-    mockSettingsHydration.hydrated = true
-    mockSettingsHydration.finish = null
-    mockRunningHydration.hydrated = true
-    mockRunningHydration.finish = null
+    mockProfileHydration.finish = null
   })
 
   it('keeps cached local access when the server rejects a profile refresh', async () => {
@@ -118,7 +106,11 @@ describe('auth profile refresh', () => {
   })
 
   it('keeps a successful credential exchange when the first profile fetch fails', async () => {
-    useAuthStore.setState({ user: { id: 'previous_user', registrationCompleted: true } })
+    setActiveProfileOwner('account:previous_user')
+    useAuthStore.setState({
+      profileOwnerId: 'account:previous_user',
+      user: { id: 'previous_user', registrationCompleted: true },
+    })
     mockLoginWithWorkOS.mockResolvedValue({ token: 'access', refreshToken: 'refresh' })
     mockGetCurrentUser.mockRejectedValue(Object.assign(new Error('Offline'), { status: 503 }))
 
@@ -130,14 +122,129 @@ describe('auth profile refresh', () => {
       refreshToken: 'refresh',
       user: null,
       profileError: 'Offline',
+      profileOwnerId: LOCAL_PROFILE_OWNER,
+      isProfileTransitioning: false,
+    })
+    expect(getProfileScope().ownerId).toBe(LOCAL_PROFILE_OWNER)
+  })
+
+  it('waits for sync to drain before starting the login exchange', async () => {
+    let releaseDrain
+    let markDrainStarted
+    const drainStarted = new Promise((resolve) => (markDrainStarted = resolve))
+    mockPauseAndDrain.mockImplementation(() => {
+      markDrainStarted()
+      return new Promise((resolve) => (releaseDrain = resolve))
+    })
+    mockLoginWithWorkOS.mockResolvedValue({ token: 'access', refreshToken: 'refresh' })
+    mockGetCurrentUser.mockRejectedValue(new Error('Offline'))
+
+    const login = useAuthStore.getState().loginWithWorkOS('code')
+    await drainStarted
+
+    expect(mockLoginWithWorkOS).not.toHaveBeenCalled()
+    expect(useAuthStore.getState().isProfileTransitioning).toBe(true)
+
+    releaseDrain()
+    await login
+    expect(mockLoginWithWorkOS).toHaveBeenCalledWith('code')
+  })
+
+  it('keeps the transition gate set when an old profile request rejects during login', async () => {
+    setActiveProfileOwner('account:user_a')
+    useAuthStore.setState({
+      isAuthenticated: true,
+      profileOwnerId: 'account:user_a',
+      user: { id: 'user_a', registrationCompleted: true },
+    })
+    let rejectOldProfile
+    mockGetCurrentUser
+      .mockReturnValueOnce(new Promise((_, reject) => (rejectOldProfile = reject)))
+      .mockRejectedValueOnce(new Error('New profile offline'))
+
+    const oldProfile = useAuthStore.getState().fetchUser()
+    let releaseDrain
+    let markDrainStarted
+    const drainStarted = new Promise((resolve) => (markDrainStarted = resolve))
+    mockPauseAndDrain.mockImplementation(() => {
+      markDrainStarted()
+      return new Promise((resolve) => (releaseDrain = resolve))
+    })
+    mockLoginWithWorkOS.mockResolvedValue({ token: 'new-access', refreshToken: 'new-refresh' })
+
+    const login = useAuthStore.getState().loginWithWorkOS('new-code')
+    await drainStarted
+    rejectOldProfile(Object.assign(new Error('Old profile failed'), { status: 503 }))
+    await expect(oldProfile).rejects.toThrow('Old profile failed')
+
+    expect(useAuthStore.getState().isProfileTransitioning).toBe(true)
+    expect(mockLoginWithWorkOS).not.toHaveBeenCalled()
+
+    releaseDrain()
+    await login
+  })
+
+  it('ignores old profile and update failures after a profile-only switch', async () => {
+    setActiveProfileOwner('account:user_a')
+    useAuthStore.setState({
+      isAuthenticated: true,
+      profileOwnerId: 'account:user_a',
+      user: { id: 'user_a', registrationCompleted: true },
+    })
+    let rejectOldProfile
+    let rejectOldUpdate
+    mockGetCurrentUser
+      .mockReturnValueOnce(new Promise((_, reject) => (rejectOldProfile = reject)))
+      .mockResolvedValueOnce({ id: 'user_b', registrationCompleted: true })
+    mockUpdateCurrentUser.mockReturnValueOnce(
+      new Promise((_, reject) => (rejectOldUpdate = reject))
+    )
+
+    const oldProfile = useAuthStore.getState().fetchUser()
+    const oldUpdate = useAuthStore.getState().updateUser({ name: 'Old account' })
+    await useAuthStore.getState().fetchUser()
+    expect(getProfileScope().ownerId).toBe('account:user_b')
+
+    rejectOldProfile(new Error('Old profile failed'))
+    rejectOldUpdate(new Error('Old update failed'))
+    await Promise.all([oldProfile, oldUpdate])
+
+    expect(useAuthStore.getState()).toMatchObject({
+      isAuthenticated: true,
+      profileOwnerId: 'account:user_b',
+      user: { id: 'user_b' },
+      profileError: null,
+      error: null,
+      isProfileTransitioning: true,
     })
   })
 
-  it('waits for settings and session hydration, not the remote profile', async () => {
+  it('invalidates pending API requests as soon as logout begins', async () => {
+    useAuthStore.setState({
+      isAuthenticated: true,
+      user: { id: 'user_a', registrationCompleted: true },
+    })
+
+    await useAuthStore.getState().logout()
+
+    expect(mockInvalidatePendingRequests).toHaveBeenCalledTimes(1)
+    expect(useAuthStore.getState()).toMatchObject({ isAuthenticated: false, user: null })
+  })
+
+  it('waits for profile-store hydration before refreshing the remote profile', async () => {
     mockCredentials.token = 'access'
     mockCredentials.refreshToken = 'refresh'
-    mockSettingsHydration.hydrated = false
-    mockRunningHydration.hydrated = false
+    let markHydrationStarted
+    const hydrationStarted = new Promise((resolve) => {
+      markHydrationStarted = resolve
+    })
+    mockHydrateProfileStores.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          mockProfileHydration.finish = resolve
+          markHydrationStarted()
+        })
+    )
     const cachedUser = { id: 'user_1', registrationCompleted: true }
     useAuthStore.setState({ isAuthenticated: true, user: cachedUser })
     let rejectProfile
@@ -149,12 +256,12 @@ describe('auth profile refresh', () => {
 
     const startup = initializeAuth()
     expect(useAuthStore.getState().isStartupReady).toBe(false)
+    await hydrationStarted
 
-    mockSettingsHydration.finish()
+    mockProfileHydration.finish()
     await Promise.resolve()
     expect(useAuthStore.getState().isStartupReady).toBe(false)
 
-    mockRunningHydration.finish()
     await startup
 
     expect(useAuthStore.getState()).toMatchObject({
@@ -178,11 +285,10 @@ describe('auth profile refresh', () => {
   })
 
   it('settles a persisted-store read error into a retryable startup state', async () => {
-    mockSettingsHydration.hydrated = false
+    mockHydrateProfileStores.mockRejectedValueOnce(new Error('storage unavailable'))
 
     const startup = initializeAuth(true)
     expect(useAuthStore.getState().isStartupReady).toBe(false)
-    mockSettingsHydration.finish(new Error('storage unavailable'))
     await startup
 
     expect(useAuthStore.getState()).toMatchObject({

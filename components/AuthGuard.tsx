@@ -10,6 +10,7 @@ export function AuthGuard() {
   const { isAuthenticated, user, isLoading } = useAuth()
   const isStartupReady = useAuthStore((state) => state.isStartupReady)
   const startupError = useAuthStore((state) => state.startupError)
+  const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
   const isProfileLoading = useAuthStore((state) => state.isProfileLoading)
   const retryProfile = useAuthStore((state) => state.fetchUser)
   const router = useRouter()
@@ -61,6 +62,14 @@ export function AuthGuard() {
           {startupError}
         </Text>
         <Button onPress={() => void initializeAuth(true)}>Retry</Button>
+      </YStack>
+    )
+  }
+
+  if (isProfileTransitioning) {
+    return (
+      <YStack flex={1} items="center" justify="center" bg="$background">
+        <Spinner size="large" color="$blue9" />
       </YStack>
     )
   }

@@ -74,6 +74,7 @@ describe('SyncEngine queue remapping', () => {
     } = require('../../features/workout-session/stores/runningWorkoutStore')
     const { queryClient } = require('../../lib/queryClient')
     const { queryKeys } = require('../../lib/queryKeys')
+    const ownerKeys = queryKeys.forOwner('local:device')
     const { replaceQueuedIdReferences } = require('../../lib/sync/queuePayloadRemap')
     const oldId = 'local_workout_active'
 
@@ -87,7 +88,7 @@ describe('SyncEngine queue remapping', () => {
         completedExercises: 0,
       },
     })
-    queryClient.setQueryData(queryKeys.workouts.list(), [
+    queryClient.setQueryData(ownerKeys.workouts.list(), [
       { id: oldId, workoutTemplate: { id: oldId, exercises: [] } },
     ])
 
@@ -101,7 +102,7 @@ describe('SyncEngine queue remapping', () => {
 
       remapRunningWorkoutId(from, to)
       queryClient.setQueriesData(
-        { queryKey: queryKeys.workouts.all },
+        { queryKey: ownerKeys.workouts.all },
         (data) => replaceQueuedIdReferences(data, from, to).value
       )
     })
@@ -127,7 +128,7 @@ describe('SyncEngine queue remapping', () => {
 
     expect(engine.resolveId('workouts', oldId)).toBe('server_workout_active')
     expect(useRunningWorkoutStore.getState().runningWorkout.id).toBe('server_workout_active')
-    expect(queryClient.getQueryData(queryKeys.workouts.list())[0]).toMatchObject({
+    expect(queryClient.getQueryData(ownerKeys.workouts.list())[0]).toMatchObject({
       id: 'server_workout_active',
       workoutTemplate: { id: 'server_workout_active' },
     })
@@ -140,7 +141,7 @@ describe('SyncEngine queue remapping', () => {
     )
     engine.destroy()
     useRunningWorkoutStore.setState({ runningWorkout: null })
-    queryClient.removeQueries({ queryKey: queryKeys.workouts.all })
+    queryClient.removeQueries({ queryKey: ownerKeys.workouts.all })
   })
 
   it('rewrites queued workout updates after an offline workout create', async () => {

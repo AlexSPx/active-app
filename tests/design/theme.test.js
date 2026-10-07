@@ -59,9 +59,22 @@ jest.mock('../../stores/uiStore', () => ({
   useUiStore: (select) =>
     select({ finishedCongrats: { visible: false }, hideFinishedCongrats: () => {} }),
 }))
-jest.mock('../../stores/authStore', () => ({
-  useAuthStore: (select) => select({ isStartupReady: true, isAuthenticated: false, user: null }),
-}))
+jest.mock('../../stores/authStore', () => {
+  const state = {
+    isStartupReady: true,
+    isAuthenticated: false,
+    user: null,
+    profileOwnerId: 'local:device',
+    legacyOwnerId: null,
+    isProfileTransitioning: false,
+    serverSession: 'unknown',
+    markProfileDatabaseReady: jest.fn(),
+  }
+  const useAuthStore = (select) => select(state)
+  useAuthStore.getState = () => state
+  useAuthStore.__state = state
+  return { useAuthStore }
+})
 jest.mock('../../components/FinishedWorkoutCongrats', () => ({
   __esModule: true,
   default: () => null,
@@ -136,11 +149,48 @@ test('routine ID remaps update list and active caches without changing running w
   listener('routines', 'local-routine', 'server-routine')
   expect(queryClient.setQueriesData).toHaveBeenCalledTimes(1)
   const [filter, rewrite] = queryClient.setQueriesData.mock.calls[0]
-  expect(filter).toEqual({ queryKey: queryKeys.routines.all })
+  expect(filter).toEqual({ queryKey: queryKeys.forOwner('local:device').routines.all })
   expect(rewrite([{ id: 'local-routine', pattern: [] }])).toEqual([
     { id: 'server-routine', pattern: [] },
   ])
   expect(rewrite({ id: 'local-routine' })).toEqual({ id: 'server-routine' })
   expect(remapRunningWorkoutId).not.toHaveBeenCalled()
   await act(async () => view.unmount())
+})
+
+test('keeps sync uploads disabled while an authenticated session has no loaded profile', async () => {
+  const { useAuthStore } = require('../../stores/authStore')
+  const { syncEngine } = require('../../lib/sync')
+  const state = useAuthStore.__state
+  Object.assign(state, {
+    isStartupReady: true,
+    startupError: null,
+    isAuthenticated: true,
+    user: null,
+    profileOwnerId: 'local:device',
+    legacyOwnerId: null,
+    isProfileTransitioning: false,
+    serverSession: 'unknown',
+  })
+  syncEngine.setUploadsEnabled.mockClear()
+
+  let view
+  await act(async () => {
+    view = create(React.createElement(Provider, {}, React.createElement(ThemeProbe)))
+  })
+
+  expect(syncEngine.setUploadsEnabled).toHaveBeenCalled()
+  expect(syncEngine.setUploadsEnabled.mock.calls.every(([enabled]) => !enabled)).toBe(true)
+
+  await act(async () => view.unmount())
+  Object.assign(state, {
+    isStartupReady: true,
+    startupError: null,
+    isAuthenticated: false,
+    user: null,
+    profileOwnerId: 'local:device',
+    legacyOwnerId: null,
+    isProfileTransitioning: false,
+    serverSession: 'unknown',
+  })
 })

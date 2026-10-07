@@ -22,6 +22,14 @@ export class AuthRepository {
     apiService.setUnauthorizedHandler(handler)
   }
 
+  invalidatePendingRequests(): Promise<void> {
+    return apiService.invalidatePendingRequests()
+  }
+
+  resumePendingRequests(): void {
+    apiService.resumePendingRequests()
+  }
+
   setToken(token: string): Promise<void> {
     return apiService.setToken(token)
   }

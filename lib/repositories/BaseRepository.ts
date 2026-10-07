@@ -25,7 +25,7 @@ export abstract class BaseRepository {
    * Enqueue a sync job for the given operation.
    */
   protected async enqueueSync(config: SyncJobConfig): Promise<void> {
-    await syncEngine.enqueue(config)
+    await syncEngine.enqueue(config, this.db)
   }
 
   /**

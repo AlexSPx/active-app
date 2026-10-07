@@ -82,7 +82,7 @@ describe('WorkoutRepository', () => {
       payload,
       localTable: 'workouts',
       localId: created.id,
-    })
+    }, db)
   })
 
   it('updates the local workout row and enqueues updateWorkout', async () => {
@@ -151,7 +151,7 @@ describe('WorkoutRepository', () => {
     expect(syncEngine.enqueue).toHaveBeenCalledWith({
       apiMethod: 'updateWorkout',
       payload: ['workout_1', updatePayload],
-    })
+    }, db)
   })
 
   it('resolves remapped IDs for workout updates and deletes', async () => {
@@ -179,11 +179,11 @@ describe('WorkoutRepository', () => {
     expect(syncEngine.enqueue).toHaveBeenNthCalledWith(1, {
       apiMethod: 'updateWorkout',
       payload: ['server_workout_4', payload],
-    })
+    }, db)
     expect(syncEngine.enqueue).toHaveBeenNthCalledWith(2, {
       apiMethod: 'deleteWorkout',
       payload: ['server_workout_4'],
-    })
+    }, db)
   })
 
   it('records a workout locally and enqueues recordWorkout', async () => {
@@ -229,7 +229,7 @@ describe('WorkoutRepository', () => {
       payload: recordRequest,
       localTable: 'workout_records',
       localId: result.workoutRecord.id,
-    })
+    }, db)
   })
 
   it('removes the local workout record if it cannot be queued', async () => {
@@ -256,6 +256,7 @@ describe('WorkoutRepository', () => {
         apiMethod: 'recordWorkout',
         payload: { ...request, workoutId: 'server_workout_2' },
       }),
+      db
     )
   })
 
@@ -290,10 +291,10 @@ describe('WorkoutRepository', () => {
     expect(syncEngine.enqueue).toHaveBeenNthCalledWith(1, {
       apiMethod: 'deleteWorkout',
       payload: ['workout_delete'],
-    })
+    }, db)
     expect(syncEngine.enqueue).toHaveBeenNthCalledWith(2, {
       apiMethod: 'deleteWorkoutRecord',
       payload: ['record_delete'],
-    })
+    }, db)
   })
 })

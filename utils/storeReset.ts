@@ -1,33 +1,24 @@
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { useSettingsStore, useUserStore } from '../features/settings'
-import { useRunningWorkoutStore } from '../features/workout-session'
+import { useUserStore } from '../features/settings'
 import { useWorkoutStore, useEditWorkoutStore } from '../features/workouts'
-import { useWidgetStore } from '../stores/widgetStore'
 import { useUiStore } from '../stores/uiStore'
 import { queryClient } from '../lib/queryClient'
 
 /**
- * Resets all application stores and clears AsyncStorage.
- * This should be called when a user signs out or when a 401 error occurs.
+ * Clears transient view state when changing profile. Owner-scoped settings,
+ * widgets, running sessions, SQLite rows, and queued work remain on disk.
  */
 export async function resetAllStores(): Promise<void> {
   try {
-    // Clear AsyncStorage completely
-    await AsyncStorage.clear()
-
-    // Clear TanStack Query cache
+    await queryClient.cancelQueries()
     queryClient.clear()
 
-    // Reset all Zustand stores to their initial state
+    // These stores contain only in-memory editors or derived profile data.
     useUserStore.getState().reset()
-    useSettingsStore.getState().reset()
-    useRunningWorkoutStore.getState().reset()
     useWorkoutStore.getState().reset()
     useEditWorkoutStore.getState().reset()
-    useWidgetStore.getState().reset()
     useUiStore.getState().reset()
 
-    console.log('All stores and caches have been reset')
+    console.log('Transient profile state and query cache reset')
   } catch (error) {
     console.error('Error resetting stores:', error)
     throw error

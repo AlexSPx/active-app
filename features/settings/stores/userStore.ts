@@ -1,12 +1,14 @@
 import { create } from 'zustand'
 import { UserRepository } from '../../../lib/repositories/UserRepository'
 import type { User, ApiError, UpdateUserRequest } from '../../../types/api'
+import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 
 const userRepository = new UserRepository()
 
 interface UserState {
   // State
   user: User | null
+  ownerId: string | null
   isLoading: boolean
   error: string | null
   lastUpdated: number | null
@@ -26,23 +28,28 @@ interface UserState {
 export const useUserStore = create<UserState>((set, get) => ({
   // Initial state
   user: null,
+  ownerId: null,
   isLoading: false,
   error: null,
   lastUpdated: null,
 
   // Actions
   fetchUser: async () => {
+    const scope = getProfileScope()
     try {
       set({ isLoading: true, error: null })
 
       const user = await userRepository.getCurrentUser()
+      if (!isCurrentProfile(scope)) return
 
       set({
         user,
+        ownerId: scope.ownerId,
         isLoading: false,
         lastUpdated: Date.now(),
       })
     } catch (error) {
+      if (!isCurrentProfile(scope)) return
       const apiError = error as ApiError
       set({
         isLoading: false,
@@ -53,6 +60,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   updateUser: (updates: Partial<User>) => {
+    if (get().ownerId !== getProfileScope().ownerId) return
     const currentUser = get().user
     if (currentUser) {
       set({
@@ -63,23 +71,27 @@ export const useUserStore = create<UserState>((set, get) => ({
   },
 
   patchUser: async (payload: UpdateUserRequest) => {
+    const scope = getProfileScope()
     try {
       set({ isLoading: true, error: null })
       const updated = await userRepository.updateCurrentUser(payload)
+      if (!isCurrentProfile(scope)) return null
       // Merge into current user state
       const currentUser = get().user
       if (currentUser) {
         set({
           user: { ...currentUser, ...updated },
+          ownerId: scope.ownerId,
           isLoading: false,
           lastUpdated: Date.now(),
         })
       } else {
         // If we had no user loaded yet, just set it
-        set({ user: updated, isLoading: false, lastUpdated: Date.now() })
+        set({ user: updated, ownerId: scope.ownerId, isLoading: false, lastUpdated: Date.now() })
       }
       return updated
     } catch (error) {
+      if (!isCurrentProfile(scope)) return null
       const apiError = error as ApiError
       set({ isLoading: false, error: apiError.message || 'Failed to update user' })
       // Propagate error for caller handling
@@ -97,6 +109,7 @@ export const useUserStore = create<UserState>((set, get) => ({
   reset: () => {
     set({
       user: null,
+      ownerId: null,
       isLoading: false,
       error: null,
       lastUpdated: null,

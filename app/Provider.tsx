@@ -1,6 +1,6 @@
+import { useCallback, useEffect, useState } from 'react'
 import { useColorScheme } from 'react-native'
-import { useEffect, useRef } from 'react'
-import { SQLiteProvider, useSQLiteContext } from 'expo-sqlite'
+import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite'
 import { migrateDbIfNeeded } from '../lib/db/migrations'
 import { TamaguiProvider, type TamaguiProviderProps, PortalProvider, Theme } from 'tamagui'
 import { ToastProvider, ToastViewport } from '@tamagui/toast'
@@ -23,39 +23,42 @@ import { hydrateFromServer } from '../lib/sync/hydrate'
 import { setSharedDatabase } from '../lib/db/connection'
 import { useAuthStore } from '../stores/authStore'
 import { remapRunningWorkoutId } from '../features/workout-session/stores/runningWorkoutStore'
+import { databaseNameForProfile, getProfileScope, isCurrentProfile } from '../lib/profileScope'
 
-// Track which DB instances have already been hydrated to avoid double-runs
-const hydratedDbs = new WeakSet<object>()
-
-/**
- * Inner component that has access to SQLiteContext.
- * Initializes the SyncEngine, registers the shared DB handle, and
- * runs hydration whenever the user authenticates.
- */
-function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
+function SyncEngineBootstrap({
+  children,
+  ownerId,
+}: {
+  children: React.ReactNode
+  ownerId: string
+}) {
   const db = useSQLiteContext()
-  const isStartupReady = useAuthStore((s) => s.isStartupReady)
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const userId = useAuthStore((s) => s.user?.id)
-  const serverSession = useAuthStore((s) => s.serverSession)
-  const startupError = useAuthStore((s) => s.startupError)
+  const [readyDb, setReadyDb] = useState<SQLiteDatabase | null>(null)
+  const isStartupReady = useAuthStore((state) => state.isStartupReady)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const userId = useAuthStore((state) => state.user?.id)
+  const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
+  const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
+  const serverSession = useAuthStore((state) => state.serverSession)
+  const startupError = useAuthStore((state) => state.startupError)
 
-  // Always keep the singleton reference pointing at the live handle
   setSharedDatabase(db)
 
-  // Initialize the local queue after startup and migrations, even without a valid server session.
   useEffect(() => {
-    syncEngine.setUploadsEnabled(false)
-    if (!isStartupReady || startupError) return
+    let active = true
+    const scope = getProfileScope()
+    if (scope.ownerId !== ownerId || profileOwnerId !== ownerId) return
 
     const unsubscribeIdRemap = syncEngine.onIdRemap((tableName, oldId, newId) => {
+      if (!isCurrentProfile(scope)) return
       if (tableName !== 'workouts' && tableName !== 'routines') return
 
       if (tableName === 'workouts') remapRunningWorkoutId(oldId, newId)
+      const ownerKeys = queryKeys.forOwner(ownerId)
       const affectedQueries =
         tableName === 'workouts'
-          ? [queryKeys.workouts.all, queryKeys.routines.all]
-          : [queryKeys.routines.all]
+          ? [ownerKeys.workouts.all, ownerKeys.routines.all]
+          : [ownerKeys.routines.all]
       for (const queryKey of affectedQueries) {
         queryClient.setQueriesData(
           { queryKey },
@@ -63,83 +66,150 @@ function SyncEngineBootstrap({ children }: { children: React.ReactNode }) {
         )
       }
     })
-    syncEngine.init(db, { processOnInit: false }).catch(console.error)
+
+    setReadyDb(null)
+    syncEngine
+      .init(db, { processOnInit: false })
+      .then(() => {
+        if (!active || !isCurrentProfile(scope)) return
+        setReadyDb(db)
+        useAuthStore.getState().markProfileDatabaseReady(ownerId)
+      })
+      .catch((error) => {
+        console.error('[SyncEngineBootstrap] Init failed:', error)
+        if (active && isCurrentProfile(scope)) {
+          // The migrated local database remains usable even if queue bootstrap fails.
+          useAuthStore.getState().markProfileDatabaseReady(ownerId)
+        }
+      })
+
     return () => {
+      active = false
       syncEngine.setUploadsEnabled(false)
       unsubscribeIdRemap()
       syncEngine.destroy()
+      setReadyDb(null)
     }
-  }, [db, isStartupReady, startupError])
+  }, [db, ownerId, profileOwnerId])
 
   useEffect(() => {
     syncEngine.setUploadsEnabled(
-      isStartupReady && !startupError && isAuthenticated && !!userId && serverSession === 'valid'
+      isStartupReady &&
+        !startupError &&
+        !isProfileTransitioning &&
+        isAuthenticated &&
+        !!userId &&
+        profileOwnerId === ownerId &&
+        serverSession === 'valid'
     )
-  }, [isAuthenticated, isStartupReady, serverSession, startupError, userId])
+  }, [
+    isAuthenticated,
+    isProfileTransitioning,
+    isStartupReady,
+    ownerId,
+    profileOwnerId,
+    serverSession,
+    startupError,
+    userId,
+  ])
 
-  // Whenever auth state transitions to authenticated, hydrate and invalidate
-  const prevAuthRef = useRef<boolean | null>(null)
   useEffect(() => {
-    if (!isStartupReady || startupError) return
-
-    if (!isAuthenticated || !userId || serverSession !== 'valid') {
-      prevAuthRef.current = false
+    if (
+      readyDb !== db ||
+      !isStartupReady ||
+      startupError ||
+      isProfileTransitioning ||
+      profileOwnerId !== ownerId ||
+      !isAuthenticated ||
+      !userId ||
+      serverSession !== 'valid'
+    ) {
       return
     }
 
-    const wasAuthenticated = prevAuthRef.current
-    prevAuthRef.current = isAuthenticated
+    const scope = getProfileScope()
+    if (scope.ownerId !== ownerId || !isCurrentProfile(scope)) return
 
-    // Skip if this DB was already hydrated for the current authenticated state.
-    if (wasAuthenticated === true) return
-
-    // Skip if this exact DB handle was already hydrated (prevents double-fires on re-renders)
-    if (hydratedDbs.has(db)) {
-      console.log('[SyncEngineBootstrap] DB already hydrated, skipping')
-      return
-    }
-    hydratedDbs.add(db)
-
-    console.log('[SyncEngineBootstrap] Auth detected — hydrating...')
     hydrateFromServer(db)
       .then(() => {
-        console.log('[SyncEngineBootstrap] Hydration complete — invalidating queries')
-        return queryClient.invalidateQueries()
+        if (isCurrentProfile(scope)) {
+          return queryClient.invalidateQueries({ queryKey: ['profile', ownerId] })
+        }
       })
-      .catch((err) => {
-        // Remove from set so it can be retried on next auth transition
-        hydratedDbs.delete(db)
-        console.warn('[SyncEngineBootstrap] Hydration failed (offline?):', err?.message)
+      .catch((error) => {
+        if (isCurrentProfile(scope)) {
+          console.warn('[SyncEngineBootstrap] Hydration failed (offline?):', error?.message)
+        }
       })
-  }, [isAuthenticated, isStartupReady, serverSession, startupError, userId, db])
+  }, [
+    db,
+    isAuthenticated,
+    isProfileTransitioning,
+    isStartupReady,
+    ownerId,
+    profileOwnerId,
+    readyDb,
+    serverSession,
+    startupError,
+    userId,
+  ])
 
   return <>{children}</>
 }
 
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   const colorScheme = useColorScheme()
-  const theme = useSettingsStore((s) => s.theme)
-  const isStartupReady = useAuthStore((s) => s.isStartupReady)
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
-  const userId = useAuthStore((s) => s.user?.id)
-  const serverSession = useAuthStore((s) => s.serverSession)
-  const startupError = useAuthStore((s) => s.startupError)
-  const finishedCongrats = useUiStore((s) => s.finishedCongrats)
-  const hideFinishedCongrats = useUiStore((s) => s.hideFinishedCongrats)
+  const theme = useSettingsStore((state) => state.theme)
+  const isStartupReady = useAuthStore((state) => state.isStartupReady)
+  const startupError = useAuthStore((state) => state.startupError)
+  const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
+  const legacyOwnerId = useAuthStore((state) => state.legacyOwnerId)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
+  const serverSession = useAuthStore((state) => state.serverSession)
+  const userId = useAuthStore((state) => state.user?.id)
+  const finishedCongrats = useUiStore((state) => state.finishedCongrats)
+  const hideFinishedCongrats = useUiStore((state) => state.hideFinishedCongrats)
   const congratsVisible = finishedCongrats.visible && !!finishedCongrats.payload
   const payload = finishedCongrats.payload
-
   const activeTheme = theme === 'system' ? colorScheme : theme
+
+  const onInit = useCallback(
+    (db: SQLiteDatabase) => migrateDbIfNeeded(db, { ownerId: profileOwnerId, legacyOwnerId }),
+    [legacyOwnerId, profileOwnerId]
+  )
 
   useEffect(() => {
     initNotifications().catch(() => {})
   }, [])
 
   useEffect(() => {
-    if (!isStartupReady || startupError || !isAuthenticated || !userId || serverSession !== 'valid')
+    const state = useAuthStore.getState()
+    if (
+      !state.isStartupReady ||
+      state.startupError ||
+      state.isProfileTransitioning ||
+      !state.isAuthenticated ||
+      !state.user?.id ||
+      state.serverSession !== 'valid'
+    ) {
       return
+    }
     registerPushNotifications().catch(() => {})
-  }, [isAuthenticated, isStartupReady, serverSession, startupError, userId])
+  }, [isStartupReady, isAuthenticated, isProfileTransitioning, serverSession, startupError, userId])
+
+  const content =
+    isStartupReady && !startupError ? (
+      <SQLiteProvider
+        key={profileOwnerId}
+        databaseName={databaseNameForProfile(profileOwnerId)}
+        onInit={onInit}
+      >
+        <SyncEngineBootstrap ownerId={profileOwnerId}>{children}</SyncEngineBootstrap>
+      </SQLiteProvider>
+    ) : (
+      children
+    )
 
   return (
     <SafeAreaProvider>
@@ -150,29 +220,25 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
       >
         <Theme name={activeTheme === 'dark' ? 'dark' : 'light'}>
           <ThemeProvider value={activeTheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <SQLiteProvider databaseName="active.db" onInit={migrateDbIfNeeded}>
-              <QueryClientProvider client={queryClient}>
-                <PostHogProvider client={posthog}>
-                  <SyncEngineBootstrap>
-                    <PortalProvider>
-                      <ToastProvider swipeDirection="horizontal" duration={6000} native={[]}>
-                        {children}
-                        <CurrentToast />
-                        <ToastViewport top="$8" left={0} right={0} />
-                        {congratsVisible && payload && (
-                          <FinishedWorkoutCongrats
-                            data={payload.record}
-                            streak={payload.streak}
-                            visible={congratsVisible}
-                            onClose={hideFinishedCongrats}
-                          />
-                        )}
-                      </ToastProvider>
-                    </PortalProvider>
-                  </SyncEngineBootstrap>
-                </PostHogProvider>
-              </QueryClientProvider>
-            </SQLiteProvider>
+            <QueryClientProvider client={queryClient}>
+              <PostHogProvider client={posthog}>
+                <PortalProvider>
+                  <ToastProvider swipeDirection="horizontal" duration={6000} native={[]}>
+                    {content}
+                    <CurrentToast />
+                    <ToastViewport top="$8" left={0} right={0} />
+                    {congratsVisible && payload && (
+                      <FinishedWorkoutCongrats
+                        data={payload.record}
+                        streak={payload.streak}
+                        visible={congratsVisible}
+                        onClose={hideFinishedCongrats}
+                      />
+                    )}
+                  </ToastProvider>
+                </PortalProvider>
+              </PostHogProvider>
+            </QueryClientProvider>
           </ThemeProvider>
         </Theme>
       </TamaguiProvider>

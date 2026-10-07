@@ -3,10 +3,13 @@ import type { ApiExercise, CreateWorkoutRequest, UpdateWorkoutRequest } from '..
 import type { Workout } from '../../../types/workout'
 import { queryKeys } from '../../../lib/queryKeys'
 import { useWorkoutRepository } from '../../../lib/hooks/useRepository'
+import { useAuthStore } from '../../../stores/authStore'
 
 export function useWorkoutMutations() {
   const queryClient = useQueryClient()
   const repo = useWorkoutRepository()
+  const ownerId = useAuthStore((state) => state.profileOwnerId)
+  const ownerKeys = queryKeys.forOwner(ownerId)
 
   const createMutation = useMutation({
     mutationFn: async ({
@@ -27,7 +30,7 @@ export function useWorkoutMutations() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
+      queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
     },
   })
 
@@ -44,7 +47,7 @@ export function useWorkoutMutations() {
       await repo.update(workoutId, payload, exercises)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
+      queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
     },
   })
 
@@ -53,7 +56,7 @@ export function useWorkoutMutations() {
       await repo.delete(id)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
+      queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
     },
   })
 
@@ -62,7 +65,7 @@ export function useWorkoutMutations() {
       await repo.deleteRecord(id)
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
+      queryClient.invalidateQueries({ queryKey: ownerKeys.records.all })
     },
   })
 
@@ -113,8 +116,16 @@ export function useWorkoutMutations() {
     }
   }
 
-  const isPending = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending || deleteRecordMutation.isPending
-  const currentError = createMutation.error ?? updateMutation.error ?? deleteMutation.error ?? deleteRecordMutation.error
+  const isPending =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending ||
+    deleteRecordMutation.isPending
+  const currentError =
+    createMutation.error ??
+    updateMutation.error ??
+    deleteMutation.error ??
+    deleteRecordMutation.error
 
   return {
     createWorkout,

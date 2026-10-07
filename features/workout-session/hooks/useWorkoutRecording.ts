@@ -6,9 +6,13 @@ import type {
 } from '../../../types/api'
 import { WorkoutRepository } from '../../../lib/repositories/WorkoutRepository'
 import { getDatabase } from '../../../lib/db/connection'
+import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 
 export interface UseWorkoutRecordingReturn {
-  recordWorkout: (workoutRecord: WorkoutRecordRequest, workoutTitle?: string) => Promise<WorkoutRecordResponse | null>
+  recordWorkout: (
+    workoutRecord: WorkoutRecordRequest,
+    workoutTitle?: string
+  ) => Promise<WorkoutRecordResponse | null>
   isRecording: boolean
   error: string | null
 }
@@ -17,23 +21,30 @@ export function useWorkoutRecording(): UseWorkoutRecordingReturn {
   const [isRecording, setIsRecording] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const recordWorkout = useCallback(async (workoutRecord: WorkoutRecordRequest, workoutTitle?: string) => {
-    try {
-      setIsRecording(true)
-      setError(null)
+  const recordWorkout = useCallback(
+    async (workoutRecord: WorkoutRecordRequest, workoutTitle?: string) => {
+      const profileScope = getProfileScope()
+      try {
+        setIsRecording(true)
+        setError(null)
 
-      const db = await getDatabase()
-      const repo = new WorkoutRepository(db)
-      const result = await repo.recordWorkout(workoutRecord, workoutTitle || 'Workout')
-      return result
-    } catch (err) {
-      console.error('Failed to record workout:', err)
-      setError(err instanceof Error ? err.message : 'Failed to record workout')
-      return null
-    } finally {
-      setIsRecording(false)
-    }
-  }, [])
+        const db = await getDatabase()
+        if (!isCurrentProfile(profileScope)) return null
+        const repo = new WorkoutRepository(db)
+        const result = await repo.recordWorkout(workoutRecord, workoutTitle || 'Workout')
+        return isCurrentProfile(profileScope) ? result : null
+      } catch (err) {
+        console.error('Failed to record workout:', err)
+        if (isCurrentProfile(profileScope)) {
+          setError(err instanceof Error ? err.message : 'Failed to record workout')
+        }
+        return null
+      } finally {
+        setIsRecording(false)
+      }
+    },
+    []
+  )
 
   return {
     recordWorkout,

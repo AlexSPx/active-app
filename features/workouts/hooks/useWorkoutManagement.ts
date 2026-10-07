@@ -3,6 +3,7 @@ import { useAppNavigation } from '../../../navigation/useAppNavigation'
 import type { ApiWorkout } from '../../../types/api'
 import { queryClient } from '../../../lib/queryClient'
 import { queryKeys } from '../../../lib/queryKeys'
+import { useAuthStore } from '../../../stores/authStore'
 
 export interface UseWorkoutManagementActions {
   startWorkout: (workout: ApiWorkout) => void
@@ -21,6 +22,8 @@ export function useWorkoutManagement(): UseWorkoutManagementActions {
     recordingError,
   } = useRunningWorkoutStore()
   const { navigateToWorkoutSession } = useAppNavigation()
+  const ownerId = useAuthStore((state) => state.profileOwnerId)
+  const ownerKeys = queryKeys.forOwner(ownerId)
 
   const startWorkout = (workout: ApiWorkout) => {
     // Start the workout in the store
@@ -70,8 +73,8 @@ export function useWorkoutManagement(): UseWorkoutManagementActions {
   const stopWorkout = async (notes?: string) => {
     await stopWorkoutInStore(notes)
     // After a workout is stopped/saved, invalidate dependent queries
-    queryClient.invalidateQueries({ queryKey: queryKeys.workouts.all })
-    queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
+    queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
+    queryClient.invalidateQueries({ queryKey: ownerKeys.records.all })
   }
 
   return {
