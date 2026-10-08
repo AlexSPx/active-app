@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { CreateRoutineRequest, UpdateRoutineRequest, Routine } from '../../../types/routine'
 import type { ApiError } from '../../../types/api'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { useRoutineRepository } from '../../../lib/hooks/useRepository'
 
 function toFriendlyError(err: unknown, fallback: string): string {
@@ -23,11 +23,12 @@ function toFriendlyError(err: unknown, fallback: string): string {
 export function useRoutineMutations() {
   const queryClient = useQueryClient()
   const repo = useRoutineRepository()
+  const ownerKeys = useProfileQueryKeys()
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateRoutineRequest) => repo.create(payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
+      queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
     },
   })
 
@@ -35,14 +36,14 @@ export function useRoutineMutations() {
     mutationFn: ({ routineId, payload }: { routineId: string; payload: UpdateRoutineRequest }) =>
       repo.update(routineId, payload),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
+      queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
     },
   })
 
   const deleteMutation = useMutation({
     mutationFn: (routineId: string) => repo.delete(routineId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.routines.all })
+      queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
     },
   })
 
@@ -79,18 +80,17 @@ export function useRoutineMutations() {
 
   const activateRoutine = async (routineId: string): Promise<Routine | null> => {
     const result = await updateRoutine(routineId, { active: true })
-    queryClient.invalidateQueries({ queryKey: queryKeys.routines.active() })
+    queryClient.invalidateQueries({ queryKey: ownerKeys.routines.active() })
     return result
   }
 
   const clearActiveRoutine = async (routineId: string): Promise<Routine | null> => {
     const result = await updateRoutine(routineId, { active: false })
-    queryClient.invalidateQueries({ queryKey: queryKeys.routines.active() })
+    queryClient.invalidateQueries({ queryKey: ownerKeys.routines.active() })
     return result
   }
 
-  const currentError =
-    createMutation.error ?? updateMutation.error ?? deleteMutation.error ?? null
+  const currentError = createMutation.error ?? updateMutation.error ?? deleteMutation.error ?? null
 
   return {
     createRoutine,

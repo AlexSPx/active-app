@@ -3,7 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext'
 import type { UpdateUserRequest, User, ApiError } from '../../../types/api'
 import { timeZonesNames } from '@vvo/tzdb'
 import { useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 
 // Simple email regex (client-side validation aid; server performs authoritative validation)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -18,6 +18,7 @@ export interface UseUpdateUserResult {
 export function useUpdateUser(): UseUpdateUserResult {
   const { updateUser } = useAuth()
   const queryClient = useQueryClient()
+  const ownerKeys = useProfileQueryKeys()
   const [isUpdating, setIsUpdating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -50,10 +51,10 @@ export function useUpdateUser(): UseUpdateUserResult {
         const user = await updateUser(updates)
         setIsUpdating(false)
         // Invalidate user query
-        queryClient.invalidateQueries({ queryKey: queryKeys.user.me })
+        queryClient.invalidateQueries({ queryKey: ownerKeys.user.me })
         // Also invalidate records if timezone changed (affects date display)
         if (typeof updates.timezone === 'string' && updates.timezone.trim() !== '') {
-          queryClient.invalidateQueries({ queryKey: queryKeys.records.all })
+          queryClient.invalidateQueries({ queryKey: ownerKeys.records.all })
         }
         return user
       } catch (e) {
@@ -63,7 +64,7 @@ export function useUpdateUser(): UseUpdateUserResult {
         return null
       }
     },
-    [queryClient, updateUser, validate]
+    [ownerKeys, queryClient, updateUser, validate]
   )
 
   return { updateUserProfile, isUpdating, error, validate }

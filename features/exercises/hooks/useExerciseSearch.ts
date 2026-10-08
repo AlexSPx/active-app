@@ -1,16 +1,17 @@
 import { useState, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useExerciseRepository } from '../../../lib/hooks/useRepository'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import type { ApiExercise } from '../../../types/api'
 
 export function useExerciseSearch() {
   const [searchQuery, setSearchQuery] = useState('')
   const queryClient = useQueryClient()
   const repo = useExerciseRepository()
+  const ownerKeys = useProfileQueryKeys()
 
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.exercises.search(searchQuery),
+    queryKey: ownerKeys.exercises.search(searchQuery),
     queryFn: async () => {
       if (!searchQuery.trim()) return []
       return repo.search(searchQuery.trim())
@@ -25,8 +26,8 @@ export function useExerciseSearch() {
 
   const clearSearch = useCallback(() => {
     setSearchQuery('')
-    queryClient.removeQueries({ queryKey: queryKeys.exercises.search('') })
-  }, [queryClient])
+    queryClient.removeQueries({ queryKey: ownerKeys.exercises.search('') })
+  }, [ownerKeys, queryClient])
 
   return {
     exercises: (data as ApiExercise[]) || [],

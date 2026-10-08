@@ -99,7 +99,7 @@ describe('running workout ID remapping', () => {
     expect(useRunningWorkoutStore.getState().runningWorkout).toBeNull()
   })
 
-  it('resolves a persisted session when sync remaps its ID before hydration', async () => {
+  it('resolves a persisted session when sync replays its ID remap after hydration', async () => {
     await useRunningWorkoutStore.persist.clearStorage()
     const workout = {
       id: 'local_workout_active',
@@ -116,6 +116,13 @@ describe('running workout ID remapping', () => {
     syncEngine.resolveId.mockReturnValueOnce('server_workout_active')
 
     await useRunningWorkoutStore.persist.rehydrate()
+    const restoredWorkout = useRunningWorkoutStore.getState().runningWorkout
+    expect(restoredWorkout.id).toBe('local_workout_active')
+
+    const resolvedId = syncEngine.resolveId('workouts', restoredWorkout.id)
+    if (resolvedId !== restoredWorkout.id) {
+      remapRunningWorkoutId(restoredWorkout.id, resolvedId)
+    }
 
     expect(useRunningWorkoutStore.getState().runningWorkout.id).toBe('server_workout_active')
   })

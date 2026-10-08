@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { useRoutineRepository } from '../../../lib/hooks/useRepository'
 import type { Routine } from '../../../types/routine'
 
@@ -17,9 +17,10 @@ export interface UseActiveRoutineReturn {
  */
 export function useActiveRoutine(): UseActiveRoutineReturn {
   const repo = useRoutineRepository()
+  const ownerKeys = useProfileQueryKeys()
 
   const { data, isLoading, error, refetch, isStale } = useQuery({
-    queryKey: queryKeys.routines.active(),
+    queryKey: ownerKeys.routines.active(),
     queryFn: async (): Promise<Routine | null> => {
       return repo.getActive()
     },
@@ -30,9 +31,9 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
     activeRoutine: data ?? null,
     loading: isLoading,
     error: error?.message ?? null,
-    refetch: async () => { await refetch() },
+    refetch: async () => {
+      await refetch()
+    },
     isStale,
   }
 }
-
-

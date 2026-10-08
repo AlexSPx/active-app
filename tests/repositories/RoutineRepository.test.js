@@ -57,7 +57,7 @@ describe('RoutineRepository', () => {
       payload,
       localTable: 'routines',
       localId: created.id,
-    })
+    }, db)
   })
 
   it('resolves workout IDs when an open routine form saves after sync remaps them', async () => {
@@ -79,7 +79,8 @@ describe('RoutineRepository', () => {
           created.id,
           { pattern: [{ ...pattern[0], workoutId: 'server_workout_open_form' }] },
         ],
-      })
+      }),
+      db
     )
   })
 
@@ -127,7 +128,7 @@ describe('RoutineRepository', () => {
     expect(syncEngine.enqueue).toHaveBeenCalledWith({
       apiMethod: 'updateRoutine',
       payload: ['routine_1', updatePayload],
-    })
+    }, db)
   })
 
   it('deactivates other routines when activating one', async () => {
@@ -188,6 +189,6 @@ describe('RoutineRepository', () => {
     expect(syncEngine.enqueue).toHaveBeenCalledWith({
       apiMethod: 'deleteRoutine',
       payload: ['routine_delete'],
-    })
+    }, db)
   })
 })

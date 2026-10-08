@@ -9,7 +9,7 @@ import type {
 } from '../../../types/api'
 import { WorkoutRepository } from '../../../lib/repositories/WorkoutRepository'
 import { getDatabase } from '../../../lib/db/connection'
-import { syncEngine } from '../../../lib/sync'
+import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 import type { FinishedCongratsPayload } from '../../../types/congrats'
 import { haptics } from '../../../utils/haptics'
 import { posthog } from '../../../services/posthog'
@@ -95,14 +95,16 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
       },
 
       stopWorkout: async (notes?: string) => {
+        const scope = getProfileScope()
         const state = get()
-        if (!state.runningWorkout || state.isRecording) return
+        const runningWorkout = state.runningWorkout
+        if (!runningWorkout || state.isRecording) return
 
         try {
           set({ isRecording: true, recordingError: null })
 
           // Convert running workout to workout record format (strength + cardio)
-          const rawRecords = state.runningWorkout.exercises.map((exercise) => {
+          const rawRecords = runningWorkout.exercises.map((exercise) => {
             const completedSets = exercise.sessionSets.filter((set) => set.completed)
             const isCardio = exercise.category === 'CARDIO'
             if (isCardio) {
@@ -142,34 +144,37 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           }
 
           const workoutRecord: WorkoutRecordRequest = {
-            workoutId: state.runningWorkout.id,
+            workoutId: runningWorkout.id,
             exerciseRecords,
             notes,
-            startTime: toLocalDateTime(new Date(state.runningWorkout.startTime)),
+            startTime: toLocalDateTime(new Date(runningWorkout.startTime)),
           }
 
           // Save to local SQLite FIRST, then queue for server sync.
           // This guarantees no data loss even if the app is offline.
           const db = await getDatabase()
+          if (!isCurrentProfile(scope)) return
+          const currentWorkout = get().runningWorkout
+          if (!currentWorkout || currentWorkout.startTime !== runningWorkout.startTime) return
           const workoutRepo = new WorkoutRepository(db)
-          const workoutId = get().runningWorkout?.id ?? workoutRecord.workoutId
           const result = await workoutRepo.recordWorkout(
-            { ...workoutRecord, workoutId },
-            state.runningWorkout.name || 'Workout'
+            { ...workoutRecord, workoutId: currentWorkout.id },
+            runningWorkout.name || 'Workout'
           )
+          if (!isCurrentProfile(scope)) return result
 
           // Clear the running workout after successful local save
           set({ runningWorkout: null, isRecording: false })
           haptics.success()
 
           posthog.capture('workout_completed', {
-            duration_seconds:
-              (Date.now() - new Date(state.runningWorkout.startTime).getTime()) / 1000,
-            total_exercises: state.runningWorkout.exercises.length,
+            duration_seconds: (Date.now() - new Date(runningWorkout.startTime).getTime()) / 1000,
+            total_exercises: runningWorkout.exercises.length,
           })
 
           return result
         } catch (error) {
+          if (!isCurrentProfile(scope)) return
           console.error('Failed to record workout:', error)
           const errorMessage = error instanceof Error ? error.message : 'Failed to record workout'
           set({ recordingError: errorMessage, isRecording: false })
@@ -361,18 +366,18 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
     {
       name: 'running-workout-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      skipHydration: true,
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        runningWorkout: null,
+        isRecording: false,
+        recordingError: null,
+        ...(persistedState as Partial<RunningWorkoutStore> | undefined),
+      }),
       partialize: (state) => ({
         runningWorkout: state.runningWorkout,
         recordingError: state.recordingError,
       }),
-      onRehydrateStorage: () => (state) => {
-        // Startup sync can remap a workout before AsyncStorage restores its session.
-        const workout = state?.runningWorkout
-        if (!workout) return
-
-        const resolvedId = syncEngine.resolveId('workouts', workout.id)
-        if (resolvedId !== workout.id) remapRunningWorkoutId(workout.id, resolvedId)
-      },
     }
   )
 )

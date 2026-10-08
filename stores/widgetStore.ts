@@ -136,6 +136,12 @@ export const useWidgetStore = create<WidgetStore>()(
     {
       name: 'widget-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      skipHydration: true,
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        widgets: [],
+        ...(persistedState as Partial<WidgetStore> | undefined),
+      }),
       partialize: (state) => ({
         widgets: state.widgets,
       }),

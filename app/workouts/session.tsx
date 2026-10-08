@@ -2,11 +2,19 @@ import { useTheme, View, YStack } from 'tamagui'
 import { useToastController } from '@tamagui/toast'
 import { FlashList } from '@shopify/flash-list'
 
-import { WorkoutSessionExercise, WorkoutSessionHeader, WorkoutActions, useWorkoutSession, RestTimerOverlay } from '../../features/workout-session'
+import {
+  WorkoutSessionExercise,
+  WorkoutSessionHeader,
+  WorkoutActions,
+  useWorkoutSession,
+  RestTimerOverlay,
+} from '../../features/workout-session'
 import { getCurrentDate } from '../../utils/date'
 import { useAppNavigation } from '../../navigation/useAppNavigation'
 import type { Exercise } from '../../types/workout-session'
 import { useUiStore } from '../../stores/uiStore'
+import { useAuthStore } from '../../stores/authStore'
+import { getProfileScope, isCurrentProfile } from '../../lib/profileScope'
 
 export default function WorkoutSessionScreen() {
   const { goBack } = useAppNavigation()
@@ -58,7 +66,27 @@ export default function WorkoutSessionScreen() {
     <View pb="$6">
       <WorkoutActions
         onFinishWorkout={async () => {
-          const resp = await finishWorkout()
+          const profileScope = getProfileScope()
+          const startingAuthState = useAuthStore.getState()
+          const isCurrentFinishSession = () => {
+            const authState = useAuthStore.getState()
+            return (
+              isCurrentProfile(profileScope) &&
+              authState.user?.id === startingAuthState.user?.id &&
+              authState.isAuthenticated === startingAuthState.isAuthenticated &&
+              !authState.isProfileTransitioning
+            )
+          }
+
+          let resp: Awaited<ReturnType<typeof finishWorkout>>
+          try {
+            resp = await finishWorkout()
+          } catch (error) {
+            if (!isCurrentFinishSession()) return false
+            throw error
+          }
+
+          if (!isCurrentFinishSession()) return false
           if (!resp) {
             toast.show('Workout not saved', {
               message: 'Your session is still in progress. Tap Finish workout to retry.',

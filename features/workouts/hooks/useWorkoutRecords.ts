@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { useWorkoutRepository } from '../../../lib/hooks/useRepository'
 import type { WorkoutRecord } from '../../../types/api'
 
@@ -12,9 +12,10 @@ export interface UseWorkoutRecordsReturn {
 
 export function useWorkoutRecords(): UseWorkoutRecordsReturn {
   const repo = useWorkoutRepository()
+  const ownerKeys = useProfileQueryKeys()
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: queryKeys.records.list(),
+    queryKey: ownerKeys.records.list(),
     queryFn: async () => {
       return repo.getAllRecords()
     },
@@ -25,6 +26,8 @@ export function useWorkoutRecords(): UseWorkoutRecordsReturn {
     workoutRecords: (data as WorkoutRecord[]) || [],
     loading: isLoading,
     error: error?.message ?? null,
-    refetch: async () => { await refetch() },
+    refetch: async () => {
+      await refetch()
+    },
   }
 }

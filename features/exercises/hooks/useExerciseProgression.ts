@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useExerciseRepository } from '../../../lib/hooks/useRepository'
-import { queryKeys } from '../../../lib/queryKeys'
+import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import type { ExerciseLogResponse } from '../../../types/api'
 
 export interface ProgressionDataPoint {
@@ -129,9 +129,10 @@ function processExerciseLogs(logs: ExerciseLogResponse[]): ExerciseProgressionDa
 
 export function useExerciseProgression(exerciseId: string | null) {
   const repo = useExerciseRepository()
+  const ownerKeys = useProfileQueryKeys()
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: queryKeys.exercises.logs(exerciseId || ''),
+    queryKey: ownerKeys.exercises.logs(exerciseId || ''),
     queryFn: async () => {
       if (!exerciseId) throw new Error('No exercise ID provided')
       const logs = await repo.getLogs(exerciseId)
@@ -145,6 +146,8 @@ export function useExerciseProgression(exerciseId: string | null) {
     data: data ?? null,
     isLoading,
     error: error?.message ?? null,
-    refetch: async () => { await refetch() },
+    refetch: async () => {
+      await refetch()
+    },
   }
 }

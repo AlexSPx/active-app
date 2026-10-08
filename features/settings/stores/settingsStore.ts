@@ -19,7 +19,6 @@ interface SettingsState {
   bodyWeightUnit: 'kg' | 'lb'
   heightUnit: 'cm' | 'in'
 
-
   // Actions
   setRestTimerEnabled: (enabled: boolean) => void
   setRestTimerDefaultSeconds: (seconds: number) => void
@@ -30,21 +29,23 @@ interface SettingsState {
   setBodyWeightUnit: (unit: 'kg' | 'lb') => void
   setHeightUnit: (unit: 'cm' | 'in') => void
   reset: () => void
-
 }
+
+const defaultSettings = () => ({
+  restTimerEnabled: true,
+  restTimerDefaultSeconds: 90,
+  timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
+  theme: 'system' as const,
+  bodyWeight: null,
+  height: null,
+  bodyWeightUnit: 'kg' as const,
+  heightUnit: 'cm' as const,
+})
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      restTimerEnabled: true,
-      restTimerDefaultSeconds: 90,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
-      theme: 'system',
-      bodyWeight: null,
-      height: null,
-      bodyWeightUnit: 'kg',
-      heightUnit: 'cm',
-
+      ...defaultSettings(),
 
       setRestTimerEnabled: (enabled) => set({ restTimerEnabled: enabled }),
       setRestTimerDefaultSeconds: (seconds) =>
@@ -68,11 +69,16 @@ export const useSettingsStore = create<SettingsState>()(
           bodyWeightUnit: 'kg',
           heightUnit: 'cm',
         }),
-
     }),
     {
       name: 'settings-storage',
       storage: createJSONStorage(() => AsyncStorage),
+      skipHydration: true,
+      merge: (persistedState, currentState) => ({
+        ...currentState,
+        ...defaultSettings(),
+        ...(persistedState as Partial<SettingsState> | undefined),
+      }),
       partialize: (state) => ({
         restTimerEnabled: state.restTimerEnabled,
         restTimerDefaultSeconds: state.restTimerDefaultSeconds,
@@ -82,7 +88,6 @@ export const useSettingsStore = create<SettingsState>()(
         height: state.height,
         bodyWeightUnit: state.bodyWeightUnit,
         heightUnit: state.heightUnit,
-
       }),
     }
   )
