@@ -1,4 +1,8 @@
 jest.mock('../../services/apiService', () => ({ apiService: {} }))
+jest.mock('expo-network', () => ({
+  getNetworkStateAsync: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
+  addNetworkStateListener: jest.fn(() => ({ remove: jest.fn() })),
+}))
 jest.mock('../../lib/sync/api', () => ({
   syncApi: {
     getUser: jest.fn(async () => ({ activeRoutineId: null })),
@@ -265,5 +269,115 @@ describe('profile-scoped sync fencing', () => {
     expect(dbA.execAsync).not.toHaveBeenCalled()
     expect(dbB.hydrationWrites).toEqual([])
     expect(getProfileScope().ownerId).toBe('account:B')
+  })
+
+  it('preserves a local mutation created while the server snapshot is in flight', async () => {
+    const { hydrateFromServer } = require('../../lib/sync/hydrate')
+    const { syncApi } = require('../../lib/sync/api')
+    const { syncEngine } = require('../../lib/sync/SyncEngine')
+    const { BaseRepository } = require('../../lib/repositories/BaseRepository')
+    setActiveProfileOwner('account:A')
+
+    let started
+    const responseStarted = new Promise((resolve) => {
+      started = resolve
+    })
+    let finishResponse
+    const delayedResponse = new Promise((resolve) => {
+      finishResponse = resolve
+    })
+    syncApi.getUser.mockResolvedValue({ activeRoutineId: null })
+    syncApi.getWorkouts.mockResolvedValue([])
+    syncApi.getWorkoutRecords.mockResolvedValue([])
+    syncApi.getRoutines.mockImplementation(() => {
+      started()
+      return delayedResponse
+    })
+
+    const db = new FakeDb()
+    db.hydrationWrites = []
+    const execAsync = jest.spyOn(db, 'execAsync')
+    await syncEngine.init(db, { processOnInit: false })
+    syncEngine.setUploadsEnabled(false)
+
+    class LocalWorkoutRepository extends BaseRepository {
+      async save(title = 'Saved offline') {
+        const id = 'local_during_hydration'
+        const now = new Date().toISOString()
+        await this.db.withTransactionAsync(async () => {
+          await this.db.runAsync(
+            'INSERT INTO workouts (id, title, notes, created_at, updated_at, workout_template, is_synced) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            id,
+            title,
+            null,
+            now,
+            now,
+            JSON.stringify({ id, exercises: [] }),
+            0
+          )
+          await this.enqueueSync({
+            apiMethod: 'createWorkout',
+            payload: { title, template: { exercises: [] } },
+            localTable: 'workouts',
+            localId: id,
+          })
+        })
+        return id
+      }
+    }
+
+    try {
+      const hydration = hydrateFromServer(db)
+      await responseStarted
+
+      const localId = await new LocalWorkoutRepository(db).save()
+      finishResponse([])
+      await expect(hydration).resolves.toBe(false)
+
+      expect(db.tables.workouts.get(localId)).toMatchObject({
+        id: localId,
+        title: 'Saved offline',
+        is_synced: 0,
+      })
+      expect(db.jobs).toHaveLength(1)
+      expect(db.jobs[0]).toMatchObject({
+        endpoint: 'createWorkout',
+        local_id: localId,
+        status: 'pending',
+      })
+      expect(db.hydrationWrites).toEqual([])
+      expect(execAsync).not.toHaveBeenCalledWith('PRAGMA foreign_keys = OFF;')
+
+      let secondStarted
+      const secondResponseStarted = new Promise((resolve) => {
+        secondStarted = resolve
+      })
+      let finishSecondResponse
+      const secondDelayedResponse = new Promise((resolve) => {
+        finishSecondResponse = resolve
+      })
+      syncApi.getRoutines.mockImplementation(() => {
+        secondStarted()
+        return secondDelayedResponse
+      })
+      const secondHydration = hydrateFromServer(db)
+      await secondResponseStarted
+      await new LocalWorkoutRepository(db).save('Quickly synced edit')
+      // Simulate the upload acknowledgement removing the new queue row before the old GET returns.
+      db.jobs.length = 0
+      finishSecondResponse([])
+      await expect(secondHydration).resolves.toBe(false)
+
+      expect(db.tables.workouts.get(localId)).toMatchObject({
+        id: localId,
+        title: 'Quickly synced edit',
+        is_synced: 0,
+      })
+      expect(db.jobs).toHaveLength(0)
+      expect(db.hydrationWrites).toEqual([])
+      expect(execAsync).not.toHaveBeenCalledWith('PRAGMA foreign_keys = OFF;')
+    } finally {
+      syncEngine.destroy()
+    }
   })
 })

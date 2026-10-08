@@ -395,7 +395,6 @@ export const useAuthStore = create<AuthState>()(
         const generation = authSessionGeneration
         const pendingRequests = authRepository.invalidatePendingRequests()
         useUiStore.getState().hideFinishedCongrats()
-        authPersistenceReady = false
         set({
           isProfileTransitioning: true,
           isAuthenticated: false,

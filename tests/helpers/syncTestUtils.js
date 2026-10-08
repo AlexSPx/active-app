@@ -109,6 +109,10 @@ class FakeDb {
   }
 
   async getFirstAsync(sql, ...params) {
+    if (sql === 'SELECT id FROM sync_queue LIMIT 1') {
+      return this.jobs[0] ? { id: this.jobs[0].id } : null
+    }
+
     if (sql.includes('FROM sync_queue WHERE id = ?')) {
       return this.jobs.find((job) => job.id === params[0]) ?? null
     }

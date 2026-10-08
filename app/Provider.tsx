@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useColorScheme } from 'react-native'
+import { AppState, useColorScheme } from 'react-native'
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite'
 import { migrateDbIfNeeded } from '../lib/db/migrations'
 import { TamaguiProvider, type TamaguiProviderProps, PortalProvider, Theme } from 'tamagui'
@@ -38,6 +38,7 @@ function SyncEngineBootstrap({
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const userId = useAuthStore((state) => state.user?.id)
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
+  const isProfileLoading = useAuthStore((state) => state.isProfileLoading)
   const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
   const serverSession = useAuthStore((state) => state.serverSession)
   const startupError = useAuthStore((state) => state.startupError)
@@ -115,6 +116,77 @@ function SyncEngineBootstrap({
 
   useEffect(() => {
     if (
+      !isStartupReady ||
+      startupError ||
+      isProfileTransitioning ||
+      isProfileLoading ||
+      !isAuthenticated ||
+      !userId ||
+      profileOwnerId !== ownerId ||
+      serverSession !== 'unknown'
+    ) {
+      return
+    }
+
+    const scope = getProfileScope()
+    if (scope.ownerId !== ownerId || !isCurrentProfile(scope)) return
+
+    let retryInterval: ReturnType<typeof setInterval> | undefined
+    let appIsActive = AppState.currentState !== 'background' && AppState.currentState !== 'inactive'
+    const stopRetrying = () => {
+      if (retryInterval !== undefined) {
+        clearInterval(retryInterval)
+        retryInterval = undefined
+      }
+    }
+    const startRetrying = () => {
+      if (!appIsActive || retryInterval !== undefined) return
+
+      retryInterval = setInterval(() => {
+        const state = useAuthStore.getState()
+        if (
+          !state.isStartupReady ||
+          state.startupError ||
+          state.isProfileTransitioning ||
+          state.isProfileLoading ||
+          !state.isAuthenticated ||
+          state.user?.id !== userId ||
+          state.profileOwnerId !== ownerId ||
+          state.serverSession !== 'unknown' ||
+          !isCurrentProfile(scope)
+        ) {
+          return
+        }
+
+        void state.fetchUser().catch(() => {})
+      }, 30_000)
+    }
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      appIsActive = nextState === 'active'
+      if (appIsActive) startRetrying()
+      else stopRetrying()
+    })
+    startRetrying()
+
+    return () => {
+      stopRetrying()
+      subscription.remove()
+    }
+  }, [
+    isAuthenticated,
+    isProfileLoading,
+    isProfileTransitioning,
+    isStartupReady,
+    ownerId,
+    profileOwnerId,
+    serverSession,
+    startupError,
+    userId,
+  ])
+
+  useEffect(() => {
+    if (
       readyDb !== db ||
       !isStartupReady ||
       startupError ||
@@ -130,17 +202,91 @@ function SyncEngineBootstrap({
     const scope = getProfileScope()
     if (scope.ownerId !== ownerId || !isCurrentProfile(scope)) return
 
-    hydrateFromServer(db)
-      .then(() => {
-        if (isCurrentProfile(scope)) {
-          return queryClient.invalidateQueries({ queryKey: ['profile', ownerId] })
+    let active = true
+    let hydrationDeferred = false
+    let hydrationInProgress = false
+    let retryHydrationAfterMutation = false
+    let unsubscribeSync: (() => void) | undefined
+
+    const hydrateWhenQueueIsClear = async () => {
+      if (!active || hydrationInProgress) return
+      const state = useAuthStore.getState()
+      if (
+        !state.isStartupReady ||
+        state.startupError ||
+        state.isProfileTransitioning ||
+        state.profileOwnerId !== ownerId ||
+        !state.isAuthenticated ||
+        state.user?.id !== userId ||
+        state.serverSession !== 'valid' ||
+        !isCurrentProfile(scope)
+      ) {
+        return
+      }
+
+      hydrationInProgress = true
+      try {
+        const queuedMutation = await db.getFirstAsync<{ id: string }>(
+          'SELECT id FROM sync_queue LIMIT 1'
+        )
+        if (!active || !isCurrentProfile(scope)) return
+        if (queuedMutation) {
+          // ponytail: defer bulk hydration until queued writes drain; reconcile per row if pulls must run sooner.
+          hydrationDeferred = true
+          console.info('[SyncEngineBootstrap] Hydration skipped while local changes remain queued')
+          return
         }
-      })
-      .catch((error) => {
+
+        const hydrated = await hydrateFromServer(db)
+        if (!active || !isCurrentProfile(scope)) return
+        if (!hydrated) {
+          const queuedAfterSnapshot = await db.getFirstAsync<{ id: string }>(
+            'SELECT id FROM sync_queue LIMIT 1'
+          )
+          if (!active || !isCurrentProfile(scope)) return
+          hydrationDeferred = !!queuedAfterSnapshot
+          if (!queuedAfterSnapshot) retryHydrationAfterMutation = true
+          return
+        }
+
+        hydrationDeferred = false
+        retryHydrationAfterMutation = false
+        unsubscribeSync?.()
+        unsubscribeSync = undefined
+        await queryClient.invalidateQueries({ queryKey: ['profile', ownerId] })
+      } catch (error: any) {
         if (isCurrentProfile(scope)) {
           console.warn('[SyncEngineBootstrap] Hydration failed (offline?):', error?.message)
         }
+      } finally {
+        hydrationInProgress = false
+        if (active && retryHydrationAfterMutation) {
+          retryHydrationAfterMutation = false
+          void hydrateWhenQueueIsClear()
+        }
+      }
+    }
+
+    unsubscribeSync = syncEngine.on('sync:complete', () => {
+      if (hydrationInProgress) {
+        retryHydrationAfterMutation = true
+      } else if (hydrationDeferred) {
+        void hydrateWhenQueueIsClear()
+      }
+    })
+    syncEngine
+      .processQueue()
+      .then(hydrateWhenQueueIsClear)
+      .catch((error) => {
+        if (isCurrentProfile(scope)) {
+          console.warn('[SyncEngineBootstrap] Queue drain failed before hydration:', error?.message)
+        }
       })
+
+    return () => {
+      active = false
+      unsubscribeSync?.()
+    }
   }, [
     db,
     isAuthenticated,

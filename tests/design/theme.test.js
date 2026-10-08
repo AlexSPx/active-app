@@ -1,10 +1,24 @@
 const React = require('react')
 const { act, create } = require('react-test-renderer')
+const mockSQLiteDatabase = { current: null }
 
-jest.mock('react-native', () => ({
-  useColorScheme: jest.fn(() => 'light'),
-  Platform: { OS: 'android' },
-}))
+jest.mock('react-native', () => {
+  const listeners = new Set()
+  const appState = { currentState: 'active' }
+  appState.addEventListener = jest.fn((_event, listener) => {
+    listeners.add(listener)
+    return { remove: () => listeners.delete(listener) }
+  })
+  appState.emit = (nextState) => {
+    appState.currentState = nextState
+    listeners.forEach((listener) => listener(nextState))
+  }
+  return {
+    AppState: appState,
+    useColorScheme: jest.fn(() => 'light'),
+    Platform: { OS: 'android' },
+  }
+})
 jest.mock('@tamagui/core', () => ({ useEvent: (callback) => callback }))
 jest.mock('../../features/settings', () => ({
   useSettingsStore: require('zustand').create((set) => ({
@@ -30,7 +44,11 @@ jest.mock('expo-sqlite', () => {
     // Expo SQLite's installed provider compares DB props and ignores changed children.
     SQLiteProvider: React.memo(
       ({ children, databaseName }) =>
-        React.createElement(SQLiteContext.Provider, { value: databaseName }, children),
+        React.createElement(
+          SQLiteContext.Provider,
+          { value: mockSQLiteDatabase.current || databaseName },
+          children
+        ),
       (before, after) =>
         before.databaseName === after.databaseName && before.onInit === after.onInit
     ),
@@ -73,6 +91,8 @@ jest.mock('../../stores/authStore', () => {
     isStartupReady: true,
     isAuthenticated: false,
     user: null,
+    isProfileLoading: false,
+    fetchUser: jest.fn(),
     profileOwnerId: 'local:device',
     legacyOwnerId: null,
     isProfileTransitioning: false,
@@ -127,15 +147,27 @@ jest.mock('../../services/notificationService', () => ({
   registerPushNotifications: async () => {},
 }))
 jest.mock('../../services/posthog', () => ({ posthog: {} }))
-jest.mock('../../lib/queryClient', () => ({ queryClient: { setQueriesData: jest.fn() } }))
-jest.mock('../../lib/sync', () => ({
-  syncEngine: {
-    onIdRemap: jest.fn(() => () => {}),
-    init: async () => {},
-    destroy: () => {},
-    setUploadsEnabled: jest.fn(),
-  },
+jest.mock('../../lib/queryClient', () => ({
+  queryClient: { setQueriesData: jest.fn(), invalidateQueries: jest.fn() },
 }))
+jest.mock('../../lib/sync', () => {
+  const syncCompleteListeners = new Set()
+  return {
+    syncEngine: {
+      onIdRemap: jest.fn(() => () => {}),
+      on: jest.fn((event, listener) => {
+        if (event !== 'sync:complete') return () => {}
+        syncCompleteListeners.add(listener)
+        return () => syncCompleteListeners.delete(listener)
+      }),
+      notifySyncComplete: () => syncCompleteListeners.forEach((listener) => listener()),
+      init: async () => {},
+      destroy: () => {},
+      setUploadsEnabled: jest.fn(),
+      processQueue: jest.fn(async () => {}),
+    },
+  }
+})
 jest.mock('../../lib/sync/queuePayloadRemap', () =>
   jest.requireActual('../../lib/sync/queuePayloadRemap')
 )
@@ -148,8 +180,17 @@ jest.mock('../../features/workout-session/stores/runningWorkoutStore', () => ({
 const { Provider } = require('../../app/Provider')
 const { useSettingsStore } = require('../../features/settings')
 const { useUiStore } = require('../../stores/uiStore')
-const { databaseNameForProfile } = require('../../lib/profileScope')
+const {
+  databaseNameForProfile,
+  LOCAL_PROFILE_OWNER,
+  profileOwnerForUser,
+  setActiveProfileOwner,
+} = require('../../lib/profileScope')
 const { useAuthStore } = require('../../stores/authStore')
+const { syncEngine } = require('../../lib/sync')
+const { hydrateFromServer } = require('../../lib/sync/hydrate')
+const { queryClient } = require('../../lib/queryClient')
+const { AppState } = require('react-native')
 const { ThemeContext } = require('tamagui')
 const { NavigationContext } = require('@react-navigation/native')
 const { useColorScheme } = require('react-native')
@@ -238,6 +279,207 @@ test('keeps sync uploads disabled while an authenticated session has no loaded p
     isProfileTransitioning: false,
     serverSession: 'unknown',
   })
+})
+
+test('revalidates a cached session and hydrates after the retry drains queued work', async () => {
+  const authState = useAuthStore.__state
+  const ownerId = profileOwnerForUser('user_1')
+  setActiveProfileOwner(ownerId)
+  const queueOrder = []
+  let hasQueuedMutation = true
+  let queueReadCount = 0
+  let markDelayedQueueReadStarted
+  const delayedQueueReadStarted = new Promise((resolve) => {
+    markDelayedQueueReadStarted = resolve
+  })
+  let resolveDelayedQueueRead
+  const delayedQueueRead = new Promise((resolve) => {
+    resolveDelayedQueueRead = resolve
+  })
+  const db = {
+    getFirstAsync: jest.fn(async () => {
+      queueOrder.push('pending-check')
+      queueReadCount += 1
+      if (queueReadCount === 3) {
+        markDelayedQueueReadStarted()
+        return delayedQueueRead
+      }
+      return hasQueuedMutation ? { id: 'offline-save' } : null
+    }),
+  }
+  mockSQLiteDatabase.current = db
+  mockSQLiteDatabase.current.getFirstAsync.mockClear()
+  syncEngine.setUploadsEnabled.mockClear()
+  syncEngine.processQueue.mockReset().mockImplementation(async () => queueOrder.push('drain'))
+  hydrateFromServer.mockReset().mockResolvedValueOnce(false).mockResolvedValue(true)
+  queryClient.invalidateQueries.mockClear()
+  let backendAvailable = false
+  useAuthStore.setState({
+    isStartupReady: true,
+    startupError: null,
+    isAuthenticated: true,
+    user: { id: 'user_1' },
+    isProfileLoading: false,
+    profileOwnerId: ownerId,
+    legacyOwnerId: null,
+    isProfileTransitioning: false,
+    serverSession: 'unknown',
+    fetchUser: jest.fn(async () => {
+      useAuthStore.setState({ isProfileLoading: true })
+      try {
+        if (!backendAvailable) throw new Error('API unavailable')
+        useAuthStore.setState({ serverSession: 'valid' })
+      } finally {
+        useAuthStore.setState({ isProfileLoading: false })
+      }
+    }),
+  })
+
+  jest.useFakeTimers()
+  let view
+  try {
+    await act(async () => {
+      view = create(React.createElement(Provider, {}, React.createElement(ThemeProbe)))
+      await Promise.resolve()
+    })
+    const fetchUser = authState.fetchUser
+
+    await act(async () => jest.advanceTimersByTimeAsync(30_000))
+    expect(fetchUser).toHaveBeenCalledTimes(1)
+    expect(authState.serverSession).toBe('unknown')
+    expect(authState).toMatchObject({ isAuthenticated: true, user: { id: 'user_1' } })
+    expect(syncEngine.setUploadsEnabled).not.toHaveBeenCalledWith(true)
+
+    backendAvailable = true
+    await act(async () => jest.advanceTimersByTimeAsync(30_000))
+    expect(fetchUser).toHaveBeenCalledTimes(2)
+    expect(authState.serverSession).toBe('valid')
+    expect(syncEngine.setUploadsEnabled).toHaveBeenCalledWith(true)
+    expect(syncEngine.processQueue).toHaveBeenCalledTimes(1)
+    expect(db.getFirstAsync).toHaveBeenCalledWith('SELECT id FROM sync_queue LIMIT 1')
+    expect(queueOrder).toEqual(['drain', 'pending-check'])
+    expect(hydrateFromServer).not.toHaveBeenCalled()
+
+    hasQueuedMutation = false
+    await act(async () => {
+      syncEngine.notifySyncComplete()
+      await delayedQueueReadStarted
+    })
+    expect(hydrateFromServer).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      // Completion arrives while the previous queue read can still report the stale queued row.
+      syncEngine.notifySyncComplete()
+      resolveDelayedQueueRead({ id: 'offline-save' })
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    expect(hydrateFromServer).toHaveBeenCalledTimes(2)
+    expect(hydrateFromServer).toHaveBeenNthCalledWith(1, db)
+    expect(hydrateFromServer).toHaveBeenNthCalledWith(2, db)
+    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({
+      queryKey: ['profile', ownerId],
+    })
+  } finally {
+    if (view) await act(async () => view.unmount())
+    mockSQLiteDatabase.current = null
+    setActiveProfileOwner(LOCAL_PROFILE_OWNER)
+    syncEngine.processQueue.mockReset().mockResolvedValue(undefined)
+    hydrateFromServer.mockReset()
+    Object.assign(authState, {
+      isStartupReady: true,
+      startupError: null,
+      isAuthenticated: false,
+      user: null,
+      isProfileLoading: false,
+      fetchUser: jest.fn(),
+      profileOwnerId: 'local:device',
+      legacyOwnerId: null,
+      isProfileTransitioning: false,
+      serverSession: 'unknown',
+    })
+    jest.useRealTimers()
+  }
+})
+
+test('does not revalidate invalid, guest, switching, or background sessions', async () => {
+  const authState = useAuthStore.__state
+  const ownerId = profileOwnerForUser('user_1')
+  setActiveProfileOwner(ownerId)
+  const fetchUser = jest.fn(async () => {})
+  useAuthStore.setState({
+    isStartupReady: true,
+    startupError: null,
+    isAuthenticated: true,
+    user: { id: 'user_1' },
+    isProfileLoading: false,
+    profileOwnerId: ownerId,
+    legacyOwnerId: null,
+    isProfileTransitioning: false,
+    serverSession: 'invalid',
+    fetchUser,
+  })
+  jest.useFakeTimers()
+  let view
+  try {
+    await act(async () => {
+      view = create(React.createElement(Provider, {}, React.createElement(ThemeProbe)))
+      await Promise.resolve()
+    })
+    await act(async () => jest.advanceTimersByTimeAsync(60_000))
+    expect(fetchUser).not.toHaveBeenCalled()
+
+    await act(async () => {
+      useAuthStore.setState({ serverSession: 'unknown', isProfileTransitioning: true })
+      jest.advanceTimersByTime(60_000)
+    })
+    expect(fetchUser).not.toHaveBeenCalled()
+
+    await act(async () => {
+      useAuthStore.setState({
+        isProfileTransitioning: false,
+        isAuthenticated: false,
+        user: null,
+      })
+      jest.advanceTimersByTime(60_000)
+    })
+    expect(fetchUser).not.toHaveBeenCalled()
+
+    AppState.emit('background')
+    await act(async () => {
+      useAuthStore.setState({
+        isAuthenticated: true,
+        user: { id: 'user_1' },
+        serverSession: 'unknown',
+      })
+      jest.advanceTimersByTime(60_000)
+    })
+    expect(fetchUser).not.toHaveBeenCalled()
+
+    await act(async () => {
+      AppState.emit('active')
+      await jest.advanceTimersByTimeAsync(30_000)
+    })
+    expect(fetchUser).toHaveBeenCalledTimes(1)
+  } finally {
+    if (view) await act(async () => view.unmount())
+    AppState.emit('active')
+    setActiveProfileOwner(LOCAL_PROFILE_OWNER)
+    Object.assign(authState, {
+      isStartupReady: true,
+      startupError: null,
+      isAuthenticated: false,
+      user: null,
+      isProfileLoading: false,
+      fetchUser: jest.fn(),
+      profileOwnerId: 'local:device',
+      legacyOwnerId: null,
+      isProfileTransitioning: false,
+      serverSession: 'unknown',
+    })
+    jest.useRealTimers()
+  }
 })
 
 test('renders and dismisses the congrats portal under the current SQLite context', async () => {

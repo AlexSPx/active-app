@@ -15,10 +15,12 @@ import type { Routine } from '../../types/routine'
  * workout_records from the server may reference workouts that haven't been upserted yet
  * (ordering is not guaranteed). FK enforcement is always restored in the finally block.
  */
-export async function hydrateFromServer(db: SQLiteDatabase): Promise<void> {
+export async function hydrateFromServer(db: SQLiteDatabase): Promise<boolean> {
   const scope = getProfileScope()
+  const queueMutationRevision = syncEngine.getQueueMutationRevision()
   const workoutRepo = new WorkoutRepository(db)
   const routineRepo = new RoutineRepository(db)
+  let hydrated = false
 
   // Fetch the user first (needed for activeRoutineId), then the rest in parallel
   let activeRoutineId: string | null = null
@@ -57,6 +59,21 @@ export async function hydrateFromServer(db: SQLiteDatabase): Promise<void> {
 
   await syncEngine.withIdRemapLock(async () => {
     assertCurrentHydration(scope)
+    const queuedMutation = await db.getFirstAsync<{ id: string }>(
+      'SELECT id FROM sync_queue LIMIT 1'
+    )
+    assertCurrentHydration(scope)
+    if (syncEngine.getQueueMutationRevision() !== queueMutationRevision) {
+      // ponytail: skip stale snapshots after a local mutation; the caller can retry after the queue settles.
+      console.info('[Hydration] Skipping server snapshot after a local mutation during fetch')
+      return
+    }
+    if (queuedMutation) {
+      // ponytail: defer bulk hydration until queued writes drain; reconcile per row if pulls must run sooner.
+      console.info('[Hydration] Skipping server snapshot while local changes remain queued')
+      return
+    }
+
     // Disable FK checks for the bulk import — server data is authoritative.
     await db.execAsync('PRAGMA foreign_keys = OFF;')
     try {
@@ -70,6 +87,7 @@ export async function hydrateFromServer(db: SQLiteDatabase): Promise<void> {
         activeRoutineId,
         scope
       )
+      hydrated = true
     } finally {
       // Always restore FK enforcement before another remap or record can run.
       await db.execAsync('PRAGMA foreign_keys = ON;')
@@ -77,7 +95,8 @@ export async function hydrateFromServer(db: SQLiteDatabase): Promise<void> {
   })
   assertCurrentHydration(scope)
 
-  console.log('[Hydration] Server data synced to local DB ✓')
+  if (hydrated) console.log('[Hydration] Server data synced to local DB ✓')
+  return hydrated
 }
 
 async function writeHydrationData(

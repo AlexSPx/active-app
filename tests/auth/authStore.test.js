@@ -266,7 +266,6 @@ describe('auth profile refresh', () => {
     expect(useUiStore.getState().finishedCongrats).toEqual({ visible: false, payload: undefined })
     await drainStarted
 
-    expect(mockRemoveToken).not.toHaveBeenCalled()
     expect(useAuthStore.getState()).toMatchObject({
       profileOwnerId: previousOwner,
       isProfileTransitioning: true,

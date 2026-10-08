@@ -55,6 +55,9 @@ interface SyncEngineDeps {
     isInternetReachable?: boolean | null
   }>
   addAppStateListener: (handler: (state: AppStateStatus) => void) => { remove(): void }
+  addNetworkStateListener?: (handler: (state: Network.NetworkStateEvent) => void) => {
+    remove(): void
+  }
 }
 
 interface InitOptions {
@@ -74,7 +77,6 @@ interface IdRemapRow {
 const ALLOWED_TABLES = ['workouts', 'workout_records', 'routines'] as const
 type AllowedTable = (typeof ALLOWED_TABLES)[number]
 
-const MAX_RETRIES = 5
 const BASE_BACKOFF_MS = 1_000
 const MAX_BACKOFF_MS = 60_000
 
@@ -93,6 +95,10 @@ export class SyncEngine {
   private resumeAfterDrain = false
   private drainPromise: Promise<void> | null = null
   private appStateSubscription: { remove(): void } | null = null
+  private networkStateSubscription: { remove(): void } | null = null
+  private retryTimer: ReturnType<typeof setTimeout> | null = null
+  private drainRequested = false
+  private queueMutationRevision = 0
   // ponytail: one save/remap lock; split per table only if contention appears.
   private idRemapLock: Promise<void> = Promise.resolve()
   private remappedIds = new Map<string, string>()
@@ -109,6 +115,7 @@ export class SyncEngine {
       api: syncApi,
       getNetworkState: () => Network.getNetworkStateAsync(),
       addAppStateListener: (handler) => AppState.addEventListener('change', handler),
+      addNetworkStateListener: (handler) => Network.addNetworkStateListener(handler),
     }
   ) {}
 
@@ -122,6 +129,13 @@ export class SyncEngine {
    */
   async init(db: SQLiteDatabase, options: InitOptions = {}): Promise<void> {
     const lifecycleGeneration = ++this.lifecycleGeneration
+    this.clearRetryTimer()
+    this.appStateSubscription?.remove()
+    this.appStateSubscription = null
+    this.networkStateSubscription?.remove()
+    this.networkStateSubscription = null
+    this.drainRequested = false
+    this.initialized = false
     const scope = getProfileScope()
     if (
       this.db !== db ||
@@ -132,7 +146,6 @@ export class SyncEngine {
     }
     this.db = db
     this.dbScope = scope
-    this.initialized = false
 
     // Ensure pragmas on this handle
     await db.execAsync('PRAGMA foreign_keys = ON;')
@@ -148,11 +161,16 @@ export class SyncEngine {
       this.emitIdRemap(remap.table_name, remap.old_id, remap.new_id)
     }
 
-    // Listen to app-state transitions (process queue on resume)
-    this.appStateSubscription?.remove()
-    this.appStateSubscription = this.deps.addAppStateListener(this.handleAppStateChange)
+    // Listen for app resume and network recovery so queued work can resume.
     this.initialized = true
-
+    this.appStateSubscription = this.deps.addAppStateListener(this.handleAppStateChange)
+    this.networkStateSubscription =
+      this.deps.addNetworkStateListener?.((networkState) => {
+        if (lifecycleGeneration !== this.lifecycleGeneration || !this.initialized) return
+        if (networkState.isConnected === false || networkState.isInternetReachable === false) return
+        this.clearRetryTimer()
+        this.processQueueInBackground()
+      }) ?? null
     // Drain any jobs left over from a previous session
     if (options.processOnInit !== false || this.enableAfterInit) {
       this.enableAfterInit = false
@@ -163,6 +181,7 @@ export class SyncEngine {
   setUploadsEnabled(enabled: boolean): void {
     this.uploadsEnabled = enabled
     if (!enabled) {
+      this.clearRetryTimer()
       this.enableAfterInit = false
       this.resumeAfterDrain = false
       return
@@ -182,14 +201,19 @@ export class SyncEngine {
     this.paused = true
     this.resumeAfterDrain = false
     this.uploadsEnabled = false
+    this.clearRetryTimer()
     this.enableAfterInit = false
     if (this.drainPromise) await this.drainPromise
   }
 
   destroy(): void {
     this.lifecycleGeneration += 1
+    this.clearRetryTimer()
     this.appStateSubscription?.remove()
     this.appStateSubscription = null
+    this.networkStateSubscription?.remove()
+    this.networkStateSubscription = null
+    this.drainRequested = false
     this.initialized = false
     this.enableAfterInit = false
     this.db = null
@@ -255,6 +279,10 @@ export class SyncEngine {
     this.remappedIds.clear()
   }
 
+  getQueueMutationRevision(): number {
+    return this.queueMutationRevision
+  }
+
   private emit(event: SyncEvent): void {
     this.listeners[event].forEach((cb) => cb())
   }
@@ -294,6 +322,7 @@ export class SyncEngine {
       job.localId || null,
       idempotencyKey
     )
+    this.queueMutationRevision += 1
 
     // Fire-and-forget — errors are handled internally
     if (scope && this.isCurrentEngine(db, scope)) this.processQueueInBackground()
@@ -304,7 +333,11 @@ export class SyncEngine {
   // -----------------------------------------------------------------------
 
   async processQueue(): Promise<void> {
-    if (this.drainPromise) return this.drainPromise
+    if (this.drainPromise) {
+      this.drainRequested = true
+      return this.drainPromise
+    }
+    if (this.retryTimer) return
     const db = this.db
     const scope = this.dbScope
     if (
@@ -324,13 +357,17 @@ export class SyncEngine {
       if (this.drainPromise !== drain) return
       this.drainPromise = null
       const shouldResume = this.resumeAfterDrain
+      const shouldDrainAgain = this.drainRequested
+      this.drainRequested = false
       if (this.resumeAfterDrain) {
         this.resumeAfterDrain = false
         this.paused = false
       }
       const activeScope = this.dbScope
       if (
-        (shouldResume || !this.isCurrentEngine(db, scope)) &&
+        (shouldResume ||
+          !this.isCurrentEngine(db, scope) ||
+          (shouldDrainAgain && !this.retryTimer)) &&
         this.db &&
         activeScope &&
         this.initialized &&
@@ -350,12 +387,9 @@ export class SyncEngine {
     // Network check
     try {
       const networkState = await this.deps.getNetworkState()
-      if (!networkState.isConnected || !networkState.isInternetReachable) {
-        return
-      }
+      if (networkState.isConnected === false || networkState.isInternetReachable === false) return
     } catch {
-      // If we can't determine network state, skip processing
-      return
+      // Unknown connectivity gets one API probe; a failed request schedules the next attempt.
     }
 
     if (!this.isCurrentEngine(db, scope) || !this.uploadsEnabled || this.paused) return
@@ -442,7 +476,12 @@ export class SyncEngine {
       const parsedPayload = JSON.parse(currentJob.payload)
       args = Array.isArray(parsedPayload) ? parsedPayload : [parsedPayload]
     } catch (error) {
-      return this.handleJobError(db, scope, currentJob, error)
+      await this.markDeadLetter(
+        db,
+        currentJob,
+        `Invalid queued payload: ${(error as Error)?.message || 'Invalid JSON'}`
+      )
+      return true
     }
 
     if (!this.isCurrentEngine(db, scope)) {
@@ -711,15 +750,8 @@ export class SyncEngine {
       return true // continue to next job — this one can't be retried
     }
 
-    // Retryable failure
-    if (newRetryCount >= MAX_RETRIES) {
-      console.error(`[SyncEngine] Max retries reached [${job.endpoint}]`)
-      await this.markDeadLetter(db, job, errorMsg)
-      return true // continue to next job
-    }
-
     console.warn(
-      `[SyncEngine] Retryable failure [${job.endpoint}] attempt ${newRetryCount}/${MAX_RETRIES}: ${errorMsg}`
+      `[SyncEngine] Retryable failure [${job.endpoint}] attempt ${newRetryCount}: ${errorMsg}`
     )
     await db.runAsync(
       'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ? WHERE id = ?',
@@ -728,8 +760,11 @@ export class SyncEngine {
       errorMsg,
       job.id
     )
+    if (this.uploadsEnabled && !this.paused && this.isCurrentEngine(db, scope)) {
+      this.scheduleRetry(newRetryCount)
+    }
 
-    // Stop processing to preserve ordering (will retry on next trigger)
+    // Stop processing to preserve ordering; the timer or connectivity listener restarts the drain.
     return false
   }
 
@@ -748,13 +783,28 @@ export class SyncEngine {
   }
 
   // -----------------------------------------------------------------------
-  // Exponential Backoff (unused in this loop-style but available for future)
+  // Exponential Backoff
   // -----------------------------------------------------------------------
 
   private getBackoff(retryCount: number): number {
     const backoff = Math.min(BASE_BACKOFF_MS * 2 ** retryCount, MAX_BACKOFF_MS)
     const jitter = Math.random() * backoff * 0.3
     return backoff + jitter
+  }
+
+  private scheduleRetry(retryCount: number): void {
+    this.clearRetryTimer()
+    const lifecycleGeneration = this.lifecycleGeneration
+    this.retryTimer = setTimeout(() => {
+      this.retryTimer = null
+      if (lifecycleGeneration !== this.lifecycleGeneration || !this.initialized) return
+      this.processQueueInBackground()
+    }, this.getBackoff(retryCount))
+  }
+
+  private clearRetryTimer(): void {
+    if (this.retryTimer) clearTimeout(this.retryTimer)
+    this.retryTimer = null
   }
 
   // -----------------------------------------------------------------------
