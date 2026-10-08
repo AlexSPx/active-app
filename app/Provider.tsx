@@ -157,6 +157,28 @@ function SyncEngineBootstrap({
   return <>{children}</>
 }
 
+function OwnerDatabaseContent({ children }: { children: React.ReactNode }) {
+  const finishedCongrats = useUiStore((state) => state.finishedCongrats)
+  const hideFinishedCongrats = useUiStore((state) => state.hideFinishedCongrats)
+  const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
+  const payload = finishedCongrats.payload
+  const congratsVisible = !isProfileTransitioning && finishedCongrats.visible && !!payload
+
+  return (
+    <PortalProvider>
+      {children}
+      {congratsVisible && payload && (
+        <FinishedWorkoutCongrats
+          data={payload.record}
+          streak={payload.streak}
+          visible={congratsVisible}
+          onClose={hideFinishedCongrats}
+        />
+      )}
+    </PortalProvider>
+  )
+}
+
 export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
   const colorScheme = useColorScheme()
   const theme = useSettingsStore((state) => state.theme)
@@ -168,10 +190,6 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
   const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
   const serverSession = useAuthStore((state) => state.serverSession)
   const userId = useAuthStore((state) => state.user?.id)
-  const finishedCongrats = useUiStore((state) => state.finishedCongrats)
-  const hideFinishedCongrats = useUiStore((state) => state.hideFinishedCongrats)
-  const congratsVisible = finishedCongrats.visible && !!finishedCongrats.payload
-  const payload = finishedCongrats.payload
   const activeTheme = theme === 'system' ? colorScheme : theme
 
   const onInit = useCallback(
@@ -205,7 +223,9 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
         databaseName={databaseNameForProfile(profileOwnerId)}
         onInit={onInit}
       >
-        <SyncEngineBootstrap ownerId={profileOwnerId}>{children}</SyncEngineBootstrap>
+        <SyncEngineBootstrap ownerId={profileOwnerId}>
+          <OwnerDatabaseContent>{children}</OwnerDatabaseContent>
+        </SyncEngineBootstrap>
       </SQLiteProvider>
     ) : (
       children
@@ -227,14 +247,6 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
                     {content}
                     <CurrentToast />
                     <ToastViewport top="$8" left={0} right={0} />
-                    {congratsVisible && payload && (
-                      <FinishedWorkoutCongrats
-                        data={payload.record}
-                        streak={payload.streak}
-                        visible={congratsVisible}
-                        onClose={hideFinishedCongrats}
-                      />
-                    )}
                   </ToastProvider>
                 </PortalProvider>
               </PostHogProvider>

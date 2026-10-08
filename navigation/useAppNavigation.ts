@@ -30,7 +30,8 @@ export function useAppNavigation(): NavigationHelpers {
   }
 
   const goBack = () => {
-    router.back()
+    if (router.canGoBack()) router.back()
+    else router.replace('/')
   }
 
   return {

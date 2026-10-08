@@ -44,6 +44,7 @@ const mockCredentials = { token: null, refreshToken: null }
 const mockProfileHydration = { finish: null }
 const AsyncStorage = require('@react-native-async-storage/async-storage')
 const { resetAllStores } = require('../../utils/storeReset')
+const { useUiStore } = require('../../stores/uiStore')
 const { clearDatabase } = require('../../lib/db/connection')
 const { LOCAL_PROFILE_OWNER, setActiveProfileOwner, getProfileScope } = require('../../lib/profileScope')
 const { useAuthStore, initializeAuth } = require('../../stores/authStore')
@@ -51,6 +52,7 @@ const { useAuthStore, initializeAuth } = require('../../stores/authStore')
 describe('auth profile refresh', () => {
   beforeEach(async () => {
     jest.clearAllMocks()
+    resetAllStores.mockReset()
     await useAuthStore.persist.clearStorage()
     await useAuthStore.persist.rehydrate()
     useAuthStore.setState({
@@ -229,6 +231,61 @@ describe('auth profile refresh', () => {
 
     expect(mockInvalidatePendingRequests).toHaveBeenCalledTimes(1)
     expect(useAuthStore.getState()).toMatchObject({ isAuthenticated: false, user: null })
+  })
+
+  it('clears finished congrats before an in-flight profile becomes ready during logout', async () => {
+    const user = { id: 'user_logout_transition', registrationCompleted: true }
+    const previousOwner = `account:${user.id}`
+    setActiveProfileOwner(previousOwner)
+    useAuthStore.setState({
+      isStartupReady: true,
+      profileOwnerId: previousOwner,
+      isProfileTransitioning: false,
+      isAuthenticated: true,
+      user,
+      token: 'access',
+      refreshToken: 'refresh',
+    })
+    useUiStore.getState().reset()
+    useUiStore
+      .getState()
+      .showFinishedCongrats(
+        { workoutTitle: 'Previous owner workout' },
+        { status: 'WEEKLY_PROGRESS', currentStreak: 0 }
+      )
+
+    let releaseDrain
+    let markDrainStarted
+    const drainStarted = new Promise((resolve) => (markDrainStarted = resolve))
+    mockPauseAndDrain.mockImplementationOnce(() => {
+      markDrainStarted()
+      return new Promise((resolve) => (releaseDrain = resolve))
+    })
+
+    const logout = useAuthStore.getState().logout()
+    expect(useUiStore.getState().finishedCongrats).toEqual({ visible: false, payload: undefined })
+    await drainStarted
+
+    expect(mockRemoveToken).not.toHaveBeenCalled()
+    expect(useAuthStore.getState()).toMatchObject({
+      profileOwnerId: previousOwner,
+      isProfileTransitioning: true,
+    })
+
+    // A profile-ready callback can clear the transition gate while logout is waiting.
+    useAuthStore.getState().markProfileDatabaseReady(previousOwner)
+    expect(useAuthStore.getState().isProfileTransitioning).toBe(false)
+    expect(useUiStore.getState().finishedCongrats).toEqual({ visible: false, payload: undefined })
+
+    releaseDrain()
+    await logout
+
+    expect(useAuthStore.getState()).toMatchObject({
+      profileOwnerId: LOCAL_PROFILE_OWNER,
+      isProfileTransitioning: false,
+      isAuthenticated: false,
+    })
+    expect(useUiStore.getState().finishedCongrats).toEqual({ visible: false, payload: undefined })
   })
 
   it('waits for profile-store hydration before refreshing the remote profile', async () => {

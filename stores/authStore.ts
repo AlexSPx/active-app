@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 import { useSettingsStore } from '../features/settings'
+import { useUiStore } from './uiStore'
 import { resetAllStores } from '../utils/storeReset'
 import { queryClient } from '../lib/queryClient'
 import { syncEngine } from '../lib/sync'
@@ -393,6 +394,8 @@ export const useAuthStore = create<AuthState>()(
         authSessionGeneration += 1
         const generation = authSessionGeneration
         const pendingRequests = authRepository.invalidatePendingRequests()
+        useUiStore.getState().hideFinishedCongrats()
+        authPersistenceReady = false
         set({
           isProfileTransitioning: true,
           isAuthenticated: false,
