@@ -10,6 +10,9 @@ export function AuthGuard() {
   const { isAuthenticated, user, isLoading } = useAuth()
   const isStartupReady = useAuthStore((state) => state.isStartupReady)
   const startupError = useAuthStore((state) => state.startupError)
+  const logoutRetryRequired = useAuthStore((state) => state.logoutRetryRequired)
+  const authError = useAuthStore((state) => state.error)
+  const retryLogout = useAuthStore((state) => state.logout)
   const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
   const isProfileLoading = useAuthStore((state) => state.isProfileLoading)
   const retryProfile = useAuthStore((state) => state.fetchUser)
@@ -48,6 +51,20 @@ export function AuthGuard() {
     return (
       <YStack flex={1} items="center" justify="center" bg="$background">
         <Spinner size="large" color="$blue9" />
+      </YStack>
+    )
+  }
+
+  if (logoutRetryRequired) {
+    return (
+      <YStack flex={1} items="center" justify="center" gap="$4" bg="$background" p="$6">
+        <Text fontSize="$6" fontWeight="700" color="$color12">
+          Sign-out needs to be retried
+        </Text>
+        <Text color="$color11" style={{ textAlign: 'center' }}>
+          {authError || 'We couldn’t finish signing out. Please try again.'}
+        </Text>
+        <Button onPress={() => void retryLogout()}>Retry sign out</Button>
       </YStack>
     )
   }

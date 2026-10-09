@@ -53,4 +53,11 @@ export class AuthRepository {
   removeRefreshToken(): Promise<void> {
     return apiService.removeRefreshToken()
   }
+
+  migrateLegacyCredentials(credentials: {
+    token: string | null
+    refreshToken: string | null
+  }): Promise<{ token: string | null; refreshToken: string | null }> {
+    return apiService.migrateLegacyCredentials(credentials)
+  }
 }

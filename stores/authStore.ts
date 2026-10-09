@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
+import { config } from '../config/api'
 import { useSettingsStore } from '../features/settings'
 import { useUiStore } from './uiStore'
 import { resetAllStores } from '../utils/storeReset'
@@ -24,6 +25,7 @@ const isWeb = Platform.OS === 'web'
 const authRepository = new AuthRepository()
 const userRepository = new UserRepository()
 let authPersistenceReady = false
+let secureCredentialsMigrated = false
 let authSessionGeneration = 0
 let authTransitions: Promise<void> = Promise.resolve()
 
@@ -54,6 +56,8 @@ function clearAuthState(set: (partial: Partial<AuthState>) => void) {
     profileError: null,
     serverSession: 'unknown',
     error: null,
+    isProfileTransitioning: false,
+    logoutRetryRequired: false,
   })
 }
 
@@ -155,6 +159,7 @@ interface AuthState {
   profileOwnerId: string
   legacyOwnerId: string | null
   isProfileTransitioning: boolean
+  logoutRetryRequired: boolean
   // Local access remains available when the remote session cannot be checked.
   isAuthenticated: boolean
   serverSession: 'unknown' | 'valid' | 'invalid'
@@ -184,6 +189,24 @@ interface AuthState {
   setRefreshToken: (token: string | null) => void
   markServerSessionInvalid: () => void
   markProfileDatabaseReady: (ownerId: string) => void
+}
+
+async function persistScrubbedAuthState(state: AuthState): Promise<void> {
+  await AsyncStorage.setItem(
+    'auth-storage',
+    JSON.stringify({
+      state: { user: state.user, isAuthenticated: state.isAuthenticated },
+      version: 0,
+    })
+  )
+}
+
+async function persistScrubbedAuthStateForGeneration(generation: number): Promise<boolean> {
+  return serializeAuthTransition(async () => {
+    if (generation !== authSessionGeneration) return false
+    await persistScrubbedAuthState(useAuthStore.getState())
+    return generation === authSessionGeneration
+  })
 }
 
 async function switchProfile(
@@ -268,6 +291,7 @@ export const useAuthStore = create<AuthState>()(
       profileOwnerId: LOCAL_PROFILE_OWNER,
       legacyOwnerId: null,
       isProfileTransitioning: false,
+      logoutRetryRequired: false,
       isAuthenticated: false,
       serverSession: 'unknown',
       user: null,
@@ -391,12 +415,22 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: async () => {
+        const previousState = get()
+        const previousPersistenceReady = authPersistenceReady
+        const wasLocalProfileReady =
+          previousState.profileOwnerId === LOCAL_PROFILE_OWNER &&
+          !previousState.isProfileTransitioning
+        let credentialCleanupAttempted = false
+        let profileSwitchStarted = false
+        let profileSwitchCommitted = false
         authSessionGeneration += 1
         const generation = authSessionGeneration
         const pendingRequests = authRepository.invalidatePendingRequests()
         useUiStore.getState().hideFinishedCongrats()
+        authPersistenceReady = false
         set({
           isProfileTransitioning: true,
+          logoutRetryRequired: false,
           isAuthenticated: false,
           user: null,
           token: null,
@@ -409,28 +443,76 @@ export const useAuthStore = create<AuthState>()(
             await pendingRequests
             await queryClient.cancelQueries()
             queryClient.clear()
-            await Promise.allSettled([
-              authRepository.removeToken(),
-              authRepository.removeRefreshToken(),
+            try {
+              credentialCleanupAttempted = true
+              await authRepository.removeToken()
+              await authRepository.removeRefreshToken()
+            } catch (error) {
+              if ((error as { code?: string })?.code !== 'SECURE_STORE_UNAVAILABLE') throw error
+              await AsyncStorage.multiRemove([
+                config.STORAGE_KEYS.TOKEN,
+                config.STORAGE_KEYS.REFRESH_TOKEN,
+              ])
+            }
+            await AsyncStorage.multiRemove([
+              config.STORAGE_KEYS.TOKEN,
+              config.STORAGE_KEYS.REFRESH_TOKEN,
             ])
 
-            const wasLocalProfile = get().profileOwnerId === LOCAL_PROFILE_OWNER
-            if (!wasLocalProfile) {
+            if (!wasLocalProfileReady) {
+              profileSwitchStarted = true
               setActiveProfileOwner(LOCAL_PROFILE_OWNER)
               await hydrateProfileStores(LOCAL_PROFILE_OWNER, get().legacyOwnerId)
               if (generation !== authSessionGeneration) return
               set({ profileOwnerId: LOCAL_PROFILE_OWNER })
+              profileSwitchCommitted = true
             }
             await resetAllStores()
             clearAuthState(set)
-            if (wasLocalProfile) set({ isProfileTransitioning: false })
             authRepository.resumePendingRequests()
             posthog.reset()
+            await AsyncStorage.removeItem('auth-storage')
+            authPersistenceReady = true
           } catch (error) {
             console.error('Logout error:', error)
             if (generation === authSessionGeneration) {
               authRepository.resumePendingRequests()
-              set({ isProfileTransitioning: false })
+              if (!credentialCleanupAttempted && !profileSwitchStarted) {
+                authPersistenceReady = previousPersistenceReady
+                set({
+                  isAuthenticated: previousState.isAuthenticated,
+                  user: previousState.user,
+                  token: previousState.token,
+                  refreshToken: previousState.refreshToken,
+                  serverSession: previousState.serverSession,
+                  isLoading: false,
+                  isProfileLoading: false,
+                  isProfileTransitioning: previousState.isProfileTransitioning,
+                  logoutRetryRequired: previousState.logoutRetryRequired,
+                  startupError: previousState.startupError,
+                  error: 'Could not sign out. Please try again.',
+                })
+              } else {
+                authPersistenceReady = false
+                set({
+                  profileOwnerId: profileSwitchStarted
+                    ? getProfileScope().ownerId
+                    : get().profileOwnerId,
+                  isAuthenticated: false,
+                  user: null,
+                  token: null,
+                  refreshToken: null,
+                  isLoading: false,
+                  isProfileLoading: false,
+                  isProfileTransitioning:
+                    credentialCleanupAttempted || (profileSwitchStarted && !profileSwitchCommitted),
+                  error: 'Could not sign out. Please try again.',
+                  logoutRetryRequired: true,
+                  ...(profileSwitchStarted
+                    ? { startupError: 'We couldn’t restore your local data.' }
+                    : {}),
+                })
+              }
             }
           }
         })
@@ -541,8 +623,9 @@ export const useAuthStore = create<AuthState>()(
       storage: authStorage,
       // Only persist essential data
       partialize: (state) => ({
-        token: state.token,
-        refreshToken: state.refreshToken,
+        ...(!isWeb && !secureCredentialsMigrated
+          ? { token: state.token, refreshToken: state.refreshToken }
+          : {}),
         user: state.user,
         isAuthenticated: state.isAuthenticated,
       }),
@@ -556,6 +639,7 @@ let initializationPromise: Promise<void> | null = null
 export function initializeAuth(retry = false): Promise<void> {
   if (retry) {
     initializationPromise = null
+    authPersistenceReady = false
     useAuthStore.setState({ isStartupReady: false, startupError: null })
   }
   if (!initializationPromise) initializationPromise = initializeAuthState()
@@ -568,7 +652,6 @@ async function initializeAuthState(): Promise<void> {
   try {
     const hydrationError = await waitForHydration(useAuthStore)
     if (hydrationError) throw hydrationError
-    authPersistenceReady = true
     if (generation !== authSessionGeneration) return
 
     // The last persisted auth user is the only identity allowed to claim legacy data.
@@ -578,36 +661,68 @@ async function initializeAuthState(): Promise<void> {
     setActiveProfileOwner(ownerId)
     await hydrateProfileStores(ownerId, legacyOwnerId)
     if (generation !== authSessionGeneration) return
-    useAuthStore.setState({ profileOwnerId: ownerId, legacyOwnerId })
+    useAuthStore.setState({
+      profileOwnerId: ownerId,
+      legacyOwnerId,
+      isProfileTransitioning: false,
+    })
 
-    const [token, refreshToken] = isWeb
-      ? [null, null]
-      : await Promise.all([authRepository.getToken(), authRepository.getRefreshToken()])
-    if (generation !== authSessionGeneration) return
-    const state = useAuthStore.getState()
-    const hasCredentials = !!(token || refreshToken)
+    const hydratedState = useAuthStore.getState()
+    try {
+      const credentials = await authRepository.migrateLegacyCredentials({
+        token: hydratedState.token,
+        refreshToken: hydratedState.refreshToken,
+      })
+      if (generation !== authSessionGeneration) return
 
-    if (hasCredentials) {
-      useAuthStore.setState({
-        isAuthenticated: true,
-        token,
-        refreshToken,
-        serverSession: 'unknown',
-      })
-    } else if (!isWeb && state.isAuthenticated && state.user) {
-      // Keep the cached profile usable after credentials expire or disappear.
-      useAuthStore.setState({ token: null, refreshToken: null, serverSession: 'invalid' })
-    } else if (!isWeb) {
-      useAuthStore.setState({
-        isAuthenticated: false,
-        user: null,
-        token: null,
-        refreshToken: null,
-        serverSession: 'unknown',
-      })
+      if (isWeb) {
+        // Browser sessions use cookies; legacy native token fields are no longer needed.
+        useAuthStore.setState({ token: null, refreshToken: null })
+        if (
+          !(await persistScrubbedAuthStateForGeneration(generation)) ||
+          generation !== authSessionGeneration
+        )
+          return
+        authPersistenceReady = true
+        shouldRefreshProfile = hydratedState.isAuthenticated
+      } else {
+        const state = useAuthStore.getState()
+        const hasCredentials = !!(credentials.token || credentials.refreshToken)
+        if (hasCredentials) {
+          useAuthStore.setState({
+            isAuthenticated: true,
+            token: credentials.token,
+            refreshToken: credentials.refreshToken,
+            serverSession: 'unknown',
+          })
+        } else if (state.isAuthenticated && state.user) {
+          // Keep the cached profile usable after credentials expire or disappear.
+          useAuthStore.setState({ token: null, refreshToken: null, serverSession: 'invalid' })
+        } else {
+          useAuthStore.setState({
+            isAuthenticated: false,
+            user: null,
+            token: null,
+            refreshToken: null,
+            serverSession: 'unknown',
+          })
+        }
+        if (
+          !(await persistScrubbedAuthStateForGeneration(generation)) ||
+          generation !== authSessionGeneration
+        )
+          return
+        secureCredentialsMigrated = true
+        authPersistenceReady = true
+        shouldRefreshProfile = hasCredentials
+      }
+    } catch (error) {
+      if (!isWeb && (error as { code?: string })?.code === 'SECURE_STORE_UNAVAILABLE') {
+        authPersistenceReady = true
+        return
+      }
+      throw error
     }
-
-    shouldRefreshProfile = hasCredentials || (isWeb && state.isAuthenticated)
   } catch (error) {
     console.error('Failed to restore local startup state:', error)
     if (generation === authSessionGeneration) {
