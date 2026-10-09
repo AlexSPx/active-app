@@ -6,7 +6,6 @@ import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { useRoutineRepository } from '../../../lib/hooks/useRepository'
 
 function toFriendlyError(err: unknown, fallback: string): string {
-  const defaultMsg = fallback
   if (err && typeof err === 'object' && 'status' in err) {
     const e = err as ApiError
     if (e.status === 409) {
@@ -15,39 +14,36 @@ function toFriendlyError(err: unknown, fallback: string): string {
     if (e.status === 400) {
       return e.message || 'Invalid data. Please check the fields and try again.'
     }
-    return e.message || defaultMsg
+    return e.message || fallback
   }
-  return err instanceof Error ? err.message : defaultMsg
+  return err instanceof Error ? err.message : fallback
 }
 
 export function useRoutineMutations() {
   const queryClient = useQueryClient()
   const repo = useRoutineRepository()
   const ownerKeys = useProfileQueryKeys()
+  const invalidateRoutines = () => {
+    queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
+  }
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateRoutineRequest) => repo.create(payload),
     retry: false,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
-    },
+    onSuccess: invalidateRoutines,
   })
 
   const updateMutation = useMutation({
     mutationFn: ({ routineId, payload }: { routineId: string; payload: UpdateRoutineRequest }) =>
       repo.update(routineId, payload),
     retry: false,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
-    },
+    onSuccess: invalidateRoutines,
   })
 
   const deleteMutation = useMutation({
     mutationFn: (routineId: string) => repo.delete(routineId),
     retry: false,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
-    },
+    onSuccess: invalidateRoutines,
   })
 
   const createRoutine = async (payload: CreateRoutineRequest): Promise<Routine | null> => {

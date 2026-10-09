@@ -11,6 +11,52 @@ jest.mock('../../services/posthog', () => ({
 const { createApi, makeJob, runQueue, FakeDb } = require('../helpers/syncTestUtils')
 
 describe('SyncEngine queue remapping', () => {
+  it.each(['sync:start', 'sync:complete', 'sync:idle', 'sync:error'])(
+    'keeps queue processing and other subscribers intact when a %s listener throws',
+    async (event) => {
+      const { SyncEngine } = require('../../lib/sync/SyncEngine')
+      const api = createApi()
+      const engine = new SyncEngine({
+        api,
+        getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+        addAppStateListener: () => ({ remove() {} }),
+      })
+      const db = new FakeDb({
+        jobs:
+          event === 'sync:idle'
+            ? []
+            : [makeJob({ id: 'delete-job', endpoint: 'deleteWorkout', payload: ['workout_1'] })],
+      })
+      const listenerError = new Error('Subscriber failed')
+      const databaseError = new Error('Database failed')
+      const nextListener = jest.fn()
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        await engine.init(db, { processOnInit: false })
+        engine.on(event, () => {
+          throw listenerError
+        })
+        engine.on(event, nextListener)
+        if (event === 'sync:error') {
+          jest.spyOn(db, 'getAllAsync').mockRejectedValueOnce(databaseError)
+          await expect(engine.processQueue()).rejects.toBe(databaseError)
+        } else {
+          await engine.processQueue()
+          expect(db.jobs).toHaveLength(0)
+          expect(api.deleteWorkout).toHaveBeenCalledTimes(event === 'sync:idle' ? 0 : 1)
+        }
+        expect(nextListener).toHaveBeenCalledTimes(1)
+        expect(consoleError).toHaveBeenCalledWith(
+          `[SyncEngine] ${event} listener failed:`,
+          listenerError
+        )
+      } finally {
+        engine.destroy()
+        consoleError.mockRestore()
+      }
+    }
+  )
+
   it('persists local jobs while uploads are disabled and drains them after validation', async () => {
     const { SyncEngine } = require('../../lib/sync/SyncEngine')
     const api = createApi()

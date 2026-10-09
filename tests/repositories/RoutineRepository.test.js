@@ -153,6 +153,36 @@ describe('RoutineRepository', () => {
     expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
   })
 
+  it('updates and deletes a routine whose local ID was remapped while the form was open', async () => {
+    const created = await repo.create({ name: 'Routine', pattern: [] })
+    const serverId = 'server_routine_open_form'
+    const row = db.tables.routines.get(created.id)
+    db.tables.routines.delete(created.id)
+    db.tables.routines.set(serverId, { ...row, id: serverId })
+    syncEngine.resolveId.mockImplementation((table, id) =>
+      table === 'routines' && id === created.id ? serverId : id
+    )
+
+    await expect(repo.update(created.id, { name: 'Updated routine' })).resolves.toMatchObject({
+      id: serverId,
+      name: 'Updated routine',
+    })
+    expect(syncEngine.enqueue).toHaveBeenLastCalledWith(
+      { apiMethod: 'updateRoutine', payload: [serverId, { name: 'Updated routine' }] },
+      db,
+      { processAfterInsert: false }
+    )
+
+    await repo.delete(created.id)
+
+    expect(db.tables.routines.has(serverId)).toBe(false)
+    expect(syncEngine.enqueue).toHaveBeenLastCalledWith(
+      { apiMethod: 'deleteRoutine', payload: [serverId] },
+      db,
+      { processAfterInsert: false }
+    )
+  })
+
   it('deactivates other routines when activating one', async () => {
     db.tables.routines.set('routine_a', {
       id: 'routine_a',

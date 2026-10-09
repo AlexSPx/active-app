@@ -12,10 +12,10 @@ import type {
   CreateWorkoutRequest,
   WorkoutRecordRequest,
   WorkoutRecord,
+  WorkoutRecordResponse,
   RegisterRequest,
   ExerciseLogResponse,
 } from '../types/api'
-import type { WorkoutRecordResponse } from '../types/api'
 import type { Routine, CreateRoutineRequest, UpdateRoutineRequest } from '../types/routine'
 
 // Re-export types for backward compatibility
@@ -103,7 +103,7 @@ interface RequestLogContext {
 class ApiService {
   private unauthorizedHandler?: () => void
   private isRefreshing = false
-  private refreshSubscribers: ((token: string | null, error?: any) => void)[] = []
+  private refreshSubscribers: ((token: string | null, error?: unknown) => void)[] = []
   private credentialGeneration = 0
   private credentialWrites: Promise<void> = Promise.resolve()
   private credentialTransition = false
@@ -641,12 +641,12 @@ class ApiService {
     this.refreshSubscribers = []
   }
 
-  private onRefreshFailed(error: any) {
+  private onRefreshFailed(error: unknown) {
     this.refreshSubscribers.forEach((callback) => callback(null, error))
     this.refreshSubscribers = []
   }
 
-  private addRefreshSubscriber(callback: (token: string | null, error?: any) => void) {
+  private addRefreshSubscriber(callback: (token: string | null, error?: unknown) => void) {
     this.refreshSubscribers.push(callback)
   }
 

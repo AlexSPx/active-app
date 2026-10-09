@@ -22,6 +22,9 @@ jest.mock('lib/repositories', () => ({
     invalidatePendingRequests: (...args) => mockInvalidatePendingRequests(...args),
     resumePendingRequests: (...args) => mockResumePendingRequests(...args),
     loginWithWorkOS: (...args) => mockLoginWithWorkOS(...args),
+    login: (...args) => mockLogin(...args),
+    loginWithGoogle: (...args) => mockLoginWithGoogle(...args),
+    register: (...args) => mockRegister(...args),
   })),
   UserRepository: jest.fn(() => ({
     getCurrentUser: (...args) => mockGetCurrentUser(...args),
@@ -37,6 +40,9 @@ jest.mock('../../features/settings', () => ({
 const mockGetCurrentUser = jest.fn()
 const mockUpdateCurrentUser = jest.fn()
 const mockLoginWithWorkOS = jest.fn()
+const mockLogin = jest.fn()
+const mockLoginWithGoogle = jest.fn()
+const mockRegister = jest.fn()
 const mockMigrateLegacyCredentials = jest.fn()
 const mockRemoveToken = jest.fn()
 const mockRemoveRefreshToken = jest.fn()
@@ -48,6 +54,7 @@ const mockCredentials = { token: null, refreshToken: null }
 const mockProfileHydration = { finish: null }
 const AsyncStorage = require('@react-native-async-storage/async-storage')
 const { config } = require('../../config/api')
+const { posthog } = require('../../services/posthog')
 const { resetAllStores } = require('../../utils/storeReset')
 const { useUiStore } = require('../../stores/uiStore')
 const { clearDatabase } = require('../../lib/db/connection')
@@ -84,6 +91,9 @@ describe('auth profile refresh', () => {
     mockGetCurrentUser.mockReset()
     mockUpdateCurrentUser.mockReset()
     mockLoginWithWorkOS.mockReset()
+    mockLogin.mockReset()
+    mockLoginWithGoogle.mockReset()
+    mockRegister.mockReset()
     mockMigrateLegacyCredentials
       .mockReset()
       .mockImplementation(async ({ token, refreshToken }) => ({
@@ -301,6 +311,62 @@ describe('auth profile refresh', () => {
     expect(clearDatabase).not.toHaveBeenCalled()
     expect(AsyncStorage.clear).not.toHaveBeenCalled()
   })
+
+  it.each([
+    ['login', { email: 'user@example.com', password: 'password' }, mockLogin, 'Login failed'],
+    ['loginWithGoogle', 'id-token', mockLoginWithGoogle, 'Google login failed'],
+    ['loginWithWorkOS', 'code', mockLoginWithWorkOS, 'WorkOS login failed'],
+    [
+      'register',
+      { email: 'user@example.com', password: 'password' },
+      mockRegister,
+      'Registration failed',
+    ],
+  ])('reports exchange errors consistently for %s', async (action, input, exchange, fallback) => {
+    const error = new Error('')
+    exchange.mockRejectedValue(error)
+
+    await expect(useAuthStore.getState()[action](input)).rejects.toBe(error)
+
+    expect(exchange).toHaveBeenCalledWith(input)
+    expect(useAuthStore.getState()).toMatchObject({
+      isLoading: false,
+      isProfileTransitioning: false,
+      error: fallback,
+    })
+    expect(mockGetCurrentUser).not.toHaveBeenCalled()
+    expect(posthog.capture).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['login', { email: 'user@example.com', password: 'password' }, mockLogin, 'email'],
+    ['loginWithGoogle', 'id-token', mockLoginWithGoogle, 'google'],
+    ['loginWithWorkOS', 'code', mockLoginWithWorkOS, 'workos'],
+    ['register', { email: 'user@example.com', password: 'password' }, mockRegister, null],
+  ])(
+    'preserves the session and analytics for %s after an offline profile fetch',
+    async (action, input, exchange, method) => {
+      exchange.mockResolvedValue({ token: 'access', refreshToken: 'refresh' })
+      mockGetCurrentUser.mockRejectedValue(new Error('Offline'))
+
+      await expect(useAuthStore.getState()[action](input)).resolves.toBeUndefined()
+
+      expect(exchange).toHaveBeenCalledWith(input)
+      expect(useAuthStore.getState()).toMatchObject({
+        isAuthenticated: true,
+        isLoading: false,
+        token: 'access',
+        refreshToken: 'refresh',
+        profileError: 'Offline',
+      })
+      if (method) {
+        expect(posthog.capture).toHaveBeenCalledWith('user_logged_in', { method })
+      } else {
+        expect(posthog.capture).toHaveBeenCalledWith('user_signed_up')
+        expect(posthog.capture).toHaveBeenCalledWith('user_logged_in')
+      }
+    }
+  )
 
   it('keeps a successful credential exchange when the first profile fetch fails', async () => {
     setActiveProfileOwner('account:previous_user')

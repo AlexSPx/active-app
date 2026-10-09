@@ -3,8 +3,7 @@ import { RootLayoutNav } from '../components/RootLayoutNav'
 import { useEffect } from 'react'
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router'
 import { Button, Text, YStack, Spinner } from 'tamagui'
-import { useAuthStore } from '../stores/authStore'
-import { initializeAuth } from '../stores/authStore'
+import { initializeAuth, useAuthStore } from '../stores/authStore'
 
 export function AuthGuard() {
   const { isAuthenticated, user, isLoading } = useAuth()

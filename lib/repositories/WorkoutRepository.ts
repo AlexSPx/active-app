@@ -277,13 +277,14 @@ export class WorkoutRepository extends BaseRepository {
 
   async deleteRecord(id: string): Promise<void> {
     return this.commitMutation(async (tx) => {
-      await tx.runAsync('DELETE FROM workout_records WHERE id = ?', id)
+      const resolvedId = syncEngine.resolveId('workout_records', id)
+      await tx.runAsync('DELETE FROM workout_records WHERE id = ?', resolvedId)
 
       return {
         value: undefined,
         job: {
           apiMethod: 'deleteWorkoutRecord',
-          payload: [id],
+          payload: [resolvedId],
         },
       }
     })

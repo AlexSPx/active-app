@@ -282,6 +282,30 @@ async function fetchProfileAfterLogin(get: () => AuthState) {
   }
 }
 
+async function authenticate(
+  exchange: () => Promise<{ token: string; refreshToken: string }>,
+  fallbackError: string,
+  set: (partial: Partial<AuthState>) => void,
+  get: () => AuthState
+): Promise<boolean> {
+  const generation = authSessionGeneration
+  set({ isLoading: true, error: null })
+  try {
+    if (!(await persistSession(exchange, generation, set, get))) return false
+    await fetchProfileAfterLogin(get)
+    return true
+  } catch (error) {
+    if (generation === authSessionGeneration) {
+      set({
+        isLoading: false,
+        isProfileTransitioning: false,
+        error: (error as ApiError).message || fallbackError,
+      })
+    }
+    throw error
+  }
+}
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -304,113 +328,48 @@ export const useAuthStore = create<AuthState>()(
 
       // Actions
       loginWithWorkOS: async (code: string) => {
-        const generation = authSessionGeneration
-        try {
-          console.log('Handling WorkOS login on ' + (isWeb ? 'web' : 'native'))
-
-          set({ isLoading: true, error: null })
-
-          if (
-            !(await persistSession(
-              () => authRepository.loginWithWorkOS(code),
-              generation,
-              set,
-              get
-            ))
+        if (
+          await authenticate(
+            () => authRepository.loginWithWorkOS(code),
+            'WorkOS login failed',
+            set,
+            get
           )
-            return
-
-          await fetchProfileAfterLogin(get)
+        ) {
           posthog.capture('user_logged_in', { method: 'workos' })
-        } catch (error) {
-          const apiError = error as ApiError
-          if (generation === authSessionGeneration) {
-            set({
-              isLoading: false,
-              isProfileTransitioning: false,
-              error: apiError.message || 'WorkOS login failed',
-            })
-          }
-          throw error
         }
       },
+
       login: async (credentials: LoginRequest) => {
-        const generation = authSessionGeneration
-        try {
-          set({ isLoading: true, error: null })
-
-          if (
-            !(await persistSession(() => authRepository.login(credentials), generation, set, get))
-          )
-            return
-
-          await fetchProfileAfterLogin(get)
-
+        if (await authenticate(() => authRepository.login(credentials), 'Login failed', set, get)) {
           posthog.capture('user_logged_in', { method: 'email' })
-        } catch (error) {
-          const apiError = error as ApiError
-          if (generation === authSessionGeneration) {
-            set({
-              isLoading: false,
-              isProfileTransitioning: false,
-              error: apiError.message || 'Login failed',
-            })
-          }
-          throw error
         }
       },
 
       register: async (payload) => {
-        const generation = authSessionGeneration
-        try {
-          set({ isLoading: true, error: null })
-
-          if (!(await persistSession(() => authRepository.register(payload), generation, set, get)))
-            return
-
-          await fetchProfileAfterLogin(get)
-
+        if (
+          await authenticate(
+            () => authRepository.register(payload),
+            'Registration failed',
+            set,
+            get
+          )
+        ) {
           posthog.capture('user_signed_up')
           posthog.capture('user_logged_in')
-        } catch (error) {
-          const apiError = error as ApiError
-          if (generation === authSessionGeneration) {
-            set({
-              isLoading: false,
-              isProfileTransitioning: false,
-              error: apiError.message || 'Registration failed',
-            })
-          }
-          throw error
         }
       },
 
       loginWithGoogle: async (idToken: string) => {
-        const generation = authSessionGeneration
-        try {
-          set({ isLoading: true, error: null })
-          if (
-            !(await persistSession(
-              () => authRepository.loginWithGoogle(idToken),
-              generation,
-              set,
-              get
-            ))
+        if (
+          await authenticate(
+            () => authRepository.loginWithGoogle(idToken),
+            'Google login failed',
+            set,
+            get
           )
-            return
-
-          await fetchProfileAfterLogin(get)
+        ) {
           posthog.capture('user_logged_in', { method: 'google' })
-        } catch (error) {
-          const apiError = error as ApiError
-          if (generation === authSessionGeneration) {
-            set({
-              isLoading: false,
-              isProfileTransitioning: false,
-              error: apiError.message || 'Google login failed',
-            })
-          }
-          throw error
         }
       },
 
