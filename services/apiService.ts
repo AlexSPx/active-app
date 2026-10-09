@@ -390,7 +390,11 @@ class ApiService {
           return this.handleResponse<T>(retryResponse, context, credentialGeneration)
         } catch (error) {
           this.onRefreshFailed(error)
-          if (credentialGeneration === this.credentialGeneration && this.unauthorizedHandler) {
+          if (
+            (error as ApiError)?.status === 401 &&
+            credentialGeneration === this.credentialGeneration &&
+            this.unauthorizedHandler
+          ) {
             this.unauthorizedHandler()
           }
           throw error
@@ -659,7 +663,9 @@ class ApiService {
         throw this.authSessionChangedError()
       }
       if (!refreshToken) {
-        throw new Error('No refresh token available')
+        const error: ApiError = new Error('No refresh token available')
+        error.status = 401
+        throw error
       }
       body = JSON.stringify({ refreshToken })
     }
