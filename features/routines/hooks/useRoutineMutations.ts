@@ -27,6 +27,7 @@ export function useRoutineMutations() {
 
   const createMutation = useMutation({
     mutationFn: (payload: CreateRoutineRequest) => repo.create(payload),
+    retry: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
     },
@@ -35,6 +36,7 @@ export function useRoutineMutations() {
   const updateMutation = useMutation({
     mutationFn: ({ routineId, payload }: { routineId: string; payload: UpdateRoutineRequest }) =>
       repo.update(routineId, payload),
+    retry: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
     },
@@ -42,6 +44,7 @@ export function useRoutineMutations() {
 
   const deleteMutation = useMutation({
     mutationFn: (routineId: string) => repo.delete(routineId),
+    retry: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
     },

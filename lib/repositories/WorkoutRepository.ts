@@ -83,34 +83,37 @@ export class WorkoutRepository extends BaseRepository {
       updatedAt: now,
     }
 
-    await this.run(
-      `INSERT INTO workouts (id, title, notes, created_at, updated_at, workout_template, is_synced)
+    return this.commitMutation(async (tx) => {
+      await tx.runAsync(
+        `INSERT INTO workouts (id, title, notes, created_at, updated_at, workout_template, is_synced)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      localId,
-      workout.title || '',
-      workout.notes || null,
-      now,
-      now,
-      JSON.stringify(templatePayload),
-      0
-    )
+        localId,
+        workout.title || '',
+        workout.notes || null,
+        now,
+        now,
+        JSON.stringify(templatePayload),
+        0
+      )
 
-    await this.enqueueSync({
-      apiMethod: 'createWorkout',
-      payload: workout,
-      localTable: 'workouts',
-      localId,
-    })
-
-    return this.rowToWorkout({
-      id: localId,
-      title: workout.title || '',
-      notes: workout.notes || null,
-      created_at: now,
-      updated_at: now,
-      workout_template: JSON.stringify(templatePayload),
-      is_synced: 0,
-      synced_at: null,
+      return {
+        value: this.rowToWorkout({
+          id: localId,
+          title: workout.title || '',
+          notes: workout.notes || null,
+          created_at: now,
+          updated_at: now,
+          workout_template: JSON.stringify(templatePayload),
+          is_synced: 0,
+          synced_at: null,
+        }),
+        job: {
+          apiMethod: 'createWorkout',
+          payload: workout,
+          localTable: 'workouts',
+          localId,
+        },
+      }
     })
   }
 
@@ -119,7 +122,7 @@ export class WorkoutRepository extends BaseRepository {
     payload: UpdateWorkoutRequest,
     selectedExercises: ApiExercise[]
   ): Promise<void> {
-    return syncEngine.withIdRemapLock(async () => {
+    return this.commitMutation(async (tx) => {
       const resolvedWorkoutId = syncEngine.resolveId('workouts', workoutId)
       const sets: string[] = []
       const vals: any[] = []
@@ -133,7 +136,11 @@ export class WorkoutRepository extends BaseRepository {
         vals.push(payload.notes || null)
       }
       if (payload.template) {
-        const current = await this.getById(resolvedWorkoutId)
+        const row = await tx.getFirstAsync<WorkoutRow>(
+          'SELECT * FROM workouts WHERE id = ?',
+          resolvedWorkoutId
+        )
+        const current = row ? this.rowToWorkout(row) : null
         const now = new Date().toISOString()
         sets.push('workout_template = ?')
         vals.push(
@@ -154,25 +161,31 @@ export class WorkoutRepository extends BaseRepository {
 
       if (sets.length > 2) {
         // More than just is_synced + updated_at
-        await this.run(`UPDATE workouts SET ${sets.join(', ')} WHERE id = ?`, ...vals)
+        await tx.runAsync(`UPDATE workouts SET ${sets.join(', ')} WHERE id = ?`, ...vals)
       }
 
-      await this.enqueueSync({
-        apiMethod: 'updateWorkout',
-        payload: [resolvedWorkoutId, payload],
-      })
+      return {
+        value: undefined,
+        job: {
+          apiMethod: 'updateWorkout',
+          payload: [resolvedWorkoutId, payload],
+        },
+      }
     })
   }
 
   async delete(id: string): Promise<void> {
-    return syncEngine.withIdRemapLock(async () => {
+    return this.commitMutation(async (tx) => {
       const resolvedId = syncEngine.resolveId('workouts', id)
-      await this.run('DELETE FROM workouts WHERE id = ?', resolvedId)
+      await tx.runAsync('DELETE FROM workouts WHERE id = ?', resolvedId)
 
-      await this.enqueueSync({
-        apiMethod: 'deleteWorkout',
-        payload: [resolvedId],
-      })
+      return {
+        value: undefined,
+        job: {
+          apiMethod: 'deleteWorkout',
+          payload: [resolvedId],
+        },
+      }
     })
   }
 
@@ -199,7 +212,7 @@ export class WorkoutRepository extends BaseRepository {
     request: WorkoutRecordRequest,
     workoutTitle: string
   ): Promise<WorkoutRecordResponse> {
-    return syncEngine.withIdRemapLock(async () => {
+    return this.commitMutation(async (tx) => {
       const recordRequest = {
         ...request,
         workoutId: syncEngine.resolveId('workouts', request.workoutId),
@@ -216,7 +229,7 @@ export class WorkoutRepository extends BaseRepository {
         notes: er.notes || null,
       }))
 
-      await this.run(
+      await tx.runAsync(
         `INSERT INTO workout_records (id, workout_id, workout_title, notes, created_at, start_time, exercise_records, is_synced)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         localId,
@@ -228,18 +241,6 @@ export class WorkoutRepository extends BaseRepository {
         JSON.stringify(exerciseRecords),
         0
       )
-
-      try {
-        await this.enqueueSync({
-          apiMethod: 'recordWorkout',
-          payload: recordRequest,
-          localTable: 'workout_records',
-          localId,
-        })
-      } catch (error) {
-        await this.run('DELETE FROM workout_records WHERE id = ?', localId)
-        throw error
-      }
 
       // Return a local-shaped response for the UI
       const localRecord: WorkoutRecord = {
@@ -253,25 +254,38 @@ export class WorkoutRepository extends BaseRepository {
       }
 
       return {
-        workoutRecord: localRecord,
-        streakUpdate: {
-          status: 'CONTINUED',
-          currentStreak: 0,
-          longestStreak: 0,
-          nextWorkoutId: null,
-          nextWorkoutDeadline: null,
-          streakFreezeCount: 0,
+        value: {
+          workoutRecord: localRecord,
+          streakUpdate: {
+            status: 'CONTINUED',
+            currentStreak: 0,
+            longestStreak: 0,
+            nextWorkoutId: null,
+            nextWorkoutDeadline: null,
+            streakFreezeCount: 0,
+          },
+        },
+        job: {
+          apiMethod: 'recordWorkout',
+          payload: recordRequest,
+          localTable: 'workout_records',
+          localId,
         },
       }
     })
   }
 
   async deleteRecord(id: string): Promise<void> {
-    await this.run('DELETE FROM workout_records WHERE id = ?', id)
+    return this.commitMutation(async (tx) => {
+      await tx.runAsync('DELETE FROM workout_records WHERE id = ?', id)
 
-    await this.enqueueSync({
-      apiMethod: 'deleteWorkoutRecord',
-      payload: [id],
+      return {
+        value: undefined,
+        job: {
+          apiMethod: 'deleteWorkoutRecord',
+          payload: [id],
+        },
+      }
     })
   }
 

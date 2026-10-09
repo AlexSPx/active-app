@@ -63,7 +63,7 @@ export class RoutineRepository extends BaseRepository {
   // -------------------------------------------------------------------------
 
   async create(payload: CreateRoutineRequest): Promise<Routine> {
-    return syncEngine.withIdRemapLock(async () => {
+    return this.commitMutation(async (tx) => {
       const resolvedPayload = {
         ...payload,
         pattern: payload.pattern.map((item) => ({
@@ -74,7 +74,7 @@ export class RoutineRepository extends BaseRepository {
       const localId = this.generateLocalId()
       const now = new Date().toISOString()
 
-      await this.run(
+      await tx.runAsync(
         `INSERT INTO routines (id, name, description, routine_type, pattern, start_date, created_at, updated_at, is_active, is_synced)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         localId,
@@ -89,32 +89,33 @@ export class RoutineRepository extends BaseRepository {
         0
       )
 
-      await this.enqueueSync({
-        apiMethod: 'createRoutine',
-        payload: resolvedPayload,
-        localTable: 'routines',
-        localId,
-      })
-
-      return this.rowToRoutine({
-        id: localId,
-        name: resolvedPayload.name,
-        description: resolvedPayload.description || null,
-        user_id: null,
-        routine_type: resolvedPayload.routineType || 'SEQUENTIAL',
-        pattern: JSON.stringify(resolvedPayload.pattern),
-        start_date: resolvedPayload.startDate || now,
-        created_at: now,
-        updated_at: now,
-        is_active: resolvedPayload.active ? 1 : 0,
-        is_synced: 0,
-        synced_at: null,
-      })
+      return {
+        value: this.rowToRoutine({
+          id: localId,
+          name: resolvedPayload.name,
+          description: resolvedPayload.description || null,
+          user_id: null,
+          routine_type: resolvedPayload.routineType || 'SEQUENTIAL',
+          pattern: JSON.stringify(resolvedPayload.pattern),
+          start_date: resolvedPayload.startDate || now,
+          created_at: now,
+          updated_at: now,
+          is_active: resolvedPayload.active ? 1 : 0,
+          is_synced: 0,
+          synced_at: null,
+        }),
+        job: {
+          apiMethod: 'createRoutine',
+          payload: resolvedPayload,
+          localTable: 'routines',
+          localId,
+        },
+      }
     })
   }
 
   async update(routineId: string, payload: UpdateRoutineRequest): Promise<Routine | null> {
-    return syncEngine.withIdRemapLock(async () => {
+    return this.commitMutation(async (tx) => {
       const resolvedPayload = payload.pattern
         ? {
             ...payload,
@@ -150,7 +151,7 @@ export class RoutineRepository extends BaseRepository {
       if (resolvedPayload.active !== undefined) {
         // If activating this routine, first deactivate all others
         if (resolvedPayload.active) {
-          await this.run('UPDATE routines SET is_active = 0')
+          await tx.runAsync('UPDATE routines SET is_active = 0')
         }
         sets.push('is_active = ?')
         vals.push(resolvedPayload.active ? 1 : 0)
@@ -162,23 +163,33 @@ export class RoutineRepository extends BaseRepository {
       vals.push(new Date().toISOString())
       vals.push(routineId)
 
-      await this.run(`UPDATE routines SET ${sets.join(', ')} WHERE id = ?`, ...vals)
+      await tx.runAsync(`UPDATE routines SET ${sets.join(', ')} WHERE id = ?`, ...vals)
 
-      await this.enqueueSync({
-        apiMethod: 'updateRoutine',
-        payload: [routineId, resolvedPayload],
-      })
-
-      return this.getById(routineId)
+      const row = await tx.getFirstAsync<RoutineRow>(
+        'SELECT * FROM routines WHERE id = ?',
+        routineId
+      )
+      return {
+        value: row ? this.rowToRoutine(row) : null,
+        job: {
+          apiMethod: 'updateRoutine',
+          payload: [routineId, resolvedPayload],
+        },
+      }
     })
   }
 
   async delete(routineId: string): Promise<void> {
-    await this.run('DELETE FROM routines WHERE id = ?', routineId)
+    return this.commitMutation(async (tx) => {
+      await tx.runAsync('DELETE FROM routines WHERE id = ?', routineId)
 
-    await this.enqueueSync({
-      apiMethod: 'deleteRoutine',
-      payload: [routineId],
+      return {
+        value: undefined,
+        job: {
+          apiMethod: 'deleteRoutine',
+          payload: [routineId],
+        },
+      }
     })
   }
 

@@ -301,11 +301,11 @@ describe('profile-scoped sync fencing', () => {
     syncEngine.setUploadsEnabled(false)
 
     class LocalWorkoutRepository extends BaseRepository {
-      async save(title = 'Saved offline') {
-        const id = 'local_during_hydration'
-        const now = new Date().toISOString()
-        await this.db.withTransactionAsync(async () => {
-          await this.db.runAsync(
+      save(title = 'Saved offline') {
+        return this.commitMutation(async (tx) => {
+          const id = 'local_during_hydration'
+          const now = new Date().toISOString()
+          await tx.runAsync(
             'INSERT INTO workouts (id, title, notes, created_at, updated_at, workout_template, is_synced) VALUES (?, ?, ?, ?, ?, ?, ?)',
             id,
             title,
@@ -315,14 +315,16 @@ describe('profile-scoped sync fencing', () => {
             JSON.stringify({ id, exercises: [] }),
             0
           )
-          await this.enqueueSync({
-            apiMethod: 'createWorkout',
-            payload: { title, template: { exercises: [] } },
-            localTable: 'workouts',
-            localId: id,
-          })
+          return {
+            value: id,
+            job: {
+              apiMethod: 'createWorkout',
+              payload: { title, template: { exercises: [] } },
+              localTable: 'workouts',
+              localId: id,
+            },
+          }
         })
-        return id
       }
     }
 
