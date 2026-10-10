@@ -66,10 +66,7 @@ export class RoutineRepository extends BaseRepository {
     return this.commitMutation(async (tx) => {
       const resolvedPayload = {
         ...payload,
-        pattern: payload.pattern.map((item) => ({
-          ...item,
-          workoutId: item.workoutId ? syncEngine.resolveId('workouts', item.workoutId) : null,
-        })),
+        pattern: this.resolvePatternWorkoutIds(payload.pattern),
       }
       const localId = this.generateLocalId()
       const now = new Date().toISOString()
@@ -116,13 +113,11 @@ export class RoutineRepository extends BaseRepository {
 
   async update(routineId: string, payload: UpdateRoutineRequest): Promise<Routine | null> {
     return this.commitMutation(async (tx) => {
+      const resolvedRoutineId = syncEngine.resolveId('routines', routineId)
       const resolvedPayload = payload.pattern
         ? {
             ...payload,
-            pattern: payload.pattern.map((item) => ({
-              ...item,
-              workoutId: item.workoutId ? syncEngine.resolveId('workouts', item.workoutId) : null,
-            })),
+            pattern: this.resolvePatternWorkoutIds(payload.pattern),
           }
         : payload
       const sets: string[] = []
@@ -161,19 +156,19 @@ export class RoutineRepository extends BaseRepository {
       vals.push(0)
       sets.push('updated_at = ?')
       vals.push(new Date().toISOString())
-      vals.push(routineId)
+      vals.push(resolvedRoutineId)
 
       await tx.runAsync(`UPDATE routines SET ${sets.join(', ')} WHERE id = ?`, ...vals)
 
       const row = await tx.getFirstAsync<RoutineRow>(
         'SELECT * FROM routines WHERE id = ?',
-        routineId
+        resolvedRoutineId
       )
       return {
         value: row ? this.rowToRoutine(row) : null,
         job: {
           apiMethod: 'updateRoutine',
-          payload: [routineId, resolvedPayload],
+          payload: [resolvedRoutineId, resolvedPayload],
         },
       }
     })
@@ -181,13 +176,14 @@ export class RoutineRepository extends BaseRepository {
 
   async delete(routineId: string): Promise<void> {
     return this.commitMutation(async (tx) => {
-      await tx.runAsync('DELETE FROM routines WHERE id = ?', routineId)
+      const resolvedRoutineId = syncEngine.resolveId('routines', routineId)
+      await tx.runAsync('DELETE FROM routines WHERE id = ?', resolvedRoutineId)
 
       return {
         value: undefined,
         job: {
           apiMethod: 'deleteRoutine',
-          payload: [routineId],
+          payload: [resolvedRoutineId],
         },
       }
     })
@@ -236,6 +232,13 @@ export class RoutineRepository extends BaseRepository {
   // -------------------------------------------------------------------------
   // Row Mapper
   // -------------------------------------------------------------------------
+
+  private resolvePatternWorkoutIds(pattern: RoutinePatternItem[]): RoutinePatternItem[] {
+    return pattern.map((item) => ({
+      ...item,
+      workoutId: item.workoutId ? syncEngine.resolveId('workouts', item.workoutId) : null,
+    }))
+  }
 
   private rowToRoutine = (row: RoutineRow): Routine => {
     let pattern: RoutinePatternItem[] = []

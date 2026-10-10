@@ -79,7 +79,6 @@ interface IdRemapRow {
 // ---------------------------------------------------------------------------
 
 const ALLOWED_TABLES = ['workouts', 'workout_records', 'routines'] as const
-type AllowedTable = (typeof ALLOWED_TABLES)[number]
 
 const BASE_BACKOFF_MS = 1_000
 const MAX_BACKOFF_MS = 60_000
@@ -292,7 +291,13 @@ export class SyncEngine {
   }
 
   private emit(event: SyncEvent): void {
-    this.listeners[event].forEach((cb) => cb())
+    this.listeners[event].forEach((cb) => {
+      try {
+        cb()
+      } catch (error) {
+        console.error(`[SyncEngine] ${event} listener failed:`, error)
+      }
+    })
   }
 
   // -----------------------------------------------------------------------

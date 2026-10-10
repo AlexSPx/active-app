@@ -1,40 +1,11 @@
+import type { Exercise } from '../lib/schemas/api'
+
 // ==========================================
 // API Types - All API-related interfaces
 // ==========================================
 
 // Exercise Types
-export interface ApiExercise {
-  id: string
-  name: string
-  level: 'BEGINNER' | 'INTERMEDIATE' | 'EXPERT'
-  force: 'PULL' | 'PUSH' | 'STATIC' | null
-  mechanic: 'COMPOUND' | 'ISOLATION' | null
-  equipment:
-    | 'BODY_ONLY'
-    | 'MACHINE'
-    | 'OTHER'
-    | 'FOAM_ROLL'
-    | 'KETTLEBELLS'
-    | 'DUMBBELL'
-    | 'CABLE'
-    | 'BARBELL'
-    | 'BANDS'
-    | 'MEDICINE_BALL'
-    | 'EXERCISE_BALL'
-    | 'E_Z_CURL_BAR'
-    | null
-  primaryMuscles: string[]
-  secondaryMuscles: string[]
-  instructions: string[]
-  category:
-    | 'STRENGTH'
-    | 'STRETCHING'
-    | 'PLYOMETRICS'
-    | 'STRONGMAN'
-    | 'POWERLIFTING'
-    | 'CARDIO'
-    | 'OLYMPIC_WEIGHTLIFTING'
-}
+export type ApiExercise = Exercise
 
 // Authentication Types
 export interface LoginRequest {

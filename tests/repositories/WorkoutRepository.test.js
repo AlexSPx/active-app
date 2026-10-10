@@ -17,6 +17,7 @@ describe('WorkoutRepository', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    syncEngine.resolveId.mockImplementation((_table, id) => id)
     db = new FakeDb()
     syncEngine.enqueue.mockImplementation(async (_job, transaction, options) => {
       db.recordTransactionEvent('enqueue', {
@@ -412,5 +413,23 @@ describe('WorkoutRepository', () => {
       { processAfterInsert: false }
     )
     expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(2)
+  })
+
+  it('deletes a workout record whose local ID was remapped while its screen was open', async () => {
+    const localId = 'local_record_open_screen'
+    const serverId = 'server_record_open_screen'
+    db.tables.workout_records.set(serverId, { id: serverId, workout_id: 'workout_1' })
+    syncEngine.resolveId.mockImplementation((table, id) =>
+      table === 'workout_records' && id === localId ? serverId : id
+    )
+
+    await repo.deleteRecord(localId)
+
+    expect(db.tables.workout_records.has(serverId)).toBe(false)
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      { apiMethod: 'deleteWorkoutRecord', payload: [serverId] },
+      db,
+      { processAfterInsert: false }
+    )
   })
 })

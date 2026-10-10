@@ -8,6 +8,9 @@ export function useWorkoutMutations() {
   const queryClient = useQueryClient()
   const repo = useWorkoutRepository()
   const ownerKeys = useProfileQueryKeys()
+  const invalidateWorkouts = () => {
+    queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
+  }
 
   const createMutation = useMutation({
     mutationFn: async ({
@@ -28,13 +31,11 @@ export function useWorkoutMutations() {
       }
     },
     retry: false,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
-    },
+    onSuccess: invalidateWorkouts,
   })
 
   const updateMutation = useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       workoutId,
       payload,
       exercises,
@@ -42,29 +43,19 @@ export function useWorkoutMutations() {
       workoutId: string
       payload: UpdateWorkoutRequest
       exercises: ApiExercise[]
-    }): Promise<void> => {
-      await repo.update(workoutId, payload, exercises)
-    },
+    }) => repo.update(workoutId, payload, exercises),
     retry: false,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
-    },
+    onSuccess: invalidateWorkouts,
   })
 
   const deleteMutation = useMutation({
-    mutationFn: async (id: string): Promise<void> => {
-      await repo.delete(id)
-    },
+    mutationFn: (id: string) => repo.delete(id),
     retry: false,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ownerKeys.workouts.all })
-    },
+    onSuccess: invalidateWorkouts,
   })
 
   const deleteRecordMutation = useMutation({
-    mutationFn: async (id: string): Promise<void> => {
-      await repo.deleteRecord(id)
-    },
+    mutationFn: (id: string) => repo.deleteRecord(id),
     retry: false,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ownerKeys.records.all })

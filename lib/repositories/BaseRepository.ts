@@ -30,14 +30,12 @@ export abstract class BaseRepository {
   ): Promise<T> {
     return syncEngine.withIdRemapLock(async () => {
       let value!: T
-      const write = async (transaction: SQLiteDatabase) => {
-        const result = await mutation(transaction)
-        value = result.value
-        await syncEngine.enqueue(result.job, transaction, { processAfterInsert: false })
-      }
-
       // Keep the configured connection; foreign_keys is per-connection and the exclusive helper opens a new one.
-      await this.db.withTransactionAsync(() => write(this.db))
+      await this.db.withTransactionAsync(async () => {
+        const result = await mutation(this.db)
+        value = result.value
+        await syncEngine.enqueue(result.job, this.db, { processAfterInsert: false })
+      })
 
       syncEngine.scheduleQueueProcessing()
       return value
