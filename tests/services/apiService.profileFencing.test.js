@@ -10,6 +10,7 @@ describe('ApiService credential-generation fencing', () => {
   })
 
   afterEach(() => {
+    apiService.resumePendingRequests()
     jest.restoreAllMocks()
   })
 
@@ -67,8 +68,9 @@ describe('ApiService credential-generation fencing', () => {
 
     const request = apiService.getWorkouts()
     await parsingStarted
-    apiService.invalidatePendingRequests()
+    const invalidated = apiService.invalidatePendingRequests()
     finishParsing([{ id: 'workout-A' }])
+    await invalidated
 
     await expect(request).rejects.toThrow(
       'Authentication changed before the request could be retried'

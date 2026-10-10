@@ -242,11 +242,12 @@ class ApiService {
     return error
   }
 
-  private async fetchWithTimeout(
+  private async fetchWithTimeout<T>(
     url: string,
-    options: RequestInit = {},
-    credentialGeneration = this.credentialGeneration
-  ): Promise<Response> {
+    options: RequestInit,
+    credentialGeneration: number,
+    consumeResponse: (response: Response) => Promise<T>
+  ): Promise<T> {
     const controller = new AbortController()
     let finishRequest!: () => void
     const settled = new Promise<void>((resolve) => {
@@ -255,13 +256,16 @@ class ApiService {
     this.activeFetches.set(controller, settled)
     const abortHandler = () => controller.abort()
     options.signal?.addEventListener('abort', abortHandler)
+    if (options.signal?.aborted) controller.abort()
     const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT)
 
     try {
-      return await fetch(url, {
+      const response = await fetch(url, {
         ...options,
         signal: controller.signal,
       })
+      if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
+      return await consumeResponse(response)
     } catch (error) {
       if ((error as Error)?.name === 'AbortError') {
         if (credentialGeneration !== this.credentialGeneration) {
@@ -294,7 +298,8 @@ class ApiService {
         const errorData = await response.json()
         error.message = errorData.message || error.message
         error.code = errorData.code
-      } catch {
+      } catch (parseError) {
+        if ((parseError as Error)?.name === 'AbortError') throw parseError
         error.message = response.statusText || error.message
       }
 
@@ -324,7 +329,8 @@ class ApiService {
     let data: T
     try {
       data = await response.json()
-    } catch {
+    } catch (parseError) {
+      if ((parseError as Error)?.name === 'AbortError') throw parseError
       if (credentialGeneration !== this.credentialGeneration) {
         throw this.authSessionChangedError()
       }
@@ -349,96 +355,87 @@ class ApiService {
 
     const fetchOptions = this.getFetchOptions({ ...options, headers })
     this.logRequest(context)
-    const response = await this.fetchWithTimeout(url, fetchOptions, credentialGeneration)
-    if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
-
-    if (response.status === 401) {
-      if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
-      if (this.credentialTransition) throw this.authSessionChangedError()
-      if (!this.isRefreshing) {
-        this.isRefreshing = true
-        try {
-          const { token, refreshToken } = await this.refreshToken(credentialGeneration)
-          if (credentialGeneration !== this.credentialGeneration) {
-            throw this.authSessionChangedError()
-          }
-          const persisted = await this.persistRefreshedCredentials(
-            token,
-            refreshToken,
-            credentialGeneration
-          )
-          if (!persisted || credentialGeneration !== this.credentialGeneration) {
-            throw this.authSessionChangedError()
-          }
-          this.onRefreshed(token ?? null)
-
-          // Retry the original request immediately
-          if (!isWeb && token) headers.Authorization = `Bearer ${token}`
-          if (credentialGeneration !== this.credentialGeneration) {
-            throw this.authSessionChangedError()
-          }
-          const retryFetchOptions = this.getFetchOptions({ ...options, headers })
-          this.logRequest(context)
-          const retryResponse = await this.fetchWithTimeout(
-            url,
-            retryFetchOptions,
-            credentialGeneration
-          )
-          if (credentialGeneration !== this.credentialGeneration) {
-            throw this.authSessionChangedError()
-          }
-          return this.handleResponse<T>(retryResponse, context, credentialGeneration)
-        } catch (error) {
-          this.onRefreshFailed(error)
-          if (
-            (error as ApiError)?.status === 401 &&
-            credentialGeneration === this.credentialGeneration &&
-            this.unauthorizedHandler
-          ) {
-            this.unauthorizedHandler()
-          }
-          throw error
-        } finally {
-          this.isRefreshing = false
-        }
-      }
-
-      return new Promise((resolve, reject) => {
-        this.addRefreshSubscriber(async (token, error) => {
-          if (error) {
-            reject(error)
-            return
-          }
-          if (credentialGeneration !== this.credentialGeneration) {
-            reject(this.authSessionChangedError())
-            return
-          }
-          if (!isWeb && !token) {
-            reject(new Error('Token refresh failed'))
-            return
-          }
-          try {
-            if (!isWeb && token) headers.Authorization = `Bearer ${token}`
-            const retryFetchOptions = this.getFetchOptions({ ...options, headers })
-            this.logRequest(context)
-            const retryResponse = await this.fetchWithTimeout(
-              url,
-              retryFetchOptions,
-              credentialGeneration
-            )
-            if (credentialGeneration !== this.credentialGeneration) {
-              reject(this.authSessionChangedError())
-              return
-            }
-            resolve(this.handleResponse<T>(retryResponse, context, credentialGeneration))
-          } catch (error) {
-            reject(error)
-          }
-        })
-      })
+    try {
+      return await this.fetchWithTimeout(url, fetchOptions, credentialGeneration, (response) =>
+        this.handleResponse<T>(response, context, credentialGeneration, true)
+      )
+    } catch (error) {
+      if ((error as ApiError)?.status !== 401) throw error
     }
 
-    return this.handleResponse<T>(response, context, credentialGeneration)
+    // The initial response is consumed and cleaned up before refresh starts.
+    if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
+    if (this.credentialTransition) throw this.authSessionChangedError()
+    if (!this.isRefreshing) {
+      this.isRefreshing = true
+      try {
+        const { token, refreshToken } = await this.refreshToken(credentialGeneration)
+        if (credentialGeneration !== this.credentialGeneration) {
+          throw this.authSessionChangedError()
+        }
+        const persisted = await this.persistRefreshedCredentials(
+          token,
+          refreshToken,
+          credentialGeneration
+        )
+        if (!persisted || credentialGeneration !== this.credentialGeneration) {
+          throw this.authSessionChangedError()
+        }
+        if (!isWeb && token) headers.Authorization = `Bearer ${token}`
+        this.onRefreshed(token ?? null)
+      } catch (error) {
+        this.onRefreshFailed(error)
+        if (
+          (error as ApiError)?.status === 401 &&
+          credentialGeneration === this.credentialGeneration &&
+          this.unauthorizedHandler
+        ) {
+          this.unauthorizedHandler()
+        }
+        throw error
+      } finally {
+        this.isRefreshing = false
+      }
+
+      // Refresh is complete before retrying, so later 401s cannot miss its broadcast.
+      if (credentialGeneration !== this.credentialGeneration) {
+        throw this.authSessionChangedError()
+      }
+      const retryFetchOptions = this.getFetchOptions({ ...options, headers })
+      this.logRequest(context)
+      return this.fetchWithTimeout(url, retryFetchOptions, credentialGeneration, (response) =>
+        this.handleResponse<T>(response, context, credentialGeneration)
+      )
+    }
+
+    return new Promise((resolve, reject) => {
+      this.addRefreshSubscriber(async (token, error) => {
+        if (error) {
+          reject(error)
+          return
+        }
+        if (credentialGeneration !== this.credentialGeneration) {
+          reject(this.authSessionChangedError())
+          return
+        }
+        if (!isWeb && !token) {
+          reject(new Error('Token refresh failed'))
+          return
+        }
+        try {
+          if (!isWeb && token) headers.Authorization = `Bearer ${token}`
+          const retryFetchOptions = this.getFetchOptions({ ...options, headers })
+          this.logRequest(context)
+          resolve(
+            await this.fetchWithTimeout(url, retryFetchOptions, credentialGeneration, (response) =>
+              this.handleResponse<T>(response, context, credentialGeneration)
+            )
+          )
+        } catch (error) {
+          reject(error)
+        }
+      })
+    })
   }
 
   private async requestWithoutRefresh<T>(
@@ -456,13 +453,13 @@ class ApiService {
     if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
 
     this.logRequest(context)
-    const response = await this.fetchWithTimeout(
+    return this.fetchWithTimeout(
       url,
       this.getFetchOptions({ ...options, headers }),
-      credentialGeneration
+      credentialGeneration,
+      (response) =>
+        this.handleResponse<T>(response, context, credentialGeneration, skipUnauthorizedHandler)
     )
-    if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
-    return this.handleResponse<T>(response, context, credentialGeneration, skipUnauthorizedHandler)
   }
 
   private async requestText(url: string, options: RequestInit = {}): Promise<string> {
@@ -476,25 +473,26 @@ class ApiService {
     if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
 
     this.logRequest(context)
-    const response = await this.fetchWithTimeout(
+    return this.fetchWithTimeout(
       url,
       this.getFetchOptions({ ...options, headers }),
-      credentialGeneration
+      credentialGeneration,
+      async (response) => {
+        this.logResponse(context, response)
+
+        if (!response.ok) {
+          const error: ApiError = new Error(`API Error: ${response.status}`)
+          error.status = response.status
+          error.message = response.statusText || error.message
+          this.logFailure(context, { status: error.status, message: error.message })
+          throw error
+        }
+
+        const text = await response.text()
+        if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
+        return text
+      }
     )
-    if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
-    this.logResponse(context, response)
-
-    if (!response.ok) {
-      const error: ApiError = new Error(`API Error: ${response.status}`)
-      error.status = response.status
-      error.message = response.statusText || error.message
-      this.logFailure(context, { status: error.status, message: error.message })
-      throw error
-    }
-
-    const text = await response.text()
-    if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
-    return text
   }
 
   async login(credentials: LoginRequest): Promise<LoginResponse> {

@@ -29,6 +29,25 @@ const deleteJob = (id, options = {}) =>
   makeJob({ id, endpoint: 'deleteWorkout', payload: [id], ...options })
 
 describe('durable sync recovery', () => {
+  it('automatically drains a 51st ordered job after one external queue trigger', async () => {
+    const ids = Array.from({ length: 51 }, (_, index) => `job-${index + 1}`)
+    const db = new FakeDb({ jobs: ids.map((id, index) => deleteJob(id, { sequence: index + 1 })) })
+    const api = createApi()
+    const engine = engineWith(api)
+    jest.useFakeTimers()
+    try {
+      await engine.init(db, { processOnInit: false })
+      await engine.processQueue()
+      // Flush the automatic successor, without requesting another drain ourselves.
+      await jest.advanceTimersByTimeAsync(0)
+      expect(api.deleteWorkout.mock.calls).toEqual(ids.map((id) => [id]))
+      expect(db.jobs).toEqual([])
+    } finally {
+      engine.destroy()
+      jest.useRealTimers()
+    }
+  })
+
   it('shares one drain while network detection and the upload are both pending', async () => {
     const network = deferred()
     const upload = deferred()
