@@ -189,6 +189,8 @@ describe('SyncEngine queue remapping', () => {
       'begin',
       'commit',
       'queue-status-write',
+      'begin',
+      'commit',
     ])
     expect(db.transactionEvents[2]).toMatchObject({
       inTransaction: false,
@@ -585,6 +587,109 @@ describe('SyncEngine queue remapping', () => {
         },
       ],
     })
+  })
+
+  it('replays create, record, routine and delete in order while keeping history', async () => {
+    const local = 'local_workout_causal'
+    const api = createApi({
+      createWorkout: jest.fn(async () => ({ id: 'server_workout_causal' })),
+      recordWorkout: jest.fn(async () => ({ workoutRecord: { id: 'server_record_causal' } })),
+      createRoutine: jest.fn(async () => ({ id: 'server_routine_causal' })),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: {
+        workouts: [local],
+        workout_records: ['local_record_causal'],
+        routines: ['local_routine_causal'],
+      },
+      configureDb: (db) => {
+        db.foreignKeysEnabled = true
+        db.tables.workouts.get(local).is_deleted = 1
+        Object.assign(db.tables.workout_records.get('local_record_causal'), {
+          workout_id: local,
+          workout_title: 'Pull Day',
+          exercise_records: '[{"exerciseName":"Barbell Row","reps":[8]}]',
+        })
+      },
+      jobs: [
+        makeJob({
+          id: 'create',
+          endpoint: 'createWorkout',
+          payload: { title: 'Pull Day', template: { exercises: [] } },
+          localTable: 'workouts',
+          localId: local,
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'record',
+          endpoint: 'recordWorkout',
+          payload: { workoutId: local, exerciseRecords: [] },
+          localTable: 'workout_records',
+          localId: 'local_record_causal',
+          sequence: 2,
+        }),
+        makeJob({
+          id: 'routine',
+          endpoint: 'createRoutine',
+          payload: {
+            name: 'Weekly',
+            pattern: [{ dayIndex: 1, dayType: 'WORKOUT', workoutId: local }],
+          },
+          localTable: 'routines',
+          localId: 'local_routine_causal',
+          sequence: 3,
+        }),
+        makeJob({ id: 'delete', endpoint: 'deleteWorkout', payload: [local], sequence: 4 }),
+      ],
+    })
+    engine.destroy()
+    expect(api.createWorkout.mock.invocationCallOrder[0]).toBeLessThan(
+      api.recordWorkout.mock.invocationCallOrder[0]
+    )
+    expect(api.recordWorkout.mock.invocationCallOrder[0]).toBeLessThan(
+      api.createRoutine.mock.invocationCallOrder[0]
+    )
+    expect(api.createRoutine.mock.invocationCallOrder[0]).toBeLessThan(
+      api.deleteWorkout.mock.invocationCallOrder[0]
+    )
+    expect(api.recordWorkout).toHaveBeenCalledWith(
+      expect.objectContaining({ workoutId: 'server_workout_causal' })
+    )
+    expect(api.createRoutine).toHaveBeenCalledWith(
+      expect.objectContaining({
+        pattern: [expect.objectContaining({ workoutId: 'server_workout_causal' })],
+      })
+    )
+    expect(api.deleteWorkout).toHaveBeenCalledWith('server_workout_causal')
+    expect(db.jobs).toEqual([])
+    expect(db.tables.workouts.has('server_workout_causal')).toBe(false)
+    expect(db.tables.workout_records.get('server_record_causal')).toMatchObject({
+      workout_id: null,
+      workout_title: 'Pull Day',
+      exercise_records: '[{"exerciseName":"Barbell Row","reps":[8]}]',
+    })
+  })
+
+  it('acknowledges a replayed delete after a lost response returns 404', async () => {
+    const missing = Object.assign(new Error('already deleted'), { status: 404 })
+    const api = createApi({
+      deleteWorkout: jest.fn(async () => {
+        throw missing
+      }),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { workouts: ['gone'] },
+      configureDb: (db) => {
+        db.tables.workouts.get('gone').is_deleted = 1
+      },
+      jobs: [makeJob({ id: 'delete-gone', endpoint: 'deleteWorkout', payload: ['gone'] })],
+    })
+    engine.destroy()
+    expect(api.deleteWorkout).toHaveBeenCalledWith('gone')
+    expect(db.jobs).toEqual([])
+    expect(db.tables.workouts.has('gone')).toBe(false)
   })
 })
 

@@ -36,7 +36,7 @@ interface WorkoutRow {
 
 interface WorkoutRecordRow {
   id: string
-  workout_id: string
+  workout_id: string | null
   workout_title: string
   notes: string | null
   created_at: string
@@ -56,12 +56,17 @@ export class WorkoutRepository extends BaseRepository {
   // -------------------------------------------------------------------------
 
   async getAll(): Promise<ApiWorkout[]> {
-    const rows = await this.queryAll<WorkoutRow>('SELECT * FROM workouts ORDER BY created_at DESC')
+    const rows = await this.queryAll<WorkoutRow>(
+      'SELECT * FROM workouts WHERE is_deleted = 0 ORDER BY created_at DESC'
+    )
     return rows.map(this.rowToWorkout)
   }
 
   async getById(id: string): Promise<ApiWorkout | null> {
-    const row = await this.queryFirst<WorkoutRow>('SELECT * FROM workouts WHERE id = ?', id)
+    const row = await this.queryFirst<WorkoutRow>(
+      'SELECT * FROM workouts WHERE id = ? AND is_deleted = 0',
+      id
+    )
     return row ? this.rowToWorkout(row) : null
   }
 
@@ -177,7 +182,27 @@ export class WorkoutRepository extends BaseRepository {
   async delete(id: string): Promise<void> {
     return this.commitMutation(async (tx) => {
       const resolvedId = syncEngine.resolveId('workouts', id)
-      await tx.runAsync('DELETE FROM workouts WHERE id = ?', resolvedId)
+      await tx.runAsync('UPDATE workouts SET is_deleted = 1 WHERE id = ?', resolvedId)
+      const routines = await tx.getAllAsync<{ id: string; pattern: string | null }>(
+        'SELECT id, pattern FROM routines WHERE is_deleted = 0'
+      )
+      for (const routine of routines) {
+        if (!routine.pattern) continue
+        let pattern: { workoutId: string | null }[]
+        try {
+          pattern = JSON.parse(routine.pattern)
+        } catch {
+          continue
+        }
+        if (!pattern.some((day) => day.workoutId === resolvedId)) continue
+        await tx.runAsync(
+          'UPDATE routines SET pattern = ? WHERE id = ?',
+          JSON.stringify(
+            pattern.map((day) => (day.workoutId === resolvedId ? { ...day, workoutId: null } : day))
+          ),
+          routine.id
+        )
+      }
 
       return {
         value: undefined,
@@ -195,7 +220,7 @@ export class WorkoutRepository extends BaseRepository {
 
   async getAllRecords(): Promise<WorkoutRecord[]> {
     const rows = await this.queryAll<WorkoutRecordRow>(
-      'SELECT * FROM workout_records ORDER BY created_at DESC'
+      'SELECT * FROM workout_records WHERE is_deleted = 0 ORDER BY created_at DESC'
     )
     return rows.map(this.rowToRecord)
   }
@@ -217,12 +242,25 @@ export class WorkoutRepository extends BaseRepository {
         ...request,
         workoutId: syncEngine.resolveId('workouts', request.workoutId),
       }
+      const workout = await tx.getFirstAsync<{
+        is_deleted: number
+        workout_template: string | null
+      }>('SELECT is_deleted, workout_template FROM workouts WHERE id = ?', recordRequest.workoutId)
+      if (!workout || workout.is_deleted) throw new Error('Cannot record a deleted workout')
+      let exercises: ApiWorkoutTemplate['exercises'] = []
+      try {
+        exercises = JSON.parse(workout.workout_template || '{}').exercises || []
+      } catch {
+        // Legacy records can have malformed templates; the exercise ID remains a useful label.
+      }
       const localId = this.generateLocalId()
       const now = new Date().toISOString()
 
       // Build the exercise records array for local storage
       const exerciseRecords: WorkoutRecordExercise[] = recordRequest.exerciseRecords.map((er) => ({
-        exerciseName: er.exerciseId,
+        exerciseName:
+          exercises.find((exercise) => exercise.exerciseId === er.exerciseId)?.exerciseTitle ||
+          er.exerciseId,
         reps: er.reps,
         weight: er.weight,
         durationSeconds: er.durationSeconds || null,
@@ -278,7 +316,7 @@ export class WorkoutRepository extends BaseRepository {
   async deleteRecord(id: string): Promise<void> {
     return this.commitMutation(async (tx) => {
       const resolvedId = syncEngine.resolveId('workout_records', id)
-      await tx.runAsync('DELETE FROM workout_records WHERE id = ?', resolvedId)
+      await tx.runAsync('UPDATE workout_records SET is_deleted = 1 WHERE id = ?', resolvedId)
 
       return {
         value: undefined,
@@ -302,21 +340,23 @@ export class WorkoutRepository extends BaseRepository {
     for (const w of serverWorkouts) {
       await this.run(
         `INSERT INTO workouts (id, title, notes, created_at, updated_at, workout_template, is_synced, synced_at)
-         VALUES (?, ?, ?, ?, ?, ?, 1, ?)
+         SELECT ?, ?, ?, ?, ?, ?, 1, ? WHERE NOT EXISTS
+           (SELECT 1 FROM workouts WHERE id = ? AND is_deleted = 1)
          ON CONFLICT(id) DO UPDATE SET
            title = excluded.title,
            notes = excluded.notes,
            updated_at = excluded.updated_at,
            workout_template = excluded.workout_template,
            is_synced = 1,
-           synced_at = excluded.synced_at`,
+           synced_at = excluded.synced_at WHERE workouts.is_deleted = 0`,
         w.id,
         w.title,
         w.notes || null,
         w.createdAt,
         w.updatedAt,
         JSON.stringify(w.workoutTemplate),
-        new Date().toISOString()
+        new Date().toISOString(),
+        w.id
       )
     }
   }
@@ -325,13 +365,15 @@ export class WorkoutRepository extends BaseRepository {
     for (const r of serverRecords) {
       await this.run(
         `INSERT INTO workout_records (id, workout_id, workout_title, notes, created_at, start_time, exercise_records, is_synced, synced_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)
+         SELECT ?, ?, ?, ?, ?, ?, ?, 1, ? WHERE NOT EXISTS
+           (SELECT 1 FROM workout_records WHERE id = ? AND is_deleted = 1)
          ON CONFLICT(id) DO UPDATE SET
+           workout_id = excluded.workout_id,
            workout_title = excluded.workout_title,
            notes = excluded.notes,
            exercise_records = excluded.exercise_records,
            is_synced = 1,
-           synced_at = excluded.synced_at`,
+           synced_at = excluded.synced_at WHERE workout_records.is_deleted = 0`,
         r.id,
         r.workoutId,
         r.workoutTitle,
@@ -339,7 +381,8 @@ export class WorkoutRepository extends BaseRepository {
         r.createdAt,
         r.startTime || null,
         JSON.stringify(r.exerciseRecords),
-        new Date().toISOString()
+        new Date().toISOString(),
+        r.id
       )
     }
   }

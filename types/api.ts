@@ -185,7 +185,7 @@ export interface WorkoutRecordExercise {
 
 export interface WorkoutRecord {
   id: string | null
-  workoutId: string
+  workoutId: string | null
   workoutTitle: string
   notes?: string | null
   createdAt: string

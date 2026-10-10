@@ -542,7 +542,13 @@ export class SyncEngine {
     try {
       response = await apiFunc.apply(this.deps.api, args)
     } catch (error) {
-      return this.handleJobError(db, scope, currentJob, error)
+      const isDelete =
+        currentJob.endpoint === 'deleteWorkout' ||
+        currentJob.endpoint === 'deleteWorkoutRecord' ||
+        currentJob.endpoint === 'deleteRoutine'
+      if (!isDelete || (error as { status?: number })?.status !== 404) {
+        return this.handleJobError(db, scope, currentJob, error)
+      }
     }
 
     if (!this.isCurrentEngine(db, scope)) {
@@ -578,7 +584,29 @@ export class SyncEngine {
     if (!this.isCurrentEngine(db, scope)) {
       return false
     }
-    await this.writeQueue(db, scope, 'DELETE FROM sync_queue WHERE id = ?', currentJob.id)
+    await this.withIdRemapLock(async () => {
+      if (!this.isCurrentEngine(db, scope)) return
+      await db.withTransactionAsync(async () => {
+        if (!this.isCurrentEngine(db, scope))
+          throw new Error('Sync lifecycle changed during acknowledgement')
+        const deletedTable =
+          currentJob.endpoint === 'deleteWorkout'
+            ? 'workouts'
+            : currentJob.endpoint === 'deleteWorkoutRecord'
+              ? 'workout_records'
+              : currentJob.endpoint === 'deleteRoutine'
+                ? 'routines'
+                : null
+        if (deletedTable) {
+          await db.runAsync(
+            `DELETE FROM "${deletedTable}" WHERE id = ? AND is_deleted = 1`,
+            args[0]
+          )
+        }
+        await db.runAsync('DELETE FROM sync_queue WHERE id = ?', currentJob.id)
+      })
+      this.queueMutationRevision += 1
+    })
     console.log(`[SyncEngine] ✓ ${currentJob.endpoint}`)
     return true
   }
@@ -616,11 +644,18 @@ export class SyncEngine {
           throw new Error('Sync lifecycle changed during ID remap')
         if (serverWorkoutAlreadyHydrated) {
           // Hydration can insert the server row before this create job returns.
+          const oldRow = await db.getFirstAsync<{ is_deleted: number }>(
+            'SELECT is_deleted FROM workouts WHERE id = ?',
+            oldId
+          )
           await db.runAsync(
             'UPDATE workout_records SET workout_id = ? WHERE workout_id = ?',
             newId,
             oldId
           )
+          if (oldRow?.is_deleted) {
+            await db.runAsync('UPDATE workouts SET is_deleted = 1 WHERE id = ?', newId)
+          }
           if (!this.isCurrentEngine(db, scope))
             throw new Error('Sync lifecycle changed during ID remap')
           await db.runAsync('DELETE FROM workouts WHERE id = ?', oldId)

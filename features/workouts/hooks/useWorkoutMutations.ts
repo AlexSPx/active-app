@@ -3,6 +3,8 @@ import type { ApiExercise, CreateWorkoutRequest, UpdateWorkoutRequest } from '..
 import type { Workout } from '../../../types/workout'
 import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { useWorkoutRepository } from '../../../lib/hooks/useRepository'
+import { syncEngine } from '../../../lib/sync'
+import { useRunningWorkoutStore } from '../../workout-session/stores/runningWorkoutStore'
 
 export function useWorkoutMutations() {
   const queryClient = useQueryClient()
@@ -49,9 +51,22 @@ export function useWorkoutMutations() {
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => repo.delete(id),
+    mutationFn: (id: string) => {
+      const runningId = useRunningWorkoutStore.getState().runningWorkout?.id
+      if (
+        runningId &&
+        syncEngine.resolveId('workouts', runningId) === syncEngine.resolveId('workouts', id)
+      ) {
+        throw new Error('Finish or cancel this running workout before deleting it.')
+      }
+      return repo.delete(id)
+    },
     retry: false,
-    onSuccess: invalidateWorkouts,
+    onSuccess: () => {
+      invalidateWorkouts()
+      queryClient.invalidateQueries({ queryKey: ownerKeys.routines.all })
+      queryClient.invalidateQueries({ queryKey: ownerKeys.records.all })
+    },
   })
 
   const deleteRecordMutation = useMutation({
