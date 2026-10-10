@@ -45,6 +45,8 @@ export interface SyncJob {
   local_table: string | null
   local_id: string | null
   idempotency_key: string | null
+  sequence: number
+  next_attempt_at: number
   retry_count: number
   status: string
 }
@@ -82,6 +84,7 @@ const ALLOWED_TABLES = ['workouts', 'workout_records', 'routines'] as const
 
 const BASE_BACKOFF_MS = 1_000
 const MAX_BACKOFF_MS = 60_000
+const QUEUE_BATCH_SIZE = 50
 
 // ---------------------------------------------------------------------------
 // SyncEngine
@@ -150,6 +153,18 @@ export class SyncEngine {
     this.db = db
     this.dbScope = scope
 
+    // A stopped processor must settle before abandoned jobs become eligible again.
+    await this.drainPromise?.catch(() => {})
+    if (lifecycleGeneration !== this.lifecycleGeneration || !this.isCurrentEngine(db, scope)) return
+    await this.writeQueue(
+      db,
+      scope,
+      'UPDATE sync_queue SET status = ? WHERE status = ?',
+      'pending',
+      'processing'
+    )
+    if (lifecycleGeneration !== this.lifecycleGeneration || !this.isCurrentEngine(db, scope)) return
+
     // Ensure pragmas on this handle
     await db.execAsync('PRAGMA foreign_keys = ON;')
     if (lifecycleGeneration !== this.lifecycleGeneration || !this.isCurrentEngine(db, scope)) return
@@ -171,7 +186,6 @@ export class SyncEngine {
       this.deps.addNetworkStateListener?.((networkState) => {
         if (lifecycleGeneration !== this.lifecycleGeneration || !this.initialized) return
         if (networkState.isConnected === false || networkState.isInternetReachable === false) return
-        this.clearRetryTimer()
         this.processQueueInBackground()
       }) ?? null
     // Drain any jobs left over from a previous session
@@ -226,6 +240,7 @@ export class SyncEngine {
   private isCurrentEngine(db: SQLiteDatabase, scope: ProfileScope): boolean {
     return (
       this.db === db &&
+      this.dbScope === scope &&
       this.dbScope?.ownerId === scope.ownerId &&
       this.dbScope?.generation === scope.generation &&
       isCurrentProfile(scope)
@@ -370,7 +385,8 @@ export class SyncEngine {
       return
     }
 
-    const drain = this.drainQueue(db, scope)
+    // Acquire the guard before even a synchronously resolving network probe can run.
+    const drain = Promise.resolve().then(() => this.drainQueue(db, scope))
     this.drainPromise = drain
     const finish = () => {
       if (this.drainPromise !== drain) return
@@ -419,7 +435,7 @@ export class SyncEngine {
       const pendingJobs = await db.getAllAsync<SyncJob>(
         `SELECT * FROM sync_queue
          WHERE status = ? OR status = ?
-         ORDER BY created_at ASC`,
+         ORDER BY sequence ASC LIMIT ${QUEUE_BATCH_SIZE}`,
         'pending',
         'failed'
       )
@@ -434,10 +450,20 @@ export class SyncEngine {
         if (!this.isCurrentEngine(db, scope) || !this.uploadsEnabled || this.paused) {
           break
         }
+        if (job.next_attempt_at > Date.now()) {
+          this.scheduleRetry(job.next_attempt_at)
+          break
+        }
         const success = await this.processJob(job, db, scope)
         if (!success) {
           // Stop processing on first failure to preserve ordering
           break
+        }
+        if (
+          job === pendingJobs[pendingJobs.length - 1] &&
+          pendingJobs.length === QUEUE_BATCH_SIZE
+        ) {
+          this.drainRequested = true
         }
       }
 
@@ -467,7 +493,6 @@ export class SyncEngine {
       job.id
     )
     if (!this.isCurrentEngine(db, scope)) {
-      await this.resetPending(db, job.id)
       return false
     }
 
@@ -477,13 +502,12 @@ export class SyncEngine {
       job.id
     )
     if (!this.isCurrentEngine(db, scope)) {
-      await this.resetPending(db, job.id)
       return false
     }
     if (!currentJob) return true
 
     if (!this.uploadsEnabled || this.paused) {
-      await this.resetPending(db, job.id)
+      await this.resetPending(db, scope, job.id)
       return false
     }
 
@@ -511,7 +535,6 @@ export class SyncEngine {
     }
 
     if (!this.isCurrentEngine(db, scope)) {
-      await this.resetPending(db, currentJob.id)
       return false
     }
 
@@ -519,15 +542,10 @@ export class SyncEngine {
     try {
       response = await apiFunc.apply(this.deps.api, args)
     } catch (error) {
-      if ((error as { code?: string })?.code === 'AUTH_SESSION_CHANGED') {
-        await this.resetPending(db, currentJob.id)
-        return false
-      }
       return this.handleJobError(db, scope, currentJob, error)
     }
 
     if (!this.isCurrentEngine(db, scope)) {
-      await this.resetPending(db, currentJob.id)
       return false
     }
 
@@ -558,7 +576,6 @@ export class SyncEngine {
     }
 
     if (!this.isCurrentEngine(db, scope)) {
-      await this.resetPending(db, currentJob.id)
       return false
     }
     await this.writeQueue(db, scope, 'DELETE FROM sync_queue WHERE id = ?', currentJob.id)
@@ -588,13 +605,15 @@ export class SyncEngine {
       }
 
       await db.withTransactionAsync(async () => {
-        if (!this.isCurrentEngine(db, scope)) return
+        if (!this.isCurrentEngine(db, scope))
+          throw new Error('Sync lifecycle changed during ID remap')
         const serverWorkoutAlreadyHydrated =
           tableName === 'workouts' &&
           oldId !== newId &&
           (await db.getFirstAsync<{ id: string }>('SELECT id FROM workouts WHERE id = ?', newId))
 
-        if (!this.isCurrentEngine(db, scope)) return
+        if (!this.isCurrentEngine(db, scope))
+          throw new Error('Sync lifecycle changed during ID remap')
         if (serverWorkoutAlreadyHydrated) {
           // Hydration can insert the server row before this create job returns.
           await db.runAsync(
@@ -602,7 +621,8 @@ export class SyncEngine {
             newId,
             oldId
           )
-          if (!this.isCurrentEngine(db, scope)) return
+          if (!this.isCurrentEngine(db, scope))
+            throw new Error('Sync lifecycle changed during ID remap')
           await db.runAsync('DELETE FROM workouts WHERE id = ?', oldId)
         } else {
           // Use a safe, compile-time known query for each table
@@ -610,14 +630,16 @@ export class SyncEngine {
           await db.runAsync(query, newId, oldId)
         }
 
-        if (!this.isCurrentEngine(db, scope)) return
+        if (!this.isCurrentEngine(db, scope))
+          throw new Error('Sync lifecycle changed during ID remap')
         if (tableName === 'workouts') {
           await this.remapJsonReferences(db, scope, 'workouts', 'workout_template', oldId, newId)
           await this.remapJsonReferences(db, scope, 'routines', 'pattern', oldId, newId)
         }
 
         // Mark as synced
-        if (!this.isCurrentEngine(db, scope)) return
+        if (!this.isCurrentEngine(db, scope))
+          throw new Error('Sync lifecycle changed during ID remap')
         await db.runAsync(
           `UPDATE "${tableName}" SET is_synced = 1, synced_at = ? WHERE id = ?`,
           new Date().toISOString(),
@@ -625,7 +647,8 @@ export class SyncEngine {
         )
 
         await this.rewriteQueuedPayloadReferences(db, scope, oldId, newId, sourceJobId)
-        if (!this.isCurrentEngine(db, scope)) return
+        if (!this.isCurrentEngine(db, scope))
+          throw new Error('Sync lifecycle changed during ID remap')
         if (oldId !== newId) {
           await db.runAsync(
             'INSERT OR REPLACE INTO id_remaps (table_name, old_id, new_id) VALUES (?, ?, ?)',
@@ -755,13 +778,31 @@ export class SyncEngine {
     error: any
   ): Promise<boolean> {
     if (!this.isCurrentEngine(db, scope)) {
-      await this.resetPending(db, job.id)
       return false
     }
 
     const newRetryCount = job.retry_count + 1
     const errorMsg = error?.message || 'Unknown error'
     const statusCode = error?.status as number | undefined
+
+    if (statusCode === 401 || error?.code === 'AUTH_SESSION_CHANGED') {
+      await this.writeQueue(
+        db,
+        scope,
+        'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, next_attempt_at = ? WHERE id = ?',
+        'failed',
+        newRetryCount,
+        errorMsg,
+        0,
+        job.id
+      )
+      if (this.isCurrentEngine(db, scope)) {
+        this.paused = true
+        this.clearRetryTimer()
+        this.emit('sync:error')
+      }
+      return false
+    }
 
     // Permanent failures (4xx except 408, 429) — dead-letter immediately
     if (
@@ -779,17 +820,19 @@ export class SyncEngine {
     console.warn(
       `[SyncEngine] Retryable failure [${job.endpoint}] attempt ${newRetryCount}: ${errorMsg}`
     )
+    const nextAttemptAt = Date.now() + this.getBackoff(newRetryCount)
     await this.writeQueue(
       db,
       scope,
-      'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ? WHERE id = ?',
+      'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, next_attempt_at = ? WHERE id = ?',
       'failed',
       newRetryCount,
       errorMsg,
+      nextAttemptAt,
       job.id
     )
     if (this.uploadsEnabled && !this.paused && this.isCurrentEngine(db, scope)) {
-      this.scheduleRetry(newRetryCount)
+      this.scheduleRetry(nextAttemptAt)
     }
 
     // Stop processing to preserve ordering; the timer or connectivity listener restarts the drain.
@@ -813,9 +856,17 @@ export class SyncEngine {
     )
   }
 
-  private async resetPending(db: SQLiteDatabase, jobId: string): Promise<void> {
-    await this.withIdRemapLock(() =>
-      db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'pending', jobId)
+  private async resetPending(
+    db: SQLiteDatabase,
+    scope: ProfileScope,
+    jobId: string
+  ): Promise<void> {
+    await this.writeQueue(
+      db,
+      scope,
+      'UPDATE sync_queue SET status = ? WHERE id = ?',
+      'pending',
+      jobId
     )
   }
 
@@ -835,19 +886,22 @@ export class SyncEngine {
   // -----------------------------------------------------------------------
 
   private getBackoff(retryCount: number): number {
-    const backoff = Math.min(BASE_BACKOFF_MS * 2 ** retryCount, MAX_BACKOFF_MS)
+    const backoff = Math.min(BASE_BACKOFF_MS * 2 ** Math.min(retryCount, 6), MAX_BACKOFF_MS)
     const jitter = Math.random() * backoff * 0.3
-    return backoff + jitter
+    return Math.ceil(Math.min(backoff + jitter, MAX_BACKOFF_MS))
   }
 
-  private scheduleRetry(retryCount: number): void {
+  private scheduleRetry(nextAttemptAt: number): void {
     this.clearRetryTimer()
     const lifecycleGeneration = this.lifecycleGeneration
-    this.retryTimer = setTimeout(() => {
-      this.retryTimer = null
-      if (lifecycleGeneration !== this.lifecycleGeneration || !this.initialized) return
-      this.processQueueInBackground()
-    }, this.getBackoff(retryCount))
+    this.retryTimer = setTimeout(
+      () => {
+        this.retryTimer = null
+        if (lifecycleGeneration !== this.lifecycleGeneration || !this.initialized) return
+        this.processQueueInBackground()
+      },
+      Math.max(0, nextAttemptAt - Date.now())
+    )
   }
 
   private clearRetryTimer(): void {

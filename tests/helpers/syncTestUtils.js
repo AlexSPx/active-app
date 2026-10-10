@@ -6,6 +6,9 @@ function makeJob({
   localTable = null,
   localId = null,
   retryCount = 0,
+  sequence,
+  nextAttemptAt = 0,
+  createdAt = '2026-01-01 00:00:00',
 }) {
   return {
     id,
@@ -16,6 +19,9 @@ function makeJob({
     local_id: localId,
     idempotency_key: `${id}-key`,
     retry_count: retryCount,
+    sequence,
+    next_attempt_at: nextAttemptAt,
+    created_at: createdAt,
     status,
     error_message: null,
   }
@@ -23,7 +29,8 @@ function makeJob({
 
 class FakeDb {
   constructor({ jobs = [], tables = {}, enforceForeignKeys = false } = {}) {
-    this.jobs = jobs.map((job) => ({ ...job }))
+    this.jobs = jobs.map((job, index) => ({ ...job, sequence: job.sequence ?? index + 1 }))
+    this.nextSequence = Math.max(0, ...this.jobs.map((job) => job.sequence)) + 1
     this.enforceForeignKeys = enforceForeignKeys
     this.tables = {
       workouts: new Map(),
@@ -103,9 +110,12 @@ class FakeDb {
       return Array.from(this.idRemaps.values())
     }
 
-    if (sql.includes('ORDER BY created_at ASC')) {
+    if (sql.includes('ORDER BY sequence ASC') || sql.includes('ORDER BY created_at ASC')) {
       const [pendingStatus, failedStatus] = params
-      return this.jobs.filter((job) => job.status === pendingStatus || job.status === failedStatus)
+      return this.jobs
+        .filter((job) => job.status === pendingStatus || job.status === failedStatus)
+        .sort((a, b) => a.sequence - b.sequence)
+        .slice(0, sql.includes('LIMIT 50') ? 50 : undefined)
     }
 
     if (sql.includes('SELECT id, payload') && sql.includes('FROM sync_queue')) {
@@ -199,6 +209,8 @@ class FakeDb {
         local_id: localId,
         idempotency_key: idempotencyKey,
         retry_count: 0,
+        next_attempt_at: 0,
+        sequence: this.nextSequence++,
         status: 'pending',
       })
       return
@@ -377,6 +389,28 @@ class FakeDb {
 
     if (sql === 'DELETE FROM routines WHERE id = ?') {
       this.tables.routines.delete(params[0])
+      return
+    }
+
+    if (sql === 'UPDATE sync_queue SET status = ? WHERE status = ?') {
+      const [status, previousStatus] = params
+      for (const job of this.jobs) if (job.status === previousStatus) job.status = status
+      return
+    }
+
+    if (
+      sql ===
+      'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, next_attempt_at = ? WHERE id = ?'
+    ) {
+      const [status, retryCount, errorMessage, deadline, jobId] = params
+      const job = this.getJob(jobId)
+      if (job)
+        Object.assign(job, {
+          status,
+          retry_count: retryCount,
+          error_message: errorMessage,
+          next_attempt_at: deadline,
+        })
       return
     }
 

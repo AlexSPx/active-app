@@ -74,12 +74,12 @@ describe('profile-scoped sync fencing', () => {
     await apiStarted
 
     setActiveProfileOwner('account:B')
-    await engine.init(dbB, { processOnInit: false })
+    const reinit = engine.init(dbB, { processOnInit: false })
     engine.setUploadsEnabled(false)
     finishUpload({ id: 'server-A' })
-    await drain
+    await Promise.all([drain, reinit])
 
-    expect(dbA.getJob('job-A').status).toBe('pending')
+    expect(dbA.getJob('job-A').status).toBe('processing')
     expect(dbA.tables.workouts.has('local-A')).toBe(true)
     expect(dbA.tables.workouts.has('server-A')).toBe(false)
     expect(dbB.getJob('job-B').status).toBe('pending')
@@ -167,7 +167,11 @@ describe('profile-scoped sync fencing', () => {
     await engine.init(db, { processOnInit: false })
     await engine.processQueue()
 
-    expect(db.getJob('uncertain-job')).toMatchObject({ status: 'pending', retry_count: 0 })
+    expect(db.getJob('uncertain-job')).toMatchObject({
+      status: 'failed',
+      retry_count: 1,
+      next_attempt_at: 0,
+    })
     engine.destroy()
   })
 
