@@ -765,7 +765,7 @@ describe('SyncEngine failure handling', () => {
     }
   })
 
-  it('drains a failed job when network connectivity is restored', async () => {
+  it('respects the persisted retry deadline when network connectivity is restored', async () => {
     jest.useFakeTimers()
     const networkRemove = jest.fn()
     let networkListener
@@ -808,6 +808,9 @@ describe('SyncEngine failure handling', () => {
       expect(api.updateWorkout).toHaveBeenCalledTimes(1)
       networkState = { isConnected: true, isInternetReachable: true }
       networkListener(networkState)
+      await engine.processQueue()
+      expect(api.updateWorkout).toHaveBeenCalledTimes(1)
+      await jest.advanceTimersByTimeAsync(Math.ceil(db.jobs[0].next_attempt_at - Date.now()))
       await retryDrained
 
       expect(api.updateWorkout).toHaveBeenCalledTimes(2)

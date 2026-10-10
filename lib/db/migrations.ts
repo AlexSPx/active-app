@@ -5,7 +5,7 @@
 import * as SQLite from 'expo-sqlite'
 import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite'
 
-const DATABASE_VERSION = 3
+const DATABASE_VERSION = 4
 const LEGACY_DATABASE_NAME = 'active.db'
 const LEGACY_OWNER_KEY = 'legacy_active_db_owner'
 const LEGACY_IMPORT_KEY = 'legacy_active_db_import_owner'
@@ -65,7 +65,10 @@ export async function migrateDbIfNeeded(db: SQLiteDatabase, owner: DatabaseOwner
 
       for (const table of LEGACY_TABLES) {
         for (const row of rowsByTable[table]) {
-          const columns = Object.keys(row)
+          // The destination allocates its own sequence after existing queued work.
+          const columns = Object.keys(row).filter(
+            (column) => table !== 'sync_queue' || column !== 'sequence'
+          )
           const names = columns.map((column) => `"${column.replace(/"/g, '""')}"`).join(', ')
           const placeholders = columns.map(() => '?').join(', ')
           await transaction.runAsync(
@@ -107,8 +110,9 @@ async function migrateSchema(db: SQLiteDatabase) {
 
   console.log(`Migrating database from version ${currentDbVersion} to ${DATABASE_VERSION}`)
 
-  if (currentDbVersion === 0) {
-    await db.execAsync(`
+  await db.withTransactionAsync(async () => {
+    if (currentDbVersion === 0) {
+      await db.execAsync(`
       -- Sync Queue for Store & Forward
       CREATE TABLE IF NOT EXISTS sync_queue (
         id TEXT PRIMARY KEY,
@@ -164,22 +168,20 @@ async function migrateSchema(db: SQLiteDatabase) {
       );
     `)
 
-    await db.execAsync('PRAGMA user_version = 1')
-  }
-
-  if (currentDbVersion < 2) {
-    try {
-      await db.execAsync('ALTER TABLE sync_queue ADD COLUMN idempotency_key TEXT;')
-    } catch (e) {
-      // Ignore if column already exists
-      console.log('Column idempotency_key may already exist:', e)
+      await db.execAsync('PRAGMA user_version = 1')
     }
 
-    await db.execAsync('PRAGMA user_version = 2')
-  }
+    if (currentDbVersion < 2) {
+      const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(sync_queue)')
+      if (!columns.some((column) => column.name === 'idempotency_key')) {
+        await db.execAsync('ALTER TABLE sync_queue ADD COLUMN idempotency_key TEXT;')
+      }
 
-  if (currentDbVersion < 3) {
-    await db.execAsync(`
+      await db.execAsync('PRAGMA user_version = 2')
+    }
+
+    if (currentDbVersion < 3) {
+      await db.execAsync(`
       CREATE TABLE IF NOT EXISTS id_remaps (
         table_name TEXT NOT NULL,
         old_id TEXT NOT NULL,
@@ -188,7 +190,38 @@ async function migrateSchema(db: SQLiteDatabase) {
       );
       PRAGMA user_version = 3;
     `)
-  }
+    }
+
+    if (currentDbVersion < 4) {
+      await db.execAsync(`
+      CREATE TABLE sync_queue_v4 (
+        sequence INTEGER PRIMARY KEY AUTOINCREMENT,
+        id TEXT NOT NULL UNIQUE,
+        endpoint TEXT NOT NULL,
+        method TEXT NOT NULL,
+        payload TEXT,
+        local_table TEXT,
+        local_id TEXT,
+        idempotency_key TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        status TEXT DEFAULT 'pending',
+        retry_count INTEGER DEFAULT 0,
+        error_message TEXT,
+        next_attempt_at INTEGER NOT NULL DEFAULT 0
+      );
+      INSERT INTO sync_queue_v4 (
+        id, endpoint, method, payload, local_table, local_id, idempotency_key,
+        created_at, status, retry_count, error_message
+      )
+      SELECT id, endpoint, method, payload, local_table, local_id,
+        COALESCE(idempotency_key, id), created_at, status, retry_count, error_message
+      FROM sync_queue ORDER BY created_at ASC, rowid ASC;
+      DROP TABLE sync_queue;
+      ALTER TABLE sync_queue_v4 RENAME TO sync_queue;
+      PRAGMA user_version = 4;
+    `)
+    }
+  })
 }
 
 async function ensureMetadataTable(db: SQLiteDatabase) {
@@ -220,7 +253,7 @@ async function getLegacyRows(db: SQLiteDatabase) {
   const rowsByTable: Record<string, Record<string, SQLiteBindValue>[]> = {}
   for (const table of LEGACY_TABLES) {
     rowsByTable[table] = await db.getAllAsync<Record<string, SQLiteBindValue>>(
-      `SELECT * FROM ${table}`
+      `SELECT * FROM ${table}${table === 'sync_queue' ? ' ORDER BY sequence ASC' : ''}`
     )
   }
   return rowsByTable
