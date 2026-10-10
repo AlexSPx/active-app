@@ -313,7 +313,7 @@ describe('durable sync recovery', () => {
       await engine.processQueue()
       expect(db.jobs[0]).toMatchObject({
         id: 'auth-head',
-        status: 'failed',
+        status: 'auth_required',
         retry_count: 1,
         next_attempt_at: 0,
         error_message: expect.stringContaining('Session expired'),

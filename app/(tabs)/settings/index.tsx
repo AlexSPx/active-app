@@ -114,6 +114,11 @@ export default function SettingsMenuScreen() {
               }
               href="/settings/rest-timer"
             />
+            <MenuRow
+              title="Synchronization"
+              description="Review queued changes and retry uploads"
+              href="/settings/sync"
+            />
           </YStack>
           <YStack>
             <Text fontSize="$caption" fontWeight="600" color="$colorSubtle" mb="$field">

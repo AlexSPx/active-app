@@ -49,9 +49,13 @@ export interface SyncJob {
   next_attempt_at: number
   retry_count: number
   status: string
+  error_message: string | null
+  created_at?: string
+  /** UI-safe explanation derived from earlier queued work. */
+  blocked_reason?: string
 }
 
-export type SyncEvent = 'sync:start' | 'sync:complete' | 'sync:error' | 'sync:idle'
+export type SyncEvent = 'sync:start' | 'sync:complete' | 'sync:error' | 'sync:idle' | 'sync:change'
 type IdRemapListener = (tableName: string, oldId: string, newId: string) => void
 
 interface SyncEngineDeps {
@@ -85,6 +89,105 @@ const ALLOWED_TABLES = ['workouts', 'workout_records', 'routines'] as const
 const BASE_BACKOFF_MS = 1_000
 const MAX_BACKOFF_MS = 60_000
 const QUEUE_BATCH_SIZE = 50
+const BLOCKED_REASON = 'Blocked by an earlier unsynced change.'
+
+interface JobDependencies {
+  primary: string | null
+  requires: Set<string>
+  unknown: boolean
+}
+
+function getJobDependencies(job: SyncJob): JobDependencies {
+  let payload: unknown
+  try {
+    payload = JSON.parse(job.payload)
+  } catch {
+    return { primary: null, requires: new Set(), unknown: true }
+  }
+
+  const args = Array.isArray(payload) ? payload : [payload]
+  const id = (value: unknown) => (typeof value === 'string' && value ? value : null)
+  const localEntity = job.local_table && job.local_id ? `${job.local_table}:${job.local_id}` : null
+  const requires = new Set<string>()
+  const addWorkoutReferences = (value: unknown): void => {
+    if (Array.isArray(value)) {
+      value.forEach(addWorkoutReferences)
+      return
+    }
+    if (!value || typeof value !== 'object') return
+    for (const [key, nested] of Object.entries(value)) {
+      if (key === 'workoutId' && typeof nested === 'string') {
+        requires.add(`workouts:${nested}`)
+      } else {
+        addWorkoutReferences(nested)
+      }
+    }
+  }
+
+  switch (job.endpoint as keyof SyncApi) {
+    case 'createWorkout':
+      return { primary: localEntity, requires, unknown: !localEntity }
+    case 'updateWorkout':
+    case 'deleteWorkout': {
+      const workoutId = id(args[0])
+      return {
+        primary: workoutId ? `workouts:${workoutId}` : null,
+        requires,
+        unknown: !workoutId,
+      }
+    }
+    case 'recordWorkout': {
+      const request = args[0]
+      if (request && typeof request === 'object') {
+        const workoutId = id((request as { workoutId?: unknown }).workoutId)
+        if (workoutId) requires.add(`workouts:${workoutId}`)
+      }
+      return { primary: localEntity, requires, unknown: !localEntity || requires.size === 0 }
+    }
+    case 'deleteWorkoutRecord': {
+      const recordId = id(args[0])
+      return {
+        primary: recordId ? `workout_records:${recordId}` : null,
+        requires,
+        unknown: !recordId,
+      }
+    }
+    case 'createRoutine':
+      addWorkoutReferences(args[0])
+      return { primary: localEntity, requires, unknown: !localEntity }
+    case 'updateRoutine': {
+      const routineId = id(args[0])
+      addWorkoutReferences(args[1])
+      return {
+        primary: routineId ? `routines:${routineId}` : null,
+        requires,
+        unknown: !routineId,
+      }
+    }
+    case 'deleteRoutine': {
+      const routineId = id(args[0])
+      return {
+        primary: routineId ? `routines:${routineId}` : null,
+        requires,
+        unknown: !routineId,
+      }
+    }
+    default:
+      return { primary: null, requires, unknown: true }
+  }
+}
+
+function isBlockedBy(dependencies: JobDependencies, earlier: readonly JobDependencies[]): boolean {
+  if (earlier.length === 0) return false
+  if (dependencies.unknown) return true
+  return earlier.some(
+    (blocker) =>
+      blocker.unknown ||
+      (!!blocker.primary &&
+        (blocker.primary === dependencies.primary || dependencies.requires.has(blocker.primary))) ||
+      (!!dependencies.primary && blocker.requires.has(dependencies.primary))
+  )
+}
 
 // ---------------------------------------------------------------------------
 // SyncEngine
@@ -96,6 +199,7 @@ export class SyncEngine {
   private lifecycleGeneration = 0
   private initialized = false
   private uploadsEnabled = true
+  private authenticationPaused = false
   private enableAfterInit = false
   private paused = false
   private resumeAfterDrain = false
@@ -114,6 +218,7 @@ export class SyncEngine {
     'sync:complete': new Set(),
     'sync:error': new Set(),
     'sync:idle': new Set(),
+    'sync:change': new Set(),
   }
 
   constructor(
@@ -152,6 +257,7 @@ export class SyncEngine {
     }
     this.db = db
     this.dbScope = scope
+    this.authenticationPaused = false
 
     // A stopped processor must settle before abandoned jobs become eligible again.
     await this.drainPromise?.catch(() => {})
@@ -179,6 +285,12 @@ export class SyncEngine {
       this.emitIdRemap(remap.table_name, remap.old_id, remap.new_id)
     }
 
+    this.authenticationPaused = !!(await db.getFirstAsync<{ id: string }>(
+      'SELECT id FROM sync_queue WHERE status = ? LIMIT 1',
+      'auth_required'
+    ))
+    if (lifecycleGeneration !== this.lifecycleGeneration || !this.isCurrentEngine(db, scope)) return
+
     // Listen for app resume and network recovery so queued work can resume.
     this.initialized = true
     this.appStateSubscription = this.deps.addAppStateListener(this.handleAppStateChange)
@@ -189,8 +301,12 @@ export class SyncEngine {
         this.processQueueInBackground()
       }) ?? null
     // Drain any jobs left over from a previous session
-    if (options.processOnInit !== false || this.enableAfterInit) {
-      this.enableAfterInit = false
+    const confirmedUploads = this.enableAfterInit
+    this.enableAfterInit = false
+    if (confirmedUploads && this.authenticationPaused) {
+      await this.resumeAuthentication(db, scope)
+    }
+    if (options.processOnInit !== false || confirmedUploads) {
       this.processQueueInBackground()
     }
   }
@@ -201,6 +317,11 @@ export class SyncEngine {
       this.clearRetryTimer()
       this.enableAfterInit = false
       this.resumeAfterDrain = false
+      return
+    }
+    if (this.authenticationPaused) {
+      if (this.initialized) this.resumeAuthenticationInBackground()
+      else this.enableAfterInit = true
       return
     }
     if (this.paused) {
@@ -235,6 +356,7 @@ export class SyncEngine {
     this.enableAfterInit = false
     this.db = null
     this.dbScope = null
+    this.authenticationPaused = false
   }
 
   private isCurrentEngine(db: SQLiteDatabase, scope: ProfileScope): boolean {
@@ -305,6 +427,81 @@ export class SyncEngine {
     return this.queueMutationRevision
   }
 
+  get authPaused(): boolean {
+    return this.authenticationPaused
+  }
+
+  async listJobs(): Promise<SyncJob[]> {
+    const db = this.db
+    const scope = this.dbScope
+    if (!db || !scope || !this.isCurrentEngine(db, scope)) return []
+
+    const jobs = await this.readQueue(db, scope)
+    if (!this.isCurrentEngine(db, scope)) return []
+    const blockers: JobDependencies[] = []
+    const visible: SyncJob[] = []
+    for (const job of jobs) {
+      const dependencies = getJobDependencies(job)
+      const blocked = isBlockedBy(dependencies, blockers)
+      if (job.status !== 'discarded') {
+        visible.push(blocked ? { ...job, blocked_reason: BLOCKED_REASON } : job)
+      }
+      blockers.push(dependencies)
+    }
+    return visible
+  }
+
+  async retryJob(jobId: string): Promise<void> {
+    const db = this.db
+    const scope = this.dbScope
+    if (!db || !scope || !this.isCurrentEngine(db, scope)) {
+      throw new Error('Sync queue is not available for this profile.')
+    }
+
+    await this.withIdRemapLock(async () => {
+      if (!this.isCurrentEngine(db, scope)) throw new Error('Sync profile changed.')
+      const job = await db.getFirstAsync<SyncJob>('SELECT * FROM sync_queue WHERE id = ?', jobId)
+      if (!this.isCurrentEngine(db, scope)) throw new Error('Sync profile changed.')
+      if (!job) throw new Error('Sync job no longer exists.')
+      if (!['dead_letter', 'discarded', 'failed'].includes(job.status)) {
+        throw new Error(`Sync job cannot be retried while ${job.status}.`)
+      }
+      await db.runAsync(
+        'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, next_attempt_at = ? WHERE id = ?',
+        'pending',
+        0,
+        null,
+        0,
+        jobId
+      )
+    })
+    if (!this.isCurrentEngine(db, scope)) throw new Error('Sync profile changed.')
+    this.queueDidChange()
+    this.clearRetryTimer()
+    this.processQueueInBackground()
+  }
+
+  async discardJob(jobId: string): Promise<void> {
+    const db = this.db
+    const scope = this.dbScope
+    if (!db || !scope || !this.isCurrentEngine(db, scope)) {
+      throw new Error('Sync queue is not available for this profile.')
+    }
+
+    await this.withIdRemapLock(async () => {
+      if (!this.isCurrentEngine(db, scope)) throw new Error('Sync profile changed.')
+      const job = await db.getFirstAsync<SyncJob>('SELECT * FROM sync_queue WHERE id = ?', jobId)
+      if (!this.isCurrentEngine(db, scope)) throw new Error('Sync profile changed.')
+      if (!job) throw new Error('Sync job no longer exists.')
+      if (job.status === 'processing') throw new Error('A processing sync job cannot be discarded.')
+      await db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'discarded', jobId)
+    })
+    if (!this.isCurrentEngine(db, scope)) throw new Error('Sync profile changed.')
+    this.queueDidChange()
+    this.clearRetryTimer()
+    this.processQueueInBackground()
+  }
+
   private emit(event: SyncEvent): void {
     this.listeners[event].forEach((cb) => {
       try {
@@ -354,7 +551,7 @@ export class SyncEngine {
       job.localId || null,
       idempotencyKey
     )
-    this.queueMutationRevision += 1
+    this.queueDidChange()
 
     // Fire-and-forget — errors are handled internally
     if (options.processAfterInsert !== false && scope && this.isCurrentEngine(db, scope)) {
@@ -379,6 +576,7 @@ export class SyncEngine {
       !scope ||
       !this.initialized ||
       !this.uploadsEnabled ||
+      this.authenticationPaused ||
       this.paused ||
       !this.isCurrentEngine(db, scope)
     ) {
@@ -418,7 +616,13 @@ export class SyncEngine {
   }
 
   private async drainQueue(db: SQLiteDatabase, scope: ProfileScope): Promise<void> {
-    if (!this.isCurrentEngine(db, scope) || !this.uploadsEnabled || this.paused) return
+    if (
+      !this.isCurrentEngine(db, scope) ||
+      !this.uploadsEnabled ||
+      this.authenticationPaused ||
+      this.paused
+    )
+      return
     // Network check
     try {
       const networkState = await this.deps.getNetworkState()
@@ -427,45 +631,38 @@ export class SyncEngine {
       // Unknown connectivity gets one API probe; a failed request schedules the next attempt.
     }
 
-    if (!this.isCurrentEngine(db, scope) || !this.uploadsEnabled || this.paused) return
+    if (
+      !this.isCurrentEngine(db, scope) ||
+      !this.uploadsEnabled ||
+      this.authenticationPaused ||
+      this.paused
+    )
+      return
 
     this.emit('sync:start')
 
     try {
-      const pendingJobs = await db.getAllAsync<SyncJob>(
-        `SELECT * FROM sync_queue
-         WHERE status = ? OR status = ?
-         ORDER BY sequence ASC LIMIT ${QUEUE_BATCH_SIZE}`,
-        'pending',
-        'failed'
-      )
-      if (!this.isCurrentEngine(db, scope)) return
+      let processed = 0
+      while (
+        processed < QUEUE_BATCH_SIZE &&
+        this.isCurrentEngine(db, scope) &&
+        this.uploadsEnabled &&
+        !this.authenticationPaused &&
+        !this.paused
+      ) {
+        const next = await this.findNextRunnableJob(db, scope)
+        if (!next.job) {
+          if (next.retryAt !== null) this.scheduleRetry(next.retryAt)
+          if (processed === 0) this.emit('sync:idle')
+          break
+        }
 
-      if (pendingJobs.length === 0) {
-        this.emit('sync:idle')
-        return
+        const success = await this.processJob(next.job, db, scope)
+        processed += 1
+        if (!success) break
       }
 
-      for (const job of pendingJobs) {
-        if (!this.isCurrentEngine(db, scope) || !this.uploadsEnabled || this.paused) {
-          break
-        }
-        if (job.next_attempt_at > Date.now()) {
-          this.scheduleRetry(job.next_attempt_at)
-          break
-        }
-        const success = await this.processJob(job, db, scope)
-        if (!success) {
-          // Stop processing on first failure to preserve ordering
-          break
-        }
-        if (
-          job === pendingJobs[pendingJobs.length - 1] &&
-          pendingJobs.length === QUEUE_BATCH_SIZE
-        ) {
-          this.drainRequested = true
-        }
-      }
+      if (processed === QUEUE_BATCH_SIZE) this.drainRequested = true
 
       if (this.isCurrentEngine(db, scope)) this.emit('sync:complete')
     } catch (error) {
@@ -473,6 +670,60 @@ export class SyncEngine {
       if (this.isCurrentEngine(db, scope)) this.emit('sync:error')
       throw error
     }
+  }
+
+  private async findNextRunnableJob(
+    db: SQLiteDatabase,
+    scope: ProfileScope
+  ): Promise<{ job: SyncJob | null; retryAt: number | null }> {
+    const blockers: JobDependencies[] = []
+    let afterSequence = 0
+
+    while (this.isCurrentEngine(db, scope)) {
+      const jobs = await db.getAllAsync<SyncJob>(
+        `SELECT * FROM sync_queue
+         WHERE sequence > ?
+         ORDER BY sequence ASC LIMIT ${QUEUE_BATCH_SIZE}`,
+        afterSequence
+      )
+      if (!this.isCurrentEngine(db, scope)) return { job: null, retryAt: null }
+      if (jobs.length === 0) return { job: null, retryAt: null }
+
+      for (const job of jobs) {
+        afterSequence = job.sequence
+        const dependencies = getJobDependencies(job)
+        const blocked = isBlockedBy(dependencies, blockers)
+        const canRun = job.status === 'pending' || job.status === 'failed'
+
+        if (canRun && !blocked) {
+          if (job.next_attempt_at <= Date.now()) return { job, retryAt: null }
+          return { job: null, retryAt: job.next_attempt_at }
+        }
+        blockers.push(dependencies)
+      }
+
+      if (jobs.length < QUEUE_BATCH_SIZE) return { job: null, retryAt: null }
+    }
+
+    return { job: null, retryAt: null }
+  }
+
+  private async readQueue(db: SQLiteDatabase, scope: ProfileScope): Promise<SyncJob[]> {
+    const rows: SyncJob[] = []
+    let afterSequence = 0
+    while (this.isCurrentEngine(db, scope)) {
+      const page = await db.getAllAsync<SyncJob>(
+        `SELECT * FROM sync_queue
+         WHERE sequence > ?
+         ORDER BY sequence ASC LIMIT ${QUEUE_BATCH_SIZE}`,
+        afterSequence
+      )
+      if (!this.isCurrentEngine(db, scope) || page.length === 0) break
+      rows.push(...page)
+      afterSequence = page[page.length - 1].sequence
+      if (page.length < QUEUE_BATCH_SIZE) break
+    }
+    return this.isCurrentEngine(db, scope) ? rows : []
   }
 
   // -----------------------------------------------------------------------
@@ -485,29 +736,23 @@ export class SyncEngine {
     scope: ProfileScope
   ): Promise<boolean> {
     if (!this.isCurrentEngine(db, scope)) return false
-    await this.writeQueue(
-      db,
-      scope,
-      'UPDATE sync_queue SET status = ? WHERE id = ?',
-      'processing',
-      job.id
-    )
-    if (!this.isCurrentEngine(db, scope)) {
-      return false
-    }
+    let currentJob: SyncJob | null = null
+    await this.withIdRemapLock(async () => {
+      if (!this.isCurrentEngine(db, scope)) return
+      const latest = await db.getFirstAsync<SyncJob>(
+        'SELECT * FROM sync_queue WHERE id = ?',
+        job.id
+      )
+      if (!this.isCurrentEngine(db, scope) || !latest) return
+      if (latest.status !== 'pending' && latest.status !== 'failed') return
+      await db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'processing', latest.id)
+      currentJob = { ...latest, status: 'processing' }
+    })
+    if (!currentJob || !this.isCurrentEngine(db, scope)) return false
+    this.queueDidChange()
 
-    // Reload after the previous job's possible ID remaps.
-    const currentJob = await db.getFirstAsync<SyncJob>(
-      'SELECT * FROM sync_queue WHERE id = ?',
-      job.id
-    )
-    if (!this.isCurrentEngine(db, scope)) {
-      return false
-    }
-    if (!currentJob) return true
-
-    if (!this.uploadsEnabled || this.paused) {
-      await this.resetPending(db, scope, job.id)
+    if (!this.uploadsEnabled || this.authenticationPaused || this.paused) {
+      await this.resetPending(db, scope, currentJob.id)
       return false
     }
 
@@ -730,10 +975,9 @@ export class SyncEngine {
     const queuedJobs = await db.getAllAsync<Pick<SyncJob, 'id' | 'payload'>>(
       `SELECT id, payload
        FROM sync_queue
-       WHERE (status = ? OR status = ?)
+       WHERE status != ?
          AND id != ?`,
-      'pending',
-      'failed',
+      'processing',
       sourceJobId || ''
     )
     if (!this.isCurrentEngine(db, scope)) return
@@ -790,14 +1034,14 @@ export class SyncEngine {
         db,
         scope,
         'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, next_attempt_at = ? WHERE id = ?',
-        'failed',
+        'auth_required',
         newRetryCount,
         errorMsg,
         0,
         job.id
       )
       if (this.isCurrentEngine(db, scope)) {
-        this.paused = true
+        this.authenticationPaused = true
         this.clearRetryTimer()
         this.emit('sync:error')
       }
@@ -814,7 +1058,7 @@ export class SyncEngine {
     ) {
       console.error(`[SyncEngine] Permanent failure [${job.endpoint}]: ${statusCode} ${errorMsg}`)
       await this.markDeadLetter(db, scope, job, `${statusCode}: ${errorMsg}`)
-      return true // continue to next job — this one can't be retried
+      return true
     }
 
     console.warn(
@@ -876,9 +1120,50 @@ export class SyncEngine {
     sql: string,
     ...params: any[]
   ): Promise<void> {
+    let changed = false
     await this.withIdRemapLock(async () => {
-      if (this.isCurrentEngine(db, scope)) await db.runAsync(sql, ...params)
+      if (this.isCurrentEngine(db, scope)) {
+        await db.runAsync(sql, ...params)
+        changed = true
+      }
     })
+    if (changed && this.isCurrentEngine(db, scope)) this.queueDidChange()
+  }
+
+  private queueDidChange(): void {
+    this.queueMutationRevision += 1
+    this.emit('sync:change')
+  }
+
+  private resumeAuthenticationInBackground(): void {
+    const db = this.db
+    const scope = this.dbScope
+    if (!db || !scope) return
+    void this.resumeAuthentication(db, scope)
+      .then(() => this.processQueue())
+      .catch((error) => console.error('[SyncEngine] Failed to resume authenticated sync:', error))
+  }
+
+  private async resumeAuthentication(db: SQLiteDatabase, scope: ProfileScope): Promise<void> {
+    let changed = false
+    await this.withIdRemapLock(async () => {
+      if (!this.isCurrentEngine(db, scope) || !this.uploadsEnabled) return
+      await db.runAsync(
+        'UPDATE sync_queue SET status = ?, error_message = ?, next_attempt_at = ? WHERE status = ?',
+        'pending',
+        null,
+        0,
+        'auth_required'
+      )
+      changed = true
+    })
+    if (!changed || !this.isCurrentEngine(db, scope) || !this.uploadsEnabled) return
+    this.authenticationPaused = false
+    if (this.paused) {
+      if (this.drainPromise) this.resumeAfterDrain = true
+      else this.paused = false
+    }
+    this.queueDidChange()
   }
 
   // -----------------------------------------------------------------------
