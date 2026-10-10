@@ -42,18 +42,23 @@ export class RoutineRepository extends BaseRepository {
   // -------------------------------------------------------------------------
 
   async getAll(): Promise<Routine[]> {
-    const rows = await this.queryAll<RoutineRow>('SELECT * FROM routines ORDER BY created_at DESC')
+    const rows = await this.queryAll<RoutineRow>(
+      'SELECT * FROM routines WHERE is_deleted = 0 ORDER BY created_at DESC'
+    )
     return rows.map(this.rowToRoutine)
   }
 
   async getById(id: string): Promise<Routine | null> {
-    const row = await this.queryFirst<RoutineRow>('SELECT * FROM routines WHERE id = ?', id)
+    const row = await this.queryFirst<RoutineRow>(
+      'SELECT * FROM routines WHERE id = ? AND is_deleted = 0',
+      id
+    )
     return row ? this.rowToRoutine(row) : null
   }
 
   async getActive(): Promise<Routine | null> {
     const row = await this.queryFirst<RoutineRow>(
-      'SELECT * FROM routines WHERE is_active = 1 LIMIT 1'
+      'SELECT * FROM routines WHERE is_active = 1 AND is_deleted = 0 LIMIT 1'
     )
     return row ? this.rowToRoutine(row) : null
   }
@@ -177,7 +182,10 @@ export class RoutineRepository extends BaseRepository {
   async delete(routineId: string): Promise<void> {
     return this.commitMutation(async (tx) => {
       const resolvedRoutineId = syncEngine.resolveId('routines', routineId)
-      await tx.runAsync('DELETE FROM routines WHERE id = ?', resolvedRoutineId)
+      await tx.runAsync(
+        'UPDATE routines SET is_deleted = 1, is_active = 0 WHERE id = ?',
+        resolvedRoutineId
+      )
 
       return {
         value: undefined,
@@ -202,7 +210,8 @@ export class RoutineRepository extends BaseRepository {
 
       await this.run(
         `INSERT INTO routines (id, name, description, user_id, routine_type, pattern, start_date, created_at, updated_at, is_active, is_synced, synced_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?)
+         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ? WHERE NOT EXISTS
+           (SELECT 1 FROM routines WHERE id = ? AND is_deleted = 1)
          ON CONFLICT(id) DO UPDATE SET
            name = excluded.name,
            description = excluded.description,
@@ -213,7 +222,7 @@ export class RoutineRepository extends BaseRepository {
            updated_at = excluded.updated_at,
            is_active = excluded.is_active,
            is_synced = 1,
-           synced_at = excluded.synced_at`,
+           synced_at = excluded.synced_at WHERE routines.is_deleted = 0`,
         r.id,
         r.name,
         r.description || null,
@@ -224,7 +233,8 @@ export class RoutineRepository extends BaseRepository {
         r.createdAt,
         r.updatedAt,
         isActive,
-        new Date().toISOString()
+        new Date().toISOString(),
+        r.id
       )
     }
   }

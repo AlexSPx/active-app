@@ -5,7 +5,7 @@
 import * as SQLite from 'expo-sqlite'
 import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite'
 
-const DATABASE_VERSION = 4
+const DATABASE_VERSION = 5
 const LEGACY_DATABASE_NAME = 'active.db'
 const LEGACY_OWNER_KEY = 'legacy_active_db_owner'
 const LEGACY_IMPORT_KEY = 'legacy_active_db_import_owner'
@@ -110,9 +110,12 @@ async function migrateSchema(db: SQLiteDatabase) {
 
   console.log(`Migrating database from version ${currentDbVersion} to ${DATABASE_VERSION}`)
 
-  await db.withTransactionAsync(async () => {
-    if (currentDbVersion === 0) {
-      await db.execAsync(`
+  // Rebuilding workout_records must retain legacy rows whose workout is absent locally.
+  await db.execAsync('PRAGMA foreign_keys = OFF')
+  try {
+    await db.withTransactionAsync(async () => {
+      if (currentDbVersion === 0) {
+        await db.execAsync(`
       -- Sync Queue for Store & Forward
       CREATE TABLE IF NOT EXISTS sync_queue (
         id TEXT PRIMARY KEY,
@@ -168,20 +171,20 @@ async function migrateSchema(db: SQLiteDatabase) {
       );
     `)
 
-      await db.execAsync('PRAGMA user_version = 1')
-    }
-
-    if (currentDbVersion < 2) {
-      const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(sync_queue)')
-      if (!columns.some((column) => column.name === 'idempotency_key')) {
-        await db.execAsync('ALTER TABLE sync_queue ADD COLUMN idempotency_key TEXT;')
+        await db.execAsync('PRAGMA user_version = 1')
       }
 
-      await db.execAsync('PRAGMA user_version = 2')
-    }
+      if (currentDbVersion < 2) {
+        const columns = await db.getAllAsync<{ name: string }>('PRAGMA table_info(sync_queue)')
+        if (!columns.some((column) => column.name === 'idempotency_key')) {
+          await db.execAsync('ALTER TABLE sync_queue ADD COLUMN idempotency_key TEXT;')
+        }
 
-    if (currentDbVersion < 3) {
-      await db.execAsync(`
+        await db.execAsync('PRAGMA user_version = 2')
+      }
+
+      if (currentDbVersion < 3) {
+        await db.execAsync(`
       CREATE TABLE IF NOT EXISTS id_remaps (
         table_name TEXT NOT NULL,
         old_id TEXT NOT NULL,
@@ -190,10 +193,10 @@ async function migrateSchema(db: SQLiteDatabase) {
       );
       PRAGMA user_version = 3;
     `)
-    }
+      }
 
-    if (currentDbVersion < 4) {
-      await db.execAsync(`
+      if (currentDbVersion < 4) {
+        await db.execAsync(`
       CREATE TABLE sync_queue_v4 (
         sequence INTEGER PRIMARY KEY AUTOINCREMENT,
         id TEXT NOT NULL UNIQUE,
@@ -220,8 +223,41 @@ async function migrateSchema(db: SQLiteDatabase) {
       ALTER TABLE sync_queue_v4 RENAME TO sync_queue;
       PRAGMA user_version = 4;
     `)
-    }
-  })
+      }
+
+      if (currentDbVersion < 5) {
+        await db.execAsync(`
+      ALTER TABLE workouts ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;
+      ALTER TABLE routines ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0;
+      CREATE TABLE workout_records_v5 (
+        id TEXT PRIMARY KEY,
+        workout_id TEXT,
+        workout_title TEXT NOT NULL,
+        notes TEXT,
+        created_at DATETIME,
+        start_time DATETIME,
+        exercise_records TEXT,
+        is_synced INTEGER DEFAULT 0,
+        synced_at DATETIME,
+        is_deleted INTEGER NOT NULL DEFAULT 0,
+        FOREIGN KEY(workout_id) REFERENCES workouts(id) ON DELETE SET NULL ON UPDATE CASCADE
+      );
+      INSERT INTO workout_records_v5 (
+        id, workout_id, workout_title, notes, created_at, start_time, exercise_records,
+        is_synced, synced_at
+      ) SELECT id,
+        CASE WHEN workout_id IN (SELECT id FROM workouts) THEN workout_id ELSE NULL END,
+        workout_title, notes, created_at, start_time, exercise_records, is_synced, synced_at
+      FROM workout_records;
+      DROP TABLE workout_records;
+      ALTER TABLE workout_records_v5 RENAME TO workout_records;
+      PRAGMA user_version = 5;
+      `)
+      }
+    })
+  } finally {
+    await db.execAsync('PRAGMA foreign_keys = ON')
+  }
 }
 
 async function ensureMetadataTable(db: SQLiteDatabase) {

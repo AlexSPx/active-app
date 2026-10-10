@@ -175,7 +175,8 @@ describe('RoutineRepository', () => {
 
     await repo.delete(created.id)
 
-    expect(db.tables.routines.has(serverId)).toBe(false)
+    expect(db.tables.routines.get(serverId).is_deleted).toBe(1)
+    await expect(repo.getById(serverId)).resolves.toBeNull()
     expect(syncEngine.enqueue).toHaveBeenLastCalledWith(
       { apiMethod: 'deleteRoutine', payload: [serverId] },
       db,
@@ -238,7 +239,9 @@ describe('RoutineRepository', () => {
 
     await repo.delete('routine_delete')
 
-    expect(db.tables.routines.has('routine_delete')).toBe(false)
+    expect(db.tables.routines.get('routine_delete').is_deleted).toBe(1)
+    await expect(repo.getAll()).resolves.toEqual([])
+    await expect(repo.getById('routine_delete')).resolves.toBeNull()
     expect(syncEngine.enqueue).toHaveBeenCalledWith(
       {
         apiMethod: 'deleteRoutine',

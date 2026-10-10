@@ -340,9 +340,22 @@ async function seedVersionThree(db, rows = []) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP, status TEXT DEFAULT 'pending',
       retry_count INTEGER DEFAULT 0, error_message TEXT
     );
-    CREATE TABLE workouts (id TEXT PRIMARY KEY, title TEXT);
-    CREATE TABLE workout_records (id TEXT PRIMARY KEY, workout_id TEXT);
-    CREATE TABLE routines (id TEXT PRIMARY KEY, name TEXT);
+    CREATE TABLE workouts (
+      id TEXT PRIMARY KEY, title TEXT NOT NULL, notes TEXT, created_at DATETIME,
+      updated_at DATETIME, workout_template TEXT, is_synced INTEGER DEFAULT 0, synced_at DATETIME
+    );
+    CREATE TABLE workout_records (
+      id TEXT PRIMARY KEY, workout_id TEXT NOT NULL, workout_title TEXT NOT NULL,
+      notes TEXT, created_at DATETIME, start_time DATETIME, exercise_records TEXT,
+      is_synced INTEGER DEFAULT 0, synced_at DATETIME,
+      FOREIGN KEY(workout_id) REFERENCES workouts(id) ON UPDATE CASCADE
+    );
+    CREATE TABLE routines (
+      id TEXT PRIMARY KEY, name TEXT NOT NULL, description TEXT, user_id TEXT,
+      routine_type TEXT DEFAULT 'SEQUENTIAL', pattern TEXT, start_date DATETIME,
+      created_at DATETIME, updated_at DATETIME, is_active INTEGER DEFAULT 0,
+      is_synced INTEGER DEFAULT 0, synced_at DATETIME
+    );
     CREATE TABLE id_remaps (table_name TEXT, old_id TEXT, new_id TEXT, PRIMARY KEY(table_name, old_id));
     PRAGMA user_version = 3;
   `)
@@ -360,6 +373,22 @@ async function seedVersionThree(db, rows = []) {
       'offline'
     )
   }
+}
+
+async function seedVersionFour(db) {
+  await seedVersionThree(db)
+  await db.execAsync(`
+    CREATE TABLE sync_queue_v4 (
+      sequence INTEGER PRIMARY KEY AUTOINCREMENT, id TEXT NOT NULL UNIQUE,
+      endpoint TEXT NOT NULL, method TEXT NOT NULL, payload TEXT, local_table TEXT,
+      local_id TEXT, idempotency_key TEXT, created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      status TEXT DEFAULT 'pending', retry_count INTEGER DEFAULT 0,
+      error_message TEXT, next_attempt_at INTEGER NOT NULL DEFAULT 0
+    );
+    DROP TABLE sync_queue;
+    ALTER TABLE sync_queue_v4 RENAME TO sync_queue;
+    PRAGMA user_version = 4;
+  `)
 }
 
 describe('durable queue schema on real SQLite', () => {
@@ -407,7 +436,7 @@ describe('durable queue schema on real SQLite', () => {
     expect(await target.getAllAsync('SELECT * FROM id_remaps')).toEqual([
       { table_name: 'workouts', old_id: 'local', new_id: 'server' },
     ])
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 4 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 5 })
     await migrateDbIfNeeded(target, owner)
     expect(await target.getAllAsync('SELECT * FROM sync_queue ORDER BY sequence')).toEqual(rows)
     await target.runAsync('DELETE FROM sync_queue WHERE id = ?', 'legacy-second')
@@ -437,7 +466,7 @@ describe('durable queue schema on real SQLite', () => {
         'SELECT sequence, next_attempt_at, status, idempotency_key FROM sync_queue'
       )
     ).toEqual({ sequence: 1, next_attempt_at: 0, status: 'pending', idempotency_key: 'new-key' })
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 4 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 5 })
   })
 
   it('rolls back the queue rebuild and schema version if copying existing rows fails', async () => {
@@ -464,6 +493,135 @@ describe('durable queue schema on real SQLite', () => {
     ).toBeNull()
     target.execAsync = originalExec
     await migrateDbIfNeeded(target, owner)
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 5 })
+  })
+})
+
+describe('deletion history schema on real SQLite', () => {
+  let target
+  let source
+  beforeEach(() => {
+    target = new SqliteDb(':memory:')
+    source = new SqliteDb('')
+    mockLegacyDb = source
+  })
+  afterEach(async () => {
+    await Promise.all([target.closeAsync(), source.closeAsync()])
+  })
+
+  it('upgrades v4, retains orphan snapshots and queue metadata, and detaches history after deleting a workout', async () => {
+    await seedVersionFour(target)
+    await target.runAsync('INSERT INTO workouts (id, title) VALUES (?, ?)', 'workout', 'Pull Day')
+    await target.runAsync(
+      'INSERT INTO workout_records (id, workout_id, workout_title, exercise_records) VALUES (?, ?, ?, ?)',
+      'record',
+      'workout',
+      'Pull Day',
+      '[{"exerciseName":"Row","reps":[8]}]'
+    )
+    await target.execAsync('PRAGMA foreign_keys = OFF')
+    await target.runAsync(
+      'INSERT INTO workout_records (id, workout_id, workout_title, exercise_records) VALUES (?, ?, ?, ?)',
+      'orphan',
+      'server-only',
+      'Server workout',
+      '[{"exerciseName":"Press"}]'
+    )
+    await target.execAsync('PRAGMA foreign_keys = ON')
+    await target.runAsync('INSERT INTO routines (id, name) VALUES (?, ?)', 'routine', 'Weekly')
+    await target.runAsync(
+      'INSERT INTO sync_queue (id, endpoint, method, payload, idempotency_key, status, retry_count, error_message, next_attempt_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'delete-job',
+      'deleteWorkout',
+      'API',
+      '["workout"]',
+      'stable-key',
+      'failed',
+      3,
+      'offline',
+      12345
+    )
+    await migrateDbIfNeeded(target, owner)
+
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 5 })
+    expect(await target.getFirstAsync('PRAGMA foreign_keys')).toEqual({ foreign_keys: 1 })
+    expect(await target.getAllAsync('PRAGMA foreign_key_check')).toEqual([])
+    expect(
+      await target.getFirstAsync('SELECT * FROM sync_queue WHERE id = ?', 'delete-job')
+    ).toMatchObject({
+      sequence: 1,
+      payload: '["workout"]',
+      idempotency_key: 'stable-key',
+      status: 'failed',
+      retry_count: 3,
+      error_message: 'offline',
+      next_attempt_at: 12345,
+    })
+    expect(
+      await target.getFirstAsync('SELECT is_deleted FROM routines WHERE id = ?', 'routine')
+    ).toEqual({ is_deleted: 0 })
+    expect(
+      await target.getFirstAsync('SELECT is_deleted FROM workout_records WHERE id = ?', 'record')
+    ).toEqual({ is_deleted: 0 })
+
+    await target.runAsync('DELETE FROM workouts WHERE id = ?', 'workout')
+    expect(
+      await target.getFirstAsync(
+        'SELECT workout_id, workout_title, exercise_records FROM workout_records WHERE id = ?',
+        'record'
+      )
+    ).toEqual({
+      workout_id: null,
+      workout_title: 'Pull Day',
+      exercise_records: '[{"exerciseName":"Row","reps":[8]}]',
+    })
+    expect(
+      await target.getFirstAsync(
+        'SELECT workout_id, workout_title FROM workout_records WHERE id = ?',
+        'orphan'
+      )
+    ).toEqual({
+      workout_id: null,
+      workout_title: 'Server workout',
+    })
+  })
+
+  it('creates the v5 schema fresh and rolls a failed v4 rebuild back without losing data', async () => {
+    await seedVersionFour(target)
+    await target.runAsync('INSERT INTO workouts (id, title) VALUES (?, ?)', 'kept', 'Kept')
+    const originalExec = target.execAsync.bind(target)
+    target.execAsync = async (sql) => {
+      if (sql.includes('CREATE TABLE workout_records_v5')) {
+        await originalExec(
+          sql.replace(
+            'ALTER TABLE workout_records_v5 RENAME TO workout_records;',
+            'SELECT * FROM forced_failure;'
+          )
+        )
+      } else await originalExec(sql)
+    }
+    await expect(migrateDbIfNeeded(target, owner)).rejects.toThrow('forced_failure')
     expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 4 })
+    expect(
+      await target.getFirstAsync('SELECT id, title FROM workouts WHERE id = ?', 'kept')
+    ).toEqual({ id: 'kept', title: 'Kept' })
+    expect(
+      await target.getFirstAsync("SELECT name FROM sqlite_master WHERE name = 'workout_records_v5'")
+    ).toBeNull()
+    expect(await target.getFirstAsync('PRAGMA foreign_keys')).toEqual({ foreign_keys: 1 })
+    target.execAsync = originalExec
+    await migrateDbIfNeeded(target, owner)
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 5 })
+
+    const fresh = new SqliteDb(':memory:')
+    mockLegacyDb = new SqliteDb('')
+    await migrateDbIfNeeded(fresh, owner)
+    expect(await fresh.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 5 })
+    expect(await fresh.getAllAsync('PRAGMA foreign_key_list(workout_records)')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ on_delete: 'SET NULL', on_update: 'CASCADE' }),
+      ])
+    )
+    await fresh.closeAsync()
   })
 })

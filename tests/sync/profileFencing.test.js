@@ -9,6 +9,7 @@ jest.mock('../../lib/sync/api', () => ({
     getWorkouts: jest.fn(async () => []),
     getWorkoutRecords: jest.fn(async () => []),
     getRoutines: jest.fn(async () => []),
+    deleteWorkout: jest.fn(async () => undefined),
   },
 }))
 jest.mock('../../lib/repositories/WorkoutRepository', () => ({
@@ -382,6 +383,50 @@ describe('profile-scoped sync fencing', () => {
       expect(db.jobs).toHaveLength(0)
       expect(db.hydrationWrites).toEqual([])
       expect(execAsync).not.toHaveBeenCalledWith('PRAGMA foreign_keys = OFF;')
+    } finally {
+      syncEngine.destroy()
+    }
+  })
+
+  it('does not restore a workout when its delete is acknowledged during an older fetch', async () => {
+    const { hydrateFromServer } = require('../../lib/sync/hydrate')
+    const { syncApi } = require('../../lib/sync/api')
+    const { syncEngine } = require('../../lib/sync/SyncEngine')
+    setActiveProfileOwner('account:A')
+    let releaseFetch
+    const oldResponse = new Promise((resolve) => {
+      releaseFetch = resolve
+    })
+    let fetchStarted
+    const started = new Promise((resolve) => {
+      fetchStarted = resolve
+    })
+    syncApi.getUser.mockResolvedValue({ activeRoutineId: null })
+    syncApi.getWorkouts.mockImplementation(() => {
+      fetchStarted()
+      return oldResponse
+    })
+    syncApi.getWorkoutRecords.mockResolvedValue([])
+    syncApi.getRoutines.mockResolvedValue([])
+    syncApi.deleteWorkout.mockResolvedValue(undefined)
+    const db = new FakeDb({
+      tables: { workouts: ['deleted'] },
+      jobs: [makeJob({ id: 'delete', endpoint: 'deleteWorkout', payload: ['deleted'] })],
+    })
+    db.tables.workouts.get('deleted').is_deleted = 1
+    db.hydrationWrites = []
+    try {
+      await syncEngine.init(db, { processOnInit: false })
+      syncEngine.setUploadsEnabled(true)
+      const hydration = hydrateFromServer(db)
+      await started
+      await syncEngine.processQueue()
+      expect(db.jobs).toEqual([])
+      expect(db.tables.workouts.has('deleted')).toBe(false)
+      releaseFetch([{ id: 'deleted', title: 'Old server response' }])
+      await expect(hydration).resolves.toBe(false)
+      expect(db.tables.workouts.has('deleted')).toBe(false)
+      expect(db.hydrationWrites).toEqual([])
     } finally {
       syncEngine.destroy()
     }

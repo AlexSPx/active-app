@@ -109,6 +109,11 @@ class FakeDb {
     if (sql === 'SELECT table_name, old_id, new_id FROM id_remaps') {
       return Array.from(this.idRemaps.values())
     }
+    if (sql === 'SELECT id, pattern FROM routines WHERE is_deleted = 0') {
+      return Array.from(this.tables.routines.values())
+        .filter((row) => !row.is_deleted)
+        .map(({ id, pattern }) => ({ id, pattern }))
+    }
 
     if (sql.includes('ORDER BY sequence ASC') || sql.includes('ORDER BY created_at ASC')) {
       const [pendingStatus, failedStatus] = params
@@ -143,22 +148,31 @@ class FakeDb {
       return rows.map((row) => ({ id: row.id, value: row[columnName] ?? null }))
     }
 
-    if (sql === 'SELECT * FROM workouts ORDER BY created_at DESC') {
-      return Array.from(this.tables.workouts.values()).sort((a, b) =>
-        String(b.created_at).localeCompare(String(a.created_at))
-      )
+    if (
+      sql === 'SELECT * FROM workouts WHERE is_deleted = 0 ORDER BY created_at DESC' ||
+      sql === 'SELECT * FROM workouts ORDER BY created_at DESC'
+    ) {
+      return Array.from(this.tables.workouts.values())
+        .filter((row) => !row.is_deleted)
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
     }
 
-    if (sql === 'SELECT * FROM workout_records ORDER BY created_at DESC') {
-      return Array.from(this.tables.workout_records.values()).sort((a, b) =>
-        String(b.created_at).localeCompare(String(a.created_at))
-      )
+    if (
+      sql === 'SELECT * FROM workout_records WHERE is_deleted = 0 ORDER BY created_at DESC' ||
+      sql === 'SELECT * FROM workout_records ORDER BY created_at DESC'
+    ) {
+      return Array.from(this.tables.workout_records.values())
+        .filter((row) => !row.is_deleted)
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
     }
 
-    if (sql === 'SELECT * FROM routines ORDER BY created_at DESC') {
-      return Array.from(this.tables.routines.values()).sort((a, b) =>
-        String(b.created_at).localeCompare(String(a.created_at))
-      )
+    if (
+      sql === 'SELECT * FROM routines WHERE is_deleted = 0 ORDER BY created_at DESC' ||
+      sql === 'SELECT * FROM routines ORDER BY created_at DESC'
+    ) {
+      return Array.from(this.tables.routines.values())
+        .filter((row) => !row.is_deleted)
+        .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
     }
 
     throw new Error(`Unsupported getAllAsync SQL in test: ${sql}`)
@@ -173,21 +187,44 @@ class FakeDb {
       return this.jobs.find((job) => job.id === params[0]) ?? null
     }
 
-    if (sql === 'SELECT * FROM workouts WHERE id = ?') {
-      return this.tables.workouts.get(params[0]) ?? null
+    if (
+      sql === 'SELECT * FROM workouts WHERE id = ?' ||
+      sql === 'SELECT * FROM workouts WHERE id = ? AND is_deleted = 0'
+    ) {
+      const row = this.tables.workouts.get(params[0]) ?? null
+      return sql.includes('is_deleted = 0') && row?.is_deleted ? null : row
+    }
+
+    if (
+      sql === 'SELECT is_deleted FROM workouts WHERE id = ?' ||
+      sql === 'SELECT is_deleted, workout_template FROM workouts WHERE id = ?'
+    ) {
+      const row = this.tables.workouts.get(params[0])
+      return row
+        ? { is_deleted: row.is_deleted ?? 0, workout_template: row.workout_template ?? null }
+        : null
     }
 
     if (sql === 'SELECT id FROM workouts WHERE id = ?') {
       return this.tables.workouts.has(params[0]) ? { id: params[0] } : null
     }
 
-    if (sql === 'SELECT * FROM routines WHERE id = ?') {
-      return this.tables.routines.get(params[0]) ?? null
+    if (
+      sql === 'SELECT * FROM routines WHERE id = ?' ||
+      sql === 'SELECT * FROM routines WHERE id = ? AND is_deleted = 0'
+    ) {
+      const row = this.tables.routines.get(params[0]) ?? null
+      return sql.includes('is_deleted = 0') && row?.is_deleted ? null : row
     }
 
-    if (sql === 'SELECT * FROM routines WHERE is_active = 1 LIMIT 1') {
+    if (
+      sql === 'SELECT * FROM routines WHERE is_active = 1 LIMIT 1' ||
+      sql === 'SELECT * FROM routines WHERE is_active = 1 AND is_deleted = 0 LIMIT 1'
+    ) {
       return (
-        Array.from(this.tables.routines.values()).find((routine) => routine.is_active === 1) ?? null
+        Array.from(this.tables.routines.values()).find(
+          (routine) => routine.is_active === 1 && !routine.is_deleted
+        ) ?? null
       )
     }
 
@@ -195,6 +232,62 @@ class FakeDb {
   }
 
   async runAsync(sql, ...params) {
+    const acknowledgedDelete = sql.match(
+      /^DELETE FROM "(workouts|workout_records|routines)" WHERE id = \? AND is_deleted = 1$/
+    )
+    if (acknowledgedDelete) {
+      const table = this.tables[acknowledgedDelete[1]]
+      if (table.get(params[0])?.is_deleted) {
+        table.delete(params[0])
+        if (acknowledgedDelete[1] === 'workouts' && this.foreignKeysEnabled) {
+          for (const record of this.tables.workout_records.values()) {
+            if (record.workout_id === params[0]) record.workout_id = null
+          }
+        }
+      }
+      return
+    }
+
+    if (sql.includes('INSERT INTO workouts') && sql.includes('WHERE NOT EXISTS')) {
+      const [id, title, notes, createdAt, updatedAt, workoutTemplate, syncedAt] = params
+      const existing = this.tables.workouts.get(id)
+      if (!existing?.is_deleted)
+        this.tables.workouts.set(id, {
+          ...existing,
+          id,
+          title,
+          notes,
+          created_at: existing?.created_at ?? createdAt,
+          updated_at: updatedAt,
+          workout_template: workoutTemplate,
+          is_synced: 1,
+          synced_at: syncedAt,
+          is_deleted: 0,
+        })
+      return
+    }
+
+    if (sql.includes('INSERT INTO workout_records') && sql.includes('WHERE NOT EXISTS')) {
+      const [id, workoutId, workoutTitle, notes, createdAt, startTime, exerciseRecords, syncedAt] =
+        params
+      const existing = this.tables.workout_records.get(id)
+      if (!existing?.is_deleted)
+        this.tables.workout_records.set(id, {
+          ...existing,
+          id,
+          workout_id: workoutId,
+          workout_title: workoutTitle,
+          notes,
+          created_at: existing?.created_at ?? createdAt,
+          start_time: startTime,
+          exercise_records: exerciseRecords,
+          is_synced: 1,
+          synced_at: syncedAt,
+          is_deleted: 0,
+        })
+      return
+    }
+
     if (
       sql ===
       'INSERT INTO sync_queue (id, endpoint, method, payload, local_table, local_id, idempotency_key)\n       VALUES (?, ?, ?, ?, ?, ?, ?)'
@@ -256,7 +349,7 @@ class FakeDb {
 
       assignments.forEach((assignment, index) => {
         const column = assignment.split(' = ')[0]
-        row[column] = params[index]
+        row[column] = / = [01]$/.test(assignment) ? Number(assignment.slice(-1)) : params[index]
       })
 
       this.tables.workouts.set(workoutId, row)
@@ -265,15 +358,22 @@ class FakeDb {
 
     if (sql === 'DELETE FROM workouts WHERE id = ?') {
       const workoutId = params[0]
-      if (
-        this.foreignKeysEnabled &&
-        Array.from(this.tables.workout_records.values()).some(
-          (record) => record.workout_id === workoutId
-        )
-      ) {
-        throw new Error('FOREIGN KEY constraint failed')
+      if (this.foreignKeysEnabled) {
+        for (const record of this.tables.workout_records.values()) {
+          if (record.workout_id === workoutId) record.workout_id = null
+        }
       }
       this.tables.workouts.delete(workoutId)
+      return
+    }
+
+    if (
+      sql === 'UPDATE workouts SET is_deleted = 1 WHERE id = ?' ||
+      sql === 'UPDATE routines SET is_deleted = 1 WHERE id = ?'
+    ) {
+      const table = sql.startsWith('UPDATE workouts') ? this.tables.workouts : this.tables.routines
+      const row = table.get(params[0])
+      if (row) row.is_deleted = 1
       return
     }
 
@@ -282,6 +382,18 @@ class FakeDb {
       for (const record of this.tables.workout_records.values()) {
         if (record.workout_id === oldWorkoutId) record.workout_id = newWorkoutId
       }
+      return
+    }
+
+    if (sql === 'UPDATE workout_records SET is_deleted = 1 WHERE id = ?') {
+      const row = this.tables.workout_records.get(params[0])
+      if (row) row.is_deleted = 1
+      return
+    }
+
+    if (sql === 'UPDATE routines SET pattern = ? WHERE id = ?') {
+      const row = this.tables.routines.get(params[1])
+      if (row) row.pattern = params[0]
       return
     }
 
@@ -380,7 +492,7 @@ class FakeDb {
 
       assignments.forEach((assignment, index) => {
         const column = assignment.split(' = ')[0]
-        row[column] = params[index]
+        row[column] = / = [01]$/.test(assignment) ? Number(assignment.slice(-1)) : params[index]
       })
 
       this.tables.routines.set(routineId, row)
@@ -501,9 +613,10 @@ function createApi(overrides = {}) {
   }
 }
 
-async function runQueue({ jobs, tables, api }) {
+async function runQueue({ jobs, tables, api, configureDb }) {
   const { SyncEngine } = require('../../lib/sync/SyncEngine')
   const db = new FakeDb({ jobs, tables })
+  configureDb?.(db)
   const engine = new SyncEngine({
     api,
     getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
