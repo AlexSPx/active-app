@@ -236,6 +236,149 @@ describe('failed sync recovery', () => {
     }
   })
 
+  it.each([
+    [
+      'a malformed create payload',
+      () => {
+        const blocker = makeJob({
+          id: 'malformed-create',
+          endpoint: 'createWorkout',
+          payload: {},
+          localTable: 'workouts',
+          localId: 'local-workout',
+        })
+        blocker.payload = '{not json'
+        return {
+          api: createApi(),
+          blocker,
+          dependents: [
+            makeJob({
+              id: 'dependent-update',
+              endpoint: 'updateWorkout',
+              payload: ['local-workout', { title: 'Keep local' }],
+            }),
+          ],
+          tables: { workouts: ['local-workout'] },
+        }
+      },
+    ],
+    [
+      'an unknown endpoint',
+      () => ({
+        api: createApi(),
+        blocker: makeJob({
+          id: 'unknown-endpoint',
+          endpoint: 'removedApiMethod',
+          payload: { workoutId: 'referenced-workout' },
+          localTable: 'workouts',
+          localId: 'local-workout',
+        }),
+        dependents: [
+          makeJob({
+            id: 'dependent-update',
+            endpoint: 'updateWorkout',
+            payload: ['local-workout', { title: 'Keep local' }],
+          }),
+          makeJob({
+            id: 'delete-referenced-workout',
+            endpoint: 'deleteWorkout',
+            payload: ['referenced-workout'],
+          }),
+        ],
+        tables: { workouts: ['local-workout'] },
+      }),
+    ],
+    [
+      'a recognized update missing its payload ID',
+      () => ({
+        api: createApi({
+          updateWorkout: jest.fn().mockRejectedValue(permanentError('missing workout id')),
+        }),
+        blocker: makeJob({
+          id: 'partial-update',
+          endpoint: 'updateWorkout',
+          payload: [],
+          localTable: 'workouts',
+          localId: 'local-workout',
+        }),
+        dependents: [
+          makeJob({
+            id: 'delete-workout',
+            endpoint: 'deleteWorkout',
+            payload: ['local-workout'],
+          }),
+        ],
+        tables: { workouts: ['local-workout'] },
+      }),
+    ],
+    [
+      'a partial workout record payload',
+      () => ({
+        api: createApi({
+          recordWorkout: jest.fn().mockRejectedValue(permanentError('missing workout id')),
+        }),
+        blocker: makeJob({
+          id: 'partial-record',
+          endpoint: 'recordWorkout',
+          payload: { notes: 'Keep local' },
+          localTable: 'workout_records',
+          localId: 'local-record',
+        }),
+        dependents: [
+          makeJob({
+            id: 'delete-record',
+            endpoint: 'deleteWorkoutRecord',
+            payload: ['local-record'],
+          }),
+        ],
+        tables: { workout_records: ['local-record'] },
+      }),
+    ],
+  ])(
+    'discarding %s releases unrelated work but preserves known dependencies',
+    async (_name, scenario) => {
+      const { api, blocker, dependents, tables } = scenario()
+      const independent = makeJob({
+        id: 'independent',
+        endpoint: 'deleteRoutine',
+        payload: ['server-routine'],
+      })
+      const db = new FakeDb({ jobs: [blocker, ...dependents, independent], tables })
+      const engine = engineWith(api)
+      const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+      try {
+        await engine.init(db, { processOnInit: false })
+        await engine.processQueue()
+
+        expect(db.getJob(blocker.id)).toMatchObject({ status: 'dead_letter' })
+        expect(db.getJob('independent')).toMatchObject({ status: 'pending' })
+
+        await engine.discardJob(blocker.id)
+        const visibleJobs = await engine.listJobs()
+        expect(visibleJobs.find((job) => job.id === 'independent')).not.toHaveProperty(
+          'blocked_reason'
+        )
+        for (const dependent of dependents) {
+          expect(visibleJobs.find((job) => job.id === dependent.id)?.blocked_reason).toBeTruthy()
+        }
+
+        await engine.processQueue()
+
+        expect(api.deleteRoutine).toHaveBeenCalledWith('server-routine')
+        expect(db.getJob('independent')).toBeNull()
+        for (const dependent of dependents) {
+          expect(db.getJob(dependent.id)).toMatchObject({ status: 'pending' })
+        }
+        for (const [table, ids] of Object.entries(tables)) {
+          for (const id of ids) expect(db.tables[table].has(id)).toBe(true)
+        }
+      } finally {
+        engine.destroy()
+        consoleError.mockRestore()
+      }
+    }
+  )
+
   it('remaps recoverable failed payloads before they are retried', async () => {
     const failedCreate = makeJob({
       id: 'failed-create',

@@ -98,17 +98,17 @@ interface JobDependencies {
 }
 
 function getJobDependencies(job: SyncJob): JobDependencies {
+  const localEntity = job.local_table && job.local_id ? `${job.local_table}:${job.local_id}` : null
+  const requires = new Set<string>()
   let payload: unknown
   try {
     payload = JSON.parse(job.payload)
   } catch {
-    return { primary: null, requires: new Set(), unknown: true }
+    return { primary: localEntity, requires, unknown: true }
   }
 
   const args = Array.isArray(payload) ? payload : [payload]
   const id = (value: unknown) => (typeof value === 'string' && value ? value : null)
-  const localEntity = job.local_table && job.local_id ? `${job.local_table}:${job.local_id}` : null
-  const requires = new Set<string>()
   const addWorkoutReferences = (value: unknown): void => {
     if (Array.isArray(value)) {
       value.forEach(addWorkoutReferences)
@@ -131,7 +131,7 @@ function getJobDependencies(job: SyncJob): JobDependencies {
     case 'deleteWorkout': {
       const workoutId = id(args[0])
       return {
-        primary: workoutId ? `workouts:${workoutId}` : null,
+        primary: workoutId ? `workouts:${workoutId}` : localEntity,
         requires,
         unknown: !workoutId,
       }
@@ -147,7 +147,7 @@ function getJobDependencies(job: SyncJob): JobDependencies {
     case 'deleteWorkoutRecord': {
       const recordId = id(args[0])
       return {
-        primary: recordId ? `workout_records:${recordId}` : null,
+        primary: recordId ? `workout_records:${recordId}` : localEntity,
         requires,
         unknown: !recordId,
       }
@@ -159,7 +159,7 @@ function getJobDependencies(job: SyncJob): JobDependencies {
       const routineId = id(args[0])
       addWorkoutReferences(args[1])
       return {
-        primary: routineId ? `routines:${routineId}` : null,
+        primary: routineId ? `routines:${routineId}` : localEntity,
         requires,
         unknown: !routineId,
       }
@@ -167,13 +167,14 @@ function getJobDependencies(job: SyncJob): JobDependencies {
     case 'deleteRoutine': {
       const routineId = id(args[0])
       return {
-        primary: routineId ? `routines:${routineId}` : null,
+        primary: routineId ? `routines:${routineId}` : localEntity,
         requires,
         unknown: !routineId,
       }
     }
     default:
-      return { primary: null, requires, unknown: true }
+      addWorkoutReferences(payload)
+      return { primary: localEntity, requires, unknown: true }
   }
 }
 
@@ -446,7 +447,7 @@ export class SyncEngine {
       if (job.status !== 'discarded') {
         visible.push(blocked ? { ...job, blocked_reason: BLOCKED_REASON } : job)
       }
-      blockers.push(dependencies)
+      blockers.push(job.status === 'discarded' ? { ...dependencies, unknown: false } : dependencies)
     }
     return visible
   }
@@ -699,7 +700,9 @@ export class SyncEngine {
           if (job.next_attempt_at <= Date.now()) return { job, retryAt: null }
           return { job: null, retryAt: job.next_attempt_at }
         }
-        blockers.push(dependencies)
+        blockers.push(
+          job.status === 'discarded' ? { ...dependencies, unknown: false } : dependencies
+        )
       }
 
       if (jobs.length < QUEUE_BATCH_SIZE) return { job: null, retryAt: null }

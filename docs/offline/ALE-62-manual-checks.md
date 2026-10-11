@@ -61,6 +61,8 @@ tests temporary retry behavior instead.
 3. Restart and verify this behavior persists. Discarding a parent does not make
    its dependent uploads valid; discard those individually if you also want to
    stop them. There is no payload-editing or undo-discard UI in this issue.
+4. For a malformed or unknown queued request, discard should let unrelated
+   changes resume. Changes tied to its known local entity must remain blocked.
 
 ## Automated checks
 
