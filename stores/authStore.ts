@@ -20,6 +20,7 @@ import { AuthRepository, UserRepository } from 'lib/repositories'
 
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { posthog } from '../services/posthog'
+import { networkPolicy } from './networkStore'
 
 const isWeb = Platform.OS === 'web'
 const authRepository = new AuthRepository()
@@ -609,6 +610,7 @@ async function initializeAuthState(): Promise<void> {
   const generation = authSessionGeneration
   let shouldRefreshProfile = false
   try {
+    await networkPolicy.ready()
     const hydrationError = await waitForHydration(useAuthStore)
     if (hydrationError) throw hydrationError
     if (generation !== authSessionGeneration) return
