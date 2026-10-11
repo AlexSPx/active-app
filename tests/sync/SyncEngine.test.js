@@ -767,7 +767,7 @@ describe('SyncEngine failure handling', () => {
     expect(db.getJob('job-delete-workout-continues')).toBeNull()
   })
 
-  it('dead-letters malformed queue payloads and continues to later jobs', async () => {
+  it('dead-letters malformed queue payloads and conservatively blocks later jobs', async () => {
     const api = createApi()
     const malformedJob = makeJob({
       id: 'job-malformed-payload',
@@ -789,12 +789,16 @@ describe('SyncEngine failure handling', () => {
     })
 
     expect(api.updateWorkout).not.toHaveBeenCalled()
-    expect(api.deleteWorkout).toHaveBeenCalledWith('server_workout')
+    expect(api.deleteWorkout).not.toHaveBeenCalled()
     expect(db.getJob('job-malformed-payload')).toMatchObject({
       status: 'dead_letter',
       error_message: expect.stringContaining('Invalid queued payload'),
     })
-    expect(db.getJob('job-after-malformed-payload')).toBeNull()
+    expect(db.getJob('job-after-malformed-payload')).toMatchObject({ status: 'pending' })
+    expect(
+      (await engine.listJobs()).find((job) => job.id === 'job-after-malformed-payload')
+        .blocked_reason
+    ).toBeTruthy()
     engine.destroy()
   })
 
@@ -1042,6 +1046,7 @@ describe('SyncEngine failure handling', () => {
           id: 'job-disabled-retry',
           endpoint: 'updateWorkout',
           payload: ['server_workout', { title: 'Retry Me' }],
+          sequence: db.nextSequence++,
         })
       )
       await engine.processQueue()

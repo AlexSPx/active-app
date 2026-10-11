@@ -115,6 +115,13 @@ class FakeDb {
         .map(({ id, pattern }) => ({ id, pattern }))
     }
 
+    if (sql.includes('FROM sync_queue') && sql.includes('WHERE sequence > ?')) {
+      return this.jobs
+        .filter((job) => job.sequence > params[0])
+        .sort((a, b) => a.sequence - b.sequence)
+        .slice(0, 50)
+    }
+
     if (sql.includes('ORDER BY sequence ASC') || sql.includes('ORDER BY created_at ASC')) {
       const [pendingStatus, failedStatus] = params
       return this.jobs
@@ -124,12 +131,9 @@ class FakeDb {
     }
 
     if (sql.includes('SELECT id, payload') && sql.includes('FROM sync_queue')) {
-      const [pendingStatus, failedStatus, excludedId] = params
+      const [excludedStatus, excludedId] = params
       return this.jobs
-        .filter(
-          (job) =>
-            (job.status === pendingStatus || job.status === failedStatus) && job.id !== excludedId
-        )
+        .filter((job) => job.status !== excludedStatus && job.id !== excludedId)
         .map((job) => ({
           id: job.id,
           payload: job.payload,
@@ -181,6 +185,11 @@ class FakeDb {
   async getFirstAsync(sql, ...params) {
     if (sql === 'SELECT id FROM sync_queue LIMIT 1') {
       return this.jobs[0] ? { id: this.jobs[0].id } : null
+    }
+
+    if (sql === 'SELECT id FROM sync_queue WHERE status = ? LIMIT 1') {
+      const job = this.jobs.find((entry) => entry.status === params[0])
+      return job ? { id: job.id } : null
     }
 
     if (sql.includes('FROM sync_queue WHERE id = ?')) {
@@ -523,6 +532,21 @@ class FakeDb {
           error_message: errorMessage,
           next_attempt_at: deadline,
         })
+      return
+    }
+
+    if (
+      sql ===
+      'UPDATE sync_queue SET status = ?, error_message = ?, next_attempt_at = ? WHERE status = ?'
+    ) {
+      const [status, errorMessage, deadline, previousStatus] = params
+      for (const job of this.jobs) {
+        if (job.status === previousStatus) {
+          job.status = status
+          job.error_message = errorMessage
+          job.next_attempt_at = deadline
+        }
+      }
       return
     }
 

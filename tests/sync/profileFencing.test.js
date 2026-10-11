@@ -169,7 +169,7 @@ describe('profile-scoped sync fencing', () => {
     await engine.processQueue()
 
     expect(db.getJob('uncertain-job')).toMatchObject({
-      status: 'failed',
+      status: 'auth_required',
       retry_count: 1,
       next_attempt_at: 0,
     })
