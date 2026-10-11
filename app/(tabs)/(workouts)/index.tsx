@@ -24,7 +24,7 @@ export default function WorkoutsInnerTab() {
   const { navigateToNewWorkout, navigateToEditWorkout } = useAppNavigation()
   const { workouts, loading, error, refetch } = useWorkouts()
   const { routines } = useRoutines()
-  const { deleteWorkout, loading: deleting } = useWorkoutMutations()
+  const { deleteWorkout, loading: deleting, error: deleteError, clearError } = useWorkoutMutations()
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const params = useLocalSearchParams<{ focusId?: string }>()
@@ -44,10 +44,14 @@ export default function WorkoutsInnerTab() {
 
   const handleEditWorkout = (workout: ApiWorkout) => navigateToEditWorkout(workout.id)
 
-  const handleDeleteWorkout = useCallback((workoutId: string) => {
-    setPendingDeleteId(workoutId)
-    setConfirmOpen(true)
-  }, [])
+  const handleDeleteWorkout = useCallback(
+    (workoutId: string) => {
+      clearError()
+      setPendingDeleteId(workoutId)
+      setConfirmOpen(true)
+    },
+    [clearError]
+  )
 
   useEffect(() => {
     if (!confirmOpen) return
@@ -75,7 +79,8 @@ export default function WorkoutsInnerTab() {
   const confirmDelete = useCallback(async () => {
     if (!pendingDeleteId) return
     const ok = await deleteWorkout(pendingDeleteId)
-    if (ok) await refetch()
+    if (!ok) return
+    await refetch()
     setConfirmOpen(false)
     setPendingDeleteId(null)
   }, [pendingDeleteId, deleteWorkout, refetch])
@@ -112,6 +117,7 @@ export default function WorkoutsInnerTab() {
         </Text>
       </XStack>
       <Text color="$colorSubtle">Are you sure? This will permanently delete this workout.</Text>
+      {!!deleteError && <ErrorDisplay title="Cannot delete workout" message={deleteError} />}
       <YStack mt="$2" gap="$3" width="100%">
         <Button
           bg="$destructive"

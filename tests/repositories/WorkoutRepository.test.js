@@ -207,7 +207,8 @@ describe('WorkoutRepository', () => {
     expect(db.tables.workouts.get('server_workout_4').title).toBe('After update')
     await repo.delete('local_workout_4')
 
-    expect(db.tables.workouts.has('server_workout_4')).toBe(false)
+    expect(db.tables.workouts.get('server_workout_4').is_deleted).toBe(1)
+    await expect(repo.getById('server_workout_4')).resolves.toBeNull()
     expect(syncEngine.withIdRemapLock).toHaveBeenCalledTimes(2)
     expect(syncEngine.enqueue).toHaveBeenNthCalledWith(
       1,
@@ -231,6 +232,7 @@ describe('WorkoutRepository', () => {
   })
 
   it('records a workout locally and enqueues recordWorkout', async () => {
+    db.tables.workouts.set('workout_2', { id: 'workout_2', is_deleted: 0 })
     const recordRequest = {
       workoutId: 'workout_2',
       notes: 'Felt strong',
@@ -282,6 +284,7 @@ describe('WorkoutRepository', () => {
   })
 
   it('rolls back the local workout and queue if queue insertion fails', async () => {
+    db.tables.workouts.set('workout_2', { id: 'workout_2', is_deleted: 0 })
     const existingJob = {
       id: 'existing_job',
       endpoint: 'createRoutine',
@@ -327,27 +330,28 @@ describe('WorkoutRepository', () => {
 
     await expect(
       repo.recordWorkout({ workoutId: 'missing_workout', exerciseRecords: [] }, 'Missing')
-    ).rejects.toThrow('FOREIGN KEY constraint failed')
-    await expect(repo.delete('workout_with_record')).rejects.toThrow(
-      'FOREIGN KEY constraint failed'
-    )
+    ).rejects.toThrow('Cannot record a deleted workout')
+    await repo.delete('workout_with_record')
 
     expect(withTransaction).toHaveBeenCalledTimes(2)
     expect(withExclusiveTransaction).not.toHaveBeenCalled()
     expect(db.tables.workout_records.has('record_with_history')).toBe(true)
     expect(db.tables.workout_records.size).toBe(1)
     expect(db.tables.workouts.has('workout_with_record')).toBe(true)
-    expect(db.jobs).toHaveLength(0)
-    expect(syncEngine.enqueue).not.toHaveBeenCalled()
+    expect(db.tables.workouts.get('workout_with_record').is_deleted).toBe(1)
+    expect(syncEngine.enqueue).toHaveBeenCalledTimes(1)
     expect(db.transactionEvents.map(({ type, mode }) => [type, mode])).toEqual([
       ['begin', 'shared'],
       ['rollback', 'shared'],
       ['begin', 'shared'],
-      ['rollback', 'shared'],
+      ['enqueue', undefined],
+      ['commit', 'shared'],
+      ['schedule', undefined],
     ])
   })
 
   it('uses the remapped workout ID for the saved record and its queue job', async () => {
+    db.tables.workouts.set('server_workout_2', { id: 'server_workout_2', is_deleted: 0 })
     syncEngine.resolveId.mockReturnValueOnce('server_workout_2')
     const request = { workoutId: 'local_workout_2', exerciseRecords: [] }
 
@@ -392,8 +396,11 @@ describe('WorkoutRepository', () => {
     await repo.delete('workout_delete')
     await repo.deleteRecord('record_delete')
 
-    expect(db.tables.workouts.has('workout_delete')).toBe(false)
-    expect(db.tables.workout_records.has('record_delete')).toBe(false)
+    expect(db.tables.workouts.get('workout_delete').is_deleted).toBe(1)
+    expect(db.tables.workout_records.get('record_delete').is_deleted).toBe(1)
+    await expect(repo.getById('workout_delete')).resolves.toBeNull()
+    await expect(repo.getAll()).resolves.toEqual([])
+    await expect(repo.getAllRecords()).resolves.toEqual([])
     expect(syncEngine.enqueue).toHaveBeenNthCalledWith(
       1,
       {
@@ -425,11 +432,84 @@ describe('WorkoutRepository', () => {
 
     await repo.deleteRecord(localId)
 
-    expect(db.tables.workout_records.has(serverId)).toBe(false)
+    expect(db.tables.workout_records.get(serverId).is_deleted).toBe(1)
     expect(syncEngine.enqueue).toHaveBeenCalledWith(
       { apiMethod: 'deleteWorkoutRecord', payload: [serverId] },
       db,
       { processAfterInsert: false }
     )
+  })
+
+  it('keeps an offline deleted workout hidden through hydration and a repository restart', async () => {
+    const created = await repo.create({ title: 'Pull Day', template: { exercises: [] } }, [])
+    await repo.delete(created.id)
+    const serverCopy = {
+      id: created.id,
+      title: 'Stale Pull Day',
+      notes: null,
+      createdAt: '2026-01-01',
+      updatedAt: '2026-01-01',
+      workoutTemplate: {
+        id: created.id,
+        exercises: [],
+        createdAt: '2026-01-01',
+        updatedAt: '2026-01-01',
+      },
+    }
+
+    await repo.hydrateWorkouts([serverCopy])
+    const restarted = new WorkoutRepository(db)
+    await expect(restarted.getAll()).resolves.toEqual([])
+    await expect(restarted.getById(created.id)).resolves.toBeNull()
+    expect(db.tables.workouts.get(created.id)).toMatchObject({ title: 'Pull Day', is_deleted: 1 })
+  })
+
+  it('keeps a saved exercise snapshot when the workout is deleted', async () => {
+    const created = await repo.create(
+      {
+        title: 'Pull Day',
+        template: { exercises: [{ exerciseId: 'row', reps: [8], weight: [80] }] },
+      },
+      [
+        {
+          id: 'row',
+          name: 'Barbell Row',
+          category: 'STRENGTH',
+          primaryMuscles: ['back'],
+          secondaryMuscles: [],
+        },
+      ]
+    )
+    const saved = await repo.recordWorkout(
+      { workoutId: created.id, exerciseRecords: [{ exerciseId: 'row', reps: [8], weight: [80] }] },
+      'Pull Day'
+    )
+    await repo.delete(created.id)
+
+    const history = await repo.getAllRecords()
+    expect(history).toHaveLength(1)
+    expect(history[0]).toMatchObject({
+      id: saved.workoutRecord.id,
+      workoutTitle: 'Pull Day',
+      exerciseRecords: [{ exerciseName: 'Barbell Row', reps: [8], weight: [80] }],
+    })
+    expect(db.tables.workout_records.get(saved.workoutRecord.id).workout_id).toBe(created.id)
+  })
+
+  it('rolls back a delete tombstone if its queue insert fails', async () => {
+    const created = await repo.create({ title: 'Keep Me', template: { exercises: [] } }, [])
+    syncEngine.enqueue.mockRejectedValueOnce(new Error('queue unavailable'))
+    await expect(repo.delete(created.id)).rejects.toThrow('queue unavailable')
+    await expect(repo.getById(created.id)).resolves.toMatchObject({ title: 'Keep Me' })
+    expect(db.tables.workouts.get(created.id).is_deleted).toBeFalsy()
+  })
+
+  it('rejects saving a new record for a deleted workout', async () => {
+    const created = await repo.create({ title: 'Deleted', template: { exercises: [] } }, [])
+    await repo.delete(created.id)
+    await expect(
+      repo.recordWorkout({ workoutId: created.id, exerciseRecords: [] }, 'Deleted')
+    ).rejects.toThrow('Cannot record a deleted workout')
+    expect(db.getTableRows('workout_records')).toEqual([])
   })
 })
