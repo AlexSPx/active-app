@@ -20,6 +20,56 @@ jest.mock('react-native', () => {
   }
 })
 jest.mock('@tamagui/core', () => ({ useEvent: (callback) => callback }))
+jest.mock(
+  'expo-network',
+  () => {
+    const listeners = new Set()
+    return {
+      getNetworkStateAsync: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
+      addNetworkStateListener: jest.fn((listener) => {
+        listeners.add(listener)
+        return { remove: () => listeners.delete(listener) }
+      }),
+      __emit: (state) => listeners.forEach((listener) => listener(state)),
+      __clear: () => listeners.clear(),
+    }
+  },
+  { virtual: true }
+)
+jest.mock('../../stores/networkStore', () => {
+  const React = require('react')
+  const state = { manualOffline: false, isReady: true, restoreError: null }
+  const listeners = new Set()
+  const useNetworkStore = (select) =>
+    React.useSyncExternalStore(
+      (listener) => {
+        listeners.add(listener)
+        return () => listeners.delete(listener)
+      },
+      () => select(state),
+      () => select(state)
+    )
+  useNetworkStore.getState = () => state
+  useNetworkStore.setState = (updates) => {
+    Object.assign(state, updates)
+    listeners.forEach((listener) => listener())
+  }
+  return {
+    useNetworkStore,
+    networkPolicy: {
+      ready: async () => {},
+      get generation() {
+        return 0
+      },
+      isOffline: () => state.manualOffline,
+      assertOnline: () => {},
+      subscribe: () => () => {},
+    },
+  }
+})
+jest.mock('../../services/apiService', () => ({
+  apiService: { probeAvailability: jest.fn(async () => {}) },
+}))
 jest.mock('../../features/settings', () => ({
   useSettingsStore: require('zustand').create((set) => ({
     theme: 'light',
@@ -111,9 +161,15 @@ jest.mock('../../stores/authStore', () => {
       () => select(state)
     )
   useAuthStore.getState = () => state
+  useAuthStore.subscribe = (listener) => {
+    listeners.add(listener)
+    return () => listeners.delete(listener)
+  }
   useAuthStore.setState = (updates) => {
+    const previous = { ...state }
     Object.assign(state, updates)
-    listeners.forEach((listener) => listener())
+    const next = { ...state }
+    listeners.forEach((listener) => listener(next, previous))
   }
   useAuthStore.__state = state
   return { useAuthStore }
@@ -163,6 +219,7 @@ jest.mock('../../lib/sync', () => {
       notifySyncComplete: () => syncCompleteListeners.forEach((listener) => listener()),
       init: async () => {},
       destroy: () => {},
+      setConnectivityManaged: jest.fn(),
       setUploadsEnabled: jest.fn(),
       processQueue: jest.fn(async () => {}),
     },
@@ -189,8 +246,10 @@ const {
 const { useAuthStore } = require('../../stores/authStore')
 const { syncEngine } = require('../../lib/sync')
 const { hydrateFromServer } = require('../../lib/sync/hydrate')
+const { apiService } = require('../../services/apiService')
 const { queryClient } = require('../../lib/queryClient')
 const { AppState } = require('react-native')
+const expoNetwork = require('expo-network')
 const { ThemeContext } = require('tamagui')
 const { NavigationContext } = require('@react-navigation/native')
 const { useColorScheme } = require('react-native')
@@ -259,6 +318,7 @@ test('keeps sync uploads disabled while an authenticated session has no loaded p
     serverSession: 'unknown',
   })
   syncEngine.setUploadsEnabled.mockClear()
+  syncEngine.processQueue.mockClear()
 
   let view
   await act(async () => {
@@ -267,6 +327,7 @@ test('keeps sync uploads disabled while an authenticated session has no loaded p
 
   expect(syncEngine.setUploadsEnabled).toHaveBeenCalled()
   expect(syncEngine.setUploadsEnabled.mock.calls.every(([enabled]) => !enabled)).toBe(true)
+  expect(syncEngine.processQueue).not.toHaveBeenCalled()
 
   await act(async () => view.unmount())
   Object.assign(state, {
@@ -344,15 +405,22 @@ test('revalidates a cached session and hydrates after the retry drains queued wo
     })
     const fetchUser = authState.fetchUser
 
-    await act(async () => jest.advanceTimersByTimeAsync(30_000))
+    await act(async () => jest.advanceTimersByTimeAsync(0))
     expect(fetchUser).toHaveBeenCalledTimes(1)
     expect(authState.serverSession).toBe('unknown')
     expect(authState).toMatchObject({ isAuthenticated: true, user: { id: 'user_1' } })
     expect(syncEngine.setUploadsEnabled).not.toHaveBeenCalledWith(true)
 
-    backendAvailable = true
-    await act(async () => jest.advanceTimersByTimeAsync(30_000))
+    await act(async () => jest.advanceTimersByTimeAsync(999))
+    expect(fetchUser).toHaveBeenCalledTimes(1)
+    await act(async () => jest.advanceTimersByTimeAsync(1))
     expect(fetchUser).toHaveBeenCalledTimes(2)
+
+    backendAvailable = true
+    await act(async () => jest.advanceTimersByTimeAsync(1_999))
+    expect(fetchUser).toHaveBeenCalledTimes(2)
+    await act(async () => jest.advanceTimersByTimeAsync(1))
+    expect(fetchUser).toHaveBeenCalledTimes(3)
     expect(authState.serverSession).toBe('valid')
     expect(syncEngine.setUploadsEnabled).toHaveBeenCalledWith(true)
     expect(syncEngine.processQueue).toHaveBeenCalledTimes(1)
@@ -598,4 +666,334 @@ test('keeps fallback children mounted before owner SQLite initialization', async
   expect(view.root.findAllByType('FinishedWorkoutCongrats')).toHaveLength(0)
   await act(async () => view.unmount())
   authState.isStartupReady = true
+})
+
+test('closes upload gate on disconnect and waits for resumed probe and auth before draining', async () => {
+  const authState = useAuthStore.__state
+  const ownerId = profileOwnerForUser('user_1')
+  const events = []
+  const flush = async () => {
+    for (let i = 0; i < 20; i += 1) await Promise.resolve()
+  }
+  const deferred = () => {
+    let resolve
+    const promise = new Promise((done) => (resolve = done))
+    return { promise, resolve }
+  }
+
+  setActiveProfileOwner(ownerId)
+  const db = { getFirstAsync: jest.fn(async () => null) }
+  mockSQLiteDatabase.current = db
+  expoNetwork.__clear()
+  expoNetwork.getNetworkStateAsync.mockResolvedValueOnce({
+    isConnected: null,
+    isInternetReachable: null,
+  })
+  apiService.probeAvailability.mockReset().mockImplementation(async () => {
+    events.push('probe:startup')
+  })
+  syncEngine.processQueue.mockReset().mockImplementation(async () => {
+    events.push('drain')
+  })
+  syncEngine.setUploadsEnabled.mockClear()
+  hydrateFromServer.mockReset().mockResolvedValueOnce(false).mockResolvedValue(true)
+  queryClient.invalidateQueries.mockClear()
+
+  let authGate = null
+  const fetchUser = jest.fn(async () => {
+    events.push('auth-refresh')
+    if (authGate) await authGate.promise
+    useAuthStore.setState({ serverSession: 'valid' })
+  })
+  useAuthStore.setState({
+    isStartupReady: true,
+    startupError: null,
+    isAuthenticated: true,
+    user: { id: 'user_1' },
+    isProfileLoading: false,
+    profileOwnerId: ownerId,
+    legacyOwnerId: null,
+    isProfileTransitioning: false,
+    serverSession: 'unknown',
+    fetchUser,
+  })
+
+  jest.useFakeTimers()
+  let view
+  try {
+    await act(async () => {
+      view = create(React.createElement(Provider, {}, React.createElement(ThemeProbe)))
+      await flush()
+    })
+    expect(events).toEqual(['probe:startup', 'auth-refresh', 'drain'])
+    expect(syncEngine.setUploadsEnabled).toHaveBeenCalledWith(true)
+    expect(hydrateFromServer).toHaveBeenCalledTimes(1)
+    expect(db.getFirstAsync).toHaveBeenCalledTimes(2)
+    expect(queryClient.invalidateQueries).not.toHaveBeenCalled()
+
+    events.length = 0
+    fetchUser.mockClear()
+    syncEngine.processQueue.mockClear()
+    syncEngine.setUploadsEnabled.mockClear()
+    const dbChecksAfterHydrationFailure = db.getFirstAsync.mock.calls.length
+    const reconnectProbe = deferred()
+    const resumeProbe = deferred()
+    apiService.probeAvailability
+      .mockReset()
+      .mockImplementationOnce(() => {
+        events.push('probe:reconnect')
+        return reconnectProbe.promise
+      })
+      .mockImplementationOnce(() => {
+        events.push('probe:resume')
+        return resumeProbe.promise
+      })
+    authGate = deferred()
+
+    await act(async () => {
+      expoNetwork.__emit({ isConnected: false, isInternetReachable: false })
+    })
+    expect(syncEngine.setUploadsEnabled).toHaveBeenLastCalledWith(false)
+
+    await act(async () => {
+      expoNetwork.__emit({ isConnected: true, isInternetReachable: true })
+      await flush()
+    })
+    expect(apiService.probeAvailability).toHaveBeenCalledTimes(1)
+    expect(fetchUser).not.toHaveBeenCalled()
+    expect(syncEngine.processQueue).not.toHaveBeenCalled()
+
+    await act(async () => {
+      AppState.emit('background')
+      AppState.emit('active')
+      await jest.advanceTimersByTimeAsync(10_000)
+      await flush()
+    })
+    expect(syncEngine.setUploadsEnabled).toHaveBeenLastCalledWith(false)
+    expect(db.getFirstAsync).toHaveBeenCalledTimes(dbChecksAfterHydrationFailure)
+    expect(hydrateFromServer).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      reconnectProbe.resolve()
+      await flush()
+    })
+    expect(apiService.probeAvailability).toHaveBeenCalledTimes(2)
+    expect(fetchUser).not.toHaveBeenCalled()
+    expect(syncEngine.processQueue).not.toHaveBeenCalled()
+    expect(db.getFirstAsync).toHaveBeenCalledTimes(dbChecksAfterHydrationFailure)
+
+    await act(async () => {
+      resumeProbe.resolve()
+      await flush()
+    })
+    expect(fetchUser).toHaveBeenCalledTimes(1)
+    expect(syncEngine.processQueue).not.toHaveBeenCalled()
+    expect(db.getFirstAsync).toHaveBeenCalledTimes(dbChecksAfterHydrationFailure)
+
+    await act(async () => {
+      await jest.advanceTimersByTimeAsync(10_000)
+      await flush()
+    })
+    expect(hydrateFromServer).toHaveBeenCalledTimes(1)
+    expect(db.getFirstAsync).toHaveBeenCalledTimes(dbChecksAfterHydrationFailure)
+
+    await act(async () => {
+      authGate.resolve()
+      await flush()
+    })
+    expect(syncEngine.setUploadsEnabled).toHaveBeenCalledWith(true)
+    expect(syncEngine.processQueue).toHaveBeenCalledTimes(1)
+    expect(events).toEqual(['probe:reconnect', 'probe:resume', 'auth-refresh', 'drain'])
+    expect(hydrateFromServer).toHaveBeenCalledTimes(2)
+    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['profile', ownerId] })
+  } finally {
+    if (view) await act(async () => view.unmount())
+    mockSQLiteDatabase.current = null
+    expoNetwork.__clear()
+    AppState.emit('active')
+    setActiveProfileOwner(LOCAL_PROFILE_OWNER)
+    syncEngine.processQueue.mockReset().mockResolvedValue(undefined)
+    syncEngine.setUploadsEnabled.mockClear()
+    apiService.probeAvailability.mockReset().mockResolvedValue(undefined)
+    hydrateFromServer.mockReset()
+    Object.assign(authState, {
+      isStartupReady: true,
+      startupError: null,
+      isAuthenticated: false,
+      user: null,
+      isProfileLoading: false,
+      fetchUser: jest.fn(),
+      profileOwnerId: 'local:device',
+      legacyOwnerId: null,
+      isProfileTransitioning: false,
+      serverSession: 'unknown',
+    })
+    jest.useRealTimers()
+  }
+})
+
+test('starts API recovery when initial app state is unknown and no event reports foreground', async () => {
+  const authState = useAuthStore.__state
+  const ownerId = profileOwnerForUser('user_1')
+  const events = []
+  const flush = async () => {
+    for (let i = 0; i < 20; i += 1) await Promise.resolve()
+  }
+
+  setActiveProfileOwner(ownerId)
+  mockSQLiteDatabase.current = { getFirstAsync: jest.fn(async () => null) }
+  expoNetwork.__clear()
+  apiService.probeAvailability.mockReset().mockImplementation(async () => {
+    events.push('probe')
+  })
+  syncEngine.processQueue.mockReset().mockImplementation(async () => {
+    events.push('drain')
+  })
+  hydrateFromServer.mockReset().mockImplementation(async () => {
+    events.push('hydrate')
+    return true
+  })
+  queryClient.invalidateQueries.mockClear()
+
+  const fetchUser = jest.fn(async () => {
+    events.push('auth-refresh')
+    useAuthStore.setState({ serverSession: 'valid' })
+  })
+  useAuthStore.setState({
+    isStartupReady: true,
+    startupError: null,
+    isAuthenticated: true,
+    user: { id: 'user_1' },
+    isProfileLoading: false,
+    profileOwnerId: ownerId,
+    legacyOwnerId: null,
+    isProfileTransitioning: false,
+    serverSession: 'unknown',
+    fetchUser,
+  })
+
+  AppState.currentState = null
+  let view
+  try {
+    await act(async () => {
+      view = create(React.createElement(Provider, {}, React.createElement(ThemeProbe)))
+      // The native state becomes active, but no AppState event is emitted.
+      AppState.currentState = 'active'
+      await flush()
+    })
+
+    expect(events).toEqual(['probe', 'auth-refresh', 'drain', 'hydrate'])
+    expect(fetchUser).toHaveBeenCalledTimes(1)
+    expect(queryClient.invalidateQueries).toHaveBeenCalledWith({ queryKey: ['profile', ownerId] })
+  } finally {
+    if (view) await act(async () => view.unmount())
+    AppState.currentState = 'active'
+    mockSQLiteDatabase.current = null
+    expoNetwork.__clear()
+    setActiveProfileOwner(LOCAL_PROFILE_OWNER)
+    syncEngine.processQueue.mockReset().mockResolvedValue(undefined)
+    apiService.probeAvailability.mockReset().mockResolvedValue(undefined)
+    hydrateFromServer.mockReset()
+    Object.assign(authState, {
+      isStartupReady: true,
+      startupError: null,
+      isAuthenticated: false,
+      user: null,
+      isProfileLoading: false,
+      fetchUser: jest.fn(),
+      profileOwnerId: 'local:device',
+      legacyOwnerId: null,
+      isProfileTransitioning: false,
+      serverSession: 'unknown',
+    })
+  }
+})
+
+test('does not start hydration when backgrounding closes the gate during the queue check', async () => {
+  const authState = useAuthStore.__state
+  const ownerId = profileOwnerForUser('user_1')
+  let finishQueueCheck
+  let markQueueCheckStarted
+  const queueCheckStarted = new Promise((resolve) => {
+    markQueueCheckStarted = resolve
+  })
+  const queueCheck = new Promise((resolve) => {
+    finishQueueCheck = resolve
+  })
+  const db = {
+    getFirstAsync: jest.fn(() => {
+      markQueueCheckStarted()
+      return queueCheck
+    }),
+  }
+  const flush = async () => {
+    for (let i = 0; i < 20; i += 1) await Promise.resolve()
+  }
+
+  setActiveProfileOwner(ownerId)
+  mockSQLiteDatabase.current = db
+  AppState.currentState = 'active'
+  expoNetwork.__clear()
+  apiService.probeAvailability.mockReset().mockResolvedValue(undefined)
+  syncEngine.processQueue.mockReset().mockResolvedValue(undefined)
+  hydrateFromServer.mockReset().mockResolvedValue(true)
+  queryClient.invalidateQueries.mockClear()
+
+  const fetchUser = jest.fn(async () => {
+    useAuthStore.setState({ serverSession: 'valid' })
+  })
+  useAuthStore.setState({
+    isStartupReady: true,
+    startupError: null,
+    isAuthenticated: true,
+    user: { id: 'user_1' },
+    isProfileLoading: false,
+    profileOwnerId: ownerId,
+    legacyOwnerId: null,
+    isProfileTransitioning: false,
+    serverSession: 'unknown',
+    fetchUser,
+  })
+
+  let view
+  try {
+    await act(async () => {
+      view = create(React.createElement(Provider, {}, React.createElement(ThemeProbe)))
+      await flush()
+    })
+    await queueCheckStarted
+    expect(syncEngine.processQueue).toHaveBeenCalledTimes(1)
+    expect(hydrateFromServer).not.toHaveBeenCalled()
+
+    await act(async () => {
+      AppState.emit('background')
+      finishQueueCheck(null)
+      await flush()
+    })
+
+    expect(hydrateFromServer).not.toHaveBeenCalled()
+    expect(queryClient.invalidateQueries).not.toHaveBeenCalled()
+  } finally {
+    if (view) await act(async () => view.unmount())
+    AppState.currentState = 'active'
+    mockSQLiteDatabase.current = null
+    expoNetwork.__clear()
+    setActiveProfileOwner(LOCAL_PROFILE_OWNER)
+    syncEngine.processQueue.mockReset().mockResolvedValue(undefined)
+    syncEngine.setUploadsEnabled.mockClear()
+    apiService.probeAvailability.mockReset().mockResolvedValue(undefined)
+    hydrateFromServer.mockReset()
+    Object.assign(authState, {
+      isStartupReady: true,
+      startupError: null,
+      isAuthenticated: false,
+      user: null,
+      isProfileLoading: false,
+      fetchUser: jest.fn(),
+      profileOwnerId: 'local:device',
+      legacyOwnerId: null,
+      isProfileTransitioning: false,
+      serverSession: 'unknown',
+    })
+  }
 })

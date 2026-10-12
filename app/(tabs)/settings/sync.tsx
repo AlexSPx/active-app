@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert } from 'react-native'
 import { Stack, useFocusEffect } from 'expo-router'
-import { Button, Paragraph, Text, XStack, YStack } from 'tamagui'
+import { Button, Label, Paragraph, Switch, Text, XStack, YStack } from 'tamagui'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
 import { WorkOSSignInButton } from '../../../components/WorkOSSignInButton'
 import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 import { syncEngine } from '../../../lib/sync'
 import type { SyncJob } from '../../../lib/sync/SyncEngine'
 import { useAuthStore } from '../../../stores/authStore'
+import { useNetworkStore } from '../../../stores/networkStore'
 
 const JOB_LABELS: Record<string, string> = {
   createWorkout: 'Create workout',
@@ -49,6 +50,8 @@ function jobMessage(job: SyncJob): string {
 }
 
 export default function SyncSettingsScreen() {
+  const { manualOffline, isReady, restoreError, setManualOffline, retryRestore } = useNetworkStore()
+  const networkReady = isReady && !restoreError
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
   const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
   const serverSession = useAuthStore((state) => state.serverSession)
@@ -65,6 +68,8 @@ export default function SyncSettingsScreen() {
   const [actionError, setActionError] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [authPaused, setAuthPaused] = useState(false)
+  const [networkBusy, setNetworkBusy] = useState(false)
+  const [networkActionError, setNetworkActionError] = useState<string | null>(null)
   const refreshRevision = useRef(0)
 
   useEffect(() => {
@@ -146,6 +151,31 @@ export default function SyncSettingsScreen() {
     )
   }
 
+  const updateManualOffline = async (nextValue: boolean) => {
+    if (!networkReady || networkBusy) return
+    setNetworkBusy(true)
+    setNetworkActionError(null)
+    try {
+      await setManualOffline(nextValue)
+    } catch {
+      setNetworkActionError('Could not save offline preference. Please try again.')
+    } finally {
+      setNetworkBusy(false)
+    }
+  }
+
+  const restoreNetworkSettings = async () => {
+    setNetworkBusy(true)
+    setNetworkActionError(null)
+    try {
+      await retryRestore()
+    } catch {
+      setNetworkActionError('Could not restore offline preference. Please try again.')
+    } finally {
+      setNetworkBusy(false)
+    }
+  }
+
   const authRequired = serverSession === 'invalid' || (loadedScopeKey === scopeKey && authPaused)
   const visibleJobs = loadedScopeKey === scopeKey && scopeReady ? jobs : []
   const visibleLoadError = loadedScopeKey === scopeKey && loadError
@@ -159,6 +189,48 @@ export default function SyncSettingsScreen() {
         title="Synchronization"
         description="Changes stay on this device until they sync with your account."
       >
+        <XStack items="center" justify="space-between" gap="$field">
+          <YStack flex={1} gap="$compact">
+            <Label htmlFor="sync-offline" fontSize="$body" fontWeight="600">
+              Work offline
+            </Label>
+            <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+              Queued changes stay on this device. Turn this off to resume syncing when the service
+              is available.
+            </Paragraph>
+          </YStack>
+          <Switch
+            id="sync-offline"
+            accessibilityLabel="Work offline"
+            checked={manualOffline}
+            disabled={!networkReady || networkBusy}
+            onCheckedChange={(value) => void updateManualOffline(value)}
+            bg={manualOffline ? '$primary' : '$backgroundStrong'}
+          >
+            <Switch.Thumb bg="$surface" />
+          </Switch>
+        </XStack>
+
+        {!!restoreError && (
+          <YStack gap="$field">
+            <Paragraph color="$destructive" accessibilityLiveRegion="polite" selectable>
+              Could not restore saved offline preference. Server actions are paused.
+            </Paragraph>
+            <Button
+              minH="$action"
+              disabled={networkBusy}
+              onPress={() => void restoreNetworkSettings()}
+            >
+              {networkBusy ? 'Retrying…' : 'Retry restore'}
+            </Button>
+          </YStack>
+        )}
+        {!!networkActionError && (
+          <Paragraph color="$destructive" accessibilityLiveRegion="polite" selectable>
+            {networkActionError}
+          </Paragraph>
+        )}
+
         {authRequired && (
           <YStack gap="$field" p="$card" rounded="$card" bg="$backgroundHover">
             <Text fontSize="$cardTitle" fontWeight="600" selectable>
@@ -167,7 +239,13 @@ export default function SyncSettingsScreen() {
             <Paragraph fontSize="$body" color="$colorSubtle" selectable>
               Your queued changes are saved on this device.
             </Paragraph>
-            <WorkOSSignInButton label="Sign in again" />
+            {networkReady && !manualOffline ? (
+              <WorkOSSignInButton label="Sign in again" />
+            ) : (
+              <Paragraph fontSize="$body" color="$colorSubtle" selectable>
+                Turn off offline mode when the service is available to sign in and resume syncing.
+              </Paragraph>
+            )}
           </YStack>
         )}
 
@@ -201,6 +279,8 @@ export default function SyncSettingsScreen() {
           ) : (
             visibleJobs.map((job) => {
               const canRetry =
+                networkReady &&
+                !manualOffline &&
                 !authRequired &&
                 !job.blocked_reason &&
                 (job.status === 'failed' || job.status === 'dead_letter')

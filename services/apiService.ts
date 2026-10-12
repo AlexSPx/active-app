@@ -17,6 +17,7 @@ import type {
   ExerciseLogResponse,
 } from '../types/api'
 import type { Routine, CreateRoutineRequest, UpdateRoutineRequest } from '../types/routine'
+import { networkPolicy } from '../stores/networkStore'
 
 // Re-export types for backward compatibility
 export type {
@@ -110,6 +111,14 @@ class ApiService {
   private credentialWrites: Promise<void> = Promise.resolve()
   private credentialTransition = false
   private activeFetches = new Map<AbortController, Promise<void>>()
+
+  constructor() {
+    networkPolicy.subscribe(() => {
+      if (networkPolicy.isOffline) {
+        for (const controller of this.activeFetches.keys()) controller.abort()
+      }
+    })
+  }
 
   private serializeCredentialWrite<T>(operation: () => Promise<T>): Promise<T> {
     const result = this.credentialWrites.then(operation)
@@ -244,10 +253,16 @@ class ApiService {
     return error
   }
 
+  private async beginNetworkRequest(expectedGeneration?: number): Promise<number> {
+    await networkPolicy.ready()
+    return networkPolicy.assertOnline(expectedGeneration)
+  }
+
   private async fetchWithTimeout<T>(
     url: string,
     options: RequestInit,
     credentialGeneration: number,
+    policyGeneration: number,
     consumeResponse: (response: Response) => Promise<T>
   ): Promise<T> {
     const controller = new AbortController()
@@ -256,24 +271,33 @@ class ApiService {
       finishRequest = resolve
     })
     this.activeFetches.set(controller, settled)
+    let timedOut = false
     const abortHandler = () => controller.abort()
     options.signal?.addEventListener('abort', abortHandler)
     if (options.signal?.aborted) controller.abort()
-    const timeoutId = setTimeout(() => controller.abort(), config.REQUEST_TIMEOUT)
+    const timeoutId = setTimeout(() => {
+      timedOut = true
+      controller.abort()
+    }, config.REQUEST_TIMEOUT)
 
     try {
+      networkPolicy.assertOnline(policyGeneration)
       const response = await fetch(url, {
         ...options,
         signal: controller.signal,
       })
       if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
-      return await consumeResponse(response)
+      networkPolicy.assertOnline(policyGeneration)
+      const result = await consumeResponse(response)
+      networkPolicy.assertOnline(policyGeneration)
+      return result
     } catch (error) {
       if ((error as Error)?.name === 'AbortError') {
+        networkPolicy.assertOnline(policyGeneration)
         if (credentialGeneration !== this.credentialGeneration) {
           throw this.authSessionChangedError()
         }
-        throw this.createTimeoutError(url)
+        if (timedOut) throw this.createTimeoutError(url)
       }
       throw error
     } finally {
@@ -288,6 +312,7 @@ class ApiService {
     response: Response,
     context: RequestLogContext,
     credentialGeneration: number,
+    policyGeneration: number,
     skipUnauthorizedHandler = false
   ): Promise<T> {
     this.logResponse(context, response)
@@ -308,6 +333,7 @@ class ApiService {
       if (credentialGeneration !== this.credentialGeneration) {
         throw this.authSessionChangedError()
       }
+      networkPolicy.assertOnline(policyGeneration)
 
       // On unauthorized globally signal handler after parsing the response.
       // Skip when the caller will handle 401 with token refresh.
@@ -336,20 +362,24 @@ class ApiService {
       if (credentialGeneration !== this.credentialGeneration) {
         throw this.authSessionChangedError()
       }
+      networkPolicy.assertOnline(policyGeneration)
       // If response is not JSON, return empty object
       return {} as T
     }
     if (credentialGeneration !== this.credentialGeneration) {
       throw this.authSessionChangedError()
     }
+    networkPolicy.assertOnline(policyGeneration)
     return data
   }
 
   private async request<T>(url: string, options: RequestInit = {}): Promise<T> {
+    const policyGeneration = await this.beginNetworkRequest()
     const credentialGeneration = this.credentialGeneration
     const method = options.method || 'GET'
     const context: RequestLogContext = { method, url }
     const headers = (await this.getAuthHeaders()) as Record<string, string>
+    networkPolicy.assertOnline(policyGeneration)
     if (options.headers) {
       Object.assign(headers, options.headers)
     }
@@ -358,8 +388,13 @@ class ApiService {
     const fetchOptions = this.getFetchOptions({ ...options, headers })
     this.logRequest(context)
     try {
-      return await this.fetchWithTimeout(url, fetchOptions, credentialGeneration, (response) =>
-        this.handleResponse<T>(response, context, credentialGeneration, true)
+      return await this.fetchWithTimeout(
+        url,
+        fetchOptions,
+        credentialGeneration,
+        policyGeneration,
+        (response) =>
+          this.handleResponse<T>(response, context, credentialGeneration, policyGeneration, true)
       )
     } catch (error) {
       if ((error as ApiError)?.status !== 401) throw error
@@ -367,11 +402,16 @@ class ApiService {
 
     // The initial response is consumed and cleaned up before refresh starts.
     if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
+    networkPolicy.assertOnline(policyGeneration)
     if (this.credentialTransition) throw this.authSessionChangedError()
     if (!this.isRefreshing) {
       this.isRefreshing = true
       try {
-        const { token, refreshToken } = await this.refreshToken(credentialGeneration)
+        const { token, refreshToken } = await this.refreshToken(
+          credentialGeneration,
+          policyGeneration
+        )
+        networkPolicy.assertOnline(policyGeneration)
         if (credentialGeneration !== this.credentialGeneration) {
           throw this.authSessionChangedError()
         }
@@ -380,6 +420,7 @@ class ApiService {
           refreshToken,
           credentialGeneration
         )
+        networkPolicy.assertOnline(policyGeneration)
         if (!persisted || credentialGeneration !== this.credentialGeneration) {
           throw this.authSessionChangedError()
         }
@@ -403,10 +444,16 @@ class ApiService {
       if (credentialGeneration !== this.credentialGeneration) {
         throw this.authSessionChangedError()
       }
+      networkPolicy.assertOnline(policyGeneration)
       const retryFetchOptions = this.getFetchOptions({ ...options, headers })
       this.logRequest(context)
-      return this.fetchWithTimeout(url, retryFetchOptions, credentialGeneration, (response) =>
-        this.handleResponse<T>(response, context, credentialGeneration)
+      return this.fetchWithTimeout(
+        url,
+        retryFetchOptions,
+        credentialGeneration,
+        policyGeneration,
+        (response) =>
+          this.handleResponse<T>(response, context, credentialGeneration, policyGeneration)
       )
     }
 
@@ -420,6 +467,12 @@ class ApiService {
           reject(this.authSessionChangedError())
           return
         }
+        try {
+          networkPolicy.assertOnline(policyGeneration)
+        } catch (policyError) {
+          reject(policyError)
+          return
+        }
         if (!isWeb && !token) {
           reject(new Error('Token refresh failed'))
           return
@@ -429,8 +482,13 @@ class ApiService {
           const retryFetchOptions = this.getFetchOptions({ ...options, headers })
           this.logRequest(context)
           resolve(
-            await this.fetchWithTimeout(url, retryFetchOptions, credentialGeneration, (response) =>
-              this.handleResponse<T>(response, context, credentialGeneration)
+            await this.fetchWithTimeout(
+              url,
+              retryFetchOptions,
+              credentialGeneration,
+              policyGeneration,
+              (response) =>
+                this.handleResponse<T>(response, context, credentialGeneration, policyGeneration)
             )
           )
         } catch (error) {
@@ -443,12 +501,15 @@ class ApiService {
   private async requestWithoutRefresh<T>(
     url: string,
     options: RequestInit = {},
-    skipUnauthorizedHandler = false
+    skipUnauthorizedHandler = false,
+    expectedPolicyGeneration?: number
   ): Promise<T> {
+    const policyGeneration = await this.beginNetworkRequest(expectedPolicyGeneration)
     const credentialGeneration = this.credentialGeneration
     const method = options.method || 'GET'
     const context: RequestLogContext = { method, url }
     const headers = (await this.getAuthHeaders()) as Record<string, string>
+    networkPolicy.assertOnline(policyGeneration)
     if (options.headers) {
       Object.assign(headers, options.headers)
     }
@@ -459,16 +520,37 @@ class ApiService {
       url,
       this.getFetchOptions({ ...options, headers }),
       credentialGeneration,
+      policyGeneration,
       (response) =>
-        this.handleResponse<T>(response, context, credentialGeneration, skipUnauthorizedHandler)
+        this.handleResponse<T>(
+          response,
+          context,
+          credentialGeneration,
+          policyGeneration,
+          skipUnauthorizedHandler
+        )
     )
   }
 
-  private async requestText(url: string, options: RequestInit = {}): Promise<string> {
+  private async requestText(
+    url: string,
+    options: RequestInit = {},
+    includeAuth = true
+  ): Promise<string> {
+    const policyGeneration = await this.beginNetworkRequest()
     const credentialGeneration = this.credentialGeneration
     const method = options.method || 'GET'
     const context: RequestLogContext = { method, url }
-    const headers = (await this.getAuthHeaders()) as Record<string, string>
+    const headers = (
+      includeAuth
+        ? await this.getAuthHeaders()
+        : {
+            'Content-Type': 'application/json',
+            'X-Platform': isWeb ? 'web' : 'native',
+            ...(process.env.NODE_ENV === 'development' && { 'ngrok-skip-browser-warning': 'true' }),
+          }
+    ) as Record<string, string>
+    networkPolicy.assertOnline(policyGeneration)
     if (options.headers) {
       Object.assign(headers, options.headers)
     }
@@ -479,6 +561,7 @@ class ApiService {
       url,
       this.getFetchOptions({ ...options, headers }),
       credentialGeneration,
+      policyGeneration,
       async (response) => {
         this.logResponse(context, response)
 
@@ -491,6 +574,7 @@ class ApiService {
         }
 
         const text = await response.text()
+        networkPolicy.assertOnline(policyGeneration)
         if (credentialGeneration !== this.credentialGeneration) throw this.authSessionChangedError()
         return text
       }
@@ -650,7 +734,11 @@ class ApiService {
     this.refreshSubscribers.push(callback)
   }
 
-  async refreshToken(credentialGeneration = this.credentialGeneration): Promise<LoginResponse> {
+  async refreshToken(
+    credentialGeneration = this.credentialGeneration,
+    expectedPolicyGeneration?: number
+  ): Promise<LoginResponse> {
+    const policyGeneration = await this.beginNetworkRequest(expectedPolicyGeneration)
     if (this.credentialTransition) throw this.authSessionChangedError()
     const url = getApiUrl(config.API_ENDPOINTS.AUTH.REFRESH)
 
@@ -659,6 +747,7 @@ class ApiService {
     let body: string | undefined
     if (!isWeb) {
       const refreshToken = await this.getRefreshToken()
+      networkPolicy.assertOnline(policyGeneration)
       if (credentialGeneration !== this.credentialGeneration) {
         throw this.authSessionChangedError()
       }
@@ -679,7 +768,8 @@ class ApiService {
         method: 'POST',
         body,
       },
-      true
+      true,
+      policyGeneration
     )
   }
 
@@ -895,6 +985,11 @@ class ApiService {
         'X-Platform': isWeb ? 'web' : 'native',
       },
     })
+  }
+
+  async probeAvailability(): Promise<void> {
+    const url = getApiUrl(config.API_ENDPOINTS.LEGAL.PRIVACY)
+    await this.requestText(url, { method: 'GET' }, false)
   }
 }
 

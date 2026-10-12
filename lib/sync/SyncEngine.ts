@@ -90,6 +90,7 @@ const ALLOWED_TABLES = ['workouts', 'workout_records', 'routines'] as const
 
 const BASE_BACKOFF_MS = 1_000
 const MAX_BACKOFF_MS = 60_000
+const NETWORK_PREFLIGHT_TIMEOUT_MS = 3_000
 const QUEUE_BATCH_SIZE = 50
 const BLOCKED_REASON = 'Blocked by an earlier unsynced change.'
 
@@ -201,6 +202,7 @@ export class SyncEngine {
   private dbScope: ProfileScope | null = null
   private lifecycleGeneration = 0
   private initialized = false
+  private connectivityManaged = false
   private uploadsEnabled = true
   private authenticationPaused = false
   private enableAfterInit = false
@@ -300,6 +302,7 @@ export class SyncEngine {
     this.networkStateSubscription =
       this.deps.addNetworkStateListener?.((networkState) => {
         if (lifecycleGeneration !== this.lifecycleGeneration || !this.initialized) return
+        if (this.connectivityManaged) return
         if (networkState.isConnected === false || networkState.isInternetReachable === false) return
         this.processQueueInBackground()
       }) ?? null
@@ -336,6 +339,10 @@ export class SyncEngine {
     }
     if (this.initialized) this.processQueueInBackground()
     else this.enableAfterInit = true
+  }
+
+  setConnectivityManaged(managed: boolean): void {
+    this.connectivityManaged = managed
   }
 
   async pauseAndDrain(): Promise<void> {
@@ -628,7 +635,24 @@ export class SyncEngine {
       return
     // Network check
     try {
-      const networkState = await this.deps.getNetworkState()
+      const networkState = await new Promise<
+        Awaited<ReturnType<SyncEngineDeps['getNetworkState']>>
+      >((resolve, reject) => {
+        const timeout = setTimeout(
+          () => reject(new Error('Network preflight timed out')),
+          NETWORK_PREFLIGHT_TIMEOUT_MS
+        )
+        this.deps.getNetworkState().then(
+          (state) => {
+            clearTimeout(timeout)
+            resolve(state)
+          },
+          (error) => {
+            clearTimeout(timeout)
+            reject(error)
+          }
+        )
+      })
       if (networkState.isConnected === false || networkState.isInternetReachable === false) return
     } catch {
       // Unknown connectivity gets one API probe; a failed request schedules the next attempt.
@@ -1093,6 +1117,15 @@ export class SyncEngine {
     const errorMsg = error?.message || 'Unknown error'
     const statusCode = error?.status as number | undefined
 
+    if (
+      error?.code === 'MANUAL_OFFLINE' ||
+      error?.code === 'NETWORK_POLICY_CHANGED' ||
+      error?.code === 'NETWORK_PREFERENCE_ERROR'
+    ) {
+      await this.resetPending(db, scope, job.id)
+      return false
+    }
+
     if (statusCode === 401 || error?.code === 'AUTH_SESSION_CHANGED') {
       await this.writeQueue(
         db,
@@ -1161,6 +1194,20 @@ export class SyncEngine {
       job.retry_count + 1,
       errorMsg,
       job.id
+    )
+  }
+
+  private async resetPending(
+    db: SQLiteDatabase,
+    scope: ProfileScope,
+    jobId: string
+  ): Promise<void> {
+    await this.writeQueue(
+      db,
+      scope,
+      'UPDATE sync_queue SET status = ? WHERE id = ?',
+      'pending',
+      jobId
     )
   }
 
@@ -1249,7 +1296,7 @@ export class SyncEngine {
   // -----------------------------------------------------------------------
 
   private handleAppStateChange = (nextAppState: AppStateStatus): void => {
-    if (nextAppState === 'active') {
+    if (nextAppState === 'active' && !this.connectivityManaged) {
       this.processQueueInBackground()
     }
   }

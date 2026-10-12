@@ -209,7 +209,7 @@ describe('ApiService response-body deadlines', () => {
       await body.started
       if (!alreadyAborted) caller.abort()
       expect(body.signal.aborted).toBe(true)
-      expect(await result).toMatchObject({ status: 408, code: 'REQUEST_TIMEOUT' })
+      expect(await result).toMatchObject({ name: 'AbortError' })
       expect(removed).toHaveBeenCalledWith('abort', expect.any(Function))
       expect(jest.getTimerCount()).toBe(0)
       removed.mockRestore()
