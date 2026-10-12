@@ -27,8 +27,9 @@ export async function hydrateFromServer(db: SQLiteDatabase): Promise<boolean> {
   let userFetched = false
   try {
     const user = await syncApi.getUser()
+    if (user == null) throw new Error('User response was empty')
 
-    activeRoutineId = user?.activeRoutineId ?? null
+    activeRoutineId = user.activeRoutineId ?? null
     userFetched = true
     console.log('[Hydration] User fetched, activeRoutineId:', activeRoutineId)
   } catch (e) {

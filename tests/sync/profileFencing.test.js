@@ -241,6 +241,28 @@ describe('profile-scoped sync fencing', () => {
     syncEngine.destroy()
   })
 
+  it.each([
+    ['null', null],
+    ['undefined', undefined],
+  ])('does not hydrate when the user response is %s', async (_label, userResponse) => {
+    const { hydrateFromServer } = require('../../lib/sync/hydrate')
+    const { syncApi } = require('../../lib/sync/api')
+    setActiveProfileOwner('account:A')
+    syncApi.getUser.mockResolvedValueOnce(userResponse)
+    const db = new FakeDb()
+    db.hydrationWrites = []
+    const execAsync = jest.spyOn(db, 'execAsync')
+    const consoleWarn = jest.spyOn(console, 'warn').mockImplementation(() => {})
+
+    try {
+      await expect(hydrateFromServer(db)).resolves.toBe(false)
+      expect(db.hydrationWrites).toEqual([])
+      expect(execAsync).not.toHaveBeenCalledWith('PRAGMA foreign_keys = OFF;')
+    } finally {
+      consoleWarn.mockRestore()
+    }
+  })
+
   it('discards a hydration response after its profile becomes stale', async () => {
     const { hydrateFromServer } = require('../../lib/sync/hydrate')
     const { syncApi } = require('../../lib/sync/api')
