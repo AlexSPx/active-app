@@ -889,7 +889,7 @@ export class SyncEngine {
         this.emitIdRemap(remap.tableName, remap.oldId, remap.newId)
         console.log(`[SyncEngine] Remapped ${remap.tableName}: ${remap.oldId} → ${remap.newId}`)
       }
-      this.queueMutationRevision += 1
+      this.queueDidChange()
     })
     console.log(`[SyncEngine] ✓ ${currentJob.endpoint}`)
     return true

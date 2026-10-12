@@ -142,9 +142,12 @@ describe('SyncEngine queue remapping', () => {
       addAppStateListener: () => ({ remove() {} }),
     })
     const remaps = []
+    const queueChanges = jest.fn()
     engine.onIdRemap((...args) => remaps.push(args))
+    engine.on('sync:change', queueChanges)
 
     await engine.init(db, { processOnInit: false })
+    queueChanges.mockClear()
     await expect(engine.processQueue()).rejects.toThrow('ack failed')
 
     expect(db.tables.workout_records.has('local-record')).toBe(true)
@@ -159,6 +162,7 @@ describe('SyncEngine queue remapping', () => {
       request_payload: JSON.stringify({ workoutId: 'server-workout', exerciseRecords: [] }),
     })
     expect(remaps).toEqual([])
+    expect(queueChanges).toHaveBeenCalledTimes(1)
 
     db.runAsync = runAsync
     await engine.init(db, { processOnInit: false })
@@ -184,6 +188,29 @@ describe('SyncEngine queue remapping', () => {
       new_id: 'server-record',
     })
     expect(remaps).toEqual([['workout_records', 'local-record', 'server-record']])
+    engine.destroy()
+  })
+
+  it('notifies queue subscribers after a successful acknowledgement', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const db = new FakeDb({
+      jobs: [makeJob({ id: 'acknowledged', endpoint: 'deleteWorkout', payload: ['workout'] })],
+    })
+    const engine = new SyncEngine({
+      api: createApi(),
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    const snapshots = []
+
+    await engine.init(db, { processOnInit: false })
+    engine.on('sync:change', () => snapshots.push(engine.listJobs()))
+    await engine.processQueue()
+
+    expect(await Promise.all(snapshots)).toEqual([
+      [expect.objectContaining({ id: 'acknowledged', status: 'processing' })],
+      [],
+    ])
     engine.destroy()
   })
 

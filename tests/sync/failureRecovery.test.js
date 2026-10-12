@@ -654,18 +654,22 @@ describe('failed sync recovery', () => {
       return result
     }
     const remapListener = jest.fn()
+    const queueChangeListener = jest.fn()
     engine.onIdRemap(remapListener)
+    engine.on('sync:change', queueChangeListener)
 
     try {
       await engine.init(dbA, { processOnInit: false })
+      queueChangeListener.mockClear()
       const drain = engine.processQueue()
       await acknowledgementCommitted.promise
       setActiveProfileOwner('account:B')
-      const reinit = engine.init(dbB, { processOnInit: false })
       releaseAcknowledgement.resolve()
-      await Promise.all([drain, reinit])
+      await drain
 
       expect(remapListener).not.toHaveBeenCalled()
+      expect(queueChangeListener).toHaveBeenCalledTimes(1)
+      await engine.init(dbB, { processOnInit: false })
       expect(engine.resolveId('workouts', 'shared-local-id')).toBe('shared-local-id')
       expect(dbB.idRemaps.size).toBe(0)
     } finally {
