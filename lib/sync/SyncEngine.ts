@@ -877,7 +877,7 @@ export class SyncEngine {
         }
         await db.runAsync('DELETE FROM sync_queue WHERE id = ?', currentJob.id)
       })
-      this.queueMutationRevision += 1
+      this.queueDidChange()
     })
     console.log(`[SyncEngine] ✓ ${currentJob.endpoint}`)
     return true

@@ -31,10 +31,22 @@ Verified on the running emulator:
    still receives no new application requests.
 4. Disable **Work offline**; the saved preference returns to online.
 
-Live online reconciliation was not verified: an availability request from the
-emulator timed out at the configured 10-second deadline, while the same configured
-ngrok legal endpoint returned HTTP 200 from the host. Deterministic tests cover
-foreground service recovery and the authentication → drain → reconciliation order.
+Retested on 2026-10-12 from `codex/ale-63-offline-reconnection`, using the existing
+Android development build and the current ngrok URL. Protected reads, legal text
+and availability probes rejected locally with `MANUAL_OFFLINE`. The cached profile
+and offline preference survived an app restart with no new API requests.
+
+A queued delete against a newly generated, verified absent workout ID stayed
+pending across a JavaScript reload, with zero retries and an operation identity.
+Disabling offline mode validated the session, replayed the job (the expected 404
+was acknowledged), removed it from the queue, and reconciled user, workouts,
+records and routines with HTTP 200 responses. No training data was created or
+removed. The app was left online with a valid session and an empty queue.
+
+The earlier emulator API timeout did not recur. A stale "Syncing" row exposed a
+missing acknowledgement notification, addressed by the focused queue-change fix.
+Retesting with a read-only queued account lookup confirmed that the focused screen
+automatically changes from "Queued" to "You’re all caught up" after acknowledgement.
 
 iOS and web were not exercised on devices. Analytics, push/update policy and
 server-side mutation deduplication belong to the separate offline issues; a
