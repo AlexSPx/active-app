@@ -11,6 +11,231 @@ jest.mock('../../services/posthog', () => ({
 const { createApi, makeJob, runQueue, FakeDb } = require('../helpers/syncTestUtils')
 
 describe('SyncEngine queue remapping', () => {
+  it('retries a lost response with the same frozen route, body, and operation key', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const api = createApi({
+      updateWorkout: jest
+        .fn()
+        .mockRejectedValueOnce(new Error('response lost'))
+        .mockResolvedValue(undefined),
+    })
+    const db = new FakeDb({
+      jobs: [
+        makeJob({
+          id: 'lost-response',
+          endpoint: 'updateWorkout',
+          payload: ['local-workout', { title: 'Frozen title' }],
+        }),
+      ],
+    })
+    const engine = new SyncEngine({
+      api,
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+
+    await engine.init(db, { processOnInit: false })
+    await engine.processQueue()
+    expect(db.getJob('lost-response').request_payload).toBe(
+      JSON.stringify(['local-workout', { title: 'Frozen title' }])
+    )
+
+    db.getJob('lost-response').payload = JSON.stringify([
+      'server-workout',
+      { title: 'Changed title' },
+    ])
+    db.getJob('lost-response').next_attempt_at = 0
+    await engine.init(db, { processOnInit: false })
+    await engine.processQueue()
+
+    expect(api.updateWorkout.mock.calls).toEqual([
+      ['local-workout', { title: 'Frozen title' }, 'lost-response-key'],
+      ['local-workout', { title: 'Frozen title' }, 'lost-response-key'],
+    ])
+    expect(db.getJob('lost-response')).toBeNull()
+    engine.destroy()
+  })
+
+  it('remaps only unattempted jobs and keeps a frozen request discardable after 409', async () => {
+    const conflict = Object.assign(new Error('request changed'), { status: 409 })
+    const api = createApi({
+      createWorkout: jest.fn(async () => ({ id: 'server-workout' })),
+      updateWorkout: jest.fn(async () => {
+        throw conflict
+      }),
+    })
+    const frozenArgs = ['local-workout', { title: 'Already attempted' }]
+    const { db, engine } = await runQueue({
+      api,
+      tables: { workouts: ['local-workout'] },
+      jobs: [
+        makeJob({
+          id: 'create-workout',
+          endpoint: 'createWorkout',
+          payload: { title: 'Offline' },
+          localTable: 'workouts',
+          localId: 'local-workout',
+        }),
+        makeJob({
+          id: 'attempted-update',
+          endpoint: 'updateWorkout',
+          payload: frozenArgs,
+          requestPayload: frozenArgs,
+        }),
+      ],
+    })
+
+    expect(api.updateWorkout).toHaveBeenCalledWith(
+      'local-workout',
+      { title: 'Already attempted' },
+      'attempted-update-key'
+    )
+    expect(db.getJob('attempted-update')).toMatchObject({
+      status: 'dead_letter',
+      payload: JSON.stringify(frozenArgs),
+      request_payload: JSON.stringify(frozenArgs),
+    })
+    await engine.discardJob('attempted-update')
+    expect(db.getJob('attempted-update').status).toBe('discarded')
+    engine.destroy()
+  })
+
+  it('rolls back the canonical row, alias, and acknowledgement on a local write error', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const db = new FakeDb({
+      tables: { workout_records: ['local-record'] },
+      jobs: [
+        makeJob({
+          id: 'atomic-record',
+          endpoint: 'recordWorkout',
+          payload: { workoutId: 'server-workout', exerciseRecords: [] },
+          localTable: 'workout_records',
+          localId: 'local-record',
+        }),
+      ],
+    })
+    Object.assign(db.tables.workout_records.get('local-record'), {
+      workout_title: 'Local title',
+      exercise_records: '[]',
+    })
+    const runAsync = db.runAsync.bind(db)
+    db.runAsync = async (sql, ...params) => {
+      if (sql === 'DELETE FROM sync_queue WHERE id = ?') throw new Error('ack failed')
+      return runAsync(sql, ...params)
+    }
+    const api = createApi({
+      recordWorkout: jest.fn(async () => ({
+        workoutRecord: {
+          id: 'server-record',
+          workoutId: 'server-workout',
+          workoutTitle: 'Server title',
+          notes: null,
+          createdAt: '2026-10-11T10:00:00Z',
+          exerciseRecords: [{ exerciseName: 'Row', achievedOneRmValue: 120 }],
+        },
+        streakUpdate: { currentStreak: 2 },
+      })),
+    })
+    const engine = new SyncEngine({
+      api,
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    const remaps = []
+    engine.onIdRemap((...args) => remaps.push(args))
+
+    await engine.init(db, { processOnInit: false })
+    await expect(engine.processQueue()).rejects.toThrow('ack failed')
+
+    expect(db.tables.workout_records.has('local-record')).toBe(true)
+    expect(db.tables.workout_records.has('server-record')).toBe(false)
+    expect(db.tables.workout_records.get('local-record')).toMatchObject({
+      workout_title: 'Local title',
+      exercise_records: '[]',
+    })
+    expect(db.idRemaps.size).toBe(0)
+    expect(db.getJob('atomic-record')).toMatchObject({
+      status: 'processing',
+      request_payload: JSON.stringify({ workoutId: 'server-workout', exerciseRecords: [] }),
+    })
+    expect(remaps).toEqual([])
+
+    db.runAsync = runAsync
+    await engine.init(db, { processOnInit: false })
+    await engine.processQueue()
+
+    expect(api.recordWorkout.mock.calls).toEqual([
+      [
+        { workoutId: 'server-workout', exerciseRecords: [] },
+        'atomic-record-key',
+      ],
+      [
+        { workoutId: 'server-workout', exerciseRecords: [] },
+        'atomic-record-key',
+      ],
+    ])
+    expect(db.getJob('atomic-record')).toBeNull()
+    expect(db.tables.workout_records.has('local-record')).toBe(false)
+    expect(db.tables.workout_records.get('server-record')).toMatchObject({
+      workout_title: 'Server title',
+      is_synced: 1,
+    })
+    expect(db.idRemaps.get('workout_records:local-record')).toMatchObject({
+      new_id: 'server-record',
+    })
+    expect(remaps).toEqual([['workout_records', 'local-record', 'server-record']])
+    engine.destroy()
+  })
+
+  it('commits canonical server record data and preserves a hydrated tombstone', async () => {
+    const api = createApi({
+      recordWorkout: jest.fn(async () => ({
+        workoutRecord: {
+          id: 'server-record',
+          workoutId: 'server-workout',
+          workoutTitle: 'Server title',
+          notes: 'Authoritative',
+          createdAt: '2026-10-11T10:00:00Z',
+          startTime: '2026-10-11T09:00:00',
+          exerciseRecords: [{ exerciseName: 'Row', achievedOneRmValue: 120 }],
+        },
+        streakUpdate: { currentStreak: 2 },
+      })),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { workout_records: ['local-record', 'server-record'] },
+      configureDb: (db) => {
+        db.tables.workout_records.get('local-record').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'record-job',
+          endpoint: 'recordWorkout',
+          payload: { workoutId: 'server-workout', exerciseRecords: [] },
+          localTable: 'workout_records',
+          localId: 'local-record',
+        }),
+      ],
+    })
+
+    expect(db.tables.workout_records.has('local-record')).toBe(false)
+    expect(db.tables.workout_records.get('server-record')).toMatchObject({
+      workout_id: 'server-workout',
+      workout_title: 'Server title',
+      notes: 'Authoritative',
+      is_deleted: 1,
+    })
+    expect(JSON.parse(db.tables.workout_records.get('server-record').exercise_records)).toEqual([
+      { exerciseName: 'Row', achievedOneRmValue: 120 },
+    ])
+    expect(db.idRemaps.get('workout_records:local-record')).toMatchObject({
+      new_id: 'server-record',
+    })
+    expect(db.getJob('record-job')).toBeNull()
+    engine.destroy()
+  })
+
   it.each(['sync:start', 'sync:complete', 'sync:idle', 'sync:error'])(
     'keeps queue processing and other subscribers intact when a %s listener throws',
     async (event) => {
@@ -112,7 +337,7 @@ describe('SyncEngine queue remapping', () => {
     expect(order).toEqual(['remap-start', 'remap-end', 'record-save'])
   })
 
-  it('keeps web queue writes outside a mutation transaction held under the remap lock', async () => {
+  it('waits for a mutation transaction before freezing and sending queued work', async () => {
     const { SyncEngine } = require('../../lib/sync/SyncEngine')
     const api = createApi({ deleteWorkout: jest.fn(async () => undefined) })
     const engine = new SyncEngine({
@@ -137,11 +362,6 @@ describe('SyncEngine queue remapping', () => {
     const queueLockRequested = new Promise((resolve) => {
       queueLockRequestedResolve = resolve
     })
-    let queueWriteAttemptedResolve
-    const queueWriteAttempted = new Promise((resolve) => {
-      queueWriteAttemptedResolve = resolve
-    })
-
     let lockCalls = 0
     const withIdRemapLock = engine.withIdRemapLock.bind(engine)
     jest.spyOn(engine, 'withIdRemapLock').mockImplementation((operation) => {
@@ -149,15 +369,6 @@ describe('SyncEngine queue remapping', () => {
       if (lockCalls === 2) queueLockRequestedResolve()
       return withIdRemapLock(operation)
     })
-
-    const runAsync = db.runAsync.bind(db)
-    db.runAsync = async (sql, ...params) => {
-      if (sql === 'UPDATE sync_queue SET status = ? WHERE id = ?') {
-        db.recordTransactionEvent('queue-status-write', { status: params[0] })
-        if (params[0] === 'processing') queueWriteAttemptedResolve()
-      }
-      return runAsync(sql, ...params)
-    }
 
     const mutation = engine.withIdRemapLock(() =>
       db.withTransactionAsync(async () => {
@@ -170,7 +381,6 @@ describe('SyncEngine queue remapping', () => {
     const processing = engine.processQueue()
     const stateWhileLocked = await Promise.race([
       queueLockRequested.then(() => 'waiting-for-lock'),
-      queueWriteAttempted.then(() => 'queue-write'),
       new Promise((resolve) => setTimeout(() => resolve('timeout'), 1000)),
     ])
     const statusWhileLocked = db.getJob('queued-delete').status
@@ -184,17 +394,18 @@ describe('SyncEngine queue remapping', () => {
     expect(statusWhileLocked).toBe('pending')
     expect(apiCallsWhileLocked).toBe(0)
     expect(eventsWhileLocked).toEqual(['begin'])
-    expect(api.deleteWorkout).toHaveBeenCalledWith('workout_1')
+    expect(api.deleteWorkout).toHaveBeenCalledWith('workout_1', 'queued-delete-key')
     expect(db.transactionEvents.map(({ type }) => type)).toEqual([
       'begin',
       'commit',
-      'queue-status-write',
+      'begin',
+      'commit',
       'begin',
       'commit',
     ])
     expect(db.transactionEvents[2]).toMatchObject({
+      type: 'begin',
       inTransaction: false,
-      status: 'processing',
     })
     expect(db.getJob('queued-delete')).toBeNull()
     engine.destroy()
@@ -305,9 +516,11 @@ describe('SyncEngine queue remapping', () => {
     expect(api.createWorkout.mock.invocationCallOrder[0]).toBeLessThan(
       api.updateWorkout.mock.invocationCallOrder[0]
     )
-    expect(api.updateWorkout).toHaveBeenCalledWith('server_workout_1', {
-      title: 'Heavy Leg Day',
-    })
+    expect(api.updateWorkout).toHaveBeenCalledWith(
+      'server_workout_1',
+      { title: 'Heavy Leg Day' },
+      'job-update-workout-key'
+    )
   })
 
   it('restores workout ID aliases from SQLite after a process restart', async () => {
@@ -468,11 +681,14 @@ describe('SyncEngine queue remapping', () => {
       ],
     })
 
-    expect(api.recordWorkout).toHaveBeenCalledWith({
-      workoutId: 'server_workout_2',
-      exerciseRecords: [],
-      startTime: '2026-04-24T10:00:00',
-    })
+    expect(api.recordWorkout).toHaveBeenCalledWith(
+      {
+        workoutId: 'server_workout_2',
+        exerciseRecords: [],
+        startTime: '2026-04-24T10:00:00',
+      },
+      'job-record-workout-key'
+    )
   })
 
   it('rewrites queued workout-record deletes after an offline record sync', async () => {
@@ -503,7 +719,10 @@ describe('SyncEngine queue remapping', () => {
       ],
     })
 
-    expect(api.deleteWorkoutRecord).toHaveBeenCalledWith('server_record_3')
+    expect(api.deleteWorkoutRecord).toHaveBeenCalledWith(
+      'server_record_3',
+      'job-delete-record-key'
+    )
   })
 
   it('rewrites queued routine updates after an offline routine create', async () => {
@@ -538,9 +757,11 @@ describe('SyncEngine queue remapping', () => {
       ],
     })
 
-    expect(api.updateRoutine).toHaveBeenCalledWith('server_routine_1', {
-      name: 'Week A Updated',
-    })
+    expect(api.updateRoutine).toHaveBeenCalledWith(
+      'server_routine_1',
+      { name: 'Week A Updated' },
+      'job-update-routine-key'
+    )
   })
 
   it('rewrites nested workout ids inside queued routine payloads', async () => {
@@ -578,15 +799,19 @@ describe('SyncEngine queue remapping', () => {
       ],
     })
 
-    expect(api.updateRoutine).toHaveBeenCalledWith('server_routine_nested', {
-      pattern: [
-        {
-          dayIndex: 1,
-          dayType: 'WORKOUT',
-          workoutId: 'server_workout_nested',
-        },
-      ],
-    })
+    expect(api.updateRoutine).toHaveBeenCalledWith(
+      'server_routine_nested',
+      {
+        pattern: [
+          {
+            dayIndex: 1,
+            dayType: 'WORKOUT',
+            workoutId: 'server_workout_nested',
+          },
+        ],
+      },
+      'job-update-routine-key'
+    )
   })
 
   it('replays create, record, routine and delete in order while keeping history', async () => {
@@ -654,14 +879,16 @@ describe('SyncEngine queue remapping', () => {
       api.deleteWorkout.mock.invocationCallOrder[0]
     )
     expect(api.recordWorkout).toHaveBeenCalledWith(
-      expect.objectContaining({ workoutId: 'server_workout_causal' })
+      expect.objectContaining({ workoutId: 'server_workout_causal' }),
+      'record-key'
     )
     expect(api.createRoutine).toHaveBeenCalledWith(
       expect.objectContaining({
         pattern: [expect.objectContaining({ workoutId: 'server_workout_causal' })],
-      })
+      }),
+      'routine-key'
     )
-    expect(api.deleteWorkout).toHaveBeenCalledWith('server_workout_causal')
+    expect(api.deleteWorkout).toHaveBeenCalledWith('server_workout_causal', 'delete-key')
     expect(db.jobs).toEqual([])
     expect(db.tables.workouts.has('server_workout_causal')).toBe(false)
     expect(db.tables.workout_records.get('server_record_causal')).toMatchObject({
@@ -687,7 +914,7 @@ describe('SyncEngine queue remapping', () => {
       jobs: [makeJob({ id: 'delete-gone', endpoint: 'deleteWorkout', payload: ['gone'] })],
     })
     engine.destroy()
-    expect(api.deleteWorkout).toHaveBeenCalledWith('gone')
+    expect(api.deleteWorkout).toHaveBeenCalledWith('gone', 'delete-gone-key')
     expect(db.jobs).toEqual([])
     expect(db.tables.workouts.has('gone')).toBe(false)
   })
@@ -758,7 +985,10 @@ describe('SyncEngine failure handling', () => {
     })
 
     expect(api.updateRoutine).toHaveBeenCalledTimes(1)
-    expect(api.deleteWorkout).toHaveBeenCalledWith('server_workout_continues')
+    expect(api.deleteWorkout).toHaveBeenCalledWith(
+      'server_workout_continues',
+      'job-delete-workout-continues-key'
+    )
     expect(db.getJob('job-update-routine-dead-letter')).toMatchObject({
       status: 'dead_letter',
       retry_count: 1,

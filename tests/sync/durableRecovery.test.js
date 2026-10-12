@@ -40,7 +40,7 @@ describe('durable sync recovery', () => {
       await engine.processQueue()
       // Flush the automatic successor, without requesting another drain ourselves.
       await jest.advanceTimersByTimeAsync(0)
-      expect(api.deleteWorkout.mock.calls).toEqual(ids.map((id) => [id]))
+      expect(api.deleteWorkout.mock.calls).toEqual(ids.map((id) => [id, `${id}-key`]))
       expect(db.jobs).toEqual([])
     } finally {
       engine.destroy()
@@ -192,10 +192,52 @@ describe('durable sync recovery', () => {
     try {
       await restarted.init(db, { processOnInit: false })
       await restarted.processQueue()
-      expect(api.deleteWorkout.mock.calls).toEqual([['first'], ['second'], ['third']])
+      expect(api.deleteWorkout.mock.calls).toEqual([
+        ['first', 'first-key'],
+        ['second', 'second-key'],
+        ['third', 'third-key'],
+      ])
       expect(db.jobs).toEqual([])
     } finally {
       restarted.destroy()
+    }
+  })
+
+  it('retries the frozen request and idempotency key after acknowledgement persistence fails', async () => {
+    const db = new FakeDb({ jobs: [deleteJob('ack-retry', { payload: ['original-id'] })] })
+    const api = createApi()
+    const runAsync = db.runAsync.bind(db)
+    db.runAsync = async (sql, ...params) => {
+      if (sql === 'DELETE FROM sync_queue WHERE id = ?') throw new Error('ack failed')
+      return runAsync(sql, ...params)
+    }
+    const first = engineWith(api)
+    await first.init(db, { processOnInit: false })
+    try {
+      await expect(first.processQueue()).rejects.toThrow('ack failed')
+      expect(db.getJob('ack-retry')).toMatchObject({
+        status: 'processing',
+        request_payload: JSON.stringify(['original-id']),
+      })
+      first.destroy()
+
+      // A queued ID remap may change payload after the request has already gone out.
+      db.getJob('ack-retry').payload = JSON.stringify(['remapped-id'])
+      db.runAsync = runAsync
+      const restarted = engineWith(api)
+      try {
+        await restarted.init(db, { processOnInit: false })
+        await restarted.processQueue()
+        expect(api.deleteWorkout.mock.calls).toEqual([
+          ['original-id', 'ack-retry-key'],
+          ['original-id', 'ack-retry-key'],
+        ])
+        expect(db.jobs).toEqual([])
+      } finally {
+        restarted.destroy()
+      }
+    } finally {
+      first.destroy()
     }
   })
 
@@ -239,13 +281,17 @@ describe('durable sync recovery', () => {
       networkListener({ isConnected: true, isInternetReachable: true })
       appListener('active')
       await second.processQueue()
-      expect(api.deleteWorkout.mock.calls).toEqual([['head']])
+      expect(api.deleteWorkout.mock.calls).toEqual([['head', 'head-key']])
       expect(db.jobs[0].next_attempt_at).toBe(deadline)
       expect(jest.getTimerCount()).toBe(1)
       await jest.advanceTimersByTimeAsync(59999)
       expect(api.deleteWorkout).toHaveBeenCalledTimes(1)
       await jest.advanceTimersByTimeAsync(1)
-      expect(api.deleteWorkout.mock.calls).toEqual([['head'], ['head'], ['dependent']])
+      expect(api.deleteWorkout.mock.calls).toEqual([
+        ['head', 'head-key'],
+        ['head', 'head-key'],
+        ['dependent', 'dependent-key'],
+      ])
       expect(db.jobs).toEqual([])
       expect(jest.getTimerCount()).toBe(0)
     } finally {
@@ -323,11 +369,15 @@ describe('durable sync recovery', () => {
       networkListener({ isConnected: true, isInternetReachable: true })
       await engine.processQueue()
       await jest.advanceTimersByTimeAsync(60000)
-      expect(api.deleteWorkout.mock.calls).toEqual([['auth-head']])
+      expect(api.deleteWorkout.mock.calls).toEqual([['auth-head', 'auth-head-key']])
       const completed = new Promise((resolve) => engine.on('sync:complete', resolve))
       engine.setUploadsEnabled(true)
       await completed
-      expect(api.deleteWorkout.mock.calls).toEqual([['auth-head'], ['auth-head'], ['dependent']])
+      expect(api.deleteWorkout.mock.calls).toEqual([
+        ['auth-head', 'auth-head-key'],
+        ['auth-head', 'auth-head-key'],
+        ['dependent', 'dependent-key'],
+      ])
       expect(db.jobs).toEqual([])
     } finally {
       engine.destroy()

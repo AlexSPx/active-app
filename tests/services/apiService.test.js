@@ -50,6 +50,16 @@ describe('API credential refresh', () => {
     })
   })
 
+  it('adds an idempotency key to a queued mutation request', async () => {
+    global.fetch.mockResolvedValueOnce(makeResponse(200, { id: 'server-workout' }))
+
+    await apiService.createWorkout({ title: 'Offline' }, 'operation-key')
+
+    expect(global.fetch.mock.calls[0][1].headers).toMatchObject({
+      'Idempotency-Key': 'operation-key',
+    })
+  })
+
   it('moves legacy AsyncStorage and hydrated credentials into SecureStore before cleanup', async () => {
     secureItems.set(config.STORAGE_KEYS.TOKEN, 'secure-access')
     secureItems.set(config.STORAGE_KEYS.REFRESH_TOKEN, 'secure-refresh')

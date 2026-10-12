@@ -70,8 +70,8 @@ describe('failed sync recovery', () => {
       await completed
 
       expect(api.updateWorkout.mock.calls).toEqual([
-        ['workout-auth', { title: 'Keep bytes' }],
-        ['workout-auth', { title: 'Keep bytes' }],
+        ['workout-auth', { title: 'Keep bytes' }, 'auth-update-key'],
+        ['workout-auth', { title: 'Keep bytes' }, 'auth-update-key'],
       ])
       expect(db.getJob('auth-update')).toBeNull()
     } finally {
@@ -145,7 +145,7 @@ describe('failed sync recovery', () => {
       await engine.processQueue()
 
       expect(api.createWorkout).toHaveBeenCalledTimes(1)
-      expect(api.deleteWorkout).toHaveBeenCalledWith('server-workout')
+      expect(api.deleteWorkout).toHaveBeenCalledWith('server-workout', 'independent-key')
       expect(api.updateWorkout).not.toHaveBeenCalled()
       expect(api.createRoutine).not.toHaveBeenCalled()
       expect(api.updateRoutine).not.toHaveBeenCalled()
@@ -228,8 +228,12 @@ describe('failed sync recovery', () => {
       engine.setUploadsEnabled(true)
       await completed
 
-      expect(api.createWorkout).toHaveBeenCalledWith({ title: 'Offline' })
-      expect(api.updateWorkout).toHaveBeenCalledWith('server-workout', { title: 'Edited' })
+      expect(api.createWorkout).toHaveBeenCalledWith({ title: 'Offline' }, 'failed-create-key')
+      expect(api.updateWorkout).toHaveBeenCalledWith(
+        'server-workout',
+        { title: 'Edited' },
+        'dependent-update-key'
+      )
       expect(db.jobs).toEqual([])
     } finally {
       engine.destroy()
@@ -364,7 +368,7 @@ describe('failed sync recovery', () => {
 
         await engine.processQueue()
 
-        expect(api.deleteRoutine).toHaveBeenCalledWith('server-routine')
+        expect(api.deleteRoutine).toHaveBeenCalledWith('server-routine', 'independent-key')
         expect(db.getJob('independent')).toBeNull()
         for (const dependent of dependents) {
           expect(db.getJob(dependent.id)).toMatchObject({ status: 'pending' })
@@ -451,7 +455,11 @@ describe('failed sync recovery', () => {
       engine.setUploadsEnabled(true)
       await childCompleted
 
-      expect(api.updateWorkout).toHaveBeenCalledWith('server-workout', { title: 'Edited' })
+      expect(api.updateWorkout).toHaveBeenCalledWith(
+        'server-workout',
+        { title: 'Edited' },
+        'failed-update-key'
+      )
       expect(db.getJob('failed-update')).toBeNull()
     } finally {
       engine.destroy()
@@ -487,7 +495,7 @@ describe('failed sync recovery', () => {
       await engine.processQueue()
 
       expect(api.deleteWorkout).toHaveBeenCalledTimes(1)
-      expect(api.deleteWorkout).toHaveBeenCalledWith('server-workout')
+      expect(api.deleteWorkout).toHaveBeenCalledWith('server-workout', 'after-blocked-key')
       expect(api.updateWorkout).not.toHaveBeenCalled()
       expect(db.getJob('after-blocked')).toBeNull()
       expect(db.jobs).toHaveLength(56)
@@ -611,6 +619,57 @@ describe('failed sync recovery', () => {
       expect(dbB.getJob('pending-B').status).toBe('pending')
     } finally {
       releaseRead.resolve()
+      engine.destroy()
+    }
+  })
+
+  it('does not publish an ID remap after the profile changes during acknowledgement commit', async () => {
+    setActiveProfileOwner('account:A')
+    const dbA = new FakeDb({
+      jobs: [
+        makeJob({
+          id: 'create-A',
+          endpoint: 'createWorkout',
+          payload: { title: 'A workout' },
+          localTable: 'workouts',
+          localId: 'shared-local-id',
+        }),
+      ],
+      tables: { workouts: ['shared-local-id'] },
+    })
+    const dbB = new FakeDb()
+    const api = createApi({ createWorkout: jest.fn(async () => ({ id: 'server-workout-A' })) })
+    const engine = engineWith(api)
+    const acknowledgementCommitted = deferred()
+    const releaseAcknowledgement = deferred()
+    const withTransaction = dbA.withTransactionAsync.bind(dbA)
+    let transactionCount = 0
+    dbA.withTransactionAsync = async (operation) => {
+      const result = await withTransaction(operation)
+      transactionCount += 1
+      if (transactionCount === 2) {
+        acknowledgementCommitted.resolve()
+        await releaseAcknowledgement.promise
+      }
+      return result
+    }
+    const remapListener = jest.fn()
+    engine.onIdRemap(remapListener)
+
+    try {
+      await engine.init(dbA, { processOnInit: false })
+      const drain = engine.processQueue()
+      await acknowledgementCommitted.promise
+      setActiveProfileOwner('account:B')
+      const reinit = engine.init(dbB, { processOnInit: false })
+      releaseAcknowledgement.resolve()
+      await Promise.all([drain, reinit])
+
+      expect(remapListener).not.toHaveBeenCalled()
+      expect(engine.resolveId('workouts', 'shared-local-id')).toBe('shared-local-id')
+      expect(dbB.idRemaps.size).toBe(0)
+    } finally {
+      releaseAcknowledgement.resolve()
       engine.destroy()
     }
   })
