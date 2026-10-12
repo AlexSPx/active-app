@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, useColorScheme } from 'react-native'
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite'
 import { migrateDbIfNeeded } from '../lib/db/migrations'
@@ -22,8 +22,23 @@ import { replaceQueuedIdReferences } from '../lib/sync/queuePayloadRemap'
 import { hydrateFromServer } from '../lib/sync/hydrate'
 import { setSharedDatabase } from '../lib/db/connection'
 import { useAuthStore } from '../stores/authStore'
+import { useNetworkStore } from '../stores/networkStore'
+import { apiService } from '../services/apiService'
 import { remapRunningWorkoutId } from '../features/workout-session/stores/runningWorkoutStore'
-import { databaseNameForProfile, getProfileScope, isCurrentProfile } from '../lib/profileScope'
+import {
+  databaseNameForProfile,
+  getProfileScope,
+  isCurrentProfile,
+  LOCAL_PROFILE_OWNER,
+} from '../lib/profileScope'
+
+function loadExpoNetwork(): typeof import('expo-network') | null {
+  try {
+    return require('expo-network')
+  } catch {
+    return null
+  }
+}
 
 function SyncEngineBootstrap({
   children,
@@ -34,14 +49,18 @@ function SyncEngineBootstrap({
 }) {
   const db = useSQLiteContext()
   const [readyDb, setReadyDb] = useState<SQLiteDatabase | null>(null)
+  const [apiReadyOwner, setApiReadyOwner] = useState<string | null>(null)
+  const apiReadyOwnerRef = useRef<string | null>(null)
   const isStartupReady = useAuthStore((state) => state.isStartupReady)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const userId = useAuthStore((state) => state.user?.id)
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
-  const isProfileLoading = useAuthStore((state) => state.isProfileLoading)
   const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
   const serverSession = useAuthStore((state) => state.serverSession)
   const startupError = useAuthStore((state) => state.startupError)
+  const manualOffline = useNetworkStore((state) => state.manualOffline)
+  const networkPreferenceReady = useNetworkStore((state) => state.isReady)
+  const networkPreferenceError = useNetworkStore((state) => state.restoreError)
 
   setSharedDatabase(db)
 
@@ -69,6 +88,7 @@ function SyncEngineBootstrap({
     })
 
     setReadyDb(null)
+    syncEngine.setConnectivityManaged(true)
     syncEngine
       .init(db, { processOnInit: false })
       .then(() => {
@@ -89,6 +109,7 @@ function SyncEngineBootstrap({
       syncEngine.setUploadsEnabled(false)
       unsubscribeIdRemap()
       syncEngine.destroy()
+      syncEngine.setConnectivityManaged(false)
       setReadyDb(null)
     }
   }, [db, ownerId, profileOwnerId])
@@ -101,12 +122,21 @@ function SyncEngineBootstrap({
         isAuthenticated &&
         !!userId &&
         profileOwnerId === ownerId &&
-        serverSession === 'valid'
+        serverSession === 'valid' &&
+        networkPreferenceReady &&
+        !networkPreferenceError &&
+        !manualOffline &&
+        apiReadyOwnerRef.current === ownerId &&
+        apiReadyOwner === ownerId
     )
   }, [
+    apiReadyOwner,
     isAuthenticated,
     isProfileTransitioning,
     isStartupReady,
+    manualOffline,
+    networkPreferenceError,
+    networkPreferenceReady,
     ownerId,
     profileOwnerId,
     serverSession,
@@ -115,72 +145,199 @@ function SyncEngineBootstrap({
   ])
 
   useEffect(() => {
+    apiReadyOwnerRef.current = null
+    setApiReadyOwner(null)
+    syncEngine.setUploadsEnabled(false)
     if (
+      readyDb !== db ||
+      !networkPreferenceReady ||
+      networkPreferenceError ||
+      manualOffline ||
       !isStartupReady ||
       startupError ||
       isProfileTransitioning ||
-      isProfileLoading ||
       !isAuthenticated ||
       !userId ||
-      profileOwnerId !== ownerId ||
-      serverSession !== 'unknown'
+      ownerId === LOCAL_PROFILE_OWNER ||
+      profileOwnerId !== ownerId
     ) {
       return
     }
 
     const scope = getProfileScope()
     if (scope.ownerId !== ownerId || !isCurrentProfile(scope)) return
+    const network = loadExpoNetwork()
 
-    let retryInterval: ReturnType<typeof setInterval> | undefined
+    let active = true
     let appIsActive = AppState.currentState !== 'background' && AppState.currentState !== 'inactive'
-    const stopRetrying = () => {
-      if (retryInterval !== undefined) {
-        clearInterval(retryInterval)
-        retryInterval = undefined
-      }
-    }
-    const startRetrying = () => {
-      if (!appIsActive || retryInterval !== undefined) return
+    let inProgress = false
+    let rerunRequested = false
+    let validationEpoch = 0
+    let retryDelay = 1_000
+    let retryTimer: ReturnType<typeof setTimeout> | undefined
 
-      retryInterval = setInterval(() => {
-        const state = useAuthStore.getState()
+    const clearRetry = () => {
+      if (retryTimer) clearTimeout(retryTimer)
+      retryTimer = undefined
+    }
+    const closeGate = () => {
+      validationEpoch += 1
+      apiReadyOwnerRef.current = null
+      setApiReadyOwner(null)
+      syncEngine.setUploadsEnabled(false)
+    }
+    const scheduleRetry = () => {
+      clearRetry()
+      if (!active || !appIsActive) return
+      retryTimer = setTimeout(run, retryDelay)
+      retryDelay = Math.min(retryDelay * 2, 60_000)
+    }
+    const run = async () => {
+      if (!active || !appIsActive) return
+      if (inProgress) {
+        rerunRequested = true
+        return
+      }
+      inProgress = true
+      const epoch = validationEpoch
+      clearRetry()
+      try {
+        try {
+          const networkState = await new Promise<
+            Awaited<ReturnType<NonNullable<typeof network>['getNetworkStateAsync']>>
+          >((resolve, reject) => {
+            if (!network) {
+              reject(new Error('Network state unavailable'))
+              return
+            }
+            const timeout = setTimeout(() => reject(new Error('Network check timed out')), 3_000)
+            network.getNetworkStateAsync().then(
+              (state) => {
+                clearTimeout(timeout)
+                resolve(state)
+              },
+              (error) => {
+                clearTimeout(timeout)
+                reject(error)
+              }
+            )
+          })
+          if (networkState.isConnected === false || networkState.isInternetReachable === false) {
+            throw new Error('Network unavailable')
+          }
+        } catch (error) {
+          if ((error as Error).message === 'Network unavailable') throw error
+        }
+        await apiService.probeAvailability()
+        const networkPreference = useNetworkStore.getState()
         if (
-          !state.isStartupReady ||
-          state.startupError ||
-          state.isProfileTransitioning ||
-          state.isProfileLoading ||
-          !state.isAuthenticated ||
-          state.user?.id !== userId ||
-          state.profileOwnerId !== ownerId ||
-          state.serverSession !== 'unknown' ||
-          !isCurrentProfile(scope)
+          !active ||
+          !appIsActive ||
+          epoch !== validationEpoch ||
+          !isCurrentProfile(scope) ||
+          !networkPreference.isReady ||
+          networkPreference.restoreError ||
+          networkPreference.manualOffline
         ) {
           return
         }
-
-        void state.fetchUser().catch(() => {})
-      }, 30_000)
+        const beforeAuth = useAuthStore.getState()
+        if (
+          !beforeAuth.isAuthenticated ||
+          beforeAuth.profileOwnerId !== ownerId ||
+          beforeAuth.user?.id !== userId ||
+          beforeAuth.serverSession === 'invalid'
+        ) {
+          return
+        }
+        await beforeAuth.fetchUser()
+        const state = useAuthStore.getState()
+        if (
+          active &&
+          appIsActive &&
+          epoch === validationEpoch &&
+          isCurrentProfile(scope) &&
+          state.profileOwnerId === ownerId &&
+          state.user?.id === userId &&
+          state.serverSession === 'valid'
+        ) {
+          retryDelay = 1_000
+          apiReadyOwnerRef.current = ownerId
+          setApiReadyOwner(ownerId)
+        }
+      } catch {
+        if (
+          active &&
+          epoch === validationEpoch &&
+          isCurrentProfile(scope) &&
+          useAuthStore.getState().serverSession !== 'invalid'
+        ) {
+          scheduleRetry()
+        }
+      } finally {
+        inProgress = false
+        if (rerunRequested) {
+          rerunRequested = false
+          void run()
+        }
+      }
     }
 
-    const subscription = AppState.addEventListener('change', (nextState) => {
+    const appStateSubscription = AppState.addEventListener('change', (nextState) => {
       appIsActive = nextState === 'active'
-      if (appIsActive) startRetrying()
-      else stopRetrying()
+      closeGate()
+      if (appIsActive) void run()
+      else clearRetry()
     })
-    startRetrying()
+    const networkSubscription = network?.addNetworkStateListener((state) => {
+      closeGate()
+      if (state.isConnected === false || state.isInternetReachable === false) return
+      if (retryTimer) return
+      void run()
+    })
+    const authSubscription = useAuthStore.subscribe((state, previous) => {
+      const eligible =
+        state.isStartupReady &&
+        !state.startupError &&
+        !state.isProfileTransitioning &&
+        state.isAuthenticated &&
+        state.profileOwnerId === ownerId &&
+        state.user?.id === userId
+      if (!eligible || state.serverSession === 'invalid') {
+        closeGate()
+      }
+      if (
+        eligible &&
+        !inProgress &&
+        state.serverSession !== 'invalid' &&
+        previous.serverSession === 'invalid'
+      ) {
+        void run()
+      }
+    })
+    closeGate()
+    void run()
 
     return () => {
-      stopRetrying()
-      subscription.remove()
+      active = false
+      apiReadyOwnerRef.current = null
+      syncEngine.setUploadsEnabled(false)
+      clearRetry()
+      appStateSubscription.remove()
+      networkSubscription?.remove()
+      authSubscription()
     }
   }, [
+    db,
     isAuthenticated,
-    isProfileLoading,
     isProfileTransitioning,
     isStartupReady,
+    manualOffline,
+    networkPreferenceError,
+    networkPreferenceReady,
     ownerId,
     profileOwnerId,
-    serverSession,
+    readyDb,
     startupError,
     userId,
   ])
@@ -194,7 +351,11 @@ function SyncEngineBootstrap({
       profileOwnerId !== ownerId ||
       !isAuthenticated ||
       !userId ||
-      serverSession !== 'valid'
+      serverSession !== 'valid' ||
+      !networkPreferenceReady ||
+      networkPreferenceError ||
+      manualOffline ||
+      apiReadyOwner !== ownerId
     ) {
       return
     }
@@ -206,12 +367,44 @@ function SyncEngineBootstrap({
     let hydrationDeferred = false
     let hydrationInProgress = false
     let retryHydrationAfterMutation = false
+    let hydrationRetryDelay = 1_000
+    let hydrationRetryTimer: ReturnType<typeof setTimeout> | undefined
+    let appIsActive = AppState.currentState !== 'background' && AppState.currentState !== 'inactive'
+    let hydrationComplete = false
     let unsubscribeSync: (() => void) | undefined
+
+    const scheduleHydrationRetry = () => {
+      const networkPreference = useNetworkStore.getState()
+      if (
+        !active ||
+        !appIsActive ||
+        hydrationRetryTimer ||
+        hydrationComplete ||
+        apiReadyOwnerRef.current !== ownerId ||
+        !networkPreference.isReady ||
+        networkPreference.restoreError ||
+        networkPreference.manualOffline
+      ) {
+        return
+      }
+      hydrationRetryTimer = setTimeout(() => {
+        hydrationRetryTimer = undefined
+        void hydrateWhenQueueIsClear()
+      }, hydrationRetryDelay)
+      hydrationRetryDelay = Math.min(hydrationRetryDelay * 2, 60_000)
+    }
 
     const hydrateWhenQueueIsClear = async () => {
       if (!active || hydrationInProgress) return
       const state = useAuthStore.getState()
+      const networkPreference = useNetworkStore.getState()
       if (
+        AppState.currentState === 'background' ||
+        AppState.currentState === 'inactive' ||
+        apiReadyOwnerRef.current !== ownerId ||
+        !networkPreference.isReady ||
+        networkPreference.restoreError ||
+        networkPreference.manualOffline ||
         !state.isStartupReady ||
         state.startupError ||
         state.isProfileTransitioning ||
@@ -229,7 +422,18 @@ function SyncEngineBootstrap({
         const queuedMutation = await db.getFirstAsync<{ id: string }>(
           'SELECT id FROM sync_queue LIMIT 1'
         )
-        if (!active || !isCurrentProfile(scope)) return
+        const currentNetworkPreference = useNetworkStore.getState()
+        if (
+          !active ||
+          !appIsActive ||
+          apiReadyOwnerRef.current !== ownerId ||
+          !currentNetworkPreference.isReady ||
+          currentNetworkPreference.restoreError ||
+          currentNetworkPreference.manualOffline ||
+          !isCurrentProfile(scope)
+        ) {
+          return
+        }
         if (queuedMutation) {
           // ponytail: defer bulk hydration until queued writes drain; reconcile per row if pulls must run sooner.
           hydrationDeferred = true
@@ -238,18 +442,34 @@ function SyncEngineBootstrap({
         }
 
         const hydrated = await hydrateFromServer(db)
-        if (!active || !isCurrentProfile(scope)) return
+        if (
+          !active ||
+          !appIsActive ||
+          apiReadyOwnerRef.current !== ownerId ||
+          !isCurrentProfile(scope)
+        ) {
+          return
+        }
         if (!hydrated) {
           const queuedAfterSnapshot = await db.getFirstAsync<{ id: string }>(
             'SELECT id FROM sync_queue LIMIT 1'
           )
-          if (!active || !isCurrentProfile(scope)) return
+          if (
+            !active ||
+            !appIsActive ||
+            apiReadyOwnerRef.current !== ownerId ||
+            !isCurrentProfile(scope)
+          ) {
+            return
+          }
           hydrationDeferred = !!queuedAfterSnapshot
-          if (!queuedAfterSnapshot) retryHydrationAfterMutation = true
+          if (!queuedAfterSnapshot) scheduleHydrationRetry()
           return
         }
 
         hydrationDeferred = false
+        hydrationComplete = true
+        hydrationRetryDelay = 1_000
         retryHydrationAfterMutation = false
         unsubscribeSync?.()
         unsubscribeSync = undefined
@@ -257,6 +477,7 @@ function SyncEngineBootstrap({
       } catch (error: any) {
         if (isCurrentProfile(scope)) {
           console.warn('[SyncEngineBootstrap] Hydration failed (offline?):', error?.message)
+          scheduleHydrationRetry()
         }
       } finally {
         hydrationInProgress = false
@@ -274,6 +495,15 @@ function SyncEngineBootstrap({
         void hydrateWhenQueueIsClear()
       }
     })
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      appIsActive = state === 'active'
+      if (!appIsActive && hydrationRetryTimer) {
+        clearTimeout(hydrationRetryTimer)
+        hydrationRetryTimer = undefined
+      } else if (appIsActive) {
+        scheduleHydrationRetry()
+      }
+    })
     syncEngine
       .processQueue()
       .then(hydrateWhenQueueIsClear)
@@ -285,10 +515,16 @@ function SyncEngineBootstrap({
 
     return () => {
       active = false
+      if (hydrationRetryTimer) clearTimeout(hydrationRetryTimer)
+      appStateSubscription.remove()
       unsubscribeSync?.()
     }
   }, [
     db,
+    apiReadyOwner,
+    manualOffline,
+    networkPreferenceError,
+    networkPreferenceReady,
     isAuthenticated,
     isProfileTransitioning,
     isStartupReady,

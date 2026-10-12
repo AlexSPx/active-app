@@ -4,6 +4,7 @@ const { act, create } = require('react-test-renderer')
 let mockCurrentScope
 let mockAuthState
 let mockSyncListeners
+let mockNetworkState
 
 jest.mock('react-native', () => ({
   Alert: { alert: jest.fn() },
@@ -17,12 +18,17 @@ jest.mock('expo-router', () => {
 })
 jest.mock('tamagui', () => {
   const React = require('react')
-  return Object.fromEntries(
+  const components = Object.fromEntries(
     ['Button', 'Paragraph', 'Text', 'XStack', 'YStack'].map((name) => [
       name,
       (props) => React.createElement(name, props, props.children),
     ])
   )
+  const Switch = (props) => React.createElement('Switch', props, props.children)
+  Switch.Thumb = (props) => React.createElement('SwitchThumb', props)
+  components.Label = (props) => React.createElement('Label', props, props.children)
+  components.Switch = Switch
+  return components
 })
 jest.mock('../../components/settings/SettingsPage', () => ({
   SettingsPage: (props) => require('react').createElement('Page', {}, props.children, props.footer),
@@ -51,6 +57,9 @@ jest.mock('../../lib/sync', () => ({
 }))
 jest.mock('../../stores/authStore', () => ({
   useAuthStore: jest.fn((selector) => selector(mockAuthState)),
+}))
+jest.mock('../../stores/networkStore', () => ({
+  useNetworkStore: jest.fn(() => mockNetworkState),
 }))
 
 const { Alert } = require('react-native')
@@ -86,6 +95,13 @@ beforeEach(() => {
     isAuthenticated: true,
   }
   mockSyncListeners = new Set()
+  mockNetworkState = {
+    manualOffline: false,
+    isReady: true,
+    restoreError: null,
+    setManualOffline: jest.fn().mockResolvedValue(undefined),
+    retryRestore: jest.fn().mockResolvedValue(undefined),
+  }
   syncEngine.authPaused = false
   syncEngine.listJobs.mockResolvedValue([job()])
   syncEngine.retryJob.mockClear()
@@ -168,6 +184,68 @@ test('auth pause offers sign-in and disables retry without clearing queued chang
     'Sign in again to resume syncing.'
   )
   expect(syncEngine.retryJob).not.toHaveBeenCalled()
+  await act(async () => view.unmount())
+})
+
+test('offline switch stays disabled until saved preferences are restored and offers retry', async () => {
+  mockNetworkState.isReady = true
+  mockNetworkState.restoreError = 'private storage error'
+  const view = await renderScreen()
+
+  const offlineSwitch = view.root.findByType('Switch')
+  expect(offlineSwitch.props.disabled).toBe(true)
+  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).toContain(
+    'Could not restore saved offline preference. Server actions are paused.'
+  )
+  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).not.toContain(
+    'private storage error'
+  )
+
+  const retryRestore = view.root
+    .findAllByType('Button')
+    .find((button) => button.props.children === 'Retry restore')
+  await act(async () => retryRestore.props.onPress())
+  expect(mockNetworkState.retryRestore).toHaveBeenCalledTimes(1)
+  await act(async () => view.unmount())
+})
+
+test('offline switch stays disabled while saved preferences are still loading', async () => {
+  mockNetworkState.isReady = false
+  const view = await renderScreen()
+
+  expect(view.root.findByType('Switch').props.disabled).toBe(true)
+  expect(mockNetworkState.setManualOffline).not.toHaveBeenCalled()
+  await act(async () => view.unmount())
+})
+
+test('manual offline mode disables server actions while keeping local discard available', async () => {
+  mockNetworkState.manualOffline = true
+  syncEngine.listJobs.mockResolvedValue([job({ status: 'failed' })])
+  const view = await renderScreen()
+
+  expect(view.root.findByType('Switch').props.checked).toBe(true)
+  expect(view.root.findAllByType('Button').map((button) => button.props.children)).not.toContain(
+    'Retry'
+  )
+  expect(view.root.findAllByType('Button').map((button) => button.props.children)).toContain(
+    'Discard'
+  )
+  await act(async () => view.unmount())
+})
+
+test('offline preference save errors are handled without exposing storage details', async () => {
+  mockNetworkState.setManualOffline.mockRejectedValue(new Error('private storage detail'))
+  const view = await renderScreen()
+
+  await act(async () => view.root.findByType('Switch').props.onCheckedChange(true))
+
+  expect(mockNetworkState.setManualOffline).toHaveBeenCalledWith(true)
+  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).toContain(
+    'Could not save offline preference. Please try again.'
+  )
+  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).not.toContain(
+    'private storage detail'
+  )
   await act(async () => view.unmount())
 })
 

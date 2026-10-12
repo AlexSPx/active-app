@@ -24,10 +24,13 @@ export async function hydrateFromServer(db: SQLiteDatabase): Promise<boolean> {
 
   // Fetch the user first (needed for activeRoutineId), then the rest in parallel
   let activeRoutineId: string | null = null
+  let userFetched = false
   try {
     const user = await syncApi.getUser()
+    if (user == null) throw new Error('User response was empty')
 
-    activeRoutineId = user?.activeRoutineId ?? null
+    activeRoutineId = user.activeRoutineId ?? null
+    userFetched = true
     console.log('[Hydration] User fetched, activeRoutineId:', activeRoutineId)
   } catch (e) {
     console.warn('[Hydration] Could not fetch user (offline?), skipping activeRoutineId:', e)
@@ -56,6 +59,8 @@ export async function hydrateFromServer(db: SQLiteDatabase): Promise<boolean> {
     records: serverRecords?.length ?? 'failed',
     routines: serverRoutines?.length ?? 'failed',
   })
+
+  if (!userFetched || !serverWorkouts || !serverRecords || !serverRoutines) return false
 
   await syncEngine.withIdRemapLock(async () => {
     assertCurrentHydration(scope)
@@ -115,6 +120,7 @@ async function writeHydrationData(
       console.log(`[Hydration] Wrote ${serverWorkouts.length} workouts`)
     } catch (e) {
       console.error('[Hydration] Failed to write workouts to SQLite:', e)
+      throw e
     }
   }
 
@@ -125,6 +131,7 @@ async function writeHydrationData(
       console.log(`[Hydration] Wrote ${serverRecords.length} workout records`)
     } catch (e) {
       console.error('[Hydration] Failed to write workout records to SQLite:', e)
+      throw e
     }
   }
 
@@ -136,6 +143,7 @@ async function writeHydrationData(
       console.log(`[Hydration] Wrote ${serverRoutines.length} routines`)
     } catch (e) {
       console.error('[Hydration] Failed to write routines to SQLite:', e)
+      throw e
     }
   }
 }

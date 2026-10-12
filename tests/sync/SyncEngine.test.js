@@ -11,6 +11,38 @@ jest.mock('../../services/posthog', () => ({
 const { createApi, makeJob, runQueue, FakeDb } = require('../helpers/syncTestUtils')
 
 describe('SyncEngine queue remapping', () => {
+  it('notifies queue subscribers after a successful acknowledgement', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const db = new FakeDb({
+      jobs: [
+        makeJob({
+          id: 'acknowledged',
+          endpoint: 'deleteWorkout',
+          payload: ['workout'],
+        }),
+      ],
+    })
+    const engine = new SyncEngine({
+      api: createApi(),
+      getNetworkState: async () => ({
+        isConnected: true,
+        isInternetReachable: true,
+      }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    const snapshots = []
+
+    await engine.init(db, { processOnInit: false })
+    engine.on('sync:change', () => snapshots.push(engine.listJobs()))
+    await engine.processQueue()
+
+    expect(await Promise.all(snapshots)).toEqual([
+      [expect.objectContaining({ id: 'acknowledged', status: 'processing' })],
+      [],
+    ])
+    engine.destroy()
+  })
+
   it.each(['sync:start', 'sync:complete', 'sync:idle', 'sync:error'])(
     'keeps queue processing and other subscribers intact when a %s listener throws',
     async (event) => {
