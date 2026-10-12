@@ -101,6 +101,8 @@ interface RequestLogContext {
   url: string
 }
 
+const idempotencyHeaders = (key?: string) => (key ? { 'Idempotency-Key': key } : undefined)
+
 class ApiService {
   private unauthorizedHandler?: () => void
   private isRefreshing = false
@@ -780,11 +782,15 @@ class ApiService {
     })
   }
 
-  async createWorkout(workoutData: CreateWorkoutRequest): Promise<{ id: string }> {
+  async createWorkout(
+    workoutData: CreateWorkoutRequest,
+    idempotencyKey?: string
+  ): Promise<{ id: string }> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.CREATE)
 
     return this.request<{ id: string }>(url, {
       method: 'POST',
+      headers: idempotencyHeaders(idempotencyKey),
       body: JSON.stringify(workoutData),
     })
   }
@@ -797,11 +803,15 @@ class ApiService {
     })
   }
 
-  async recordWorkout(workoutRecord: WorkoutRecordRequest): Promise<WorkoutRecordResponse> {
+  async recordWorkout(
+    workoutRecord: WorkoutRecordRequest,
+    idempotencyKey?: string
+  ): Promise<WorkoutRecordResponse> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.RECORD)
 
     return this.request<WorkoutRecordResponse>(url, {
       method: 'POST',
+      headers: idempotencyHeaders(idempotencyKey),
       body: JSON.stringify(workoutRecord),
     })
   }
@@ -812,13 +822,15 @@ class ApiService {
       title?: string
       notes?: string
       template?: CreateWorkoutRequest['template']
-    }
+    },
+    idempotencyKey?: string
   ): Promise<void> {
     const base = config.API_ENDPOINTS.WORKOUTS.UPDATE
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
 
     return this.request<void>(url, {
       method: 'PUT',
+      headers: idempotencyHeaders(idempotencyKey),
       body: JSON.stringify(payload),
     })
   }
@@ -831,21 +843,23 @@ class ApiService {
     })
   }
 
-  async deleteWorkoutRecord(recordId: string): Promise<void> {
+  async deleteWorkoutRecord(recordId: string, idempotencyKey?: string): Promise<void> {
     const base = config.API_ENDPOINTS.WORKOUTS.RECORD
     const url = getApiUrl(`${base}/${encodeURIComponent(recordId)}`)
 
     return this.request<void>(url, {
       method: 'DELETE',
+      headers: idempotencyHeaders(idempotencyKey),
     })
   }
 
-  async deleteWorkout(workoutId: string): Promise<void> {
+  async deleteWorkout(workoutId: string, idempotencyKey?: string): Promise<void> {
     const base = config.API_ENDPOINTS.WORKOUTS.DELETE
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
 
     return this.request<void>(url, {
       method: 'DELETE',
+      headers: idempotencyHeaders(idempotencyKey),
     })
   }
 
@@ -917,31 +931,38 @@ class ApiService {
     })
   }
 
-  async createRoutine(payload: CreateRoutineRequest): Promise<Routine> {
+  async createRoutine(payload: CreateRoutineRequest, idempotencyKey?: string): Promise<Routine> {
     const url = getApiUrl(config.API_ENDPOINTS.ROUTINES.CREATE)
 
     return this.request<Routine>(url, {
       method: 'POST',
+      headers: idempotencyHeaders(idempotencyKey),
       body: JSON.stringify(payload),
     })
   }
 
-  async updateRoutine(routineId: string, payload: UpdateRoutineRequest): Promise<Routine> {
+  async updateRoutine(
+    routineId: string,
+    payload: UpdateRoutineRequest,
+    idempotencyKey?: string
+  ): Promise<Routine> {
     const base = config.API_ENDPOINTS.ROUTINES.UPDATE
     const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
 
     return this.request<Routine>(url, {
       method: 'PUT',
+      headers: idempotencyHeaders(idempotencyKey),
       body: JSON.stringify(payload),
     })
   }
 
-  async deleteRoutine(routineId: string): Promise<void> {
+  async deleteRoutine(routineId: string, idempotencyKey?: string): Promise<void> {
     const base = config.API_ENDPOINTS.ROUTINES.DELETE
     const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
 
     return this.request<void>(url, {
       method: 'DELETE',
+      headers: idempotencyHeaders(idempotencyKey),
     })
   }
   async getTermsOfService(): Promise<string> {

@@ -14,6 +14,7 @@
 import { type SQLiteDatabase } from 'expo-sqlite'
 import * as Network from 'expo-network'
 import { AppState, type AppStateStatus } from 'react-native'
+import type { WorkoutRecord } from '../../types/api'
 import { syncApi, type SyncApi } from './api'
 import { replaceQueuedIdReferences } from './queuePayloadRemap'
 import { getProfileScope, isCurrentProfile, type ProfileScope } from '../profileScope'
@@ -42,6 +43,7 @@ export interface SyncJob {
   endpoint: string
   method: string
   payload: string
+  request_payload: string | null
   local_table: string | null
   local_id: string | null
   idempotency_key: string | null
@@ -103,7 +105,7 @@ function getJobDependencies(job: SyncJob): JobDependencies {
   const requires = new Set<string>()
   let payload: unknown
   try {
-    payload = JSON.parse(job.payload)
+    payload = JSON.parse(job.request_payload ?? job.payload)
   } catch {
     return { primary: localEntity, requires, unknown: true }
   }
@@ -772,16 +774,20 @@ export class SyncEngine {
       )
       if (!this.isCurrentEngine(db, scope) || !latest) return
       if (latest.status !== 'pending' && latest.status !== 'failed') return
-      await db.runAsync('UPDATE sync_queue SET status = ? WHERE id = ?', 'processing', latest.id)
-      currentJob = { ...latest, status: 'processing' }
+      if (!this.uploadsEnabled || this.authenticationPaused || this.paused) return
+      const requestPayload = latest.request_payload ?? latest.payload
+      await db.withTransactionAsync(async () => {
+        await db.runAsync(
+          'UPDATE sync_queue SET status = ?, request_payload = ? WHERE id = ?',
+          'processing',
+          requestPayload,
+          latest.id
+        )
+      })
+      currentJob = { ...latest, status: 'processing', request_payload: requestPayload }
     })
     if (!currentJob || !this.isCurrentEngine(db, scope)) return false
     this.queueDidChange()
-
-    if (!this.uploadsEnabled || this.authenticationPaused || this.paused) {
-      await this.resetPending(db, scope, currentJob.id)
-      return false
-    }
 
     const methodName = currentJob.endpoint as keyof SyncApi
     const apiFunc = this.deps.api[methodName] as (...args: any[]) => Promise<any>
@@ -794,7 +800,7 @@ export class SyncEngine {
 
     let args: any[]
     try {
-      const parsedPayload = JSON.parse(currentJob.payload)
+      const parsedPayload = JSON.parse(currentJob.request_payload ?? currentJob.payload)
       args = Array.isArray(parsedPayload) ? parsedPayload : [parsedPayload]
     } catch (error) {
       await this.markDeadLetter(
@@ -812,7 +818,10 @@ export class SyncEngine {
 
     let response: any
     try {
-      response = await apiFunc.apply(this.deps.api, args)
+      response = await apiFunc.apply(this.deps.api, [
+        ...args,
+        currentJob.idempotency_key ?? currentJob.id,
+      ])
     } catch (error) {
       const isDelete =
         currentJob.endpoint === 'deleteWorkout' ||
@@ -827,40 +836,59 @@ export class SyncEngine {
       return false
     }
 
-    if (response && response.id && currentJob.local_table && currentJob.local_id) {
-      await this.remapId(
-        db,
-        scope,
-        currentJob.local_table,
-        currentJob.local_id,
-        response.id,
-        currentJob.id
-      )
-    }
-
-    if (
+    const remap =
       response?.workoutRecord?.id &&
       currentJob.local_table === 'workout_records' &&
       currentJob.local_id
-    ) {
-      await this.remapId(
-        db,
-        scope,
-        'workout_records',
-        currentJob.local_id,
-        response.workoutRecord.id,
-        currentJob.id
-      )
-    }
+        ? {
+            tableName: 'workout_records',
+            oldId: currentJob.local_id,
+            newId: response.workoutRecord.id as string,
+          }
+        : response?.id && currentJob.local_table && currentJob.local_id
+          ? {
+              tableName: currentJob.local_table,
+              oldId: currentJob.local_id,
+              newId: response.id as string,
+            }
+          : null
 
-    if (!this.isCurrentEngine(db, scope)) {
-      return false
-    }
     await this.withIdRemapLock(async () => {
       if (!this.isCurrentEngine(db, scope)) return
       await db.withTransactionAsync(async () => {
         if (!this.isCurrentEngine(db, scope))
           throw new Error('Sync lifecycle changed during acknowledgement')
+        if (remap) {
+          await this.applyIdRemap(
+            db,
+            scope,
+            remap.tableName,
+            remap.oldId,
+            remap.newId,
+            currentJob.id
+          )
+        }
+        if (
+          currentJob.endpoint === 'recordWorkout' &&
+          currentJob.local_id &&
+          response?.workoutRecord?.workoutTitle &&
+          response.workoutRecord.createdAt &&
+          Array.isArray(response.workoutRecord.exerciseRecords)
+        ) {
+          const record = response.workoutRecord as WorkoutRecord
+          await db.runAsync(
+            `UPDATE workout_records
+             SET workout_id = ?, workout_title = ?, notes = ?, created_at = ?, start_time = ?, exercise_records = ?
+             WHERE id = ?`,
+            record.workoutId,
+            record.workoutTitle,
+            record.notes ?? null,
+            record.createdAt,
+            record.startTime ?? null,
+            JSON.stringify(record.exerciseRecords),
+            remap?.newId ?? currentJob.local_id
+          )
+        }
         const deletedTable =
           currentJob.endpoint === 'deleteWorkout'
             ? 'workouts'
@@ -877,6 +905,14 @@ export class SyncEngine {
         }
         await db.runAsync('DELETE FROM sync_queue WHERE id = ?', currentJob.id)
       })
+      if (!this.isCurrentEngine(db, scope)) return
+      if (remap) {
+        if (remap.oldId !== remap.newId) {
+          this.remappedIds.set(`${remap.tableName}:${remap.oldId}`, remap.newId)
+        }
+        this.emitIdRemap(remap.tableName, remap.oldId, remap.newId)
+        console.log(`[SyncEngine] Remapped ${remap.tableName}: ${remap.oldId} → ${remap.newId}`)
+      }
       this.queueDidChange()
     })
     console.log(`[SyncEngine] ✓ ${currentJob.endpoint}`)
@@ -887,7 +923,7 @@ export class SyncEngine {
   // ID Remapping (safe)
   // -----------------------------------------------------------------------
 
-  private async remapId(
+  private async applyIdRemap(
     db: SQLiteDatabase,
     scope: ProfileScope,
     tableName: string,
@@ -895,83 +931,74 @@ export class SyncEngine {
     newId: string,
     sourceJobId?: string
   ): Promise<void> {
-    return this.withIdRemapLock(async () => {
-      if (!this.isCurrentEngine(db, scope)) return
+    // Allowlist check (defense-in-depth; already validated at enqueue)
+    if (!(ALLOWED_TABLES as readonly string[]).includes(tableName)) {
+      throw new Error(`Invalid remap table: ${tableName}`)
+    }
 
-      // Allowlist check (defense-in-depth; already validated at enqueue)
-      if (!(ALLOWED_TABLES as readonly string[]).includes(tableName)) {
-        console.error(`[SyncEngine] remapId rejected table: ${tableName}`)
-        return
-      }
+    if (!this.isCurrentEngine(db, scope))
+      throw new Error('Sync lifecycle changed during ID remap')
+    const serverRowAlreadyHydrated =
+      oldId !== newId &&
+      (await db.getFirstAsync<{ id: string }>(
+        `SELECT id FROM "${tableName}" WHERE id = ?`,
+        newId
+      ))
 
-      await db.withTransactionAsync(async () => {
-        if (!this.isCurrentEngine(db, scope))
-          throw new Error('Sync lifecycle changed during ID remap')
-        const serverWorkoutAlreadyHydrated =
-          tableName === 'workouts' &&
-          oldId !== newId &&
-          (await db.getFirstAsync<{ id: string }>('SELECT id FROM workouts WHERE id = ?', newId))
-
-        if (!this.isCurrentEngine(db, scope))
-          throw new Error('Sync lifecycle changed during ID remap')
-        if (serverWorkoutAlreadyHydrated) {
-          // Hydration can insert the server row before this create job returns.
-          const oldRow = await db.getFirstAsync<{ is_deleted: number }>(
-            'SELECT is_deleted FROM workouts WHERE id = ?',
-            oldId
-          )
-          await db.runAsync(
-            'UPDATE workout_records SET workout_id = ? WHERE workout_id = ?',
-            newId,
-            oldId
-          )
-          if (oldRow?.is_deleted) {
-            await db.runAsync('UPDATE workouts SET is_deleted = 1 WHERE id = ?', newId)
-          }
-          if (!this.isCurrentEngine(db, scope))
-            throw new Error('Sync lifecycle changed during ID remap')
-          await db.runAsync('DELETE FROM workouts WHERE id = ?', oldId)
-        } else {
-          // Use a safe, compile-time known query for each table
-          const query = `UPDATE "${tableName}" SET id = ? WHERE id = ?`
-          await db.runAsync(query, newId, oldId)
-        }
-
-        if (!this.isCurrentEngine(db, scope))
-          throw new Error('Sync lifecycle changed during ID remap')
-        if (tableName === 'workouts') {
-          await this.remapJsonReferences(db, scope, 'workouts', 'workout_template', oldId, newId)
-          await this.remapJsonReferences(db, scope, 'routines', 'pattern', oldId, newId)
-        }
-
-        // Mark as synced
-        if (!this.isCurrentEngine(db, scope))
-          throw new Error('Sync lifecycle changed during ID remap')
+    if (!this.isCurrentEngine(db, scope))
+      throw new Error('Sync lifecycle changed during ID remap')
+    if (serverRowAlreadyHydrated) {
+      // Hydration can insert the server row before this create job returns.
+      const oldRow = await db.getFirstAsync<{ is_deleted: number }>(
+        `SELECT is_deleted FROM "${tableName}" WHERE id = ?`,
+        oldId
+      )
+      if (tableName === 'workouts') {
         await db.runAsync(
-          `UPDATE "${tableName}" SET is_synced = 1, synced_at = ? WHERE id = ?`,
-          new Date().toISOString(),
-          newId
+          'UPDATE workout_records SET workout_id = ? WHERE workout_id = ?',
+          newId,
+          oldId
         )
+      }
+      if (oldRow?.is_deleted) {
+        await db.runAsync(`UPDATE "${tableName}" SET is_deleted = 1 WHERE id = ?`, newId)
+      }
+      if (!this.isCurrentEngine(db, scope))
+        throw new Error('Sync lifecycle changed during ID remap')
+      await db.runAsync(`DELETE FROM "${tableName}" WHERE id = ?`, oldId)
+    } else {
+      // Use a safe, compile-time known query for each table
+      const query = `UPDATE "${tableName}" SET id = ? WHERE id = ?`
+      await db.runAsync(query, newId, oldId)
+    }
 
-        await this.rewriteQueuedPayloadReferences(db, scope, oldId, newId, sourceJobId)
-        if (!this.isCurrentEngine(db, scope))
-          throw new Error('Sync lifecycle changed during ID remap')
-        if (oldId !== newId) {
-          await db.runAsync(
-            'INSERT OR REPLACE INTO id_remaps (table_name, old_id, new_id) VALUES (?, ?, ?)',
-            tableName,
-            oldId,
-            newId
-          )
-        }
-      })
+    if (!this.isCurrentEngine(db, scope))
+      throw new Error('Sync lifecycle changed during ID remap')
+    if (tableName === 'workouts') {
+      await this.remapJsonReferences(db, scope, 'workouts', 'workout_template', oldId, newId)
+      await this.remapJsonReferences(db, scope, 'routines', 'pattern', oldId, newId)
+    }
 
-      if (!this.isCurrentEngine(db, scope)) return
-      if (oldId !== newId) this.remappedIds.set(`${tableName}:${oldId}`, newId)
-      this.emitIdRemap(tableName, oldId, newId)
+    // Mark as synced
+    if (!this.isCurrentEngine(db, scope))
+      throw new Error('Sync lifecycle changed during ID remap')
+    await db.runAsync(
+      `UPDATE "${tableName}" SET is_synced = 1, synced_at = ? WHERE id = ?`,
+      new Date().toISOString(),
+      newId
+    )
 
-      console.log(`[SyncEngine] Remapped ${tableName}: ${oldId} → ${newId}`)
-    })
+    await this.rewriteQueuedPayloadReferences(db, scope, oldId, newId, sourceJobId)
+    if (!this.isCurrentEngine(db, scope))
+      throw new Error('Sync lifecycle changed during ID remap')
+    if (oldId !== newId) {
+      await db.runAsync(
+        'INSERT OR REPLACE INTO id_remaps (table_name, old_id, new_id) VALUES (?, ?, ?)',
+        tableName,
+        oldId,
+        newId
+      )
+    }
   }
 
   private emitIdRemap(tableName: string, oldId: string, newId: string): void {
@@ -1037,9 +1064,8 @@ export class SyncEngine {
     const queuedJobs = await db.getAllAsync<Pick<SyncJob, 'id' | 'payload'>>(
       `SELECT id, payload
        FROM sync_queue
-       WHERE status != ?
+       WHERE request_payload IS NULL
          AND id != ?`,
-      'processing',
       sourceJobId || ''
     )
     if (!this.isCurrentEngine(db, scope)) return

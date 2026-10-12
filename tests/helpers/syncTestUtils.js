@@ -9,12 +9,14 @@ function makeJob({
   sequence,
   nextAttemptAt = 0,
   createdAt = '2026-01-01 00:00:00',
+  requestPayload = null,
 }) {
   return {
     id,
     endpoint,
     method: 'API',
     payload: JSON.stringify(payload),
+    request_payload: requestPayload == null ? null : JSON.stringify(requestPayload),
     local_table: localTable,
     local_id: localId,
     idempotency_key: `${id}-key`,
@@ -131,9 +133,9 @@ class FakeDb {
     }
 
     if (sql.includes('SELECT id, payload') && sql.includes('FROM sync_queue')) {
-      const [excludedStatus, excludedId] = params
+      const [excludedId] = params
       return this.jobs
-        .filter((job) => job.status !== excludedStatus && job.id !== excludedId)
+        .filter((job) => job.request_payload == null && job.id !== excludedId)
         .map((job) => ({
           id: job.id,
           payload: job.payload,
@@ -218,6 +220,21 @@ class FakeDb {
       return this.tables.workouts.has(params[0]) ? { id: params[0] } : null
     }
 
+    const quotedIdLookup = sql.match(
+      /^SELECT id FROM "(workouts|workout_records|routines)" WHERE id = \?$/
+    )
+    if (quotedIdLookup) {
+      return this.tables[quotedIdLookup[1]].has(params[0]) ? { id: params[0] } : null
+    }
+
+    const quotedDeletedLookup = sql.match(
+      /^SELECT is_deleted FROM "(workouts|workout_records|routines)" WHERE id = \?$/
+    )
+    if (quotedDeletedLookup) {
+      const row = this.tables[quotedDeletedLookup[1]].get(params[0])
+      return row ? { is_deleted: row.is_deleted ?? 0 } : null
+    }
+
     if (
       sql === 'SELECT * FROM routines WHERE id = ?' ||
       sql === 'SELECT * FROM routines WHERE id = ? AND is_deleted = 0'
@@ -241,6 +258,39 @@ class FakeDb {
   }
 
   async runAsync(sql, ...params) {
+    if (sql.startsWith('UPDATE workout_records\n             SET workout_id = ?')) {
+      const [workoutId, workoutTitle, notes, createdAt, startTime, exerciseRecords, id] = params
+      const row = this.tables.workout_records.get(id)
+      if (row) {
+        Object.assign(row, {
+          workout_id: workoutId,
+          workout_title: workoutTitle,
+          notes,
+          created_at: createdAt,
+          start_time: startTime,
+          exercise_records: exerciseRecords,
+        })
+      }
+      return
+    }
+
+    const quotedTombstone = sql.match(
+      /^UPDATE "(workouts|workout_records|routines)" SET is_deleted = 1 WHERE id = \?$/
+    )
+    if (quotedTombstone) {
+      const row = this.tables[quotedTombstone[1]].get(params[0])
+      if (row) row.is_deleted = 1
+      return
+    }
+
+    const quotedDelete = sql.match(
+      /^DELETE FROM "(workouts|workout_records|routines)" WHERE id = \?$/
+    )
+    if (quotedDelete) {
+      this.tables[quotedDelete[1]].delete(params[0])
+      return
+    }
+
     const acknowledgedDelete = sql.match(
       /^DELETE FROM "(workouts|workout_records|routines)" WHERE id = \? AND is_deleted = 1$/
     )
@@ -554,6 +604,16 @@ class FakeDb {
       const [status, jobId] = params
       const job = this.jobs.find((entry) => entry.id === jobId)
       if (job) job.status = status
+      return
+    }
+
+    if (sql === 'UPDATE sync_queue SET status = ?, request_payload = ? WHERE id = ?') {
+      const [status, requestPayload, jobId] = params
+      const job = this.jobs.find((entry) => entry.id === jobId)
+      if (job) {
+        job.status = status
+        job.request_payload = requestPayload
+      }
       return
     }
 

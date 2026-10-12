@@ -74,6 +74,7 @@ function job(overrides = {}) {
     status: 'dead_letter',
     error_message: '409: duplicate name',
     blocked_reason: undefined,
+    request_payload: null,
     ...overrides,
   }
 }
@@ -168,6 +169,18 @@ test('discard asks for confirmation and keeps the change until confirmed', async
   expect(view.root.findAllByType('Text').map((item) => item.props.children)).not.toContain(
     'Create workout'
   )
+  await act(async () => view.unmount())
+})
+
+test('discard warns when a lost reply may hide a completed server change', async () => {
+  syncEngine.listJobs.mockResolvedValue([job({ request_payload: '[{"title":"Sent"}]' })])
+  const view = await renderScreen()
+  const discard = view.root
+    .findAllByType('Button')
+    .find((button) => button.props.children === 'Discard')
+
+  await act(async () => discard.props.onPress())
+  expect(Alert.alert.mock.calls[0][1]).toContain('server may already have applied this change')
   await act(async () => view.unmount())
 })
 

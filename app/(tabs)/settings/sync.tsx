@@ -134,9 +134,12 @@ export default function SyncSettingsScreen() {
   )
 
   const confirmDiscard = (job: SyncJob) => {
+    const message = job.request_payload
+      ? 'This stops retries. The server may already have applied this change if its reply was lost. Your local training data and related queued changes stay on this device.'
+      : 'This stops only this upload. Your local training data and related queued changes stay on this device.'
     Alert.alert(
       'Discard this queued change?',
-      'This stops only this upload. Your local training data and related queued changes stay on this device.',
+      message,
       [
         { text: 'Keep change', style: 'cancel' },
         {
