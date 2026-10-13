@@ -1,5 +1,5 @@
 module.exports = (api) => {
-  api.cache(true)
+  const isDevelopment = api.env('development')
   return {
     presets: [
       [
@@ -10,15 +10,19 @@ module.exports = (api) => {
       ],
     ],
     plugins: [
-      [
-        '@tamagui/babel-plugin',
-        {
-          components: ['tamagui', '@tamagui/lucide-icons'],
-          config: './tamagui.config.ts',
-          logTimings: true,
-          disableExtraction: true,
-        },
-      ],
+      ...(!isDevelopment
+        ? [
+            [
+              '@tamagui/babel-plugin',
+              {
+                components: ['tamagui', '@tamagui/lucide-icons'],
+                config: './tamagui.config.ts',
+                logTimings: false,
+                disableExtraction: true,
+              },
+            ],
+          ]
+        : []),
       // NOTE: this is only necessary if you are using reanimated for animations
       'react-native-reanimated/plugin',
     ],

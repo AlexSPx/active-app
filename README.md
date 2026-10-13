@@ -108,11 +108,16 @@ yarn web
 | Command | Description |
 |---------|-------------|
 | `yarn start` | Start Expo dev server |
+| `yarn start:clear` | Start Expo with a cleared bundler cache for troubleshooting |
 | `yarn ios` | Run on iOS simulator |
 | `yarn android` | Run on Android emulator |
 | `yarn web` | Start web server |
 | `yarn format` | Format code with Prettier |
 | `yarn test` | Run Jest tests |
+
+The development server uses two Metro workers to leave resources available for
+the emulator, backend, and desktop. Normal startup preserves the bundler cache;
+use `yarn start:clear` only when troubleshooting stale bundles.
 
 ## Architecture
 
