@@ -231,6 +231,42 @@ describe('WorkoutRepository', () => {
     expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(2)
   })
 
+  it('captures the acknowledged workout version before update and delete', async () => {
+    db.tables.workouts.set('workout-versioned', {
+      id: 'workout-versioned',
+      title: 'Versioned',
+      notes: null,
+      created_at: '2026-04-24T10:00:00.000Z',
+      updated_at: '2026-04-24T10:00:00.000Z',
+      workout_template: '{"id":"workout-versioned","exercises":[]}',
+      is_synced: 1,
+      synced_at: null,
+      server_version: 5,
+    })
+
+    await repo.update('workout-versioned', { title: 'Updated' }, [])
+    await repo.delete('workout-versioned')
+
+    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(
+      1,
+      {
+        apiMethod: 'updateWorkout',
+        payload: ['workout-versioned', { title: 'Updated', baseVersion: 5 }],
+      },
+      db,
+      { processAfterInsert: false }
+    )
+    expect(syncEngine.enqueue).toHaveBeenNthCalledWith(
+      2,
+      {
+        apiMethod: 'deleteWorkout',
+        payload: { id: 'workout-versioned', baseVersion: 5 },
+      },
+      db,
+      { processAfterInsert: false }
+    )
+  })
+
   it('records a workout locally and enqueues recordWorkout', async () => {
     db.tables.workouts.set('workout_2', { id: 'workout_2', is_deleted: 0 })
     const recordRequest = {

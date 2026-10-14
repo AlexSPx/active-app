@@ -1,6 +1,7 @@
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+jest.mock('react-native', () => ({ Platform: { OS: 'ios' } }))
 jest.mock('expo-modules-core', () => ({ requireOptionalNativeModule: jest.fn(() => ({})) }), {
   virtual: true,
 })
@@ -58,6 +59,53 @@ describe('API credential refresh', () => {
     expect(global.fetch.mock.calls[0][1].headers).toMatchObject({
       'Idempotency-Key': 'operation-key',
     })
+  })
+
+  it('sends delete preconditions as query parameters and returns cross-root versions', async () => {
+    const acknowledgement = {
+      deletedWorkoutId: 'workout/1',
+      routineVersions: [{ id: 'routine-1', version: 8 }],
+    }
+    global.fetch.mockResolvedValueOnce(makeResponse(200, acknowledgement))
+
+    await expect(
+      apiService.deleteWorkout({ id: 'workout/1', baseVersion: 4 }, 'delete-key')
+    ).resolves.toEqual(acknowledgement)
+
+    const [requestUrl, options] = global.fetch.mock.calls[0]
+    const parsedUrl = new URL(requestUrl)
+    expect(parsedUrl.pathname).toContain('/workout%2F1')
+    expect(parsedUrl.searchParams.get('baseVersion')).toBe('4')
+    expect(options).toMatchObject({
+      method: 'DELETE',
+      headers: expect.objectContaining({ 'Idempotency-Key': 'delete-key' }),
+    })
+  })
+
+  it('sends both routine delete roots and retains typed stale details', async () => {
+    global.fetch.mockResolvedValueOnce(
+      makeResponse(409, {
+        message: 'Profile changed',
+        code: 'STALE_VERSION',
+        currentVersion: 13,
+      })
+    )
+
+    await expect(
+      apiService.deleteRoutine(
+        { id: 'routine-1', baseVersion: 5, profileBaseVersion: 12 },
+        'delete-routine-key'
+      )
+    ).rejects.toMatchObject({
+      status: 409,
+      message: 'Profile changed',
+      code: 'STALE_VERSION',
+      currentVersion: 13,
+    })
+
+    const parsedUrl = new URL(global.fetch.mock.calls[0][0])
+    expect(parsedUrl.searchParams.get('baseVersion')).toBe('5')
+    expect(parsedUrl.searchParams.get('profileBaseVersion')).toBe('12')
   })
 
   it('moves legacy AsyncStorage and hydrated credentials into SecureStore before cleanup', async () => {

@@ -15,6 +15,9 @@ import {
   LOCAL_PROFILE_OWNER,
   profileOwnerForUser,
   setActiveProfileOwner,
+  getCurrentProfileVersion,
+  mergeCurrentProfileVersion,
+  onProfileVersion,
 } from '../lib/profileScope'
 import { AuthRepository, UserRepository } from 'lib/repositories'
 
@@ -151,6 +154,15 @@ function syncUserToSettings(user: User) {
       console.error('Failed to sync measurements to settings store', e)
     }
   }
+}
+
+function isStaleProfileSnapshot(user: User): boolean {
+  const currentVersion = getCurrentProfileVersion()
+  return (
+    user.profileVersion !== undefined &&
+    currentVersion !== null &&
+    user.profileVersion < currentVersion
+  )
 }
 
 interface AuthState {
@@ -496,6 +508,16 @@ export const useAuthStore = create<AuthState>()(
           }
           if (getProfileScope().ownerId !== ownerId) return
 
+          if (isStaleProfileSnapshot(user)) {
+            set({
+              isProfileLoading: false,
+              profileError: null,
+              serverSession: 'valid',
+              isProfileTransitioning: profileChanged,
+            })
+            return
+          }
+
           set({
             user,
             isProfileLoading: false,
@@ -503,6 +525,9 @@ export const useAuthStore = create<AuthState>()(
             serverSession: 'valid',
             isProfileTransitioning: profileChanged,
           })
+          if (user.profileVersion !== undefined) {
+            mergeCurrentProfileVersion(getProfileScope(), user.profileVersion)
+          }
 
           syncUserToSettings(user)
         } catch (error) {
@@ -535,11 +560,25 @@ export const useAuthStore = create<AuthState>()(
         const requestScope = getProfileScope()
         try {
           set({ isLoading: true, error: null })
-          const updated = await userRepository.updateCurrentUser(payload)
+          const updated = await userRepository.updateCurrentUser({
+            ...payload,
+            baseVersion:
+              payload.baseVersion ??
+              getCurrentProfileVersion() ??
+              get().user?.profileVersion ??
+              undefined,
+          })
           if (generation !== authSessionGeneration || !isCurrentProfile(requestScope)) return null
           if (profileOwnerForUser(updated.id) !== get().profileOwnerId) return null
+          if (isStaleProfileSnapshot(updated)) {
+            set({ isLoading: false, serverSession: 'valid' })
+            return get().user
+          }
           // Merge with existing state (server returns full user shape)
           set({ user: updated, isLoading: false, serverSession: 'valid' })
+          if (updated.profileVersion !== undefined) {
+            mergeCurrentProfileVersion(requestScope, updated.profileVersion)
+          }
 
           syncUserToSettings(updated)
           return updated
@@ -566,7 +605,11 @@ export const useAuthStore = create<AuthState>()(
       setError: (error: string | null) => set({ error }),
       setUser: (user: User | null) => {
         if (user && profileOwnerForUser(user.id) !== get().profileOwnerId) return
+        if (user && isStaleProfileSnapshot(user)) return
         set({ user })
+        if (user?.profileVersion !== undefined) {
+          mergeCurrentProfileVersion(getProfileScope(), user.profileVersion)
+        }
       },
       setToken: (token: string | null) => set({ token, isAuthenticated: !!token }),
       setRefreshToken: (refreshToken: string | null) => set({ refreshToken }),
@@ -592,6 +635,13 @@ export const useAuthStore = create<AuthState>()(
     }
   )
 )
+
+onProfileVersion((scope, version) => {
+  const state = useAuthStore.getState()
+  if (!state.user || state.profileOwnerId !== scope.ownerId) return
+  if (state.user.profileVersion !== undefined && state.user.profileVersion >= version) return
+  useAuthStore.setState({ user: { ...state.user, profileVersion: version } })
+})
 
 // Restore local state first; server profile validation continues in the background.
 let initializationPromise: Promise<void> | null = null
@@ -620,6 +670,9 @@ async function initializeAuthState(): Promise<void> {
     const legacyOwnerId = cachedState.user?.id ? profileOwnerForUser(cachedState.user.id) : null
     const ownerId = legacyOwnerId ?? LOCAL_PROFILE_OWNER
     setActiveProfileOwner(ownerId)
+    if (cachedState.user?.profileVersion !== undefined) {
+      mergeCurrentProfileVersion(getProfileScope(), cachedState.user.profileVersion)
+    }
     await hydrateProfileStores(ownerId, legacyOwnerId)
     if (generation !== authSessionGeneration) return
     useAuthStore.setState({

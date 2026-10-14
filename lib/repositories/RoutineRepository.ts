@@ -6,6 +6,7 @@
  */
 import { BaseRepository } from './BaseRepository'
 import { syncEngine } from '../sync'
+import { getCurrentProfileVersion } from '../profileScope'
 import type {
   Routine,
   CreateRoutineRequest,
@@ -30,6 +31,7 @@ interface RoutineRow {
   is_active: number
   is_synced: number
   synced_at: string | null
+  server_version: number | null
 }
 
 // ---------------------------------------------------------------------------
@@ -69,9 +71,11 @@ export class RoutineRepository extends BaseRepository {
 
   async create(payload: CreateRoutineRequest): Promise<Routine> {
     return this.commitMutation(async (tx) => {
-      const resolvedPayload = {
+      const profileBaseVersion = getCurrentProfileVersion()
+      const resolvedPayload: CreateRoutineRequest = {
         ...payload,
         pattern: this.resolvePatternWorkoutIds(payload.pattern),
+        ...(payload.active && profileBaseVersion !== null ? { profileBaseVersion } : {}),
       }
       const localId = this.generateLocalId()
       const now = new Date().toISOString()
@@ -105,6 +109,7 @@ export class RoutineRepository extends BaseRepository {
           is_active: resolvedPayload.active ? 1 : 0,
           is_synced: 0,
           synced_at: null,
+          server_version: null,
         }),
         job: {
           apiMethod: 'createRoutine',
@@ -119,12 +124,28 @@ export class RoutineRepository extends BaseRepository {
   async update(routineId: string, payload: UpdateRoutineRequest): Promise<Routine | null> {
     return this.commitMutation(async (tx) => {
       const resolvedRoutineId = syncEngine.resolveId('routines', routineId)
-      const resolvedPayload = payload.pattern
-        ? {
-            ...payload,
-            pattern: this.resolvePatternWorkoutIds(payload.pattern),
-          }
-        : payload
+      const rowBeforeMutation = await tx.getFirstAsync<Pick<RoutineRow, 'server_version'>>(
+        'SELECT server_version FROM routines WHERE id = ?',
+        resolvedRoutineId
+      )
+      const profileBaseVersion = getCurrentProfileVersion()
+      const changesRoutine = Object.keys(payload).some(
+        (key) => key !== 'active' && key !== 'baseVersion' && key !== 'profileBaseVersion'
+      )
+      const changesProfile = payload.active !== undefined
+      const hasAllBases =
+        (!changesRoutine || rowBeforeMutation?.server_version != null) &&
+        (!changesProfile || profileBaseVersion !== null)
+      const resolvedPayload: UpdateRoutineRequest = {
+        ...payload,
+        ...(payload.pattern ? { pattern: this.resolvePatternWorkoutIds(payload.pattern) } : {}),
+        ...(hasAllBases && changesRoutine
+          ? { baseVersion: rowBeforeMutation?.server_version ?? undefined }
+          : {}),
+        ...(hasAllBases && changesProfile && profileBaseVersion !== null
+          ? { profileBaseVersion }
+          : {}),
+      }
       const sets: string[] = []
       const vals: any[] = []
 
@@ -182,6 +203,11 @@ export class RoutineRepository extends BaseRepository {
   async delete(routineId: string): Promise<void> {
     return this.commitMutation(async (tx) => {
       const resolvedRoutineId = syncEngine.resolveId('routines', routineId)
+      const row = await tx.getFirstAsync<Pick<RoutineRow, 'server_version'>>(
+        'SELECT server_version FROM routines WHERE id = ?',
+        resolvedRoutineId
+      )
+      const profileBaseVersion = getCurrentProfileVersion()
       await tx.runAsync(
         'UPDATE routines SET is_deleted = 1, is_active = 0 WHERE id = ?',
         resolvedRoutineId
@@ -191,7 +217,14 @@ export class RoutineRepository extends BaseRepository {
         value: undefined,
         job: {
           apiMethod: 'deleteRoutine',
-          payload: [resolvedRoutineId],
+          payload:
+            row?.server_version == null || profileBaseVersion === null
+              ? [resolvedRoutineId]
+              : {
+                  id: resolvedRoutineId,
+                  baseVersion: row.server_version,
+                  profileBaseVersion,
+                },
         },
       }
     })
@@ -209,8 +242,8 @@ export class RoutineRepository extends BaseRepository {
       const isActive = activeRoutineId ? (r.id === activeRoutineId ? 1 : 0) : 0
 
       await this.run(
-        `INSERT INTO routines (id, name, description, user_id, routine_type, pattern, start_date, created_at, updated_at, is_active, is_synced, synced_at)
-         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ? WHERE NOT EXISTS
+        `INSERT INTO routines (id, name, description, user_id, routine_type, pattern, start_date, created_at, updated_at, is_active, is_synced, synced_at, server_version)
+         SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ? WHERE NOT EXISTS
            (SELECT 1 FROM routines WHERE id = ? AND is_deleted = 1)
          ON CONFLICT(id) DO UPDATE SET
            name = excluded.name,
@@ -221,6 +254,7 @@ export class RoutineRepository extends BaseRepository {
            start_date = excluded.start_date,
            updated_at = excluded.updated_at,
            is_active = excluded.is_active,
+           server_version = excluded.server_version,
            is_synced = 1,
            synced_at = excluded.synced_at WHERE routines.is_deleted = 0`,
         r.id,
@@ -234,6 +268,7 @@ export class RoutineRepository extends BaseRepository {
         r.updatedAt,
         isActive,
         new Date().toISOString(),
+        r.version ?? null,
         r.id
       )
     }
@@ -268,6 +303,7 @@ export class RoutineRepository extends BaseRepository {
       startDate: row.start_date || '',
       createdAt: row.created_at || '',
       updatedAt: row.updated_at || '',
+      version: row.server_version ?? undefined,
     }
   }
 }

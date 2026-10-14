@@ -14,10 +14,15 @@
 import { type SQLiteDatabase } from 'expo-sqlite'
 import * as Network from 'expo-network'
 import { AppState, type AppStateStatus } from 'react-native'
-import type { WorkoutRecord } from '../../types/api'
+import type { WorkoutRecord, EntityVersion } from '../../types/api'
 import { syncApi, type SyncApi } from './api'
 import { replaceQueuedIdReferences } from './queuePayloadRemap'
-import { getProfileScope, isCurrentProfile, type ProfileScope } from '../profileScope'
+import {
+  getProfileScope,
+  isCurrentProfile,
+  mergeCurrentProfileVersion,
+  type ProfileScope,
+} from '../profileScope'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -52,6 +57,7 @@ export interface SyncJob {
   retry_count: number
   status: string
   error_message: string | null
+  error_code: string | null
   created_at?: string
   /** UI-safe explanation derived from earlier queued work. */
   blocked_reason?: string
@@ -100,6 +106,70 @@ interface JobDependencies {
   unknown: boolean
 }
 
+type VersionedTable = 'workouts' | 'routines'
+
+interface QueuedMutation {
+  table: VersionedTable | null
+  id: string | null
+  changesProfile: boolean
+  payload: unknown
+}
+
+function parseQueuedMutation(
+  job: Pick<SyncJob, 'endpoint' | 'payload' | 'request_payload' | 'local_table' | 'local_id'>
+): QueuedMutation | null {
+  let payload: unknown
+  try {
+    payload = JSON.parse(job.request_payload ?? job.payload)
+  } catch {
+    return null
+  }
+  const args = Array.isArray(payload) ? payload : [payload]
+  const objectArg =
+    args[0] && typeof args[0] === 'object' ? (args[0] as Record<string, unknown>) : null
+  const stringId = typeof args[0] === 'string' ? args[0] : null
+
+  switch (job.endpoint as keyof SyncApi) {
+    case 'createWorkout':
+      return { table: 'workouts', id: job.local_id, changesProfile: false, payload }
+    case 'updateWorkout':
+      return { table: 'workouts', id: stringId, changesProfile: false, payload }
+    case 'deleteWorkout':
+      return {
+        table: 'workouts',
+        id: stringId ?? (typeof objectArg?.id === 'string' ? objectArg.id : null),
+        changesProfile: false,
+        payload,
+      }
+    case 'createRoutine':
+      return {
+        table: 'routines',
+        id: job.local_id,
+        changesProfile: objectArg?.active === true,
+        payload,
+      }
+    case 'updateRoutine': {
+      const request =
+        args[1] && typeof args[1] === 'object' ? (args[1] as Record<string, unknown>) : null
+      return {
+        table: 'routines',
+        id: stringId,
+        changesProfile: request?.active !== undefined,
+        payload,
+      }
+    }
+    case 'deleteRoutine':
+      return {
+        table: 'routines',
+        id: stringId ?? (typeof objectArg?.id === 'string' ? objectArg.id : null),
+        changesProfile: objectArg?.profileBaseVersion !== undefined,
+        payload,
+      }
+    default:
+      return { table: null, id: null, changesProfile: false, payload }
+  }
+}
+
 function getJobDependencies(job: SyncJob): JobDependencies {
   const localEntity = job.local_table && job.local_id ? `${job.local_table}:${job.local_id}` : null
   const requires = new Set<string>()
@@ -132,7 +202,9 @@ function getJobDependencies(job: SyncJob): JobDependencies {
       return { primary: localEntity, requires, unknown: !localEntity }
     case 'updateWorkout':
     case 'deleteWorkout': {
-      const workoutId = id(args[0])
+      const workoutId =
+        id(args[0]) ??
+        (args[0] && typeof args[0] === 'object' ? id((args[0] as { id?: unknown }).id) : null)
       return {
         primary: workoutId ? `workouts:${workoutId}` : localEntity,
         requires,
@@ -168,7 +240,9 @@ function getJobDependencies(job: SyncJob): JobDependencies {
       }
     }
     case 'deleteRoutine': {
-      const routineId = id(args[0])
+      const routineId =
+        id(args[0]) ??
+        (args[0] && typeof args[0] === 'object' ? id((args[0] as { id?: unknown }).id) : null)
       return {
         primary: routineId ? `routines:${routineId}` : localEntity,
         requires,
@@ -451,7 +525,7 @@ export class SyncEngine {
     const blockers: JobDependencies[] = []
     const visible: SyncJob[] = []
     for (const job of jobs) {
-      const dependencies = getJobDependencies(job)
+      const dependencies = this.resolveDependencies(getJobDependencies(job))
       const blocked = isBlockedBy(dependencies, blockers)
       if (job.status !== 'discarded') {
         visible.push(blocked ? { ...job, blocked_reason: BLOCKED_REASON } : job)
@@ -477,9 +551,10 @@ export class SyncEngine {
         throw new Error(`Sync job cannot be retried while ${job.status}.`)
       }
       await db.runAsync(
-        'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, next_attempt_at = ? WHERE id = ?',
+        'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, error_code = ?, next_attempt_at = ? WHERE id = ?',
         'pending',
         0,
+        null,
         null,
         0,
         jobId
@@ -718,7 +793,7 @@ export class SyncEngine {
 
       for (const job of jobs) {
         afterSequence = job.sequence
-        const dependencies = getJobDependencies(job)
+        const dependencies = this.resolveDependencies(getJobDependencies(job))
         const blocked = isBlockedBy(dependencies, blockers)
         const canRun = job.status === 'pending' || job.status === 'failed'
 
@@ -735,6 +810,22 @@ export class SyncEngine {
     }
 
     return { job: null, retryAt: null }
+  }
+
+  private resolveDependencies(dependencies: JobDependencies): JobDependencies {
+    const resolveKey = (key: string | null): string | null => {
+      if (key === null) return null
+      const separator = key.indexOf(':')
+      if (separator < 0) return key
+      const table = key.slice(0, separator)
+      const id = key.slice(separator + 1)
+      return `${table}:${this.resolveId(table, id)}`
+    }
+    return {
+      primary: resolveKey(dependencies.primary),
+      requires: new Set(Array.from(dependencies.requires, (key) => resolveKey(key) ?? key)),
+      unknown: dependencies.unknown,
+    }
   }
 
   private async readQueue(db: SQLiteDatabase, scope: ProfileScope): Promise<SyncJob[]> {
@@ -827,7 +918,8 @@ export class SyncEngine {
         currentJob.endpoint === 'deleteWorkout' ||
         currentJob.endpoint === 'deleteWorkoutRecord' ||
         currentJob.endpoint === 'deleteRoutine'
-      if (!isDelete || (error as { status?: number })?.status !== 404) {
+      const versionedDelete = isDelete && args[0] && typeof args[0] === 'object'
+      if (!isDelete || versionedDelete || (error as { status?: number })?.status !== 404) {
         return this.handleJobError(db, scope, currentJob, error)
       }
     }
@@ -853,6 +945,15 @@ export class SyncEngine {
             }
           : null
 
+    const acknowledgement = await this.resolveAcknowledgement(
+      db,
+      scope,
+      currentJob,
+      response,
+      remap
+    )
+    if (!acknowledgement) return true
+
     await this.withIdRemapLock(async () => {
       if (!this.isCurrentEngine(db, scope)) return
       await db.withTransactionAsync(async () => {
@@ -866,6 +967,28 @@ export class SyncEngine {
             remap.oldId,
             remap.newId,
             currentJob.id
+          )
+        }
+        for (const entity of acknowledgement.entities) {
+          await db.runAsync(
+            `UPDATE "${entity.table}" SET server_version = ? WHERE id = ?`,
+            entity.version,
+            entity.id
+          )
+          await this.advanceImmediateEntitySuccessor(
+            db,
+            currentJob.sequence,
+            entity.table,
+            entity.id,
+            entity.version,
+            remap
+          )
+        }
+        if (acknowledgement.profileVersion !== null) {
+          await this.advanceImmediateProfileSuccessor(
+            db,
+            currentJob.sequence,
+            acknowledgement.profileVersion
           )
         }
         if (
@@ -898,9 +1021,10 @@ export class SyncEngine {
                 ? 'routines'
                 : null
         if (deletedTable) {
+          const deletedId = typeof args[0] === 'string' ? args[0] : args[0]?.id
           await db.runAsync(
             `DELETE FROM "${deletedTable}" WHERE id = ? AND is_deleted = 1`,
-            args[0]
+            deletedId
           )
         }
         await db.runAsync('DELETE FROM sync_queue WHERE id = ?', currentJob.id)
@@ -915,8 +1039,201 @@ export class SyncEngine {
       }
       this.queueDidChange()
     })
+    if (acknowledgement.profileVersion !== null) {
+      mergeCurrentProfileVersion(scope, acknowledgement.profileVersion)
+    }
     console.log(`[SyncEngine] ✓ ${currentJob.endpoint}`)
     return true
+  }
+
+  private async resolveAcknowledgement(
+    db: SQLiteDatabase,
+    scope: ProfileScope,
+    job: SyncJob,
+    response: any,
+    remap: { tableName: string; oldId: string; newId: string } | null
+  ): Promise<{
+    entities: Array<{ table: VersionedTable; id: string; version: number }>
+    profileVersion: number | null
+  } | null> {
+    const entities: Array<{ table: VersionedTable; id: string; version: number }> = []
+    let profileVersion: number | null = null
+    const mutation = parseQueuedMutation(job)
+
+    if (job.endpoint === 'createWorkout' || job.endpoint === 'updateWorkout') {
+      const id =
+        remap?.newId ?? mutation?.id ?? (typeof response?.id === 'string' ? response.id : null)
+      const version = await this.resolveMissingEntityVersion('workouts', id, response?.version)
+      if (version === null || !id) {
+        await this.markDeadLetter(
+          db,
+          scope,
+          job,
+          'Successful response did not prove the workout version',
+          'STALE_VERSION'
+        )
+        return null
+      }
+      entities.push({ table: 'workouts', id, version })
+    }
+
+    if (job.endpoint === 'createRoutine' || job.endpoint === 'updateRoutine') {
+      const id =
+        remap?.newId ?? mutation?.id ?? (typeof response?.id === 'string' ? response.id : null)
+      const version = await this.resolveMissingEntityVersion('routines', id, response?.version)
+      if (version === null || !id) {
+        await this.markDeadLetter(
+          db,
+          scope,
+          job,
+          'Successful response did not prove the routine version',
+          'STALE_VERSION'
+        )
+        return null
+      }
+      entities.push({ table: 'routines', id, version })
+    }
+
+    if (job.endpoint === 'deleteWorkout') {
+      if (Array.isArray(response?.routineVersions)) {
+        for (const entity of response.routineVersions as EntityVersion[]) {
+          entities.push({ table: 'routines', id: entity.id, version: entity.version })
+        }
+      } else {
+        const routines = await this.deps.api.getRoutines()
+        if (routines.some((routine) => routine.version !== 0)) {
+          await this.markDeadLetter(
+            db,
+            scope,
+            job,
+            'Successful response did not prove the affected routine versions',
+            'STALE_VERSION'
+          )
+          return null
+        }
+      }
+    }
+
+    if (mutation?.changesProfile) {
+      if (typeof response?.profileVersion === 'number') {
+        profileVersion = response.profileVersion
+      } else if (job.endpoint !== 'deleteRoutine') {
+        const user = await this.deps.api.getUser()
+        if (user.profileVersion !== 0) {
+          await this.markDeadLetter(
+            db,
+            scope,
+            job,
+            'Successful response did not prove the profile version',
+            'STALE_VERSION'
+          )
+          return null
+        }
+        profileVersion = 0
+      }
+    }
+
+    return { entities, profileVersion }
+  }
+
+  private async resolveMissingEntityVersion(
+    table: VersionedTable,
+    id: string | null | undefined,
+    responseVersion: unknown
+  ): Promise<number | null> {
+    if (typeof responseVersion === 'number') return responseVersion
+    if (!id) return null
+    const rows =
+      table === 'workouts' ? await this.deps.api.getWorkouts() : await this.deps.api.getRoutines()
+    const current = rows.find((row) => row.id === id)?.version
+    return current === 0 ? 0 : null
+  }
+
+  private async advanceImmediateEntitySuccessor(
+    db: SQLiteDatabase,
+    afterSequence: number,
+    table: VersionedTable,
+    id: string,
+    version: number,
+    remap: { tableName: string; oldId: string; newId: string } | null
+  ): Promise<void> {
+    const jobs = await db.getAllAsync<SyncJob>(
+      `SELECT * FROM sync_queue
+       WHERE sequence > ? AND status != ?
+       ORDER BY sequence ASC`,
+      afterSequence,
+      'discarded'
+    )
+    const successor = jobs.find((candidate) => {
+      const mutation = parseQueuedMutation(candidate)
+      if (mutation?.table !== table || mutation.id === null) return false
+      const candidateId =
+        remap?.tableName === table && mutation.id === remap.oldId
+          ? remap.newId
+          : this.resolveId(table, mutation.id)
+      return candidateId === id
+    })
+    if (!successor || successor.request_payload !== null) return
+    const payload = this.withBaseVersion(successor, version)
+    if (payload !== null) {
+      await db.runAsync('UPDATE sync_queue SET payload = ? WHERE id = ?', payload, successor.id)
+    }
+  }
+
+  private async advanceImmediateProfileSuccessor(
+    db: SQLiteDatabase,
+    afterSequence: number,
+    version: number
+  ): Promise<void> {
+    const jobs = await db.getAllAsync<SyncJob>(
+      `SELECT * FROM sync_queue
+       WHERE sequence > ? AND status != ?
+       ORDER BY sequence ASC`,
+      afterSequence,
+      'discarded'
+    )
+    const successor = jobs.find((candidate) => parseQueuedMutation(candidate)?.changesProfile)
+    if (!successor || successor.request_payload !== null) return
+    const payload = this.withProfileBaseVersion(successor, version)
+    if (payload !== null) {
+      await db.runAsync('UPDATE sync_queue SET payload = ? WHERE id = ?', payload, successor.id)
+    }
+  }
+
+  private withBaseVersion(job: SyncJob, version: number): string | null {
+    const mutation = parseQueuedMutation(job)
+    if (!mutation) return null
+    if (job.endpoint === 'updateWorkout' || job.endpoint === 'updateRoutine') {
+      const args = mutation.payload as unknown[]
+      return JSON.stringify([args[0], { ...(args[1] as object), baseVersion: version }])
+    }
+    if (job.endpoint === 'deleteRoutine' && Array.isArray(mutation.payload)) return null
+    if (job.endpoint === 'deleteWorkout' || job.endpoint === 'deleteRoutine') {
+      const request = Array.isArray(mutation.payload)
+        ? { id: mutation.payload[0] }
+        : (mutation.payload as object)
+      return JSON.stringify({ ...request, baseVersion: version })
+    }
+    return null
+  }
+
+  private withProfileBaseVersion(job: SyncJob, version: number): string | null {
+    const mutation = parseQueuedMutation(job)
+    if (!mutation) return null
+    if (job.endpoint === 'createRoutine') {
+      return JSON.stringify({ ...(mutation.payload as object), profileBaseVersion: version })
+    }
+    if (job.endpoint === 'updateRoutine') {
+      const args = mutation.payload as unknown[]
+      return JSON.stringify([args[0], { ...(args[1] as object), profileBaseVersion: version }])
+    }
+    if (job.endpoint === 'deleteRoutine') {
+      const request = Array.isArray(mutation.payload)
+        ? { id: mutation.payload[0] }
+        : (mutation.payload as object)
+      return JSON.stringify({ ...request, profileBaseVersion: version })
+    }
+    return null
   }
 
   // -----------------------------------------------------------------------
@@ -936,17 +1253,12 @@ export class SyncEngine {
       throw new Error(`Invalid remap table: ${tableName}`)
     }
 
-    if (!this.isCurrentEngine(db, scope))
-      throw new Error('Sync lifecycle changed during ID remap')
+    if (!this.isCurrentEngine(db, scope)) throw new Error('Sync lifecycle changed during ID remap')
     const serverRowAlreadyHydrated =
       oldId !== newId &&
-      (await db.getFirstAsync<{ id: string }>(
-        `SELECT id FROM "${tableName}" WHERE id = ?`,
-        newId
-      ))
+      (await db.getFirstAsync<{ id: string }>(`SELECT id FROM "${tableName}" WHERE id = ?`, newId))
 
-    if (!this.isCurrentEngine(db, scope))
-      throw new Error('Sync lifecycle changed during ID remap')
+    if (!this.isCurrentEngine(db, scope)) throw new Error('Sync lifecycle changed during ID remap')
     if (serverRowAlreadyHydrated) {
       // Hydration can insert the server row before this create job returns.
       const oldRow = await db.getFirstAsync<{ is_deleted: number }>(
@@ -972,16 +1284,14 @@ export class SyncEngine {
       await db.runAsync(query, newId, oldId)
     }
 
-    if (!this.isCurrentEngine(db, scope))
-      throw new Error('Sync lifecycle changed during ID remap')
+    if (!this.isCurrentEngine(db, scope)) throw new Error('Sync lifecycle changed during ID remap')
     if (tableName === 'workouts') {
       await this.remapJsonReferences(db, scope, 'workouts', 'workout_template', oldId, newId)
       await this.remapJsonReferences(db, scope, 'routines', 'pattern', oldId, newId)
     }
 
     // Mark as synced
-    if (!this.isCurrentEngine(db, scope))
-      throw new Error('Sync lifecycle changed during ID remap')
+    if (!this.isCurrentEngine(db, scope)) throw new Error('Sync lifecycle changed during ID remap')
     await db.runAsync(
       `UPDATE "${tableName}" SET is_synced = 1, synced_at = ? WHERE id = ?`,
       new Date().toISOString(),
@@ -989,8 +1299,7 @@ export class SyncEngine {
     )
 
     await this.rewriteQueuedPayloadReferences(db, scope, oldId, newId, sourceJobId)
-    if (!this.isCurrentEngine(db, scope))
-      throw new Error('Sync lifecycle changed during ID remap')
+    if (!this.isCurrentEngine(db, scope)) throw new Error('Sync lifecycle changed during ID remap')
     if (oldId !== newId) {
       await db.runAsync(
         'INSERT OR REPLACE INTO id_remaps (table_name, old_id, new_id) VALUES (?, ?, ?)',
@@ -1154,7 +1463,7 @@ export class SyncEngine {
       statusCode !== 429
     ) {
       console.error(`[SyncEngine] Permanent failure [${job.endpoint}]: ${statusCode} ${errorMsg}`)
-      await this.markDeadLetter(db, scope, job, `${statusCode}: ${errorMsg}`)
+      await this.markDeadLetter(db, scope, job, `${statusCode}: ${errorMsg}`, error?.code)
       return true
     }
 
@@ -1184,15 +1493,17 @@ export class SyncEngine {
     db: SQLiteDatabase,
     scope: ProfileScope,
     job: SyncJob,
-    errorMsg: string
+    errorMsg: string,
+    errorCode?: string
   ): Promise<void> {
     await this.writeQueue(
       db,
       scope,
-      'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ? WHERE id = ?',
+      'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, error_code = ? WHERE id = ?',
       'dead_letter',
       job.retry_count + 1,
       errorMsg,
+      errorCode ?? null,
       job.id
     )
   }

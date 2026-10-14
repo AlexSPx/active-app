@@ -43,7 +43,10 @@ describe('failed sync recovery', () => {
     const db = new FakeDb({ jobs: [job] })
     const unauthorized = Object.assign(new Error('Session expired'), { status: 401 })
     const api = createApi({
-      updateWorkout: jest.fn().mockRejectedValueOnce(unauthorized).mockResolvedValue(undefined),
+      updateWorkout: jest
+        .fn()
+        .mockRejectedValueOnce(unauthorized)
+        .mockResolvedValue({ id: 'workout-auth', version: 1 }),
     })
     const first = engineWith(api)
 
@@ -180,7 +183,7 @@ describe('failed sync recovery', () => {
 
   it('keeps discarded failures as durable blockers and can retry the selected row', async () => {
     const api = createApi({
-      createWorkout: jest.fn(async () => ({ id: 'server-workout' })),
+      createWorkout: jest.fn(async () => ({ id: 'server-workout', version: 0 })),
     })
     const db = new FakeDb({
       tables: { workouts: ['local-workout'] },
@@ -231,7 +234,7 @@ describe('failed sync recovery', () => {
       expect(api.createWorkout).toHaveBeenCalledWith({ title: 'Offline' }, 'failed-create-key')
       expect(api.updateWorkout).toHaveBeenCalledWith(
         'server-workout',
-        { title: 'Edited' },
+        { title: 'Edited', baseVersion: 0 },
         'dependent-update-key'
       )
       expect(db.jobs).toEqual([])
@@ -411,7 +414,7 @@ describe('failed sync recovery', () => {
       jobs: [failedCreate, failedUpdate, discardedUpdate],
     })
     const api = createApi({
-      createWorkout: jest.fn(async () => ({ id: 'server-workout' })),
+      createWorkout: jest.fn(async () => ({ id: 'server-workout', version: 0 })),
     })
     const engine = engineWith(api)
     try {
@@ -431,7 +434,7 @@ describe('failed sync recovery', () => {
       expect(db.getJob('failed-create')).toBeNull()
       expect(db.getJob('failed-update')).toMatchObject({
         status: 'dead_letter',
-        payload: JSON.stringify(['server-workout', { title: 'Edited' }]),
+        payload: JSON.stringify(['server-workout', { title: 'Edited', baseVersion: 0 }]),
         idempotency_key: 'failed-update-key',
         retry_count: 2,
         error_message: '409: rejected',
@@ -447,7 +450,7 @@ describe('failed sync recovery', () => {
       await engine.retryJob('failed-update')
       expect(db.getJob('failed-update')).toMatchObject({
         status: 'pending',
-        payload: JSON.stringify(['server-workout', { title: 'Edited' }]),
+        payload: JSON.stringify(['server-workout', { title: 'Edited', baseVersion: 0 }]),
         idempotency_key: 'failed-update-key',
       })
 
@@ -457,7 +460,7 @@ describe('failed sync recovery', () => {
 
       expect(api.updateWorkout).toHaveBeenCalledWith(
         'server-workout',
-        { title: 'Edited' },
+        { title: 'Edited', baseVersion: 0 },
         'failed-update-key'
       )
       expect(db.getJob('failed-update')).toBeNull()
@@ -638,7 +641,9 @@ describe('failed sync recovery', () => {
       tables: { workouts: ['shared-local-id'] },
     })
     const dbB = new FakeDb()
-    const api = createApi({ createWorkout: jest.fn(async () => ({ id: 'server-workout-A' })) })
+    const api = createApi({
+      createWorkout: jest.fn(async () => ({ id: 'server-workout-A', version: 0 })),
+    })
     const engine = engineWith(api)
     const acknowledgementCommitted = deferred()
     const releaseAcknowledgement = deferred()

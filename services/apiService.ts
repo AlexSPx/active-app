@@ -15,8 +15,16 @@ import type {
   WorkoutRecordResponse,
   RegisterRequest,
   ExerciseLogResponse,
+  WorkoutDeleteRequest,
+  WorkoutDeleteAck,
 } from '../types/api'
-import type { Routine, CreateRoutineRequest, UpdateRoutineRequest } from '../types/routine'
+import type {
+  Routine,
+  CreateRoutineRequest,
+  UpdateRoutineRequest,
+  RoutineDeleteRequest,
+  RoutineDeleteAck,
+} from '../types/routine'
 import { networkPolicy } from '../stores/networkStore'
 
 // Re-export types for backward compatibility
@@ -325,6 +333,7 @@ class ApiService {
         const errorData = await response.json()
         error.message = errorData.message || error.message
         error.code = errorData.code
+        error.currentVersion = errorData.currentVersion
       } catch (parseError) {
         if ((parseError as Error)?.name === 'AbortError') throw parseError
         error.message = response.statusText || error.message
@@ -785,10 +794,10 @@ class ApiService {
   async createWorkout(
     workoutData: CreateWorkoutRequest,
     idempotencyKey?: string
-  ): Promise<{ id: string }> {
+  ): Promise<{ id: string; version?: number }> {
     const url = getApiUrl(config.API_ENDPOINTS.WORKOUTS.CREATE)
 
-    return this.request<{ id: string }>(url, {
+    return this.request<{ id: string; version?: number }>(url, {
       method: 'POST',
       headers: idempotencyHeaders(idempotencyKey),
       body: JSON.stringify(workoutData),
@@ -824,11 +833,11 @@ class ApiService {
       template?: CreateWorkoutRequest['template']
     },
     idempotencyKey?: string
-  ): Promise<void> {
+  ): Promise<ApiWorkout> {
     const base = config.API_ENDPOINTS.WORKOUTS.UPDATE
     const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
 
-    return this.request<void>(url, {
+    return this.request<ApiWorkout>(url, {
       method: 'PUT',
       headers: idempotencyHeaders(idempotencyKey),
       body: JSON.stringify(payload),
@@ -853,11 +862,18 @@ class ApiService {
     })
   }
 
-  async deleteWorkout(workoutId: string, idempotencyKey?: string): Promise<void> {
+  async deleteWorkout(
+    request: WorkoutDeleteRequest | string,
+    idempotencyKey?: string
+  ): Promise<WorkoutDeleteAck | void> {
     const base = config.API_ENDPOINTS.WORKOUTS.DELETE
-    const url = getApiUrl(`${base}/${encodeURIComponent(workoutId)}`)
+    const input = typeof request === 'string' ? { id: request } : request
+    const url = new URL(getApiUrl(`${base}/${encodeURIComponent(input.id)}`))
+    if (input.baseVersion !== undefined) {
+      url.searchParams.set('baseVersion', String(input.baseVersion))
+    }
 
-    return this.request<void>(url, {
+    return this.request<WorkoutDeleteAck | void>(url.toString(), {
       method: 'DELETE',
       headers: idempotencyHeaders(idempotencyKey),
     })
@@ -956,11 +972,21 @@ class ApiService {
     })
   }
 
-  async deleteRoutine(routineId: string, idempotencyKey?: string): Promise<void> {
+  async deleteRoutine(
+    request: RoutineDeleteRequest | string,
+    idempotencyKey?: string
+  ): Promise<RoutineDeleteAck | void> {
     const base = config.API_ENDPOINTS.ROUTINES.DELETE
-    const url = getApiUrl(`${base}/${encodeURIComponent(routineId)}`)
+    const input = typeof request === 'string' ? { id: request } : request
+    const url = new URL(getApiUrl(`${base}/${encodeURIComponent(input.id)}`))
+    if (input.baseVersion !== undefined) {
+      url.searchParams.set('baseVersion', String(input.baseVersion))
+    }
+    if ('profileBaseVersion' in input && input.profileBaseVersion !== undefined) {
+      url.searchParams.set('profileBaseVersion', String(input.profileBaseVersion))
+    }
 
-    return this.request<void>(url, {
+    return this.request<RoutineDeleteAck | void>(url.toString(), {
       method: 'DELETE',
       headers: idempotencyHeaders(idempotencyKey),
     })

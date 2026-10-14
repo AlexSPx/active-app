@@ -131,7 +131,7 @@ describe('profile-scoped sync fencing', () => {
 
     expect(pauseResolved).toBe(false)
     expect(api.deleteWorkout).not.toHaveBeenCalled()
-    finishUpload({})
+    finishUpload({ id: 'server-job-active', version: 0 })
     await Promise.all([drain, pause])
 
     expect(db.getJob('job-active')).toBeNull()

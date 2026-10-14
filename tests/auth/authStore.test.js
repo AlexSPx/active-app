@@ -62,6 +62,8 @@ const {
   LOCAL_PROFILE_OWNER,
   setActiveProfileOwner,
   getProfileScope,
+  getCurrentProfileVersion,
+  mergeCurrentProfileVersion,
 } = require('../../lib/profileScope')
 const { useAuthStore, initializeAuth } = require('../../stores/authStore')
 
@@ -113,7 +115,7 @@ describe('auth profile refresh', () => {
   })
 
   it('keeps cached credentials and local writes when SecureStore is unavailable', async () => {
-    const cachedUser = { id: 'user_1', registrationCompleted: true }
+    const cachedUser = { id: 'user_1', registrationCompleted: true, profileVersion: 6 }
     const cachedRow = JSON.stringify({
       state: {
         isAuthenticated: true,
@@ -149,6 +151,7 @@ describe('auth profile refresh', () => {
       refreshToken: 'legacy-refresh',
     })
     expect(mockGetCurrentUser).not.toHaveBeenCalled()
+    expect(getCurrentProfileVersion()).toBe(6)
     expect(await AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN)).toBe('legacy-access')
     expect(await AsyncStorage.getItem(config.STORAGE_KEYS.REFRESH_TOKEN)).toBe('legacy-refresh')
     expect(JSON.parse(await AsyncStorage.getItem('auth-storage')).state).toMatchObject({
@@ -681,6 +684,90 @@ describe('auth profile refresh', () => {
       refreshToken: null,
       isProfileLoading: false,
     })
+  })
+
+  it('submits the current profile version and stores the acknowledged version', async () => {
+    setActiveProfileOwner('account:user-versioned')
+    useAuthStore.setState({
+      isAuthenticated: true,
+      profileOwnerId: 'account:user-versioned',
+      user: { id: 'user-versioned', registrationCompleted: true, profileVersion: 7 },
+    })
+    mockUpdateCurrentUser.mockResolvedValue({
+      id: 'user-versioned',
+      username: 'updated',
+      registrationCompleted: true,
+      profileVersion: 8,
+    })
+
+    await expect(
+      useAuthStore.getState().updateUser({ username: 'updated' })
+    ).resolves.toMatchObject({
+      profileVersion: 8,
+    })
+
+    expect(mockUpdateCurrentUser).toHaveBeenCalledWith({
+      username: 'updated',
+      baseVersion: 7,
+    })
+    expect(useAuthStore.getState().user).toMatchObject({
+      id: 'user-versioned',
+      username: 'updated',
+      profileVersion: 8,
+    })
+  })
+
+  it('retains the acknowledged user when same-owner reads return an older version', async () => {
+    const ownerId = 'account:user-versioned'
+    const acknowledgedUser = {
+      id: 'user-versioned',
+      username: 'acknowledged',
+      registrationCompleted: true,
+      profileVersion: 1,
+    }
+    setActiveProfileOwner(ownerId)
+    useAuthStore.setState({
+      isAuthenticated: true,
+      profileOwnerId: ownerId,
+      user: acknowledgedUser,
+    })
+    mergeCurrentProfileVersion(getProfileScope(), 2)
+
+    const currentUser = useAuthStore.getState().user
+    const staleUser = { ...acknowledgedUser, username: 'stale', profileVersion: 1 }
+    mockGetCurrentUser.mockResolvedValue(staleUser)
+    mockUpdateCurrentUser.mockResolvedValue(staleUser)
+
+    await useAuthStore.getState().fetchUser()
+    await expect(useAuthStore.getState().updateUser({ username: 'requested' })).resolves.toEqual(
+      currentUser
+    )
+    useAuthStore.getState().setUser(staleUser)
+
+    expect(mockUpdateCurrentUser).toHaveBeenCalledWith({
+      username: 'requested',
+      baseVersion: 2,
+    })
+    expect(useAuthStore.getState().user).toEqual(currentUser)
+    expect(useAuthStore.getState()).toMatchObject({
+      isLoading: false,
+      isProfileLoading: false,
+      serverSession: 'valid',
+    })
+  })
+
+  it('rejects a profile-version acknowledgement from an old owner scope', () => {
+    setActiveProfileOwner('account:old-owner')
+    const oldScope = getProfileScope()
+    setActiveProfileOwner('account:new-owner')
+    useAuthStore.setState({
+      profileOwnerId: 'account:new-owner',
+      user: { id: 'new-owner', registrationCompleted: true, profileVersion: 3 },
+    })
+
+    expect(mergeCurrentProfileVersion(oldScope, 20)).toBe(false)
+    expect(useAuthStore.getState().user.profileVersion).toBe(3)
+    expect(getCurrentProfileVersion()).toBeNull()
   })
 
   it('clears legacy credential copies and auth storage on logout without SecureStore', async () => {

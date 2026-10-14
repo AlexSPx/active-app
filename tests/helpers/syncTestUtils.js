@@ -26,6 +26,7 @@ function makeJob({
     created_at: createdAt,
     status,
     error_message: null,
+    error_code: null,
   }
 }
 
@@ -118,8 +119,9 @@ class FakeDb {
     }
 
     if (sql.includes('FROM sync_queue') && sql.includes('WHERE sequence > ?')) {
+      const excludedStatus = sql.includes('status != ?') ? params[1] : null
       return this.jobs
-        .filter((job) => job.sequence > params[0])
+        .filter((job) => job.sequence > params[0] && job.status !== excludedStatus)
         .sort((a, b) => a.sequence - b.sequence)
         .slice(0, 50)
     }
@@ -220,6 +222,11 @@ class FakeDb {
       return this.tables.workouts.has(params[0]) ? { id: params[0] } : null
     }
 
+    if (sql === 'SELECT server_version FROM workouts WHERE id = ?') {
+      const row = this.tables.workouts.get(params[0])
+      return row ? { server_version: row.server_version ?? null } : null
+    }
+
     const quotedIdLookup = sql.match(
       /^SELECT id FROM "(workouts|workout_records|routines)" WHERE id = \?$/
     )
@@ -241,6 +248,11 @@ class FakeDb {
     ) {
       const row = this.tables.routines.get(params[0]) ?? null
       return sql.includes('is_deleted = 0') && row?.is_deleted ? null : row
+    }
+
+    if (sql === 'SELECT server_version FROM routines WHERE id = ?') {
+      const row = this.tables.routines.get(params[0])
+      return row ? { server_version: row.server_version ?? null } : null
     }
 
     if (
@@ -308,7 +320,8 @@ class FakeDb {
     }
 
     if (sql.includes('INSERT INTO workouts') && sql.includes('WHERE NOT EXISTS')) {
-      const [id, title, notes, createdAt, updatedAt, workoutTemplate, syncedAt] = params
+      const [id, title, notes, createdAt, updatedAt, workoutTemplate, syncedAt, serverVersion] =
+        params
       const existing = this.tables.workouts.get(id)
       if (!existing?.is_deleted)
         this.tables.workouts.set(id, {
@@ -321,6 +334,7 @@ class FakeDb {
           workout_template: workoutTemplate,
           is_synced: 1,
           synced_at: syncedAt,
+          server_version: serverVersion ?? null,
           is_deleted: 0,
         })
       return
@@ -364,6 +378,9 @@ class FakeDb {
         next_attempt_at: 0,
         sequence: this.nextSequence++,
         status: 'pending',
+        request_payload: null,
+        error_message: null,
+        error_code: null,
       })
       return
     }
@@ -587,6 +604,23 @@ class FakeDb {
 
     if (
       sql ===
+      'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, error_code = ?, next_attempt_at = ? WHERE id = ?'
+    ) {
+      const [status, retryCount, errorMessage, errorCode, deadline, jobId] = params
+      const job = this.getJob(jobId)
+      if (job)
+        Object.assign(job, {
+          status,
+          retry_count: retryCount,
+          error_message: errorMessage,
+          error_code: errorCode,
+          next_attempt_at: deadline,
+        })
+      return
+    }
+
+    if (
+      sql ===
       'UPDATE sync_queue SET status = ?, error_message = ?, next_attempt_at = ? WHERE status = ?'
     ) {
       const [status, errorMessage, deadline, previousStatus] = params
@@ -643,6 +677,31 @@ class FakeDb {
       return
     }
 
+    if (
+      sql ===
+      'UPDATE sync_queue SET status = ?, retry_count = ?, error_message = ?, error_code = ? WHERE id = ?'
+    ) {
+      const [status, retryCount, errorMessage, errorCode, jobId] = params
+      const job = this.jobs.find((entry) => entry.id === jobId)
+      if (job) {
+        job.status = status
+        job.retry_count = retryCount
+        job.error_message = errorMessage
+        job.error_code = errorCode
+      }
+      return
+    }
+
+    const serverVersionUpdate = sql.match(
+      /^UPDATE "(workouts|routines)" SET server_version = \? WHERE id = \?$/
+    )
+    if (serverVersionUpdate) {
+      const [version, id] = params
+      const row = this.tables[serverVersionUpdate[1]].get(id)
+      if (row) row.server_version = version
+      return
+    }
+
     const remapMatch = sql.match(/^UPDATE "([^"]+)" SET id = \? WHERE id = \?$/)
     if (remapMatch) {
       const [, tableName] = remapMatch
@@ -685,14 +744,18 @@ class FakeDb {
 
 function createApi(overrides = {}) {
   return {
-    createWorkout: jest.fn(async () => ({ id: 'server_workout_default' })),
-    updateWorkout: jest.fn(async () => undefined),
+    createWorkout: jest.fn(async () => ({ id: 'server_workout_default', version: 0 })),
+    updateWorkout: jest.fn(async (id) => ({ id, version: 1 })),
     deleteWorkout: jest.fn(async () => undefined),
     recordWorkout: jest.fn(async () => ({ workoutRecord: { id: 'server_record_default' } })),
     deleteWorkoutRecord: jest.fn(async () => undefined),
-    createRoutine: jest.fn(async () => ({ id: 'server_routine_default' })),
-    updateRoutine: jest.fn(async () => undefined),
+    createRoutine: jest.fn(async () => ({ id: 'server_routine_default', version: 0 })),
+    updateRoutine: jest.fn(async (id) => ({ id, version: 1 })),
     deleteRoutine: jest.fn(async () => undefined),
+    getUser: jest.fn(async () => ({ profileVersion: 0 })),
+    getWorkouts: jest.fn(async () => []),
+    getWorkoutRecords: jest.fn(async () => []),
+    getRoutines: jest.fn(async () => []),
     ...overrides,
   }
 }
