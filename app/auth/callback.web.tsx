@@ -67,6 +67,15 @@ export default function AuthCallback() {
 
       // Not a popup - handle auth directly (fallback for direct navigation)
       addLog('Handling as redirect flow')
+      const savedState = sessionStorage.getItem('workos_auth_state')
+      sessionStorage.removeItem('workos_auth_state')
+      const normalizedState = state ? state.replace(/\|(popup|redirect)$/, '') : null
+      if (!savedState || !normalizedState || savedState !== normalizedState) {
+        addLog('State mismatch or missing state in redirect flow')
+        setTimeout(() => router.replace('/welcome/home'), 3000)
+        return
+      }
+
       if (error) {
         addLog(`OAuth error: ${error}`)
         console.error('OAuth error:', error)
