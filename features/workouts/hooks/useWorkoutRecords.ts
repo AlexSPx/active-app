@@ -16,6 +16,7 @@ export function useWorkoutRecords(): UseWorkoutRecordsReturn {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ownerKeys.records.list(),
+    networkMode: 'always',
     queryFn: async () => {
       return repo.getAllRecords()
     },

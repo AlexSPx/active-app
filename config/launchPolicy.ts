@@ -11,3 +11,14 @@ export const nativeLaunchPolicy = {
 export function isNativeOfflineLaunch(): boolean {
   return Platform.OS !== 'web'
 }
+
+export function isBackendEnabledForLaunch(): boolean {
+  return !isNativeOfflineLaunch() || nativeLaunchPolicy.backendEnabled
+}
+
+export function isSyncEnabledForLaunch(): boolean {
+  return (
+    !isNativeOfflineLaunch() ||
+    (nativeLaunchPolicy.backendEnabled && nativeLaunchPolicy.syncEnabled)
+  )
+}

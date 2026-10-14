@@ -16,6 +16,7 @@ export function useWorkout(id?: string): UseWorkoutReturn {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ownerKeys.workouts.detail(id || ''),
+    networkMode: 'always',
     enabled: Boolean(id),
     queryFn: async (): Promise<ApiWorkout | null> => {
       if (!id) return null

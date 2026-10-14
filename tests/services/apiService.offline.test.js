@@ -3,6 +3,11 @@ let mockReadGate = null
 let mockReadStarted
 let mockSecureItems = new Map()
 
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isBackendEnabledForLaunch: () => true,
+}))
+
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
   default: {

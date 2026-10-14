@@ -1,4 +1,8 @@
 jest.mock('../../services/apiService', () => ({ apiService: {} }))
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isSyncEnabledForLaunch: () => true,
+}))
 jest.mock('expo-network', () => ({
   getNetworkStateAsync: jest.fn(async () => ({ isConnected: true, isInternetReachable: true })),
   addNetworkStateListener: jest.fn(() => ({ remove: jest.fn() })),

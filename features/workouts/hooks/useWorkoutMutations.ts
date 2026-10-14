@@ -15,6 +15,7 @@ export function useWorkoutMutations() {
   }
 
   const createMutation = useMutation({
+    networkMode: 'always',
     mutationFn: async ({
       workout,
       exercises,
@@ -37,6 +38,7 @@ export function useWorkoutMutations() {
   })
 
   const updateMutation = useMutation({
+    networkMode: 'always',
     mutationFn: ({
       workoutId,
       payload,
@@ -51,6 +53,7 @@ export function useWorkoutMutations() {
   })
 
   const deleteMutation = useMutation({
+    networkMode: 'always',
     mutationFn: (id: string) => {
       const runningId = useRunningWorkoutStore.getState().runningWorkout?.id
       if (
@@ -70,6 +73,7 @@ export function useWorkoutMutations() {
   })
 
   const deleteRecordMutation = useMutation({
+    networkMode: 'always',
     mutationFn: (id: string) => repo.deleteRecord(id),
     retry: false,
     onSuccess: () => {

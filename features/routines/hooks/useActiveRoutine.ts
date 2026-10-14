@@ -21,6 +21,7 @@ export function useActiveRoutine(): UseActiveRoutineReturn {
 
   const { data, isLoading, error, refetch, isStale } = useQuery({
     queryKey: ownerKeys.routines.active(),
+    networkMode: 'always',
     queryFn: async (): Promise<Routine | null> => {
       return repo.getActive()
     },

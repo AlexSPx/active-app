@@ -9,6 +9,10 @@ let mockNetworkState
 jest.mock('react-native', () => ({
   Alert: { alert: jest.fn() },
 }))
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isSyncEnabledForLaunch: () => true,
+}))
 jest.mock('expo-router', () => {
   const React = require('react')
   return {

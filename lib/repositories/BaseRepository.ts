@@ -9,6 +9,7 @@
  */
 import { type SQLiteDatabase } from 'expo-sqlite'
 import { syncEngine, type SyncJobConfig } from '../sync'
+import { isSyncEnabledForLaunch } from '../../config/launchPolicy'
 
 export abstract class BaseRepository {
   constructor(protected db: SQLiteDatabase) {}
@@ -28,16 +29,19 @@ export abstract class BaseRepository {
   protected async commitMutation<T>(
     mutation: (transaction: SQLiteDatabase) => Promise<{ value: T; job: SyncJobConfig }>
   ): Promise<T> {
+    const syncEnabled = isSyncEnabledForLaunch()
     return syncEngine.withIdRemapLock(async () => {
       let value!: T
       // Keep the configured connection; foreign_keys is per-connection and the exclusive helper opens a new one.
       await this.db.withTransactionAsync(async () => {
         const result = await mutation(this.db)
         value = result.value
-        await syncEngine.enqueue(result.job, this.db, { processAfterInsert: false })
+        if (syncEnabled) {
+          await syncEngine.enqueue(result.job, this.db, { processAfterInsert: false })
+        }
       })
 
-      syncEngine.scheduleQueueProcessing()
+      if (syncEnabled) syncEngine.scheduleQueueProcessing()
       return value
     })
   }

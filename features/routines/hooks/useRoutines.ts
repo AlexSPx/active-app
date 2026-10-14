@@ -17,6 +17,7 @@ export function useRoutines(): UseRoutinesReturn {
 
   const { data, isLoading, error, refetch, isStale } = useQuery({
     queryKey: ownerKeys.routines.list(),
+    networkMode: 'always',
     queryFn: async () => {
       return repo.getAll()
     },

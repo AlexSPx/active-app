@@ -9,6 +9,10 @@ jest.mock('../../lib/sync', () => ({
 jest.mock('../../lib/profileScope', () => ({
   getCurrentProfileVersion: jest.fn(() => null),
 }))
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isSyncEnabledForLaunch: () => true,
+}))
 
 const { syncEngine } = require('../../lib/sync')
 const { getCurrentProfileVersion } = require('../../lib/profileScope')
