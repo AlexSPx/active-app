@@ -4,6 +4,8 @@ import { useEffect } from 'react'
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router'
 import { Button, Text, YStack, Spinner } from 'tamagui'
 import { initializeAuth, useAuthStore } from '../stores/authStore'
+import { LOCAL_PROFILE_OWNER } from '../lib/profileScope'
+import { isNativeOfflineLaunch } from '../config/launchPolicy'
 
 export function AuthGuard() {
   const { isAuthenticated, user, isLoading } = useAuth()
@@ -13,6 +15,7 @@ export function AuthGuard() {
   const authError = useAuthStore((state) => state.error)
   const retryLogout = useAuthStore((state) => state.logout)
   const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
+  const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
   const isProfileLoading = useAuthStore((state) => state.isProfileLoading)
   const retryProfile = useAuthStore((state) => state.fetchUser)
   const router = useRouter()
@@ -27,6 +30,20 @@ export function AuthGuard() {
     const inLegalGroup = segments[0] === 'legal'
     const isPublicRoute = inWelcomeGroup || inLegalGroup
     const isRegistering = segments[1] === 'register'
+
+    if (isNativeOfflineLaunch()) {
+      const needsOnboarding =
+        profileOwnerId === LOCAL_PROFILE_OWNER
+          ? user?.registrationCompleted !== true
+          : user?.registrationCompleted === false
+
+      if (needsOnboarding && !isRegistering && !inLegalGroup) {
+        router.replace('/welcome/register' as any)
+      } else if (!needsOnboarding && inWelcomeGroup) {
+        router.replace('/(tabs)' as any)
+      }
+      return
+    }
 
     if (!isAuthenticated && !isPublicRoute) {
       // Redirect to welcome screen if not authenticated
@@ -44,7 +61,7 @@ export function AuthGuard() {
         router.replace('/(tabs)' as any)
       }
     }
-  }, [isAuthenticated, isStartupReady, segments, navigationState?.key, user])
+  }, [isAuthenticated, isStartupReady, segments, navigationState?.key, profileOwnerId, user])
 
   if (!isStartupReady || isAuthenticated == null || (isLoading && !isAuthenticated)) {
     return (

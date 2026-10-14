@@ -4,12 +4,17 @@ import type { UpdateUserRequest, User, ApiError } from '../../../types/api'
 import { timeZonesNames } from '@vvo/tzdb'
 import { useQueryClient } from '@tanstack/react-query'
 import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
+import { saveSettingsProfile } from '../stores/settingsStore'
+import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 
 // Simple email regex (client-side validation aid; server performs authoritative validation)
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export interface UseUpdateUserResult {
-  updateUserProfile: (updates: UpdateUserRequest) => Promise<User | null>
+  updateUserProfile: (
+    updates: UpdateUserRequest,
+    localPreferences?: { bodyWeightUnit?: 'kg' | 'lb'; heightUnit?: 'cm' | 'in' }
+  ) => Promise<User | null>
   isUpdating: boolean
   error: string | null
   validate: (updates: UpdateUserRequest) => string | null
@@ -39,7 +44,10 @@ export function useUpdateUser(): UseUpdateUserResult {
   }, [])
 
   const updateUserProfile = useCallback(
-    async (updates: UpdateUserRequest): Promise<User | null> => {
+    async (
+      updates: UpdateUserRequest,
+      localPreferences?: { bodyWeightUnit?: 'kg' | 'lb'; heightUnit?: 'cm' | 'in' }
+    ): Promise<User | null> => {
       setError(null)
       const validationError = validate(updates)
       if (validationError) {
@@ -48,7 +56,12 @@ export function useUpdateUser(): UseUpdateUserResult {
       }
       setIsUpdating(true)
       try {
+        const scope = getProfileScope()
         const user = await updateUser(updates)
+        if (user && localPreferences) {
+          if (!isCurrentProfile(scope)) throw new Error('Profile changed while saving settings.')
+          await saveSettingsProfile(scope, localPreferences)
+        }
         setIsUpdating(false)
         // Invalidate user query
         queryClient.invalidateQueries({ queryKey: ownerKeys.user.me })
@@ -58,8 +71,8 @@ export function useUpdateUser(): UseUpdateUserResult {
         }
         return user
       } catch (e) {
-        const apiError = e as ApiError
-        setError(apiError.message || 'Failed to update profile')
+        const message = e instanceof Error ? e.message : (e as ApiError).message
+        setError(message || 'Failed to update profile')
         setIsUpdating(false)
         return null
       }

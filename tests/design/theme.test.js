@@ -19,6 +19,10 @@ jest.mock('react-native', () => {
     Platform: { OS: 'android' },
   }
 })
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isNativeOfflineLaunch: () => false,
+}))
 jest.mock('@tamagui/core', () => ({ useEvent: (callback) => callback }))
 jest.mock(
   'expo-network',
@@ -75,6 +79,13 @@ jest.mock('../../features/settings', () => ({
     theme: 'light',
     setTheme: (theme) => set({ theme }),
   })),
+}))
+jest.mock('../../features/settings/stores/settingsStore', () => ({
+  useSettingsStore: require('../../features/settings').useSettingsStore,
+  saveSettingsProfile: jest.fn(async () => {}),
+}))
+jest.mock('../../lib/legacyTrainingProfile', () => ({
+  readLegacyTrainingProfile: jest.fn(async () => null),
 }))
 jest.mock('tamagui', () => {
   const React = require('react')

@@ -240,95 +240,7 @@ describe('migrateDbIfNeeded', () => {
   })
 })
 
-// Use Python's SQLite so schema rebuilds, rowid ordering and rollback are checked by SQLite itself.
-class SqliteDb {
-  constructor(path) {
-    const { spawn } = require('child_process')
-    const { createInterface } = require('readline')
-    this.databasePath = path
-    this.requests = []
-    this.worker = spawn('python3', [
-      '-u',
-      '-c',
-      `
-import json, sqlite3, sys
-connection = sqlite3.connect(sys.argv[1], isolation_level=None)
-connection.row_factory = sqlite3.Row
-for line in sys.stdin:
-    try:
-        request = json.loads(line)
-        if request['kind'] == 'exec':
-            statement = ''
-            for char in request['sql']:
-                statement += char
-                if char == ';' and sqlite3.complete_statement(statement):
-                    connection.execute(statement)
-                    statement = ''
-            if statement.strip(): connection.execute(statement)
-            result = None
-        else:
-            cursor = connection.execute(request['sql'], request['params'])
-            result = [dict(row) for row in cursor.fetchall()]
-        print(json.dumps({'result': result}), flush=True)
-    except Exception as error:
-        print(json.dumps({'error': str(error)}), flush=True)
-`,
-      path,
-    ])
-    this.worker.on('error', (error) => this.fail(error))
-    this.worker.on('exit', (code) => this.fail(new Error(`SQLite worker exited (${code})`)))
-    createInterface({ input: this.worker.stdout }).on('line', (line) => {
-      const response = JSON.parse(line)
-      const { resolve, reject } = this.requests.shift()
-      if (response.error) reject(new Error(response.error))
-      else resolve(response.result)
-    })
-  }
-
-  fail(error) {
-    this.failure = error
-    for (const { reject } of this.requests.splice(0)) reject(error)
-  }
-
-  request(kind, sql, params = []) {
-    if (this.failure) return Promise.reject(this.failure)
-    return new Promise((resolve, reject) => {
-      this.requests.push({ resolve, reject })
-      this.worker.stdin.write(`${JSON.stringify({ kind, sql, params })}\n`)
-    })
-  }
-
-  execAsync(sql) {
-    return this.request('exec', sql)
-  }
-  getAllAsync(sql, ...params) {
-    return this.request('query', sql, params)
-  }
-  async getFirstAsync(sql, ...params) {
-    return (await this.getAllAsync(sql, ...params))[0] ?? null
-  }
-  runAsync(sql, ...params) {
-    return this.request('query', sql, Array.isArray(params[0]) ? params[0] : params)
-  }
-  async withTransactionAsync(operation) {
-    await this.execAsync('BEGIN')
-    try {
-      await operation()
-      await this.execAsync('COMMIT')
-    } catch (error) {
-      await this.execAsync('ROLLBACK')
-      throw error
-    }
-  }
-  async closeAsync() {
-    if (this.closePromise) return this.closePromise
-    if (this.failure || this.worker.exitCode !== null) return
-    const exited = new Promise((resolve) => this.worker.once('exit', resolve))
-    this.closePromise = exited
-    this.worker.stdin.end()
-    await exited
-  }
-}
+const { SqliteDb } = require('../helpers/sqliteDb')
 
 const owner = { ownerId: 'account:alice', legacyOwnerId: 'account:alice' }
 
@@ -437,7 +349,7 @@ describe('durable queue schema on real SQLite', () => {
     expect(await target.getAllAsync('SELECT * FROM id_remaps')).toEqual([
       { table_name: 'workouts', old_id: 'local', new_id: 'server' },
     ])
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 8 })
     await migrateDbIfNeeded(target, owner)
     expect(await target.getAllAsync('SELECT * FROM sync_queue ORDER BY sequence')).toEqual(rows)
     await target.runAsync('DELETE FROM sync_queue WHERE id = ?', 'legacy-second')
@@ -473,7 +385,7 @@ describe('durable queue schema on real SQLite', () => {
       idempotency_key: 'new-key',
       request_payload: null,
     })
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 8 })
   })
 
   it('rolls back the queue rebuild and schema version if copying existing rows fails', async () => {
@@ -500,7 +412,39 @@ describe('durable queue schema on real SQLite', () => {
     ).toBeNull()
     target.execAsync = originalExec
     await migrateDbIfNeeded(target, owner)
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 8 })
+  })
+})
+
+describe('local user profile schema on real SQLite', () => {
+  let target
+  let source
+  beforeEach(() => {
+    target = new SqliteDb(':memory:')
+    source = new SqliteDb('')
+    mockLegacyDb = source
+  })
+  afterEach(async () => {
+    await Promise.all([target.closeAsync(), source.closeAsync()])
+  })
+
+  it('creates the single-row user profile table and upgrades the schema version', async () => {
+    await migrateDbIfNeeded(target, owner)
+
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 8 })
+    expect(
+      await target.getFirstAsync(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
+        'user_profile'
+      )
+    ).toEqual({ name: 'user_profile' })
+    expect(await target.getAllAsync('PRAGMA table_info(user_profile)')).toMatchObject([
+      { name: 'id', pk: 1 },
+      { name: 'user_json', notnull: 1 },
+    ])
+    await expect(
+      target.runAsync('INSERT INTO user_profile (id, user_json) VALUES (2, ?)', '{}')
+    ).rejects.toThrow(/CHECK constraint failed/)
   })
 })
 
@@ -550,7 +494,7 @@ describe('deletion history schema on real SQLite', () => {
     )
     await migrateDbIfNeeded(target, owner)
 
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 8 })
     expect(await target.getFirstAsync('PRAGMA foreign_keys')).toEqual({ foreign_keys: 1 })
     expect(await target.getAllAsync('PRAGMA foreign_key_check')).toEqual([])
     expect(
@@ -626,12 +570,12 @@ describe('deletion history schema on real SQLite', () => {
     expect(await target.getFirstAsync('PRAGMA foreign_keys')).toEqual({ foreign_keys: 1 })
     target.execAsync = originalExec
     await migrateDbIfNeeded(target, owner)
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 8 })
 
     const fresh = new SqliteDb(':memory:')
     mockLegacyDb = new SqliteDb('')
     await migrateDbIfNeeded(fresh, owner)
-    expect(await fresh.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
+    expect(await fresh.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 8 })
     expect(await fresh.getAllAsync('PRAGMA foreign_key_list(workout_records)')).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ on_delete: 'SET NULL', on_update: 'CASCADE' }),

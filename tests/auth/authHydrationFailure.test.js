@@ -1,6 +1,10 @@
 const mockStorageData = new Map()
 let mockFailAuthRead = false
 
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isNativeOfflineLaunch: () => false,
+}))
 jest.mock('@react-native-async-storage/async-storage', () => ({
   getItem: jest.fn(async (name) => {
     if (mockFailAuthRead && name === 'auth-storage') throw new Error('storage unavailable')

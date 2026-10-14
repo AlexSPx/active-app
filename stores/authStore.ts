@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 import { config } from '../config/api'
 import { useSettingsStore } from '../features/settings'
+import { saveSettingsProfile } from '../features/settings/stores/settingsStore'
 import { useUiStore } from './uiStore'
 import { resetAllStores } from '../utils/storeReset'
 import { queryClient } from '../lib/queryClient'
@@ -13,6 +14,7 @@ import {
   getProfileScope,
   isCurrentProfile,
   LOCAL_PROFILE_OWNER,
+  LOCAL_USER_ID,
   profileOwnerForUser,
   setActiveProfileOwner,
   getCurrentProfileVersion,
@@ -24,6 +26,7 @@ import { AuthRepository, UserRepository } from 'lib/repositories'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { posthog } from '../services/posthog'
 import { networkPolicy } from './networkStore'
+import { isNativeOfflineLaunch, nativeLaunchPolicy } from '../config/launchPolicy'
 
 const isWeb = Platform.OS === 'web'
 const authRepository = new AuthRepository()
@@ -204,10 +207,11 @@ interface AuthState {
 }
 
 async function persistScrubbedAuthState(state: AuthState): Promise<void> {
+  const user = isNativeOfflineLaunch() && state.user?.id === LOCAL_USER_ID ? null : state.user
   await AsyncStorage.setItem(
     'auth-storage',
     JSON.stringify({
-      state: { user: state.user, isAuthenticated: state.isAuthenticated },
+      state: { user, isAuthenticated: state.isAuthenticated },
       version: 0,
     })
   )
@@ -300,6 +304,11 @@ async function authenticate(
   set: (partial: Partial<AuthState>) => void,
   get: () => AuthState
 ): Promise<boolean> {
+  if (isNativeOfflineLaunch() && !nativeLaunchPolicy.accountsEnabled) {
+    set({ isLoading: false, error: 'Accounts are unavailable in this version.' })
+    return false
+  }
+
   const generation = authSessionGeneration
   set({ isLoading: true, error: null })
   try {
@@ -490,6 +499,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       fetchUser: async () => {
+        if (isNativeOfflineLaunch() && !nativeLaunchPolicy.accountsEnabled) return
+
         const generation = authSessionGeneration
         const requestScope = getProfileScope()
         try {
@@ -570,16 +581,31 @@ export const useAuthStore = create<AuthState>()(
           if (generation !== authSessionGeneration || !isCurrentProfile(requestScope)) return null
           if (profileOwnerForUser(updated.id) !== get().profileOwnerId) return null
           if (isStaleProfileSnapshot(updated)) {
-            set({ isLoading: false, serverSession: 'valid' })
+            set({
+              isLoading: false,
+              serverSession: isNativeOfflineLaunch() ? get().serverSession : 'valid',
+            })
             return get().user
           }
+          if (isNativeOfflineLaunch()) {
+            await saveSettingsProfile(requestScope, {
+              timeZone: updated.timezone || 'UTC',
+              bodyWeight: updated.measurements?.weightKg ?? null,
+              height: updated.measurements?.heightCm ?? null,
+            })
+            if (generation !== authSessionGeneration || !isCurrentProfile(requestScope)) return null
+          }
           // Merge with existing state (server returns full user shape)
-          set({ user: updated, isLoading: false, serverSession: 'valid' })
+          set({
+            user: updated,
+            isLoading: false,
+            serverSession: isNativeOfflineLaunch() ? get().serverSession : 'valid',
+          })
           if (updated.profileVersion !== undefined) {
             mergeCurrentProfileVersion(requestScope, updated.profileVersion)
           }
 
-          syncUserToSettings(updated)
+          if (!isNativeOfflineLaunch()) syncUserToSettings(updated)
           return updated
         } catch (error) {
           if (generation !== authSessionGeneration || !isCurrentProfile(requestScope)) return null
@@ -628,7 +654,7 @@ export const useAuthStore = create<AuthState>()(
         ...(!isWeb && !secureCredentialsMigrated
           ? { token: state.token, refreshToken: state.refreshToken }
           : {}),
-        user: state.user,
+        user: isNativeOfflineLaunch() && state.user?.id === LOCAL_USER_ID ? null : state.user,
         isAuthenticated: state.isAuthenticated,
       }),
     }
@@ -657,9 +683,10 @@ export function initializeAuth(retry = false): Promise<void> {
 
 async function initializeAuthState(): Promise<void> {
   const generation = authSessionGeneration
+  const localLaunch = isNativeOfflineLaunch()
   let shouldRefreshProfile = false
   try {
-    await networkPolicy.ready()
+    if (!localLaunch) await networkPolicy.ready()
     const hydrationError = await waitForHydration(useAuthStore)
     if (hydrationError) throw hydrationError
     if (generation !== authSessionGeneration) return
@@ -682,6 +709,24 @@ async function initializeAuthState(): Promise<void> {
 
     const hydratedState = useAuthStore.getState()
     try {
+      if (localLaunch) {
+        useAuthStore.setState({
+          isAuthenticated: !!hydratedState.user,
+          token: null,
+          refreshToken: null,
+          serverSession: 'unknown',
+        })
+        if (
+          !(await persistScrubbedAuthStateForGeneration(generation)) ||
+          generation !== authSessionGeneration
+        ) {
+          return
+        }
+        secureCredentialsMigrated = true
+        authPersistenceReady = true
+        return
+      }
+
       const credentials = await authRepository.migrateLegacyCredentials({
         token: hydratedState.token,
         refreshToken: hydratedState.refreshToken,

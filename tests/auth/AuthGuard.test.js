@@ -1,10 +1,12 @@
-jest.mock('../../contexts/AuthContext', () => ({
-  useAuth: () => ({ isAuthenticated: false, user: null, isLoading: false }),
-}))
+let mockNativeOfflineLaunch = false
+let mockSegments = ['welcome']
+let mockAuthValue = { isAuthenticated: false, user: null, isLoading: false }
+
+jest.mock('../../contexts/AuthContext', () => ({ useAuth: () => mockAuthValue }))
 jest.mock('../../components/RootLayoutNav', () => ({ RootLayoutNav: () => null }))
 jest.mock('expo-router', () => ({
   useRouter: () => ({ replace: mockReplace }),
-  useSegments: () => ['welcome'],
+  useSegments: () => mockSegments,
   useRootNavigationState: () => ({ key: 'root' }),
 }))
 jest.mock('tamagui', () => {
@@ -21,6 +23,10 @@ jest.mock('../../stores/authStore', () => ({
   useAuthStore: (selector) => selector(mockAuthState),
   initializeAuth: (...args) => mockInitializeAuth(...args),
 }))
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isNativeOfflineLaunch: () => mockNativeOfflineLaunch,
+}))
 
 const mockReplace = jest.fn()
 const mockInitializeAuth = jest.fn()
@@ -35,6 +41,9 @@ describe('AuthGuard recovery actions', () => {
     mockReplace.mockReset()
     mockInitializeAuth.mockReset()
     mockLogout.mockReset()
+    mockNativeOfflineLaunch = false
+    mockSegments = ['welcome']
+    mockAuthValue = { isAuthenticated: false, user: null, isLoading: false }
     mockAuthState = {
       isStartupReady: true,
       startupError: null,
@@ -42,6 +51,7 @@ describe('AuthGuard recovery actions', () => {
       error: 'Could not sign out. Please try again.',
       isProfileTransitioning: true,
       isProfileLoading: false,
+      profileOwnerId: 'local:device',
       logout: mockLogout,
       fetchUser: jest.fn(),
     }
@@ -84,6 +94,66 @@ describe('AuthGuard recovery actions', () => {
 
     expect(mockInitializeAuth).toHaveBeenCalledWith(true)
     expect(mockLogout).not.toHaveBeenCalled()
+    await act(async () => root.unmount())
+  })
+
+  it('routes a fresh native local profile to onboarding', async () => {
+    mockNativeOfflineLaunch = true
+    mockSegments = ['(tabs)']
+    mockAuthState.isStartupReady = true
+    mockAuthState.logoutRetryRequired = false
+    mockAuthState.isProfileTransitioning = false
+
+    let root
+    await act(async () => {
+      root = create(React.createElement(AuthGuard))
+    })
+
+    expect(mockReplace).toHaveBeenCalledWith('/welcome/register')
+    await act(async () => root.unmount())
+  })
+
+  it('routes a cached completed native account directly to training without credentials', async () => {
+    mockNativeOfflineLaunch = true
+    mockSegments = ['welcome', 'home']
+    mockAuthValue = {
+      isAuthenticated: true,
+      user: { id: 'cached-owner', registrationCompleted: true },
+      isLoading: false,
+    }
+    mockAuthState.isStartupReady = true
+    mockAuthState.logoutRetryRequired = false
+    mockAuthState.isProfileTransitioning = false
+    mockAuthState.profileOwnerId = 'account:cached-owner'
+
+    let root
+    await act(async () => {
+      root = create(React.createElement(AuthGuard))
+    })
+
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
+    await act(async () => root.unmount())
+  })
+
+  it('routes a completed native local profile directly to training', async () => {
+    mockNativeOfflineLaunch = true
+    mockSegments = ['welcome', 'home']
+    mockAuthValue = {
+      isAuthenticated: true,
+      user: { id: 'local:device', registrationCompleted: true },
+      isLoading: false,
+    }
+    mockAuthState.isStartupReady = true
+    mockAuthState.logoutRetryRequired = false
+    mockAuthState.isProfileTransitioning = false
+    mockAuthState.profileOwnerId = 'local:device'
+
+    let root
+    await act(async () => {
+      root = create(React.createElement(AuthGuard))
+    })
+
+    expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
     await act(async () => root.unmount())
   })
 })

@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import { isCurrentProfile, type ProfileScope } from '../../../lib/profileScope'
 
 interface SettingsState {
   // Rest timer settings
@@ -30,6 +31,45 @@ interface SettingsState {
   setHeightUnit: (unit: 'cm' | 'in') => void
   reset: () => void
 }
+
+export type SettingsProfileChanges = Partial<
+  Pick<SettingsState, 'timeZone' | 'bodyWeight' | 'height' | 'bodyWeightUnit' | 'heightUnit'>
+>
+
+const pausedStorage = createJSONStorage(() => ({
+  getItem: async () => null,
+  setItem: async () => {},
+  removeItem: async () => {},
+}))
+
+let persistenceOperations: Promise<unknown> = Promise.resolve()
+
+function enqueuePersistence<T>(operation: () => Promise<T>): Promise<T> {
+  const next = persistenceOperations.then(operation, operation)
+  persistenceOperations = next.catch(() => {})
+  return next
+}
+
+export async function flushSettingsPersistence(): Promise<void> {
+  await persistenceOperations
+}
+
+export const settingsProfileStorage = createJSONStorage(() => ({
+  getItem: (name) => AsyncStorage.getItem(name),
+  setItem: (name, serializedValue) =>
+    enqueuePersistence(async () => {
+      const options = useSettingsStore.persist.getOptions()
+      if (options.name !== name) {
+        await AsyncStorage.setItem(name, serializedValue)
+        return
+      }
+
+      const currentState = useSettingsStore.getState()
+      const state = options.partialize ? options.partialize(currentState) : currentState
+      await AsyncStorage.setItem(name, JSON.stringify({ state, version: options.version }))
+    }),
+  removeItem: (name) => enqueuePersistence(() => AsyncStorage.removeItem(name)),
+}))
 
 const defaultSettings = () => ({
   restTimerEnabled: true,
@@ -72,7 +112,7 @@ export const useSettingsStore = create<SettingsState>()(
     }),
     {
       name: 'settings-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: settingsProfileStorage,
       skipHydration: true,
       merge: (persistedState, currentState) => ({
         ...currentState,
@@ -92,3 +132,35 @@ export const useSettingsStore = create<SettingsState>()(
     }
   )
 )
+
+export async function saveSettingsProfile(
+  scope: ProfileScope,
+  changes: SettingsProfileChanges
+): Promise<void> {
+  return enqueuePersistence(async () => {
+    const expectedName = `settings-storage:${encodeURIComponent(scope.ownerId)}`
+    const options = useSettingsStore.persist.getOptions()
+    if (options.name !== expectedName || !options.storage) {
+      throw new Error('Settings are not ready for the current profile.')
+    }
+    if (!isCurrentProfile(scope)) throw new Error('Profile changed while saving settings.')
+
+    const nextState = { ...useSettingsStore.getState(), ...changes }
+    const state = options.partialize ? options.partialize(nextState) : nextState
+
+    await AsyncStorage.setItem(expectedName, JSON.stringify({ state, version: options.version }))
+    if (!isCurrentProfile(scope)) throw new Error('Profile changed while saving settings.')
+
+    const currentOptions = useSettingsStore.persist.getOptions()
+    if (currentOptions.name !== expectedName || currentOptions.storage !== options.storage) {
+      throw new Error('Profile changed while saving settings.')
+    }
+
+    useSettingsStore.persist.setOptions({ storage: pausedStorage })
+    try {
+      useSettingsStore.setState(changes)
+    } finally {
+      useSettingsStore.persist.setOptions({ storage: options.storage })
+    }
+  })
+}

@@ -4,8 +4,10 @@
  */
 import * as SQLite from 'expo-sqlite'
 import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite'
+import type { User } from '../../types/api'
+import { getProfileScope, isCurrentProfile, type ProfileScope } from '../profileScope'
 
-const DATABASE_VERSION = 7
+const DATABASE_VERSION = 8
 const LEGACY_DATABASE_NAME = 'active.db'
 const LEGACY_OWNER_KEY = 'legacy_active_db_owner'
 const LEGACY_IMPORT_KEY = 'legacy_active_db_import_owner'
@@ -271,10 +273,44 @@ async function migrateSchema(db: SQLiteDatabase) {
       PRAGMA user_version = 7;
       `)
       }
+
+      if (currentDbVersion < 8) {
+        await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS user_profile (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        user_json TEXT NOT NULL
+      );
+      PRAGMA user_version = 8;
+      `)
+      }
     })
   } finally {
     await db.execAsync('PRAGMA foreign_keys = ON')
   }
+}
+
+/**
+ * Seeds the current owner database with its local profile without replacing a
+ * profile already saved by an earlier launch.
+ */
+export async function initializeLocalUser(db: SQLiteDatabase, seed: User): Promise<void> {
+  const scope = getProfileScope()
+  assertCurrentProfile(scope)
+
+  await db.withTransactionAsync(async () => {
+    assertCurrentProfile(scope)
+    await db.runAsync(
+      'INSERT OR IGNORE INTO user_profile (id, user_json) VALUES (1, ?)',
+      JSON.stringify(seed)
+    )
+    assertCurrentProfile(scope)
+  })
+
+  assertCurrentProfile(scope)
+}
+
+function assertCurrentProfile(scope: ProfileScope): void {
+  if (!isCurrentProfile(scope)) throw new Error('Profile changed during user initialization')
 }
 
 async function ensureMetadataTable(db: SQLiteDatabase) {

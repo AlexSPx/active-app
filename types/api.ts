@@ -54,6 +54,8 @@ export interface User {
   measurements?: UserMeasurements | null
   registrationCompleted: boolean
   notificationPreferences?: UserNotifications | null
+  /** Local-only cadence used while the native app runs without an account backend. */
+  notificationFrequency?: number
   profileVersion?: number
 }
 
