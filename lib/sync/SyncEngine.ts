@@ -464,14 +464,12 @@ export class SyncEngine {
   }
 
   private processQueueInBackground(): void {
-    if (!isSyncEnabledForLaunch()) return
     void this.processQueue().catch((error) => {
       console.error('[SyncEngine] Background queue drain failed:', error)
     })
   }
 
   scheduleQueueProcessing(): void {
-    if (!isSyncEnabledForLaunch()) return
     this.processQueueInBackground()
   }
 
@@ -722,7 +720,6 @@ export class SyncEngine {
 
   private async drainQueue(db: SQLiteDatabase, scope: ProfileScope): Promise<void> {
     if (
-      !isSyncEnabledForLaunch() ||
       !this.isCurrentEngine(db, scope) ||
       !this.uploadsEnabled ||
       this.authenticationPaused ||
@@ -767,7 +764,6 @@ export class SyncEngine {
     try {
       let processed = 0
       while (
-        isSyncEnabledForLaunch() &&
         processed < QUEUE_BATCH_SIZE &&
         this.isCurrentEngine(db, scope) &&
         this.uploadsEnabled &&
@@ -877,7 +873,7 @@ export class SyncEngine {
     db: SQLiteDatabase,
     scope: ProfileScope
   ): Promise<boolean> {
-    if (!isSyncEnabledForLaunch() || !this.isCurrentEngine(db, scope)) return false
+    if (!this.isCurrentEngine(db, scope)) return false
     let currentJob: SyncJob | null = null
     await this.withIdRemapLock(async () => {
       if (!this.isCurrentEngine(db, scope)) return
@@ -887,13 +883,7 @@ export class SyncEngine {
       )
       if (!this.isCurrentEngine(db, scope) || !latest) return
       if (latest.status !== 'pending' && latest.status !== 'failed') return
-      if (
-        !isSyncEnabledForLaunch() ||
-        !this.uploadsEnabled ||
-        this.authenticationPaused ||
-        this.paused
-      )
-        return
+      if (!this.uploadsEnabled || this.authenticationPaused || this.paused) return
       const requestPayload = latest.request_payload ?? latest.payload
       await db.withTransactionAsync(async () => {
         await db.runAsync(
@@ -1601,7 +1591,6 @@ export class SyncEngine {
   }
 
   private resumeAuthenticationInBackground(): void {
-    if (!isSyncEnabledForLaunch()) return
     const db = this.db
     const scope = this.dbScope
     if (!db || !scope) return
@@ -1611,7 +1600,6 @@ export class SyncEngine {
   }
 
   private async resumeAuthentication(db: SQLiteDatabase, scope: ProfileScope): Promise<void> {
-    if (!isSyncEnabledForLaunch()) return
     let changed = false
     await this.withIdRemapLock(async () => {
       if (!this.isCurrentEngine(db, scope) || !this.uploadsEnabled) return
@@ -1644,7 +1632,6 @@ export class SyncEngine {
   }
 
   private scheduleRetry(nextAttemptAt: number): void {
-    if (!isSyncEnabledForLaunch()) return
     this.clearRetryTimer()
     const lifecycleGeneration = this.lifecycleGeneration
     this.retryTimer = setTimeout(
@@ -1667,7 +1654,7 @@ export class SyncEngine {
   // -----------------------------------------------------------------------
 
   private handleAppStateChange = (nextAppState: AppStateStatus): void => {
-    if (isSyncEnabledForLaunch() && nextAppState === 'active' && !this.connectivityManaged) {
+    if (nextAppState === 'active' && !this.connectivityManaged) {
       this.processQueueInBackground()
     }
   }
