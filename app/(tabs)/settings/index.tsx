@@ -43,6 +43,7 @@ function MenuRow({
 }
 
 export default function SettingsMenuScreen() {
+  const showSyncMenu = false
   const isNativeOffline = isNativeOfflineLaunch()
   const isNativeLocalOnly = !isSyncEnabledForLaunch()
   const { logout, user } = useAuth()
@@ -117,15 +118,17 @@ export default function SettingsMenuScreen() {
               }
               href="/settings/rest-timer"
             />
-            <MenuRow
-              title={isNativeLocalOnly ? 'Local storage' : 'Synchronization'}
-              description={
-                isNativeLocalOnly
-                  ? 'Your training data is saved on this device'
-                  : 'Review queued changes and retry uploads'
-              }
-              href="/settings/sync"
-            />
+            {showSyncMenu && (
+              <MenuRow
+                title={isNativeLocalOnly ? 'Local storage' : 'Synchronization'}
+                description={
+                  isNativeLocalOnly
+                    ? 'Your training data is saved on this device'
+                    : 'Review queued changes and retry uploads'
+                }
+                href="/settings/sync"
+              />
+            )}
           </YStack>
           <YStack>
             <Text fontSize="$caption" fontWeight="600" color="$colorSubtle" mb="$field">
