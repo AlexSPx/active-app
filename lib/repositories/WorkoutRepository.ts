@@ -32,6 +32,7 @@ interface WorkoutRow {
   workout_template: string | null
   is_synced: number
   synced_at: string | null
+  server_version: number | null
 }
 
 interface WorkoutRecordRow {
@@ -111,6 +112,7 @@ export class WorkoutRepository extends BaseRepository {
           workout_template: JSON.stringify(templatePayload),
           is_synced: 0,
           synced_at: null,
+          server_version: null,
         }),
         job: {
           apiMethod: 'createWorkout',
@@ -129,6 +131,12 @@ export class WorkoutRepository extends BaseRepository {
   ): Promise<void> {
     return this.commitMutation(async (tx) => {
       const resolvedWorkoutId = syncEngine.resolveId('workouts', workoutId)
+      const row = await tx.getFirstAsync<WorkoutRow>(
+        'SELECT * FROM workouts WHERE id = ?',
+        resolvedWorkoutId
+      )
+      const requestPayload: UpdateWorkoutRequest =
+        row?.server_version == null ? payload : { ...payload, baseVersion: row.server_version }
       const sets: string[] = []
       const vals: any[] = []
 
@@ -141,10 +149,6 @@ export class WorkoutRepository extends BaseRepository {
         vals.push(payload.notes || null)
       }
       if (payload.template) {
-        const row = await tx.getFirstAsync<WorkoutRow>(
-          'SELECT * FROM workouts WHERE id = ?',
-          resolvedWorkoutId
-        )
         const current = row ? this.rowToWorkout(row) : null
         const now = new Date().toISOString()
         sets.push('workout_template = ?')
@@ -173,7 +177,7 @@ export class WorkoutRepository extends BaseRepository {
         value: undefined,
         job: {
           apiMethod: 'updateWorkout',
-          payload: [resolvedWorkoutId, payload],
+          payload: [resolvedWorkoutId, requestPayload],
         },
       }
     })
@@ -182,6 +186,10 @@ export class WorkoutRepository extends BaseRepository {
   async delete(id: string): Promise<void> {
     return this.commitMutation(async (tx) => {
       const resolvedId = syncEngine.resolveId('workouts', id)
+      const row = await tx.getFirstAsync<Pick<WorkoutRow, 'server_version'>>(
+        'SELECT server_version FROM workouts WHERE id = ?',
+        resolvedId
+      )
       await tx.runAsync('UPDATE workouts SET is_deleted = 1 WHERE id = ?', resolvedId)
       const routines = await tx.getAllAsync<{ id: string; pattern: string | null }>(
         'SELECT id, pattern FROM routines WHERE is_deleted = 0'
@@ -208,7 +216,10 @@ export class WorkoutRepository extends BaseRepository {
         value: undefined,
         job: {
           apiMethod: 'deleteWorkout',
-          payload: [resolvedId],
+          payload:
+            row?.server_version == null
+              ? [resolvedId]
+              : { id: resolvedId, baseVersion: row.server_version },
         },
       }
     })
@@ -339,14 +350,15 @@ export class WorkoutRepository extends BaseRepository {
   async hydrateWorkouts(serverWorkouts: ApiWorkout[]): Promise<void> {
     for (const w of serverWorkouts) {
       await this.run(
-        `INSERT INTO workouts (id, title, notes, created_at, updated_at, workout_template, is_synced, synced_at)
-         SELECT ?, ?, ?, ?, ?, ?, 1, ? WHERE NOT EXISTS
+        `INSERT INTO workouts (id, title, notes, created_at, updated_at, workout_template, is_synced, synced_at, server_version)
+         SELECT ?, ?, ?, ?, ?, ?, 1, ?, ? WHERE NOT EXISTS
            (SELECT 1 FROM workouts WHERE id = ? AND is_deleted = 1)
          ON CONFLICT(id) DO UPDATE SET
            title = excluded.title,
            notes = excluded.notes,
            updated_at = excluded.updated_at,
            workout_template = excluded.workout_template,
+           server_version = excluded.server_version,
            is_synced = 1,
            synced_at = excluded.synced_at WHERE workouts.is_deleted = 0`,
         w.id,
@@ -356,6 +368,7 @@ export class WorkoutRepository extends BaseRepository {
         w.updatedAt,
         JSON.stringify(w.workoutTemplate),
         new Date().toISOString(),
+        w.version ?? null,
         w.id
       )
     }
@@ -414,6 +427,7 @@ export class WorkoutRepository extends BaseRepository {
       createdAt: row.created_at,
       updatedAt: row.updated_at || row.created_at,
       workoutTemplate: template,
+      version: row.server_version ?? undefined,
     }
   }
 

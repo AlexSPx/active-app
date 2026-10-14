@@ -437,7 +437,7 @@ describe('durable queue schema on real SQLite', () => {
     expect(await target.getAllAsync('SELECT * FROM id_remaps')).toEqual([
       { table_name: 'workouts', old_id: 'local', new_id: 'server' },
     ])
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 6 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
     await migrateDbIfNeeded(target, owner)
     expect(await target.getAllAsync('SELECT * FROM sync_queue ORDER BY sequence')).toEqual(rows)
     await target.runAsync('DELETE FROM sync_queue WHERE id = ?', 'legacy-second')
@@ -473,7 +473,7 @@ describe('durable queue schema on real SQLite', () => {
       idempotency_key: 'new-key',
       request_payload: null,
     })
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 6 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
   })
 
   it('rolls back the queue rebuild and schema version if copying existing rows fails', async () => {
@@ -500,7 +500,7 @@ describe('durable queue schema on real SQLite', () => {
     ).toBeNull()
     target.execAsync = originalExec
     await migrateDbIfNeeded(target, owner)
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 6 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
   })
 })
 
@@ -550,7 +550,7 @@ describe('deletion history schema on real SQLite', () => {
     )
     await migrateDbIfNeeded(target, owner)
 
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 6 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
     expect(await target.getFirstAsync('PRAGMA foreign_keys')).toEqual({ foreign_keys: 1 })
     expect(await target.getAllAsync('PRAGMA foreign_key_check')).toEqual([])
     expect(
@@ -564,7 +564,14 @@ describe('deletion history schema on real SQLite', () => {
       error_message: 'offline',
       next_attempt_at: 12345,
       request_payload: null,
+      error_code: null,
     })
+    expect(
+      await target.getFirstAsync('SELECT server_version FROM workouts WHERE id = ?', 'workout')
+    ).toEqual({ server_version: null })
+    expect(
+      await target.getFirstAsync('SELECT server_version FROM routines WHERE id = ?', 'routine')
+    ).toEqual({ server_version: null })
     expect(
       await target.getFirstAsync('SELECT is_deleted FROM routines WHERE id = ?', 'routine')
     ).toEqual({ is_deleted: 0 })
@@ -619,12 +626,12 @@ describe('deletion history schema on real SQLite', () => {
     expect(await target.getFirstAsync('PRAGMA foreign_keys')).toEqual({ foreign_keys: 1 })
     target.execAsync = originalExec
     await migrateDbIfNeeded(target, owner)
-    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 6 })
+    expect(await target.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
 
     const fresh = new SqliteDb(':memory:')
     mockLegacyDb = new SqliteDb('')
     await migrateDbIfNeeded(fresh, owner)
-    expect(await fresh.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 6 })
+    expect(await fresh.getFirstAsync('PRAGMA user_version')).toEqual({ user_version: 7 })
     expect(await fresh.getAllAsync('PRAGMA foreign_key_list(workout_records)')).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ on_delete: 'SET NULL', on_update: 'CASCADE' }),

@@ -5,7 +5,7 @@
 import * as SQLite from 'expo-sqlite'
 import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite'
 
-const DATABASE_VERSION = 6
+const DATABASE_VERSION = 7
 const LEGACY_DATABASE_NAME = 'active.db'
 const LEGACY_OWNER_KEY = 'legacy_active_db_owner'
 const LEGACY_IMPORT_KEY = 'legacy_active_db_import_owner'
@@ -260,6 +260,15 @@ async function migrateSchema(db: SQLiteDatabase) {
         await db.execAsync(`
       ALTER TABLE sync_queue ADD COLUMN request_payload TEXT;
       PRAGMA user_version = 6;
+      `)
+      }
+
+      if (currentDbVersion < 7) {
+        await db.execAsync(`
+      ALTER TABLE workouts ADD COLUMN server_version INTEGER;
+      ALTER TABLE routines ADD COLUMN server_version INTEGER;
+      ALTER TABLE sync_queue ADD COLUMN error_code TEXT;
+      PRAGMA user_version = 7;
       `)
       }
     })

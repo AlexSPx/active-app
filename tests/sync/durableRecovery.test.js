@@ -151,7 +151,7 @@ describe('durable sync recovery', () => {
         await releaseWrite.promise
       }
     })
-    const api = createApi({ createWorkout: jest.fn(async () => ({ id: 'server' })) })
+    const api = createApi({ createWorkout: jest.fn(async () => ({ id: 'server', version: 0 })) })
     const engine = engineWith(api)
     const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
     try {

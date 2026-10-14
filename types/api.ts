@@ -54,6 +54,7 @@ export interface User {
   measurements?: UserMeasurements | null
   registrationCompleted: boolean
   notificationPreferences?: UserNotifications | null
+  profileVersion?: number
 }
 
 export interface UserNotifications {
@@ -67,6 +68,7 @@ export interface UserMeasurements {
 }
 
 export interface UpdateUserRequest {
+  baseVersion?: number
   username?: string
   firstName?: string
   lastName?: string
@@ -123,6 +125,7 @@ export interface ApiWorkout {
   createdAt: string
   updatedAt: string
   workoutTemplate: ApiWorkoutTemplate
+  version?: number
 }
 
 // Workout Creation Request Types
@@ -148,6 +151,7 @@ export interface CreateWorkoutRequest {
 }
 
 export interface UpdateWorkoutRequest {
+  baseVersion?: number
   title?: string
   notes?: string
   // If template is provided, it must be complete
@@ -249,4 +253,20 @@ export interface ExerciseLogResponse {
 export interface ApiError extends Error {
   status?: number
   code?: string
+  currentVersion?: number
+}
+
+export interface EntityVersion {
+  id: string
+  version: number
+}
+
+export interface WorkoutDeleteRequest {
+  id: string
+  baseVersion?: number
+}
+
+export interface WorkoutDeleteAck {
+  deletedWorkoutId: string
+  routineVersions: EntityVersion[]
 }

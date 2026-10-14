@@ -23,6 +23,8 @@ export interface Routine {
   startDate: string // Instant (ISO-8601 string) e.g. 2023-10-27T10:00:00Z
   createdAt: string // ISO-8601 string
   updatedAt: string // ISO-8601 string
+  version?: number
+  profileVersion?: number
 }
 
 export interface CreateRoutineRequest {
@@ -32,13 +34,27 @@ export interface CreateRoutineRequest {
   pattern: RoutinePatternItem[]
   startDate?: string // LocalDate (yyyy-MM-dd)
   active?: boolean
+  profileBaseVersion?: number
 }
 
 export interface UpdateRoutineRequest {
+  baseVersion?: number
+  profileBaseVersion?: number
   name?: string
   description?: string | null
   routineType?: RoutineType
   pattern?: RoutinePatternItem[]
   startDate?: string // LocalDate (yyyy-MM-dd)
   active?: boolean
+}
+
+export interface RoutineDeleteRequest {
+  id: string
+  baseVersion?: number
+  profileBaseVersion?: number
+}
+
+export interface RoutineDeleteAck {
+  deletedRoutineId: string
+  profileVersion?: number
 }

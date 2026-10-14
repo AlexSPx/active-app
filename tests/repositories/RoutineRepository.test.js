@@ -6,8 +6,12 @@ jest.mock('../../lib/sync', () => ({
     resolveId: jest.fn((_table, id) => id),
   },
 }))
+jest.mock('../../lib/profileScope', () => ({
+  getCurrentProfileVersion: jest.fn(() => null),
+}))
 
 const { syncEngine } = require('../../lib/sync')
+const { getCurrentProfileVersion } = require('../../lib/profileScope')
 const { RoutineRepository } = require('../../lib/repositories/RoutineRepository')
 const { FakeDb } = require('../helpers/syncTestUtils')
 
@@ -17,6 +21,7 @@ describe('RoutineRepository', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    getCurrentProfileVersion.mockReturnValue(null)
     syncEngine.resolveId.mockImplementation((_table, id) => id)
     db = new FakeDb()
     syncEngine.enqueue.mockImplementation(async (_job, transaction, options) => {
@@ -219,6 +224,65 @@ describe('RoutineRepository', () => {
     expect(db.tables.routines.get('routine_a').is_active).toBe(0)
     expect(db.tables.routines.get('routine_b').is_active).toBe(1)
     expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
+  })
+
+  it('captures routine and profile versions before an active update', async () => {
+    getCurrentProfileVersion.mockReturnValue(9)
+    db.tables.routines.set('routine-versioned', {
+      id: 'routine-versioned',
+      name: 'Routine',
+      description: null,
+      user_id: null,
+      routine_type: 'SEQUENTIAL',
+      pattern: '[]',
+      start_date: '2026-04-24',
+      created_at: '2026-04-24T10:00:00.000Z',
+      updated_at: '2026-04-24T10:00:00.000Z',
+      is_active: 0,
+      is_synced: 1,
+      synced_at: null,
+      server_version: 4,
+    })
+
+    await repo.update('routine-versioned', { name: 'Updated', active: true })
+
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      {
+        apiMethod: 'updateRoutine',
+        payload: [
+          'routine-versioned',
+          { name: 'Updated', active: true, baseVersion: 4, profileBaseVersion: 9 },
+        ],
+      },
+      db,
+      { processAfterInsert: false }
+    )
+  })
+
+  it('uses both known roots for a versioned routine delete', async () => {
+    getCurrentProfileVersion.mockReturnValue(12)
+    db.tables.routines.set('routine-versioned-delete', {
+      id: 'routine-versioned-delete',
+      name: 'Routine',
+      pattern: '[]',
+      is_active: 0,
+      server_version: 6,
+    })
+
+    await repo.delete('routine-versioned-delete')
+
+    expect(syncEngine.enqueue).toHaveBeenCalledWith(
+      {
+        apiMethod: 'deleteRoutine',
+        payload: {
+          id: 'routine-versioned-delete',
+          baseVersion: 6,
+          profileBaseVersion: 12,
+        },
+      },
+      db,
+      { processAfterInsert: false }
+    )
   })
 
   it('deletes local routine rows and enqueues deleteRoutine', async () => {

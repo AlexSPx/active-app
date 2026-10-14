@@ -7,17 +7,31 @@ import type {
   WorkoutRecord,
   WorkoutRecordRequest,
   WorkoutRecordResponse,
+  WorkoutDeleteRequest,
+  WorkoutDeleteAck,
 } from '../../types/api'
-import type { CreateRoutineRequest, Routine, UpdateRoutineRequest } from '../../types/routine'
+import type {
+  CreateRoutineRequest,
+  Routine,
+  UpdateRoutineRequest,
+  RoutineDeleteRequest,
+  RoutineDeleteAck,
+} from '../../types/routine'
 
 export interface SyncApi {
-  createWorkout(workoutData: CreateWorkoutRequest, idempotencyKey?: string): Promise<{ id: string }>
+  createWorkout(
+    workoutData: CreateWorkoutRequest,
+    idempotencyKey?: string
+  ): Promise<{ id: string; version?: number }>
   updateWorkout(
     workoutId: string,
     payload: UpdateWorkoutRequest,
     idempotencyKey?: string
-  ): Promise<void>
-  deleteWorkout(workoutId: string, idempotencyKey?: string): Promise<void>
+  ): Promise<ApiWorkout>
+  deleteWorkout(
+    request: WorkoutDeleteRequest | string,
+    idempotencyKey?: string
+  ): Promise<WorkoutDeleteAck | void>
   recordWorkout(
     workoutRecord: WorkoutRecordRequest,
     idempotencyKey?: string
@@ -29,7 +43,10 @@ export interface SyncApi {
     payload: UpdateRoutineRequest,
     idempotencyKey?: string
   ): Promise<Routine>
-  deleteRoutine(routineId: string, idempotencyKey?: string): Promise<void>
+  deleteRoutine(
+    request: RoutineDeleteRequest | string,
+    idempotencyKey?: string
+  ): Promise<RoutineDeleteAck | void>
   getUser(): Promise<User>
   getWorkouts(): Promise<ApiWorkout[]>
   getWorkoutRecords(): Promise<WorkoutRecord[]>
@@ -39,12 +56,12 @@ export interface SyncApi {
 export const syncApi: SyncApi = {
   createWorkout: (workoutData, key) => apiService.createWorkout(workoutData, key),
   updateWorkout: (workoutId, payload, key) => apiService.updateWorkout(workoutId, payload, key),
-  deleteWorkout: (workoutId, key) => apiService.deleteWorkout(workoutId, key),
+  deleteWorkout: (request, key) => apiService.deleteWorkout(request, key),
   recordWorkout: (workoutRecord, key) => apiService.recordWorkout(workoutRecord, key),
   deleteWorkoutRecord: (recordId, key) => apiService.deleteWorkoutRecord(recordId, key),
   createRoutine: (payload, key) => apiService.createRoutine(payload, key),
   updateRoutine: (routineId, payload, key) => apiService.updateRoutine(routineId, payload, key),
-  deleteRoutine: (routineId, key) => apiService.deleteRoutine(routineId, key),
+  deleteRoutine: (request, key) => apiService.deleteRoutine(request, key),
   getUser: () => apiService.getUser(),
   getWorkouts: () => apiService.getWorkouts(),
   getWorkoutRecords: () => apiService.getWorkoutRecords(),

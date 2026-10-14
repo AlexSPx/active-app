@@ -88,6 +88,7 @@ export const userSchema = z.object({
   measurements: userMeasurementsSchema.nullable().optional(),
   registrationCompleted: z.boolean(),
   notificationPreferences: userNotificationsSchema,
+  profileVersion: z.number().int().nonnegative().optional(),
 })
 
 // ==========================================
@@ -153,6 +154,7 @@ export const workoutSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   workoutTemplate: workoutTemplateSchema,
+  version: z.number().int().nonnegative().optional(),
 })
 
 export const workoutsArraySchema = z.array(workoutSchema)
@@ -231,6 +233,8 @@ export const routineSchema = z.object({
   startDate: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  version: z.number().int().nonnegative().optional(),
+  profileVersion: z.number().int().nonnegative().optional(),
 })
 
 export const routinesArraySchema = z.array(routineSchema)

@@ -17,7 +17,7 @@ describe('SyncEngine queue remapping', () => {
       updateWorkout: jest
         .fn()
         .mockRejectedValueOnce(new Error('response lost'))
-        .mockResolvedValue(undefined),
+        .mockResolvedValue({ id: 'local-workout', version: 1 }),
     })
     const db = new FakeDb({
       jobs: [
@@ -57,9 +57,12 @@ describe('SyncEngine queue remapping', () => {
   })
 
   it('remaps only unattempted jobs and keeps a frozen request discardable after 409', async () => {
-    const conflict = Object.assign(new Error('request changed'), { status: 409 })
+    const conflict = Object.assign(new Error('request changed'), {
+      status: 409,
+      code: 'STALE_VERSION',
+    })
     const api = createApi({
-      createWorkout: jest.fn(async () => ({ id: 'server-workout' })),
+      createWorkout: jest.fn(async () => ({ id: 'server-workout', version: 0 })),
       updateWorkout: jest.fn(async () => {
         throw conflict
       }),
@@ -92,6 +95,7 @@ describe('SyncEngine queue remapping', () => {
     )
     expect(db.getJob('attempted-update')).toMatchObject({
       status: 'dead_letter',
+      error_code: 'STALE_VERSION',
       payload: JSON.stringify(frozenArgs),
       request_payload: JSON.stringify(frozenArgs),
     })
@@ -169,14 +173,8 @@ describe('SyncEngine queue remapping', () => {
     await engine.processQueue()
 
     expect(api.recordWorkout.mock.calls).toEqual([
-      [
-        { workoutId: 'server-workout', exerciseRecords: [] },
-        'atomic-record-key',
-      ],
-      [
-        { workoutId: 'server-workout', exerciseRecords: [] },
-        'atomic-record-key',
-      ],
+      [{ workoutId: 'server-workout', exerciseRecords: [] }, 'atomic-record-key'],
+      [{ workoutId: 'server-workout', exerciseRecords: [] }, 'atomic-record-key'],
     ])
     expect(db.getJob('atomic-record')).toBeNull()
     expect(db.tables.workout_records.has('local-record')).toBe(false)
@@ -465,7 +463,9 @@ describe('SyncEngine queue remapping', () => {
     ])
 
     const engine = new SyncEngine({
-      api: createApi({ createWorkout: jest.fn(async () => ({ id: 'server_workout_active' })) }),
+      api: createApi({
+        createWorkout: jest.fn(async () => ({ id: 'server_workout_active', version: 0 })),
+      }),
       getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
       addAppStateListener: () => ({ remove() {} }),
     })
@@ -518,7 +518,7 @@ describe('SyncEngine queue remapping', () => {
 
   it('rewrites queued workout updates after an offline workout create', async () => {
     const api = createApi({
-      createWorkout: jest.fn(async () => ({ id: 'server_workout_1' })),
+      createWorkout: jest.fn(async () => ({ id: 'server_workout_1', version: 0 })),
     })
 
     await runQueue({
@@ -545,7 +545,7 @@ describe('SyncEngine queue remapping', () => {
     )
     expect(api.updateWorkout).toHaveBeenCalledWith(
       'server_workout_1',
-      { title: 'Heavy Leg Day' },
+      { title: 'Heavy Leg Day', baseVersion: 0 },
       'job-update-workout-key'
     )
   })
@@ -565,7 +565,9 @@ describe('SyncEngine queue remapping', () => {
       ],
     })
     const deps = {
-      api: createApi({ createWorkout: jest.fn(async () => ({ id: 'server_workout_restart' })) }),
+      api: createApi({
+        createWorkout: jest.fn(async () => ({ id: 'server_workout_restart', version: 0 })),
+      }),
       getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
       addAppStateListener: () => ({ remove() {} }),
     }
@@ -613,7 +615,10 @@ describe('SyncEngine queue remapping', () => {
     })
     const engine = new SyncEngine({
       api: createApi({
-        createWorkout: jest.fn(async () => ({ id: 'server_workout_with_history' })),
+        createWorkout: jest.fn(async () => ({
+          id: 'server_workout_with_history',
+          version: 0,
+        })),
       }),
       getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
       addAppStateListener: () => ({ remove() {} }),
@@ -664,7 +669,7 @@ describe('SyncEngine queue remapping', () => {
       workout_title: 'Raced import',
     })
     const engine = new SyncEngine({
-      api: createApi({ createWorkout: jest.fn(async () => ({ id: serverId })) }),
+      api: createApi({ createWorkout: jest.fn(async () => ({ id: serverId, version: 0 })) }),
       getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
       addAppStateListener: () => ({ remove() {} }),
     })
@@ -680,7 +685,7 @@ describe('SyncEngine queue remapping', () => {
 
   it('rewrites queued workout records after an offline workout create', async () => {
     const api = createApi({
-      createWorkout: jest.fn(async () => ({ id: 'server_workout_2' })),
+      createWorkout: jest.fn(async () => ({ id: 'server_workout_2', version: 0 })),
     })
 
     await runQueue({
@@ -746,15 +751,12 @@ describe('SyncEngine queue remapping', () => {
       ],
     })
 
-    expect(api.deleteWorkoutRecord).toHaveBeenCalledWith(
-      'server_record_3',
-      'job-delete-record-key'
-    )
+    expect(api.deleteWorkoutRecord).toHaveBeenCalledWith('server_record_3', 'job-delete-record-key')
   })
 
   it('rewrites queued routine updates after an offline routine create', async () => {
     const api = createApi({
-      createRoutine: jest.fn(async () => ({ id: 'server_routine_1' })),
+      createRoutine: jest.fn(async () => ({ id: 'server_routine_1', version: 0 })),
     })
 
     await runQueue({
@@ -786,14 +788,14 @@ describe('SyncEngine queue remapping', () => {
 
     expect(api.updateRoutine).toHaveBeenCalledWith(
       'server_routine_1',
-      { name: 'Week A Updated' },
+      { name: 'Week A Updated', baseVersion: 0 },
       'job-update-routine-key'
     )
   })
 
   it('rewrites nested workout ids inside queued routine payloads', async () => {
     const api = createApi({
-      createWorkout: jest.fn(async () => ({ id: 'server_workout_nested' })),
+      createWorkout: jest.fn(async () => ({ id: 'server_workout_nested', version: 0 })),
     })
 
     await runQueue({
@@ -844,9 +846,9 @@ describe('SyncEngine queue remapping', () => {
   it('replays create, record, routine and delete in order while keeping history', async () => {
     const local = 'local_workout_causal'
     const api = createApi({
-      createWorkout: jest.fn(async () => ({ id: 'server_workout_causal' })),
+      createWorkout: jest.fn(async () => ({ id: 'server_workout_causal', version: 0 })),
       recordWorkout: jest.fn(async () => ({ workoutRecord: { id: 'server_record_causal' } })),
-      createRoutine: jest.fn(async () => ({ id: 'server_routine_causal' })),
+      createRoutine: jest.fn(async () => ({ id: 'server_routine_causal', version: 0 })),
     })
     const { db, engine } = await runQueue({
       api,
@@ -915,7 +917,10 @@ describe('SyncEngine queue remapping', () => {
       }),
       'routine-key'
     )
-    expect(api.deleteWorkout).toHaveBeenCalledWith('server_workout_causal', 'delete-key')
+    expect(api.deleteWorkout).toHaveBeenCalledWith(
+      { id: 'server_workout_causal', baseVersion: 0 },
+      'delete-key'
+    )
     expect(db.jobs).toEqual([])
     expect(db.tables.workouts.has('server_workout_causal')).toBe(false)
     expect(db.tables.workout_records.get('server_record_causal')).toMatchObject({
@@ -944,6 +949,476 @@ describe('SyncEngine queue remapping', () => {
     expect(api.deleteWorkout).toHaveBeenCalledWith('gone', 'delete-gone-key')
     expect(db.jobs).toEqual([])
     expect(db.tables.workouts.has('gone')).toBe(false)
+  })
+})
+
+describe('SyncEngine version acknowledgements', () => {
+  it('stops rebasing at an attempted immediate successor', async () => {
+    const api = createApi({
+      updateWorkout: jest.fn(async () => ({ id: 'workout-1', version: 6 })),
+    })
+    const attempted = ['workout-1', { title: 'Attempted', baseVersion: 5 }]
+    const { db, engine } = await runQueue({
+      api,
+      tables: { workouts: ['workout-1'] },
+      jobs: [
+        makeJob({
+          id: 'first',
+          endpoint: 'updateWorkout',
+          payload: ['workout-1', { title: 'First', baseVersion: 5 }],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'attempted',
+          endpoint: 'updateWorkout',
+          payload: attempted,
+          requestPayload: attempted,
+          status: 'dead_letter',
+          sequence: 2,
+        }),
+        makeJob({
+          id: 'third',
+          endpoint: 'updateWorkout',
+          payload: ['workout-1', { title: 'Third', baseVersion: 5 }],
+          sequence: 3,
+        }),
+      ],
+    })
+
+    expect(db.getJob('attempted').request_payload).toBe(JSON.stringify(attempted))
+    expect(JSON.parse(db.getJob('third').payload)).toEqual([
+      'workout-1',
+      { title: 'Third', baseVersion: 5 },
+    ])
+    expect(db.tables.workouts.get('workout-1').server_version).toBe(6)
+    engine.destroy()
+  })
+
+  it('keeps a remapped create from skipping an attempted local-id successor', async () => {
+    const attempted = ['local-workout', { title: 'Attempted' }]
+    const { db, engine } = await runQueue({
+      api: createApi({
+        createWorkout: jest.fn(async () => ({ id: 'server-workout', version: 0 })),
+      }),
+      tables: { workouts: ['local-workout'] },
+      jobs: [
+        makeJob({
+          id: 'create',
+          endpoint: 'createWorkout',
+          payload: { title: 'Created' },
+          localTable: 'workouts',
+          localId: 'local-workout',
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'attempted',
+          endpoint: 'updateWorkout',
+          payload: attempted,
+          requestPayload: attempted,
+          status: 'dead_letter',
+          sequence: 2,
+        }),
+        makeJob({
+          id: 'third',
+          endpoint: 'updateWorkout',
+          payload: ['local-workout', { title: 'Third' }],
+          sequence: 3,
+        }),
+      ],
+    })
+
+    expect(db.getJob('attempted').request_payload).toBe(JSON.stringify(attempted))
+    expect(JSON.parse(db.getJob('third').payload)).toEqual(['server-workout', { title: 'Third' }])
+    engine.destroy()
+  })
+
+  it('advances the shared profile base across different routine ids', async () => {
+    const api = createApi({
+      updateRoutine: jest.fn(async (id) => {
+        if (id === 'routine-a') return { id, version: 4, profileVersion: 11 }
+        throw new Error('offline after first acknowledgement')
+      }),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { routines: ['routine-a', 'routine-b'] },
+      jobs: [
+        makeJob({
+          id: 'activate-a',
+          endpoint: 'updateRoutine',
+          payload: ['routine-a', { active: true, baseVersion: 3, profileBaseVersion: 10 }],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'activate-b',
+          endpoint: 'updateRoutine',
+          payload: ['routine-b', { active: true, baseVersion: 7, profileBaseVersion: 10 }],
+          sequence: 2,
+        }),
+      ],
+    })
+
+    expect(api.updateRoutine.mock.calls[1]).toEqual([
+      'routine-b',
+      { active: true, baseVersion: 7, profileBaseVersion: 11 },
+      'activate-b-key',
+    ])
+    expect(db.tables.routines.get('routine-a').server_version).toBe(4)
+    expect(db.getJob('activate-b')).toMatchObject({ status: 'failed' })
+    engine.destroy()
+  })
+
+  it('carries an inactive delete profile base to the next activation', async () => {
+    const api = createApi({
+      updateRoutine: jest.fn(async (id) => ({
+        id,
+        version: id === 'routine-a' ? 4 : 6,
+        ...(id === 'routine-a' ? { profileVersion: 11 } : {}),
+      })),
+      deleteRoutine: jest.fn(async () => ({ deletedRoutineId: 'routine-b' })),
+    })
+    const { engine } = await runQueue({
+      api,
+      tables: { routines: ['routine-a', 'routine-b', 'routine-c'] },
+      configureDb: (db) => {
+        db.tables.routines.get('routine-b').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'activate-a',
+          endpoint: 'updateRoutine',
+          payload: ['routine-a', { active: true, baseVersion: 3, profileBaseVersion: 10 }],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'delete-inactive-b',
+          endpoint: 'deleteRoutine',
+          payload: { id: 'routine-b', baseVersion: 4, profileBaseVersion: 10 },
+          sequence: 2,
+        }),
+        makeJob({
+          id: 'activate-c',
+          endpoint: 'updateRoutine',
+          payload: ['routine-c', { active: true, baseVersion: 5, profileBaseVersion: 10 }],
+          sequence: 3,
+        }),
+      ],
+    })
+
+    expect(api.updateRoutine).toHaveBeenLastCalledWith(
+      'routine-c',
+      { active: true, baseVersion: 5, profileBaseVersion: 11 },
+      'activate-c-key'
+    )
+    engine.destroy()
+  })
+
+  it('keeps the inactive delete base when a remote profile mutation happens during deletion', async () => {
+    let remoteProfileVersion = 11
+    const staleVersion = Object.assign(new Error('Profile changed'), {
+      status: 409,
+      code: 'STALE_VERSION',
+    })
+    const api = createApi({
+      updateRoutine: jest.fn(async (id, request) => {
+        if (id === 'routine-a') return { id, version: 4, profileVersion: 11 }
+        if (request.profileBaseVersion !== remoteProfileVersion) throw staleVersion
+        return { id, version: 6, profileVersion: 13 }
+      }),
+      deleteRoutine: jest.fn(async () => {
+        remoteProfileVersion = 12
+        return { deletedRoutineId: 'routine-b' }
+      }),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { routines: ['routine-a', 'routine-b', 'routine-c'] },
+      configureDb: (database) => {
+        database.tables.routines.get('routine-b').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'activate-a',
+          endpoint: 'updateRoutine',
+          payload: ['routine-a', { active: true, baseVersion: 3, profileBaseVersion: 10 }],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'delete-inactive-b',
+          endpoint: 'deleteRoutine',
+          payload: { id: 'routine-b', baseVersion: 4, profileBaseVersion: 10 },
+          sequence: 2,
+        }),
+        makeJob({
+          id: 'activate-c',
+          endpoint: 'updateRoutine',
+          payload: ['routine-c', { active: true, baseVersion: 5, profileBaseVersion: 10 }],
+          sequence: 3,
+        }),
+      ],
+    })
+
+    expect(api.updateRoutine.mock.calls[1]).toEqual([
+      'routine-c',
+      { active: true, baseVersion: 5, profileBaseVersion: 11 },
+      'activate-c-key',
+    ])
+    expect(db.getJob('activate-c')).toMatchObject({
+      status: 'dead_letter',
+      error_code: 'STALE_VERSION',
+      request_payload: JSON.stringify([
+        'routine-c',
+        { active: true, baseVersion: 5, profileBaseVersion: 11 },
+      ]),
+    })
+    expect(db.tables.routines.has('routine-c')).toBe(true)
+    engine.destroy()
+  })
+
+  it('keeps a legacy routine delete as an unresolved profile barrier', async () => {
+    const activationC = ['routine-c', { active: true, baseVersion: 5, profileBaseVersion: 10 }]
+    const api = createApi({
+      updateRoutine: jest
+        .fn()
+        .mockResolvedValueOnce({ id: 'routine-a', version: 4, profileVersion: 11 })
+        .mockRejectedValueOnce(new Error('offline after legacy acknowledgement')),
+      deleteRoutine: jest.fn(async () => undefined),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { routines: ['routine-a', 'routine-b', 'routine-c'] },
+      configureDb: (database) => {
+        database.tables.routines.get('routine-b').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'activate-a',
+          endpoint: 'updateRoutine',
+          payload: ['routine-a', { active: true, baseVersion: 3, profileBaseVersion: 10 }],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'delete-legacy-b',
+          endpoint: 'deleteRoutine',
+          payload: ['routine-b'],
+          sequence: 2,
+        }),
+        makeJob({
+          id: 'activate-c',
+          endpoint: 'updateRoutine',
+          payload: activationC,
+          sequence: 3,
+        }),
+      ],
+    })
+
+    expect(api.deleteRoutine).toHaveBeenCalledWith('routine-b', 'delete-legacy-b-key')
+    expect(db.getJob('delete-legacy-b')).toMatchObject({
+      status: 'dead_letter',
+      error_code: 'STALE_VERSION',
+      payload: JSON.stringify(['routine-b']),
+      request_payload: JSON.stringify(['routine-b']),
+    })
+    expect(db.tables.routines.has('routine-b')).toBe(true)
+    expect(api.updateRoutine.mock.calls[1]).toEqual(['routine-c', activationC[1], 'activate-c-key'])
+    expect(db.getJob('activate-c')).toMatchObject({
+      payload: JSON.stringify(activationC),
+      request_payload: JSON.stringify(activationC),
+    })
+    engine.destroy()
+  })
+
+  it('rebases a routine successor from a workout delete acknowledgement', async () => {
+    const api = createApi({
+      deleteWorkout: jest.fn(async () => ({
+        deletedWorkoutId: 'workout-1',
+        routineVersions: [{ id: 'routine-1', version: 8 }],
+      })),
+      updateRoutine: jest.fn(async () => {
+        throw new Error('offline after delete acknowledgement')
+      }),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { workouts: ['workout-1'], routines: ['routine-1'] },
+      configureDb: (database) => {
+        database.tables.workouts.get('workout-1').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'delete-workout',
+          endpoint: 'deleteWorkout',
+          payload: { id: 'workout-1', baseVersion: 3 },
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'edit-routine',
+          endpoint: 'updateRoutine',
+          payload: ['routine-1', { name: 'After delete', baseVersion: 7 }],
+          sequence: 2,
+        }),
+      ],
+    })
+
+    expect(api.updateRoutine).toHaveBeenCalledWith(
+      'routine-1',
+      { name: 'After delete', baseVersion: 8 },
+      'edit-routine-key'
+    )
+    expect(db.tables.routines.get('routine-1').server_version).toBe(8)
+    expect(db.tables.workouts.has('workout-1')).toBe(false)
+    engine.destroy()
+  })
+
+  it('persists a create remap and its successor base across restart', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const db = new FakeDb({
+      tables: { workouts: ['local-workout'] },
+      jobs: [
+        makeJob({
+          id: 'create-workout',
+          endpoint: 'createWorkout',
+          payload: { title: 'Offline' },
+          localTable: 'workouts',
+          localId: 'local-workout',
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'edit-workout',
+          endpoint: 'updateWorkout',
+          payload: ['local-workout', { title: 'Edited' }],
+          sequence: 2,
+          nextAttemptAt: Date.now() + 60_000,
+        }),
+      ],
+    })
+    const firstApi = createApi({
+      createWorkout: jest.fn(async () => ({ id: 'server-workout', version: 0 })),
+    })
+    const first = new SyncEngine({
+      api: firstApi,
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    await first.init(db, { processOnInit: false })
+    await first.processQueue()
+    first.destroy()
+
+    expect(JSON.parse(db.getJob('edit-workout').payload)).toEqual([
+      'server-workout',
+      { title: 'Edited', baseVersion: 0 },
+    ])
+    db.getJob('edit-workout').next_attempt_at = 0
+    const secondApi = createApi()
+    const second = new SyncEngine({
+      api: secondApi,
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    await second.init(db, { processOnInit: false })
+    await second.processQueue()
+
+    expect(secondApi.updateWorkout).toHaveBeenCalledWith(
+      'server-workout',
+      { title: 'Edited', baseVersion: 0 },
+      'edit-workout-key'
+    )
+    expect(db.tables.workouts.get('server-workout').server_version).toBe(1)
+    second.destroy()
+  })
+
+  it('retains a historic missing-version replay when current freshness cannot be proven', async () => {
+    const api = createApi({
+      updateWorkout: jest.fn(async () => ({ id: 'workout-1' })),
+      getWorkouts: jest.fn(async () => [{ id: 'workout-1', version: 4 }]),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { workouts: ['workout-1'] },
+      configureDb: (database) => {
+        Object.assign(database.tables.workouts.get('workout-1'), {
+          title: 'Recoverable local draft',
+          server_version: 0,
+        })
+      },
+      jobs: [
+        makeJob({
+          id: 'historic-replay',
+          endpoint: 'updateWorkout',
+          payload: ['workout-1', { title: 'Recoverable local draft', baseVersion: 0 }],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'later-draft',
+          endpoint: 'updateWorkout',
+          payload: ['workout-1', { title: 'Later draft', baseVersion: 0 }],
+          sequence: 2,
+        }),
+      ],
+    })
+
+    expect(db.getJob('historic-replay')).toMatchObject({
+      status: 'dead_letter',
+      error_code: 'STALE_VERSION',
+      request_payload: JSON.stringify([
+        'workout-1',
+        { title: 'Recoverable local draft', baseVersion: 0 },
+      ]),
+    })
+    expect(JSON.parse(db.getJob('later-draft').payload)[1].baseVersion).toBe(0)
+    expect(db.tables.workouts.get('workout-1')).toMatchObject({
+      title: 'Recoverable local draft',
+      server_version: 0,
+    })
+    engine.destroy()
+  })
+
+  it('retains a historic workout delete when affected routine versions are unknown', async () => {
+    const api = createApi({
+      deleteWorkout: jest.fn(async () => undefined),
+      getRoutines: jest.fn(async () => [{ id: 'routine-1', version: 2 }]),
+      updateRoutine: jest.fn(async () => {
+        throw Object.assign(new Error('Routine changed'), {
+          status: 409,
+          code: 'STALE_VERSION',
+        })
+      }),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { workouts: ['workout-1'], routines: ['routine-1'] },
+      configureDb: (database) => {
+        database.tables.workouts.get('workout-1').is_deleted = 1
+        database.tables.routines.get('routine-1').server_version = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'historic-delete',
+          endpoint: 'deleteWorkout',
+          payload: ['workout-1'],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'routine-draft',
+          endpoint: 'updateRoutine',
+          payload: ['routine-1', { name: 'Draft', baseVersion: 1 }],
+          sequence: 2,
+        }),
+      ],
+    })
+
+    expect(db.getJob('historic-delete')).toMatchObject({
+      status: 'dead_letter',
+      error_code: 'STALE_VERSION',
+      request_payload: JSON.stringify(['workout-1']),
+    })
+    expect(db.getJob('routine-draft')).toMatchObject({
+      status: 'dead_letter',
+      error_code: 'STALE_VERSION',
+      payload: JSON.stringify(['routine-1', { name: 'Draft', baseVersion: 1 }]),
+    })
+    expect(db.tables.workouts.get('workout-1').is_deleted).toBe(1)
+    engine.destroy()
   })
 })
 
@@ -1066,6 +1541,7 @@ describe('SyncEngine failure handling', () => {
     const api = createApi({
       updateWorkout: jest.fn(async () => {
         if (failuresRemaining-- > 0) throw new Error('network timeout')
+        return { id: 'server_workout_retry', version: 1 }
       }),
     })
     const { SyncEngine } = require('../../lib/sync/SyncEngine')
@@ -1140,6 +1616,7 @@ describe('SyncEngine failure handling', () => {
     const api = createApi({
       updateWorkout: jest.fn(async () => {
         if (failuresRemaining-- > 0) throw new Error('temporary backend error')
+        return { id: 'server_workout_retry', version: 1 }
       }),
     })
     const { SyncEngine } = require('../../lib/sync/SyncEngine')
