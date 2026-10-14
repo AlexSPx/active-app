@@ -4,6 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import { Platform } from 'react-native'
 import { config } from '../config/api'
 import { useSettingsStore } from '../features/settings'
+import { saveSettingsProfile } from '../features/settings/stores/settingsStore'
 import { useUiStore } from './uiStore'
 import { resetAllStores } from '../utils/storeReset'
 import { queryClient } from '../lib/queryClient'
@@ -13,6 +14,7 @@ import {
   getProfileScope,
   isCurrentProfile,
   LOCAL_PROFILE_OWNER,
+  LOCAL_USER_ID,
   profileOwnerForUser,
   setActiveProfileOwner,
   getCurrentProfileVersion,
@@ -205,10 +207,11 @@ interface AuthState {
 }
 
 async function persistScrubbedAuthState(state: AuthState): Promise<void> {
+  const user = isNativeOfflineLaunch() && state.user?.id === LOCAL_USER_ID ? null : state.user
   await AsyncStorage.setItem(
     'auth-storage',
     JSON.stringify({
-      state: { user: state.user, isAuthenticated: state.isAuthenticated },
+      state: { user, isAuthenticated: state.isAuthenticated },
       version: 0,
     })
   )
@@ -563,8 +566,6 @@ export const useAuthStore = create<AuthState>()(
       },
 
       updateUser: async (payload: UpdateUserRequest) => {
-        if (isNativeOfflineLaunch() && !nativeLaunchPolicy.accountsEnabled) return null
-
         const generation = authSessionGeneration
         const requestScope = getProfileScope()
         try {
@@ -580,16 +581,31 @@ export const useAuthStore = create<AuthState>()(
           if (generation !== authSessionGeneration || !isCurrentProfile(requestScope)) return null
           if (profileOwnerForUser(updated.id) !== get().profileOwnerId) return null
           if (isStaleProfileSnapshot(updated)) {
-            set({ isLoading: false, serverSession: 'valid' })
+            set({
+              isLoading: false,
+              serverSession: isNativeOfflineLaunch() ? get().serverSession : 'valid',
+            })
             return get().user
           }
+          if (isNativeOfflineLaunch()) {
+            await saveSettingsProfile(requestScope, {
+              timeZone: updated.timezone || 'UTC',
+              bodyWeight: updated.measurements?.weightKg ?? null,
+              height: updated.measurements?.heightCm ?? null,
+            })
+            if (generation !== authSessionGeneration || !isCurrentProfile(requestScope)) return null
+          }
           // Merge with existing state (server returns full user shape)
-          set({ user: updated, isLoading: false, serverSession: 'valid' })
+          set({
+            user: updated,
+            isLoading: false,
+            serverSession: isNativeOfflineLaunch() ? get().serverSession : 'valid',
+          })
           if (updated.profileVersion !== undefined) {
             mergeCurrentProfileVersion(requestScope, updated.profileVersion)
           }
 
-          syncUserToSettings(updated)
+          if (!isNativeOfflineLaunch()) syncUserToSettings(updated)
           return updated
         } catch (error) {
           if (generation !== authSessionGeneration || !isCurrentProfile(requestScope)) return null
@@ -638,7 +654,7 @@ export const useAuthStore = create<AuthState>()(
         ...(!isWeb && !secureCredentialsMigrated
           ? { token: state.token, refreshToken: state.refreshToken }
           : {}),
-        user: state.user,
+        user: isNativeOfflineLaunch() && state.user?.id === LOCAL_USER_ID ? null : state.user,
         isAuthenticated: state.isAuthenticated,
       }),
     }
@@ -683,16 +699,7 @@ async function initializeAuthState(): Promise<void> {
     if (cachedState.user?.profileVersion !== undefined) {
       mergeCurrentProfileVersion(getProfileScope(), cachedState.user.profileVersion)
     }
-    const cachedTrainingProfile =
-      localLaunch && cachedState.user
-        ? {
-            firstName: cachedState.user.firstName ?? '',
-            lastName: cachedState.user.lastName ?? '',
-            onboardingCompleted: cachedState.user.registrationCompleted !== false,
-            notificationFrequency: cachedState.user.notificationPreferences?.schedule?.length ?? 1,
-          }
-        : undefined
-    await hydrateProfileStores(ownerId, legacyOwnerId, cachedTrainingProfile)
+    await hydrateProfileStores(ownerId, legacyOwnerId)
     if (generation !== authSessionGeneration) return
     useAuthStore.setState({
       profileOwnerId: ownerId,

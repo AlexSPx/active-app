@@ -16,6 +16,7 @@ import { WorkOSSignInButton } from '../../components/WorkOSSignInButton'
 import { InputField } from '../../components/ui/InputField'
 import { UpdateUserRequest } from 'types/api'
 import { registrationFormSchema, type RegistrationFormData } from '../../lib/schemas/forms'
+import { isNativeOfflineLaunch } from '../../config/launchPolicy'
 
 const STEPS = ['Account', 'Personal', 'Body', 'Time Zone', 'Notifications']
 
@@ -29,6 +30,7 @@ const RegisterPage = () => {
   const [direction, setDirection] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [initialized, setInitialized] = useState(false)
+  const isOfflineLaunch = isNativeOfflineLaunch()
 
   const {
     watch,
@@ -68,6 +70,17 @@ const RegisterPage = () => {
 
   // Effect to pre-fill data if user is already authenticated
   useEffect(() => {
+    if (isOfflineLaunch) {
+      if (user && !initialized) {
+        if (user.username) setValue('username', user.username)
+        if (user.firstName) setValue('firstName', user.firstName)
+        if (user.lastName) setValue('lastName', user.lastName)
+        if (user.timezone) setValue('timezone', user.timezone)
+        setInitialized(true)
+      }
+      return
+    }
+
     if (user && !initialized && !user.registrationCompleted) {
       if (user.email) setValue('email', user.email)
       if (user.username) setValue('username', user.username)
@@ -83,25 +96,19 @@ const RegisterPage = () => {
         duration: 3000,
       })
     }
-  }, [user, initialized, setValue, toast])
+  }, [user, initialized, setValue, toast, isOfflineLaunch])
 
   // --- Helpers for Body Step ---
   const weightValuesKg = useMemo(
-    () => Array.from({ length: Math.floor((200 - 30) / 0.5) + 1 }, (_, i) => Number((30 + i * 0.5).toFixed(1))),
+    () =>
+      Array.from({ length: Math.floor((200 - 30) / 0.5) + 1 }, (_, i) =>
+        Number((30 + i * 0.5).toFixed(1))
+      ),
     []
   )
-  const weightValuesLb = useMemo(
-    () => Array.from({ length: 440 - 70 + 1 }, (_, i) => 70 + i),
-    []
-  )
-  const heightValuesCm = useMemo(
-    () => Array.from({ length: 220 - 120 + 1 }, (_, i) => 120 + i),
-    []
-  )
-  const heightValuesIn = useMemo(
-    () => Array.from({ length: 86 - 48 + 1 }, (_, i) => 48 + i),
-    []
-  )
+  const weightValuesLb = useMemo(() => Array.from({ length: 440 - 70 + 1 }, (_, i) => 70 + i), [])
+  const heightValuesCm = useMemo(() => Array.from({ length: 220 - 120 + 1 }, (_, i) => 120 + i), [])
+  const heightValuesIn = useMemo(() => Array.from({ length: 86 - 48 + 1 }, (_, i) => 48 + i), [])
 
   const displayWeight = useMemo(() => {
     if (weight === null) return null
@@ -113,32 +120,41 @@ const RegisterPage = () => {
     return heightUnit === 'cm' ? Math.round(heightVal) : Math.round(heightVal / 2.54)
   }, [heightVal, heightUnit])
 
-  const onSelectWeight = useCallback((val: number | null) => {
-    if (val === null) {
-      setValue('weight', null)
-      return
-    }
-    const kg = weightUnit === 'kg' ? val : val / 2.20462
-    setValue('weight', Math.round(kg * 100) / 100)
-    Haptics.selectionAsync()
-  }, [weightUnit, setValue])
+  const onSelectWeight = useCallback(
+    (val: number | null) => {
+      if (val === null) {
+        setValue('weight', null)
+        return
+      }
+      const kg = weightUnit === 'kg' ? val : val / 2.20462
+      setValue('weight', Math.round(kg * 100) / 100)
+      Haptics.selectionAsync()
+    },
+    [weightUnit, setValue]
+  )
 
-  const onSelectHeight = useCallback((val: number | null) => {
-    if (val === null) {
-      setValue('height', null)
-      return
-    }
-    const cm = heightUnit === 'cm' ? val : val * 2.54
-    setValue('height', Math.round(cm))
-    Haptics.selectionAsync()
-  }, [heightUnit, setValue])
+  const onSelectHeight = useCallback(
+    (val: number | null) => {
+      if (val === null) {
+        setValue('height', null)
+        return
+      }
+      const cm = heightUnit === 'cm' ? val : val * 2.54
+      setValue('height', Math.round(cm))
+      Haptics.selectionAsync()
+    },
+    [heightUnit, setValue]
+  )
 
   // --- Step Validation ---
   const isStepValid = useCallback(() => {
     switch (step) {
       case 0: // Account
-        return false // WorkOS button handles validation implicitly
+        return isOfflineLaunch // WorkOS button handles validation implicitly on web
       case 1: // Personal
+        if (isOfflineLaunch) {
+          return true
+        }
         return firstName.length > 0 && lastName.length > 0 && username.length > 0
       case 2: // Body
         return weight !== null && heightVal !== null
@@ -149,7 +165,7 @@ const RegisterPage = () => {
       default:
         return false
     }
-  }, [step, firstName, lastName, username, weight, heightVal])
+  }, [step, firstName, lastName, username, weight, heightVal, isOfflineLaunch])
 
   const handleNext = useCallback(() => {
     if (step < STEPS.length - 1) {
@@ -162,7 +178,7 @@ const RegisterPage = () => {
   }, [step])
 
   const handleBack = useCallback(async () => {
-    if (isWorkOSAuth && step === 1) {
+    if (!isOfflineLaunch && isWorkOSAuth && step === 1) {
       await logout()
       router.replace('/')
       return
@@ -175,40 +191,43 @@ const RegisterPage = () => {
     } else {
       router.back()
     }
-  }, [isWorkOSAuth, step, logout, router])
+  }, [isWorkOSAuth, step, logout, router, isOfflineLaunch])
 
-  const handleWorkOSSuccess = useCallback(async (code: string) => {
-    setValue('isWorkOSAuth', true)
-    try {
-      const { user } = useAuthStore.getState()
-      if (user) {
-        if (user.firstName) setValue('firstName', user.firstName)
-        if (user.lastName) setValue('lastName', user.lastName)
-        if (user.email) setValue('email', user.email)
-        if (user.username) setValue('username', user.username)
+  const handleWorkOSSuccess = useCallback(
+    async (code: string) => {
+      setValue('isWorkOSAuth', true)
+      try {
+        const { user } = useAuthStore.getState()
+        if (user) {
+          if (user.firstName) setValue('firstName', user.firstName)
+          if (user.lastName) setValue('lastName', user.lastName)
+          if (user.email) setValue('email', user.email)
+          if (user.username) setValue('username', user.username)
+        }
+
+        setDirection(1)
+        setStep(1)
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+      } catch (error) {
+        console.error('Error fetching user details after WorkOS Sign-In:', error)
       }
-
-      setDirection(1)
-      setStep(1)
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-    } catch (error) {
-      console.error('Error fetching user details after WorkOS Sign-In:', error)
-    }
-  }, [setValue])
+    },
+    [setValue]
+  )
 
   const handleRegister = useCallback(async () => {
     setIsLoading(true)
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     try {
       const data = getValues()
-      if (!data.isWorkOSAuth || (user && user.registrationCompleted)) {
+      if (!isOfflineLaunch && (!data.isWorkOSAuth || (user && user.registrationCompleted))) {
         throw new Error('Please use WorkOS to sign up.')
       }
 
       const updateUserRequest: UpdateUserRequest = {
-        username: data.username || undefined,
-        firstName: data.firstName,
-        lastName: data.lastName,
+        username: data.username ? data.username.trim() : undefined,
+        firstName: data.firstName ? data.firstName.trim() : '',
+        lastName: data.lastName ? data.lastName.trim() : '',
         timezone: data.timezone,
         measurements: {
           weightKg: data.weight,
@@ -217,10 +236,19 @@ const RegisterPage = () => {
         registrationCompleted: true,
         notificationFrequency: data.notificationFrequency,
       }
-      await updateUserProfile(updateUserRequest)
+      const saved = await updateUserProfile(updateUserRequest, {
+        bodyWeightUnit: data.weightUnit,
+        heightUnit: data.heightUnit,
+      })
+      if (!saved) {
+        throw new Error('Could not save profile')
+      }
 
       router.replace('/(tabs)' as any)
-      toast.show('Welcome!', { message: 'Account created successfully.', customData: { type: 'success' } })
+      toast.show('Welcome!', {
+        message: 'Account created successfully.',
+        customData: { type: 'success' },
+      })
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
       const serverMsg = err?.message || 'Please try again.'
@@ -228,7 +256,7 @@ const RegisterPage = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [getValues, user, updateUserProfile, router, toast])
+  }, [getValues, user, updateUserProfile, router, toast, isOfflineLaunch])
 
   // --- Render Components ---
   const renderStepContent = () => {
@@ -237,18 +265,44 @@ const RegisterPage = () => {
         return (
           <YStack gap="$4" items="center" justify="center" flex={1}>
             <Text fontSize="$5" style={{ textAlign: 'center' }} color="$color11" mb="$4">
-              Create an account to track your workouts and progress.
+              {isOfflineLaunch
+                ? 'Set up your local profile to track your workouts and progress.'
+                : 'Create an account to track your workouts and progress.'}
             </Text>
-            <WorkOSSignInButton onSuccess={handleWorkOSSuccess} label="Sign Up with WorkOS" />
+            {isOfflineLaunch ? (
+              <Button
+                size="$5"
+                bg="$blue9"
+                rounded="$6"
+                width="100%"
+                onPress={() => {
+                  setDirection(1)
+                  setStep(1)
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+                }}
+                pressStyle={{ bg: '$blue10', scale: 0.98 }}
+                animation="fast"
+              >
+                <Text color="white" fontWeight="700" fontSize="$4">
+                  Get Started
+                </Text>
+              </Button>
+            ) : (
+              <WorkOSSignInButton onSuccess={handleWorkOSSuccess} label="Sign Up with WorkOS" />
+            )}
 
             <Text fontSize="$2" color="$color11" style={{ textAlign: 'center' }} mt="$4">
               By creating an account, you agree to our{' '}
               <Link href="/legal/terms-of-service" asChild>
-                <Text color="$blue9" textDecorationLine="underline">Terms of Service</Text>
-              </Link>
-              {' '}and{' '}
+                <Text color="$blue9" textDecorationLine="underline">
+                  Terms of Service
+                </Text>
+              </Link>{' '}
+              and{' '}
               <Link href="/legal/privacy-policy" asChild>
-                <Text color="$blue9" textDecorationLine="underline">Privacy Policy</Text>
+                <Text color="$blue9" textDecorationLine="underline">
+                  Privacy Policy
+                </Text>
               </Link>
               .
             </Text>
@@ -258,7 +312,9 @@ const RegisterPage = () => {
         return (
           <YStack gap="$4">
             <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">Username</Label>
+              <Label color="$color11" fontSize="$3">
+                Username
+              </Label>
               <InputField
                 placeholder="coolrunner123"
                 value={username}
@@ -266,7 +322,9 @@ const RegisterPage = () => {
               />
             </YStack>
             <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">First Name</Label>
+              <Label color="$color11" fontSize="$3">
+                First Name
+              </Label>
               <InputField
                 placeholder="Jane"
                 value={firstName}
@@ -274,7 +332,9 @@ const RegisterPage = () => {
               />
             </YStack>
             <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">Last Name</Label>
+              <Label color="$color11" fontSize="$3">
+                Last Name
+              </Label>
               <InputField
                 placeholder="Doe"
                 value={lastName}
@@ -290,30 +350,44 @@ const RegisterPage = () => {
               <XStack justify="space-between" items="center">
                 <XStack gap="$2" items="center">
                   <Weight size={20} color="$blue9" />
-                  <Text fontWeight="600" fontSize="$5">Weight</Text>
+                  <Text fontWeight="600" fontSize="$5">
+                    Weight
+                  </Text>
                 </XStack>
                 <XStack bg="$color4" p="$1" rounded="$4">
                   <Button
                     size="$2"
                     chromeless
                     bg={weightUnit === 'kg' ? '$background' : 'transparent'}
-                    onPress={() => { setValue('weightUnit', 'kg'); Haptics.selectionAsync() }}
+                    onPress={() => {
+                      setValue('weightUnit', 'kg')
+                      Haptics.selectionAsync()
+                    }}
                     rounded="$3"
-                  >kg</Button>
+                  >
+                    kg
+                  </Button>
                   <Button
                     size="$2"
                     chromeless
                     bg={weightUnit === 'lb' ? '$background' : 'transparent'}
-                    onPress={() => { setValue('weightUnit', 'lb'); Haptics.selectionAsync() }}
+                    onPress={() => {
+                      setValue('weightUnit', 'lb')
+                      Haptics.selectionAsync()
+                    }}
                     rounded="$3"
-                  >lb</Button>
+                  >
+                    lb
+                  </Button>
                 </XStack>
               </XStack>
               <WheelSelector
                 values={weightUnit === 'kg' ? weightValuesKg : weightValuesLb}
                 selected={displayWeight}
                 onChange={(v) => onSelectWeight(v as number | null)}
-                formatItem={(v) => weightUnit === 'kg' ? Number(v).toFixed(1) : Math.round(Number(v)).toString()}
+                formatItem={(v) =>
+                  weightUnit === 'kg' ? Number(v).toFixed(1) : Math.round(Number(v)).toString()
+                }
                 itemHeight={40}
               />
             </YStack>
@@ -322,23 +396,35 @@ const RegisterPage = () => {
               <XStack justify="space-between" items="center">
                 <XStack gap="$2" items="center">
                   <Ruler size={20} color="$blue9" />
-                  <Text fontWeight="600" fontSize="$5">Height</Text>
+                  <Text fontWeight="600" fontSize="$5">
+                    Height
+                  </Text>
                 </XStack>
                 <XStack bg="$color4" p="$1" rounded="$4">
                   <Button
                     size="$2"
                     chromeless
                     bg={heightUnit === 'cm' ? '$background' : 'transparent'}
-                    onPress={() => { setValue('heightUnit', 'cm'); Haptics.selectionAsync() }}
+                    onPress={() => {
+                      setValue('heightUnit', 'cm')
+                      Haptics.selectionAsync()
+                    }}
                     rounded="$3"
-                  >cm</Button>
+                  >
+                    cm
+                  </Button>
                   <Button
                     size="$2"
                     chromeless
                     bg={heightUnit === 'in' ? '$background' : 'transparent'}
-                    onPress={() => { setValue('heightUnit', 'in'); Haptics.selectionAsync() }}
+                    onPress={() => {
+                      setValue('heightUnit', 'in')
+                      Haptics.selectionAsync()
+                    }}
                     rounded="$3"
-                  >in</Button>
+                  >
+                    in
+                  </Button>
                 </XStack>
               </XStack>
               <WheelSelector
@@ -357,21 +443,18 @@ const RegisterPage = () => {
             <YStack bg="$color2" p="$4" rounded="$6" gap="$4">
               <XStack gap="$2" items="center">
                 <Clock size={20} color="$blue9" />
-                <Text fontWeight="600" fontSize="$5">Time Zone</Text>
+                <Text fontWeight="600" fontSize="$5">
+                  Time Zone
+                </Text>
               </XStack>
-              <TimeZoneSelector
-                value={timezone}
-                onValueChange={(tz) => setValue('timezone', tz)}
-              />
+              <TimeZoneSelector value={timezone} onValueChange={(tz) => setValue('timezone', tz)} />
             </YStack>
           </YStack>
         )
       case 4:
         return (
           <YStack gap="$4">
-            <NotificationPermissions
-              onStatusChange={() => {}}
-            />
+            <NotificationPermissions onStatusChange={() => {}} />
           </YStack>
         )
       default:
@@ -386,14 +469,10 @@ const RegisterPage = () => {
     >
       <YStack flex={1} bg="$background" px="$4" pt="$8" pb="$4">
         {/* Header */}
-        <YStack
-          mb="$6"
-          animation="quick"
-          enterStyle={{ opacity: 0, y: -20 }}
-          opacity={1}
-          y={0}
-        >
-          <H2 fontSize="$8" fontWeight="bold" mb="$4">Create Account</H2>
+        <YStack mb="$6" animation="quick" enterStyle={{ opacity: 0, y: -20 }} opacity={1} y={0}>
+          <H2 fontSize="$8" fontWeight="bold" mb="$4">
+            {isOfflineLaunch ? 'Set Up Profile' : 'Create Account'}
+          </H2>
 
           {/* Step Indicator */}
           <YStack>
@@ -415,8 +494,12 @@ const RegisterPage = () => {
               })}
             </XStack>
             <XStack justify="space-between">
-              <Text fontSize="$3" fontWeight="600" color="$color11">{STEPS[step]}</Text>
-              <Text fontSize="$3" color="$color10">Step {step + 1} of {STEPS.length}</Text>
+              <Text fontSize="$3" fontWeight="600" color="$color11">
+                {STEPS[step]}
+              </Text>
+              <Text fontSize="$3" color="$color10">
+                Step {step + 1} of {STEPS.length}
+              </Text>
             </XStack>
           </YStack>
         </YStack>
@@ -456,7 +539,9 @@ const RegisterPage = () => {
             borderColor="$color5"
             color="$color11"
           >
-            <Text>{step === 0 || (isWorkOSAuth && step === 1) ? 'Cancel' : 'Back'}</Text>
+            <Text>
+              {step === 0 || (!isOfflineLaunch && isWorkOSAuth && step === 1) ? 'Cancel' : 'Back'}
+            </Text>
           </Button>
           <Button
             flex={1}

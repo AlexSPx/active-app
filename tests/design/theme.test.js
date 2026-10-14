@@ -80,6 +80,13 @@ jest.mock('../../features/settings', () => ({
     setTheme: (theme) => set({ theme }),
   })),
 }))
+jest.mock('../../features/settings/stores/settingsStore', () => ({
+  useSettingsStore: require('../../features/settings').useSettingsStore,
+  saveSettingsProfile: jest.fn(async () => {}),
+}))
+jest.mock('../../lib/legacyTrainingProfile', () => ({
+  readLegacyTrainingProfile: jest.fn(async () => null),
+}))
 jest.mock('tamagui', () => {
   const React = require('react')
   const ThemeContext = React.createContext('light')

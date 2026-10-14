@@ -1,6 +1,5 @@
 let mockNativeOfflineLaunch = false
 let mockSegments = ['welcome']
-let mockOnboardingCompleted = false
 let mockAuthValue = { isAuthenticated: false, user: null, isLoading: false }
 
 jest.mock('../../contexts/AuthContext', () => ({ useAuth: () => mockAuthValue }))
@@ -28,9 +27,6 @@ jest.mock('../../config/launchPolicy', () => ({
   ...jest.requireActual('../../config/launchPolicy'),
   isNativeOfflineLaunch: () => mockNativeOfflineLaunch,
 }))
-jest.mock('../../features/training-profile/stores/trainingProfileStore', () => ({
-  useTrainingProfileStore: (selector) => selector({ onboardingCompleted: mockOnboardingCompleted }),
-}))
 
 const mockReplace = jest.fn()
 const mockInitializeAuth = jest.fn()
@@ -47,7 +43,6 @@ describe('AuthGuard recovery actions', () => {
     mockLogout.mockReset()
     mockNativeOfflineLaunch = false
     mockSegments = ['welcome']
-    mockOnboardingCompleted = false
     mockAuthValue = { isAuthenticated: false, user: null, isLoading: false }
     mockAuthState = {
       isStartupReady: true,
@@ -121,7 +116,6 @@ describe('AuthGuard recovery actions', () => {
   it('routes a cached completed native account directly to training without credentials', async () => {
     mockNativeOfflineLaunch = true
     mockSegments = ['welcome', 'home']
-    mockOnboardingCompleted = true
     mockAuthValue = {
       isAuthenticated: true,
       user: { id: 'cached-owner', registrationCompleted: true },
@@ -144,7 +138,11 @@ describe('AuthGuard recovery actions', () => {
   it('routes a completed native local profile directly to training', async () => {
     mockNativeOfflineLaunch = true
     mockSegments = ['welcome', 'home']
-    mockOnboardingCompleted = true
+    mockAuthValue = {
+      isAuthenticated: true,
+      user: { id: 'local:device', registrationCompleted: true },
+      isLoading: false,
+    }
     mockAuthState.isStartupReady = true
     mockAuthState.logoutRetryRequired = false
     mockAuthState.isProfileTransitioning = false

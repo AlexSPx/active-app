@@ -157,11 +157,7 @@ describe('auth profile refresh', () => {
       token: 'legacy-access',
       refreshToken: 'legacy-refresh',
     })
-    expect(mockHydrateProfileStores).toHaveBeenCalledWith(
-      'account:user_1',
-      'account:user_1',
-      undefined
-    )
+    expect(mockHydrateProfileStores).toHaveBeenCalledWith('account:user_1', 'account:user_1')
     expect(useAuthStore.getState()).toMatchObject({
       isStartupReady: true,
       startupError: null,
@@ -1164,8 +1160,7 @@ describe('auth profile refresh', () => {
     expect(mockGetCurrentUser).not.toHaveBeenCalled()
     expect(mockHydrateProfileStores).toHaveBeenCalledWith(
       'account:cached_owner',
-      'account:cached_owner',
-      { firstName: '', lastName: '', onboardingCompleted: true, notificationFrequency: 0 }
+      'account:cached_owner'
     )
     expect(useAuthStore.getState()).toMatchObject({
       isStartupReady: true,

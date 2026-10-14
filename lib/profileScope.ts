@@ -1,4 +1,5 @@
 export const LOCAL_PROFILE_OWNER = 'local:device'
+export const LOCAL_USER_ID = 'local:device'
 
 export interface ProfileScope {
   ownerId: string
@@ -11,6 +12,7 @@ let profileVersion: number | null = null
 const profileVersionListeners = new Set<(scope: ProfileScope, version: number) => void>()
 
 export function profileOwnerForUser(userId?: string | null): string {
+  if (userId === LOCAL_USER_ID) return LOCAL_PROFILE_OWNER
   return userId ? `account:${userId}` : LOCAL_PROFILE_OWNER
 }
 

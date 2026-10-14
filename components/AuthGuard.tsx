@@ -6,7 +6,6 @@ import { Button, Text, YStack, Spinner } from 'tamagui'
 import { initializeAuth, useAuthStore } from '../stores/authStore'
 import { LOCAL_PROFILE_OWNER } from '../lib/profileScope'
 import { isNativeOfflineLaunch } from '../config/launchPolicy'
-import { useTrainingProfileStore } from '../features/training-profile/stores/trainingProfileStore'
 
 export function AuthGuard() {
   const { isAuthenticated, user, isLoading } = useAuth()
@@ -17,7 +16,6 @@ export function AuthGuard() {
   const retryLogout = useAuthStore((state) => state.logout)
   const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
-  const onboardingCompleted = useTrainingProfileStore((state) => state.onboardingCompleted)
   const isProfileLoading = useAuthStore((state) => state.isProfileLoading)
   const retryProfile = useAuthStore((state) => state.fetchUser)
   const router = useRouter()
@@ -36,8 +34,8 @@ export function AuthGuard() {
     if (isNativeOfflineLaunch()) {
       const needsOnboarding =
         profileOwnerId === LOCAL_PROFILE_OWNER
-          ? !onboardingCompleted
-          : user?.registrationCompleted === false && !onboardingCompleted
+          ? user?.registrationCompleted !== true
+          : user?.registrationCompleted === false
 
       if (needsOnboarding && !isRegistering && !inLegalGroup) {
         router.replace('/welcome/register' as any)
@@ -63,15 +61,7 @@ export function AuthGuard() {
         router.replace('/(tabs)' as any)
       }
     }
-  }, [
-    isAuthenticated,
-    isStartupReady,
-    segments,
-    navigationState?.key,
-    onboardingCompleted,
-    profileOwnerId,
-    user,
-  ])
+  }, [isAuthenticated, isStartupReady, segments, navigationState?.key, profileOwnerId, user])
 
   if (!isStartupReady || isAuthenticated == null || (isLoading && !isAuthenticated)) {
     return (

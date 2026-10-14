@@ -1,6 +1,5 @@
 const React = require('react')
 const { act, create } = require('react-test-renderer')
-let mockLocalNotificationFrequency = 1
 
 jest.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 80 }))
 jest.mock('react-native', () => ({
@@ -45,10 +44,7 @@ jest.mock('../../features/settings', () => ({
   useSettingsStore: jest.fn(),
   useUpdateUser: jest.fn(),
 }))
-jest.mock('../../features/training-profile/stores/trainingProfileStore', () => ({
-  useTrainingProfileStore: (selector) =>
-    selector({ notificationFrequency: mockLocalNotificationFrequency }),
-}))
+
 const { useSettingsStore, useUpdateUser } = require('../../features/settings')
 const {
   measurementText,
@@ -317,7 +313,7 @@ test('reminder frequency accepts missing legacy preferences and preserves explic
   }
 
   Platform.OS = 'android'
-  mockLocalNotificationFrequency = 0
+  useAuth.mockReturnValue({ user: { notificationFrequency: 0 } })
   let view
   await act(async () => {
     view = create(React.createElement(PermissionsScreen))
@@ -328,5 +324,4 @@ test('reminder frequency accepts missing legacy preferences and preserves explic
   expect(selected.props.children).toBe('Off')
   await act(async () => view.unmount())
   Platform.OS = 'android'
-  mockLocalNotificationFrequency = 1
 })

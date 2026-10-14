@@ -8,7 +8,6 @@ import { useAuth } from '../../../contexts/AuthContext'
 import { useSettingsStore } from '../../../features/settings'
 import { measurementText } from '../../../features/settings/inputs'
 import NotificationPermissions from '../../../components/NotificationPermissions'
-import { useTrainingProfileStore } from '../../../features/training-profile/stores/trainingProfileStore'
 
 function MenuRow({
   title,
@@ -46,14 +45,8 @@ export default function SettingsMenuScreen() {
   const isNativeOffline = Platform.OS !== 'web'
   const { logout, user } = useAuth()
   const settings = useSettingsStore()
-  const profile = useTrainingProfileStore()
-  const localName = [profile.firstName, profile.lastName].filter(Boolean).join(' ')
-  const name = isNativeOffline
-    ? localName || 'Training profile'
-    : localName ||
-      [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
-      user?.username ||
-      'Your account'
+  const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ')
+  const name = userName || (isNativeOffline ? 'Training profile' : user?.username || 'Your account')
   const version = Application.nativeApplicationVersion || Constants.expoConfig?.version || 'Unknown'
   const confirmSignOut = () =>
     Alert.alert('Sign out of Active?', 'You’ll need to sign in again to access your account.', [

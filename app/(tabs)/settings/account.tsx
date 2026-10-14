@@ -3,32 +3,28 @@ import { useEffect, useState } from 'react'
 import { Button, Input, Label, Paragraph, Text, YStack } from 'tamagui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useAuthMutations } from '../../../features/auth'
-import { useTrainingProfileStore } from '../../../features/training-profile/stores/trainingProfileStore'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
 
 export default function AccountSettingsScreen() {
   const isNativeOffline = Platform.OS !== 'web'
-  const { logout, user } = useAuth()
-  const profile = useTrainingProfileStore()
+  const { logout, updateUser, user } = useAuth()
   const { deleteAccount, deleteAccountPending: deleting, error: deleteError } = useAuthMutations()
-  const [firstName, setFirstName] = useState(profile.firstName)
-  const [lastName, setLastName] = useState(profile.lastName)
+  const [firstName, setFirstName] = useState(user?.firstName ?? '')
+  const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
-  const localName = [profile.firstName, profile.lastName].filter(Boolean).join(' ')
-  const fullName = isNativeOffline
-    ? localName || 'Training profile'
-    : localName ||
-      [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
-      user?.username ||
-      'Your account'
-  const dirty = firstName.trim() !== profile.firstName || lastName.trim() !== profile.lastName
+  const currentFirstName = user?.firstName ?? ''
+  const currentLastName = user?.lastName ?? ''
+  const fullName =
+    [currentFirstName, currentLastName].filter(Boolean).join(' ') ||
+    (isNativeOffline ? 'Training profile' : user?.username || 'Your account')
+  const dirty = firstName.trim() !== currentFirstName || lastName.trim() !== currentLastName
 
   useEffect(() => {
-    setFirstName(profile.firstName)
-    setLastName(profile.lastName)
-  }, [profile.firstName, profile.lastName])
+    setFirstName(currentFirstName)
+    setLastName(currentLastName)
+  }, [currentFirstName, currentLastName])
 
   const saveTrainingName = async () => {
     if (!dirty || saving) return
@@ -36,7 +32,11 @@ export default function AccountSettingsScreen() {
     setSaveError(null)
     setSaved(false)
     try {
-      await profile.updateProfile({ firstName: firstName.trim(), lastName: lastName.trim() })
+      const updated = await updateUser({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+      })
+      if (!updated) throw new Error('Could not save your training name.')
       setSaved(true)
     } catch (cause) {
       setSaveError(cause instanceof Error ? cause.message : 'Could not save your training name.')

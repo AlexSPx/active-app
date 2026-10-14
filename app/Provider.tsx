@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, useColorScheme } from 'react-native'
 import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite'
-import { migrateDbIfNeeded } from '../lib/db/migrations'
 import { TamaguiProvider, type TamaguiProviderProps, PortalProvider, Theme } from 'tamagui'
 import { ToastProvider, ToastViewport } from '@tamagui/toast'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -14,6 +13,7 @@ import { initNotifications, registerPushNotifications } from '../services/notifi
 import { PostHogProvider } from 'posthog-react-native'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useSettingsStore } from '../features/settings'
+import { saveSettingsProfile } from '../features/settings/stores/settingsStore'
 import { posthog } from '../services/posthog'
 import { queryClient } from '../lib/queryClient'
 import { queryKeys } from '../lib/queryKeys'
@@ -22,6 +22,9 @@ import { replaceQueuedIdReferences } from '../lib/sync/queuePayloadRemap'
 import { hydrateFromServer } from '../lib/sync/hydrate'
 import { setSharedDatabase } from '../lib/db/connection'
 import { useAuthStore } from '../stores/authStore'
+import { initializeLocalUser, migrateDbIfNeeded } from '../lib/db/migrations'
+import { readLegacyTrainingProfile } from '../lib/legacyTrainingProfile'
+import { isMissingLocalUserProfile, UserRepository } from '../lib/repositories/UserRepository'
 import { useNetworkStore } from '../stores/networkStore'
 import { apiService } from '../services/apiService'
 import { remapRunningWorkoutId } from '../features/workout-session/stores/runningWorkoutStore'
@@ -31,7 +34,12 @@ import {
   getProfileScope,
   isCurrentProfile,
   LOCAL_PROFILE_OWNER,
+  LOCAL_USER_ID,
+  profileOwnerForUser,
 } from '../lib/profileScope'
+import type { User } from '../types/api'
+
+const userRepository = new UserRepository()
 
 function loadExpoNetwork(): typeof import('expo-network') | null {
   try {
@@ -588,7 +596,104 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
   const activeTheme = theme === 'system' ? colorScheme : theme
 
   const onInit = useCallback(
-    (db: SQLiteDatabase) => migrateDbIfNeeded(db, { ownerId: profileOwnerId, legacyOwnerId }),
+    async (db: SQLiteDatabase) => {
+      const scope = getProfileScope()
+      if (
+        scope.ownerId !== profileOwnerId ||
+        useAuthStore.getState().profileOwnerId !== profileOwnerId ||
+        !isCurrentProfile(scope)
+      ) {
+        return
+      }
+
+      try {
+        await migrateDbIfNeeded(db, { ownerId: profileOwnerId, legacyOwnerId })
+        if (!isCurrentProfile(scope) || useAuthStore.getState().profileOwnerId !== profileOwnerId) {
+          return
+        }
+        setSharedDatabase(db)
+
+        if (!isNativeOfflineLaunch()) return
+
+        const state = useAuthStore.getState()
+
+        let storedUser: User | null
+        try {
+          storedUser = await userRepository.getCurrentUser()
+        } catch (error) {
+          if (!isMissingLocalUserProfile(error)) throw error
+          storedUser = null
+        }
+        if (!isCurrentProfile(scope) || useAuthStore.getState().profileOwnerId !== profileOwnerId) {
+          throw new Error('Profile changed while restoring local user')
+        }
+
+        if (!storedUser) {
+          const legacyProfile = await readLegacyTrainingProfile(profileOwnerId)
+          if (
+            !isCurrentProfile(scope) ||
+            useAuthStore.getState().profileOwnerId !== profileOwnerId
+          ) {
+            throw new Error('Profile changed while restoring local user')
+          }
+          const cachedUser = state.user
+          const settings = useSettingsStore.getState()
+          const seed: User = {
+            ...(cachedUser ?? {}),
+            id: cachedUser?.id ?? LOCAL_USER_ID,
+            email: cachedUser?.email ?? '',
+            username: cachedUser?.username ?? '',
+            firstName: legacyProfile?.firstName ?? cachedUser?.firstName ?? '',
+            lastName: legacyProfile?.lastName ?? cachedUser?.lastName ?? '',
+            createdAt: cachedUser?.createdAt ?? new Date().toISOString(),
+            timezone: settings.timeZone,
+            measurements: { weightKg: settings.bodyWeight, heightCm: settings.height },
+            registrationCompleted:
+              legacyProfile?.onboardingCompleted ??
+              (cachedUser ? cachedUser.registrationCompleted !== false : false),
+            notificationPreferences: cachedUser?.notificationPreferences ?? null,
+            notificationFrequency:
+              legacyProfile?.notificationFrequency ??
+              cachedUser?.notificationFrequency ??
+              cachedUser?.notificationPreferences?.schedule?.length ??
+              1,
+          }
+
+          await initializeLocalUser(db, seed)
+          storedUser = await userRepository.getCurrentUser()
+        }
+
+        if (!storedUser) throw new Error('Could not restore the local user profile')
+        if (profileOwnerForUser(storedUser.id) !== profileOwnerId || !isCurrentProfile(scope)) {
+          throw new Error('Local user belongs to a different profile')
+        }
+
+        await saveSettingsProfile(scope, {
+          timeZone: storedUser.timezone || 'UTC',
+          bodyWeight: storedUser.measurements?.weightKg ?? null,
+          height: storedUser.measurements?.heightCm ?? null,
+        })
+        if (!isCurrentProfile(scope)) throw new Error('Profile changed while restoring local user')
+
+        useAuthStore.setState({
+          user: storedUser,
+          isAuthenticated: true,
+          token: null,
+          refreshToken: null,
+          serverSession: 'unknown',
+          isLoading: false,
+          isProfileLoading: false,
+          isProfileTransitioning: false,
+          profileError: null,
+        })
+      } catch (error) {
+        if (!isCurrentProfile(scope) || useAuthStore.getState().profileOwnerId !== profileOwnerId) {
+          return
+        }
+        console.error('[Provider] Could not restore profile database:', error)
+        useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
+      }
+    },
     [legacyOwnerId, profileOwnerId]
   )
 

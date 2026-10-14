@@ -5,14 +5,14 @@ import { useAuth } from '../../../contexts/AuthContext'
 import { useUpdateUser } from '../../../features/settings'
 import NotificationPermissions from '../../../components/NotificationPermissions'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
-import { useTrainingProfileStore } from '../../../features/training-profile/stores/trainingProfileStore'
 
 export default function PermissionsScreen() {
   const { user } = useAuth()
-  const localFrequency = useTrainingProfileStore((state) => state.notificationFrequency)
   const { updateUserProfile, isUpdating, error } = useUpdateUser()
   const initialFrequency =
-    Platform.OS === 'web' ? (user?.notificationPreferences?.schedule?.length ?? 1) : localFrequency
+    Platform.OS === 'web'
+      ? (user?.notificationPreferences?.schedule?.length ?? 1)
+      : (user?.notificationFrequency ?? 1)
   const [frequency, setFrequency] = useState(initialFrequency)
   useEffect(() => setFrequency(initialFrequency), [initialFrequency])
   const changeFrequency = async (value: number) => {

@@ -3,11 +3,6 @@ import { createJSONStorage } from 'zustand/middleware'
 import { settingsProfileStorage, useSettingsStore } from '../features/settings/stores/settingsStore'
 import { useRunningWorkoutStore } from '../features/workout-session/stores/runningWorkoutStore'
 import { useWidgetStore } from '../stores/widgetStore'
-import {
-  hydrateTrainingProfileStore,
-  useTrainingProfileStore,
-  type TrainingProfileUpdate,
-} from '../features/training-profile/stores/trainingProfileStore'
 import { setActiveProfileOwner } from './profileScope'
 
 const LEGACY_OWNER_KEY = 'profile-storage-owner-v1'
@@ -50,11 +45,7 @@ async function migrateLegacyStorage(ownerId: string, legacyOwnerId: string | nul
   )
 }
 
-async function hydrate(
-  ownerId: string,
-  legacyOwnerId: string | null,
-  seedFromCachedUser?: TrainingProfileUpdate
-): Promise<void> {
+async function hydrate(ownerId: string, legacyOwnerId: string | null): Promise<void> {
   setActiveProfileOwner(ownerId)
   await migrateLegacyStorage(ownerId, legacyOwnerId)
 
@@ -85,7 +76,6 @@ async function hydrate(
     useSettingsStore.persist.rehydrate(),
     useRunningWorkoutStore.persist.rehydrate(),
     useWidgetStore.persist.rehydrate(),
-    hydrateTrainingProfileStore(ownerId),
   ])
   if (
     !useSettingsStore.persist.hasHydrated() ||
@@ -94,22 +84,12 @@ async function hydrate(
   ) {
     throw new Error(`Could not restore stored data for ${ownerId}`)
   }
-  if (seedFromCachedUser) {
-    await useTrainingProfileStore.getState().seedProfileIfMissing(seedFromCachedUser)
-  }
   loadedOwner = ownerId
 }
 
-export function hydrateProfileStores(
-  ownerId: string,
-  legacyOwnerId: string | null,
-  seedFromCachedUser?: TrainingProfileUpdate
-): Promise<void> {
+export function hydrateProfileStores(ownerId: string, legacyOwnerId: string | null): Promise<void> {
   const next = transition.then(async () => {
-    if (loadedOwner !== ownerId) await hydrate(ownerId, legacyOwnerId, seedFromCachedUser)
-    else if (seedFromCachedUser) {
-      await useTrainingProfileStore.getState().seedProfileIfMissing(seedFromCachedUser)
-    }
+    if (loadedOwner !== ownerId) await hydrate(ownerId, legacyOwnerId)
   })
   transition = next.catch(() => {})
   return next
