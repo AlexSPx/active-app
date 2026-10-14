@@ -33,7 +33,11 @@ jest.mock('lib/repositories', () => ({
 }))
 jest.mock('../../features/settings', () => ({
   useSettingsStore: Object.assign(() => {}, {
-    getState: () => ({ setTimeZone: jest.fn(), setBodyWeight: jest.fn(), setHeight: jest.fn() }),
+    getState: () => ({
+      setTimeZone: (...args) => mockSetTimeZone(...args),
+      setBodyWeight: (...args) => mockSetBodyWeight(...args),
+      setHeight: (...args) => mockSetHeight(...args),
+    }),
   }),
 }))
 
@@ -50,6 +54,9 @@ const mockPauseAndDrain = jest.fn()
 const mockInvalidatePendingRequests = jest.fn()
 const mockResumePendingRequests = jest.fn()
 const mockHydrateProfileStores = jest.fn()
+const mockSetTimeZone = jest.fn()
+const mockSetBodyWeight = jest.fn()
+const mockSetHeight = jest.fn()
 const mockCredentials = { token: null, refreshToken: null }
 const mockProfileHydration = { finish: null }
 const AsyncStorage = require('@react-native-async-storage/async-storage')
@@ -108,6 +115,9 @@ describe('auth profile refresh', () => {
     mockInvalidatePendingRequests.mockReset()
     mockResumePendingRequests.mockReset()
     mockHydrateProfileStores.mockReset().mockResolvedValue(undefined)
+    mockSetTimeZone.mockReset()
+    mockSetBodyWeight.mockReset()
+    mockSetHeight.mockReset()
     setActiveProfileOwner(LOCAL_PROFILE_OWNER)
     mockCredentials.token = null
     mockCredentials.refreshToken = null
@@ -754,6 +764,65 @@ describe('auth profile refresh', () => {
       isProfileLoading: false,
       serverSession: 'valid',
     })
+  })
+
+  it('retains acknowledged profile and settings when same-owner responses omit the version', async () => {
+    const ownerId = 'account:user-versioned'
+    const acknowledgedUser = {
+      id: 'user-versioned',
+      username: 'acknowledged',
+      registrationCompleted: true,
+      profileVersion: 2,
+      timezone: 'Europe/Sofia',
+      measurements: { weightKg: 80, heightCm: 180 },
+    }
+    const versionlessUser = {
+      id: 'user-versioned',
+      username: 'stale',
+      registrationCompleted: true,
+      timezone: 'UTC',
+      measurements: { weightKg: 60, heightCm: 160 },
+    }
+    setActiveProfileOwner(ownerId)
+    useAuthStore.setState({
+      isAuthenticated: true,
+      profileOwnerId: ownerId,
+      user: acknowledgedUser,
+    })
+    mergeCurrentProfileVersion(getProfileScope(), 2)
+    mockGetCurrentUser.mockResolvedValue(versionlessUser)
+    mockUpdateCurrentUser.mockResolvedValue(versionlessUser)
+
+    await useAuthStore.getState().fetchUser()
+    await expect(useAuthStore.getState().updateUser({ username: 'requested' })).resolves.toEqual(
+      acknowledgedUser
+    )
+    useAuthStore.getState().setUser(versionlessUser)
+
+    expect(useAuthStore.getState().user).toEqual(acknowledgedUser)
+    expect(mockSetTimeZone).not.toHaveBeenCalled()
+    expect(mockSetBodyWeight).not.toHaveBeenCalled()
+    expect(mockSetHeight).not.toHaveBeenCalled()
+  })
+
+  it('accepts a versionless same-owner profile before a version is known', async () => {
+    const ownerId = 'account:user-versionless'
+    const versionlessUser = {
+      id: 'user-versionless',
+      registrationCompleted: true,
+      timezone: 'Europe/Sofia',
+      measurements: { weightKg: 75, heightCm: 175 },
+    }
+    setActiveProfileOwner(ownerId)
+    useAuthStore.setState({ profileOwnerId: ownerId, user: null })
+    mockGetCurrentUser.mockResolvedValue(versionlessUser)
+
+    await useAuthStore.getState().fetchUser()
+
+    expect(useAuthStore.getState().user).toEqual(versionlessUser)
+    expect(mockSetTimeZone).toHaveBeenCalledWith('Europe/Sofia')
+    expect(mockSetBodyWeight).toHaveBeenCalledWith(75)
+    expect(mockSetHeight).toHaveBeenCalledWith(175)
   })
 
   it('rejects a profile-version acknowledgement from an old owner scope', () => {

@@ -159,9 +159,8 @@ function syncUserToSettings(user: User) {
 function isStaleProfileSnapshot(user: User): boolean {
   const currentVersion = getCurrentProfileVersion()
   return (
-    user.profileVersion !== undefined &&
     currentVersion !== null &&
-    user.profileVersion < currentVersion
+    (user.profileVersion === undefined || user.profileVersion < currentVersion)
   )
 }
 

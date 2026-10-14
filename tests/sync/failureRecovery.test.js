@@ -348,7 +348,7 @@ describe('failed sync recovery', () => {
       const independent = makeJob({
         id: 'independent',
         endpoint: 'deleteRoutine',
-        payload: ['server-routine'],
+        payload: { id: 'server-routine', baseVersion: 0, profileBaseVersion: 0 },
       })
       const db = new FakeDb({ jobs: [blocker, ...dependents, independent], tables })
       const engine = engineWith(api)
@@ -371,7 +371,10 @@ describe('failed sync recovery', () => {
 
         await engine.processQueue()
 
-        expect(api.deleteRoutine).toHaveBeenCalledWith('server-routine', 'independent-key')
+        expect(api.deleteRoutine).toHaveBeenCalledWith(
+          { id: 'server-routine', baseVersion: 0, profileBaseVersion: 0 },
+          'independent-key'
+        )
         expect(db.getJob('independent')).toBeNull()
         for (const dependent of dependents) {
           expect(db.getJob(dependent.id)).toMatchObject({ status: 'pending' })

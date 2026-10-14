@@ -1093,7 +1093,7 @@ describe('SyncEngine version acknowledgements', () => {
         makeJob({
           id: 'delete-inactive-b',
           endpoint: 'deleteRoutine',
-          payload: { id: 'routine-b', profileBaseVersion: 10 },
+          payload: { id: 'routine-b', baseVersion: 4, profileBaseVersion: 10 },
           sequence: 2,
         }),
         makeJob({
@@ -1146,7 +1146,7 @@ describe('SyncEngine version acknowledgements', () => {
         makeJob({
           id: 'delete-inactive-b',
           endpoint: 'deleteRoutine',
-          payload: { id: 'routine-b', profileBaseVersion: 10 },
+          payload: { id: 'routine-b', baseVersion: 4, profileBaseVersion: 10 },
           sequence: 2,
         }),
         makeJob({
@@ -1172,6 +1172,59 @@ describe('SyncEngine version acknowledgements', () => {
       ]),
     })
     expect(db.tables.routines.has('routine-c')).toBe(true)
+    engine.destroy()
+  })
+
+  it('keeps a legacy routine delete as an unresolved profile barrier', async () => {
+    const activationC = ['routine-c', { active: true, baseVersion: 5, profileBaseVersion: 10 }]
+    const api = createApi({
+      updateRoutine: jest
+        .fn()
+        .mockResolvedValueOnce({ id: 'routine-a', version: 4, profileVersion: 11 })
+        .mockRejectedValueOnce(new Error('offline after legacy acknowledgement')),
+      deleteRoutine: jest.fn(async () => undefined),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { routines: ['routine-a', 'routine-b', 'routine-c'] },
+      configureDb: (database) => {
+        database.tables.routines.get('routine-b').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'activate-a',
+          endpoint: 'updateRoutine',
+          payload: ['routine-a', { active: true, baseVersion: 3, profileBaseVersion: 10 }],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'delete-legacy-b',
+          endpoint: 'deleteRoutine',
+          payload: ['routine-b'],
+          sequence: 2,
+        }),
+        makeJob({
+          id: 'activate-c',
+          endpoint: 'updateRoutine',
+          payload: activationC,
+          sequence: 3,
+        }),
+      ],
+    })
+
+    expect(api.deleteRoutine).toHaveBeenCalledWith('routine-b', 'delete-legacy-b-key')
+    expect(db.getJob('delete-legacy-b')).toMatchObject({
+      status: 'dead_letter',
+      error_code: 'STALE_VERSION',
+      payload: JSON.stringify(['routine-b']),
+      request_payload: JSON.stringify(['routine-b']),
+    })
+    expect(db.tables.routines.has('routine-b')).toBe(true)
+    expect(api.updateRoutine.mock.calls[1]).toEqual(['routine-c', activationC[1], 'activate-c-key'])
+    expect(db.getJob('activate-c')).toMatchObject({
+      payload: JSON.stringify(activationC),
+      request_payload: JSON.stringify(activationC),
+    })
     engine.destroy()
   })
 
