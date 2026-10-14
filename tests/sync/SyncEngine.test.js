@@ -1068,6 +1068,113 @@ describe('SyncEngine version acknowledgements', () => {
     engine.destroy()
   })
 
+  it('carries an inactive delete profile base to the next activation', async () => {
+    const api = createApi({
+      updateRoutine: jest.fn(async (id) => ({
+        id,
+        version: id === 'routine-a' ? 4 : 6,
+        ...(id === 'routine-a' ? { profileVersion: 11 } : {}),
+      })),
+      deleteRoutine: jest.fn(async () => ({ deletedRoutineId: 'routine-b' })),
+    })
+    const { engine } = await runQueue({
+      api,
+      tables: { routines: ['routine-a', 'routine-b', 'routine-c'] },
+      configureDb: (db) => {
+        db.tables.routines.get('routine-b').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'activate-a',
+          endpoint: 'updateRoutine',
+          payload: ['routine-a', { active: true, baseVersion: 3, profileBaseVersion: 10 }],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'delete-inactive-b',
+          endpoint: 'deleteRoutine',
+          payload: { id: 'routine-b', profileBaseVersion: 10 },
+          sequence: 2,
+        }),
+        makeJob({
+          id: 'activate-c',
+          endpoint: 'updateRoutine',
+          payload: ['routine-c', { active: true, baseVersion: 5, profileBaseVersion: 10 }],
+          sequence: 3,
+        }),
+      ],
+    })
+
+    expect(api.updateRoutine).toHaveBeenLastCalledWith(
+      'routine-c',
+      { active: true, baseVersion: 5, profileBaseVersion: 11 },
+      'activate-c-key'
+    )
+    engine.destroy()
+  })
+
+  it('keeps the inactive delete base when a remote profile mutation happens during deletion', async () => {
+    let remoteProfileVersion = 11
+    const staleVersion = Object.assign(new Error('Profile changed'), {
+      status: 409,
+      code: 'STALE_VERSION',
+    })
+    const api = createApi({
+      updateRoutine: jest.fn(async (id, request) => {
+        if (id === 'routine-a') return { id, version: 4, profileVersion: 11 }
+        if (request.profileBaseVersion !== remoteProfileVersion) throw staleVersion
+        return { id, version: 6, profileVersion: 13 }
+      }),
+      deleteRoutine: jest.fn(async () => {
+        remoteProfileVersion = 12
+        return { deletedRoutineId: 'routine-b' }
+      }),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { routines: ['routine-a', 'routine-b', 'routine-c'] },
+      configureDb: (database) => {
+        database.tables.routines.get('routine-b').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'activate-a',
+          endpoint: 'updateRoutine',
+          payload: ['routine-a', { active: true, baseVersion: 3, profileBaseVersion: 10 }],
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'delete-inactive-b',
+          endpoint: 'deleteRoutine',
+          payload: { id: 'routine-b', profileBaseVersion: 10 },
+          sequence: 2,
+        }),
+        makeJob({
+          id: 'activate-c',
+          endpoint: 'updateRoutine',
+          payload: ['routine-c', { active: true, baseVersion: 5, profileBaseVersion: 10 }],
+          sequence: 3,
+        }),
+      ],
+    })
+
+    expect(api.updateRoutine.mock.calls[1]).toEqual([
+      'routine-c',
+      { active: true, baseVersion: 5, profileBaseVersion: 11 },
+      'activate-c-key',
+    ])
+    expect(db.getJob('activate-c')).toMatchObject({
+      status: 'dead_letter',
+      error_code: 'STALE_VERSION',
+      request_payload: JSON.stringify([
+        'routine-c',
+        { active: true, baseVersion: 5, profileBaseVersion: 11 },
+      ]),
+    })
+    expect(db.tables.routines.has('routine-c')).toBe(true)
+    engine.destroy()
+  })
+
   it('rebases a routine successor from a workout delete acknowledgement', async () => {
     const api = createApi({
       deleteWorkout: jest.fn(async () => ({

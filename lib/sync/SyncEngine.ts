@@ -1117,7 +1117,16 @@ export class SyncEngine {
     if (mutation?.changesProfile) {
       if (typeof response?.profileVersion === 'number') {
         profileVersion = response.profileVersion
-      } else if (job.endpoint !== 'deleteRoutine') {
+      } else if (job.endpoint === 'deleteRoutine') {
+        const payload = mutation.payload
+        const request = Array.isArray(payload) ? payload[0] : payload
+        if (request !== null && typeof request === 'object' && !Array.isArray(request)) {
+          const baseVersion = Object.entries(request).find(
+            ([key]) => key === 'profileBaseVersion'
+          )?.[1]
+          if (typeof baseVersion === 'number') profileVersion = baseVersion
+        }
+      } else {
         const user = await this.deps.api.getUser()
         if (user.profileVersion !== 0) {
           await this.markDeadLetter(
