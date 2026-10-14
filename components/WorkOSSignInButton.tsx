@@ -1,7 +1,6 @@
 import React, { useEffect, useCallback } from 'react'
 import { Button, Text } from 'tamagui'
 import { Lock } from '@tamagui/lucide-icons'
-import { makeRedirectUri, useAuthRequest } from 'expo-auth-session'
 import { useAuthStore } from '../stores/authStore'
 import { useRouter } from 'expo-router'
 import { Alert, Platform } from 'react-native'
@@ -9,7 +8,6 @@ import { Alert, Platform } from 'react-native'
 // WorkOS Configuration
 const discovery = {
   authorizationEndpoint: 'https://api.workos.com/sso/authorize',
-  tokenEndpoint: 'https://api.workos.com/sso/token',
 }
 
 interface WorkOSSignInButtonProps {
@@ -17,21 +15,18 @@ interface WorkOSSignInButtonProps {
   label?: string
 }
 
-const redirectScheme = process.env.NODE_ENV === 'development' ? 'dev.activenext' : 'activenext'
-
-// Generate appropriate redirect URI based on platform
 const getRedirectUri = () => {
-  if (Platform.OS === 'web') {
-    const origin = typeof window !== 'undefined' ? window.location.origin : ''
-    return `${origin}/auth/callback`
-  }
-  return makeRedirectUri({
-    scheme: redirectScheme,
-    path: 'auth/callback',
-  })
+  const origin = typeof window !== 'undefined' ? window.location.origin : ''
+  return `${origin}/auth/callback`
 }
 
-export const WorkOSSignInButton = ({
+export const WorkOSSignInButton = (props: WorkOSSignInButtonProps) => {
+  if (Platform.OS !== 'web') return null
+
+  return <WebWorkOSSignInButton {...props} />
+}
+
+const WebWorkOSSignInButton = ({
   onSuccess,
   label = 'Sign in with WorkOS',
 }: WorkOSSignInButtonProps) => {
@@ -55,35 +50,8 @@ export const WorkOSSignInButton = ({
     [loginWithWorkOS, onSuccess, router]
   )
 
-  // Native auth using expo-auth-session
-  const [request, response, promptAsync] = useAuthRequest(
-    {
-      clientId: process.env.EXPO_PUBLIC_WORKOS_CLIENT_ID || '',
-      redirectUri,
-      scopes: ['openid', 'profile', 'email'],
-      responseType: 'code',
-      extraParams: {
-        provider: 'authkit',
-      },
-    },
-    discovery
-  )
-
-  // Handle native auth response
-  useEffect(() => {
-    if (Platform.OS !== 'web' && response?.type === 'success') {
-      const { code } = response.params
-      handleLogin(code)
-    } else if (response?.type === 'error') {
-      Alert.alert('Authentication Error', 'Failed to sign in with WorkOS.')
-      console.error('WorkOS Auth Error:', response.error)
-    }
-  }, [response, handleLogin])
-
   // Listen for messages from popup window (web only)
   useEffect(() => {
-    if (Platform.OS !== 'web') return
-
     const handleMessage = (event: MessageEvent) => {
       // Verify origin
       if (event.origin !== window.location.origin) return
@@ -163,18 +131,9 @@ export const WorkOSSignInButton = ({
     }
   }
 
-  const handlePress = () => {
-    if (Platform.OS === 'web') {
-      handleWebAuth()
-    } else {
-      promptAsync()
-    }
-  }
-
   return (
     <Button
-      onPress={handlePress}
-      disabled={Platform.OS !== 'web' && !request}
+      onPress={handleWebAuth}
       bg="$color9"
       size="$5"
       rounded="$6"

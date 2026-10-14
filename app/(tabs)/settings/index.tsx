@@ -1,4 +1,4 @@
-import { Alert } from 'react-native'
+import { Alert, Platform } from 'react-native'
 import { Link } from 'expo-router'
 import { Button, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui'
 import { ChevronRight, LogOut } from '@tamagui/lucide-icons'
@@ -8,6 +8,7 @@ import { useAuth } from '../../../contexts/AuthContext'
 import { useSettingsStore } from '../../../features/settings'
 import { measurementText } from '../../../features/settings/inputs'
 import NotificationPermissions from '../../../components/NotificationPermissions'
+import { useTrainingProfileStore } from '../../../features/training-profile/stores/trainingProfileStore'
 
 function MenuRow({
   title,
@@ -42,10 +43,17 @@ function MenuRow({
 }
 
 export default function SettingsMenuScreen() {
+  const isNativeOffline = Platform.OS !== 'web'
   const { logout, user } = useAuth()
   const settings = useSettingsStore()
-  const name =
-    [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.username || 'Your account'
+  const profile = useTrainingProfileStore()
+  const localName = [profile.firstName, profile.lastName].filter(Boolean).join(' ')
+  const name = isNativeOffline
+    ? localName || 'Training profile'
+    : localName ||
+      [user?.firstName, user?.lastName].filter(Boolean).join(' ') ||
+      user?.username ||
+      'Your account'
   const version = Application.nativeApplicationVersion || Constants.expoConfig?.version || 'Unknown'
   const confirmSignOut = () =>
     Alert.alert('Sign out of Active?', 'You’ll need to sign in again to access your account.', [
@@ -70,21 +78,21 @@ export default function SettingsMenuScreen() {
               minH="$touch"
               py="$field"
               pressStyle={{ bg: '$backgroundPress' }}
-              accessibilityLabel="Your account"
+              accessibilityLabel={isNativeOffline ? 'Training profile' : 'Your account'}
             >
               <XStack gap="$field" items="center">
                 <YStack flex={1} gap="$compact">
                   <Text fontSize="$sectionTitle" lineHeight="$sectionTitle" fontWeight="600">
                     {name}
                   </Text>
-                  {!!user?.email && (
+                  {!isNativeOffline && !!user?.email && (
                     <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
                       {user.email}
                     </Text>
                   )}
                 </YStack>
                 <Text fontSize="$caption" color="$primary">
-                  Account →
+                  {isNativeOffline ? 'Profile →' : 'Account →'}
                 </Text>
               </XStack>
             </Button>
@@ -140,16 +148,18 @@ export default function SettingsMenuScreen() {
               href="/settings/permissions"
             />
           </YStack>
-          <Button
-            chromeless
-            self="flex-start"
-            minH="$touch"
-            color="$colorSubtle"
-            icon={<LogOut size="$iconSmall" />}
-            onPress={confirmSignOut}
-          >
-            Sign out
-          </Button>
+          {!isNativeOffline && (
+            <Button
+              chromeless
+              self="flex-start"
+              minH="$touch"
+              color="$colorSubtle"
+              icon={<LogOut size="$iconSmall" />}
+              onPress={confirmSignOut}
+            >
+              Sign out
+            </Button>
+          )}
           <YStack gap="$compact">
             <XStack gap="$field" flexWrap="wrap">
               <Link href="/legal/privacy-policy" asChild>

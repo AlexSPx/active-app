@@ -3,6 +3,11 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 )
 jest.mock('../../utils/storeReset', () => ({ resetAllStores: jest.fn() }))
 jest.mock('../../lib/db/connection', () => ({ clearDatabase: jest.fn() }))
+let mockNativeOfflineLaunch = false
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isNativeOfflineLaunch: () => mockNativeOfflineLaunch,
+}))
 jest.mock('../../lib/sync', () => ({
   syncEngine: { pauseAndDrain: (...args) => mockPauseAndDrain(...args) },
 }))
@@ -76,6 +81,7 @@ const { useAuthStore, initializeAuth } = require('../../stores/authStore')
 
 describe('auth profile refresh', () => {
   beforeEach(async () => {
+    mockNativeOfflineLaunch = false
     jest.clearAllMocks()
     resetAllStores.mockReset()
     await useAuthStore.persist.clearStorage()
@@ -151,7 +157,11 @@ describe('auth profile refresh', () => {
       token: 'legacy-access',
       refreshToken: 'legacy-refresh',
     })
-    expect(mockHydrateProfileStores).toHaveBeenCalledWith('account:user_1', 'account:user_1')
+    expect(mockHydrateProfileStores).toHaveBeenCalledWith(
+      'account:user_1',
+      'account:user_1',
+      undefined
+    )
     expect(useAuthStore.getState()).toMatchObject({
       isStartupReady: true,
       startupError: null,
@@ -1127,5 +1137,49 @@ describe('auth profile refresh', () => {
       error: null,
     })
     expect(await AsyncStorage.getItem('auth-storage')).toBeNull()
+  })
+
+  it('restores a cached owner without reading or refreshing credentials in native offline launch', async () => {
+    const cachedUser = {
+      id: 'cached_owner',
+      registrationCompleted: true,
+      notificationPreferences: { schedule: [] },
+    }
+    const cachedRow = JSON.stringify({
+      state: {
+        isAuthenticated: true,
+        user: cachedUser,
+        token: 'expired-access',
+        refreshToken: 'expired-refresh',
+      },
+      version: 0,
+    })
+    mockNativeOfflineLaunch = true
+    await AsyncStorage.setItem('auth-storage', cachedRow)
+    await useAuthStore.persist.rehydrate()
+
+    await initializeAuth(true)
+
+    expect(mockMigrateLegacyCredentials).not.toHaveBeenCalled()
+    expect(mockGetCurrentUser).not.toHaveBeenCalled()
+    expect(mockHydrateProfileStores).toHaveBeenCalledWith(
+      'account:cached_owner',
+      'account:cached_owner',
+      { firstName: '', lastName: '', onboardingCompleted: true, notificationFrequency: 0 }
+    )
+    expect(useAuthStore.getState()).toMatchObject({
+      isStartupReady: true,
+      startupError: null,
+      profileOwnerId: 'account:cached_owner',
+      isAuthenticated: true,
+      user: cachedUser,
+      token: null,
+      refreshToken: null,
+      serverSession: 'unknown',
+    })
+    expect(JSON.parse(await AsyncStorage.getItem('auth-storage')).state).toEqual({
+      user: cachedUser,
+      isAuthenticated: true,
+    })
   })
 })

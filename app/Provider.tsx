@@ -25,6 +25,7 @@ import { useAuthStore } from '../stores/authStore'
 import { useNetworkStore } from '../stores/networkStore'
 import { apiService } from '../services/apiService'
 import { remapRunningWorkoutId } from '../features/workout-session/stores/runningWorkoutStore'
+import { isNativeOfflineLaunch, nativeLaunchPolicy } from '../config/launchPolicy'
 import {
   databaseNameForProfile,
   getProfileScope,
@@ -89,6 +90,9 @@ function SyncEngineBootstrap({
 
     setReadyDb(null)
     syncEngine.setConnectivityManaged(true)
+    if (isNativeOfflineLaunch() && !nativeLaunchPolicy.syncEnabled) {
+      syncEngine.setUploadsEnabled(false)
+    }
     syncEngine
       .init(db, { processOnInit: false })
       .then(() => {
@@ -145,6 +149,13 @@ function SyncEngineBootstrap({
   ])
 
   useEffect(() => {
+    if (isNativeOfflineLaunch() && !nativeLaunchPolicy.backendEnabled) {
+      apiReadyOwnerRef.current = null
+      setApiReadyOwner(null)
+      syncEngine.setUploadsEnabled(false)
+      return
+    }
+
     apiReadyOwnerRef.current = null
     setApiReadyOwner(null)
     syncEngine.setUploadsEnabled(false)
@@ -343,6 +354,8 @@ function SyncEngineBootstrap({
   ])
 
   useEffect(() => {
+    if (isNativeOfflineLaunch() && !nativeLaunchPolicy.backendEnabled) return
+
     if (
       readyDb !== db ||
       !isStartupReady ||
@@ -623,7 +636,14 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
         <Theme name={activeTheme === 'dark' ? 'dark' : 'light'}>
           <ThemeProvider value={activeTheme === 'dark' ? DarkTheme : DefaultTheme}>
             <QueryClientProvider client={queryClient}>
-              <PostHogProvider client={posthog}>
+              <PostHogProvider
+                client={posthog}
+                autocapture={
+                  isNativeOfflineLaunch() && !nativeLaunchPolicy.telemetryEnabled
+                    ? false
+                    : undefined
+                }
+              >
                 <PortalProvider>
                   <ToastProvider swipeDirection="horizontal" duration={6000} native={[]}>
                     {content}

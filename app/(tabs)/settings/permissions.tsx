@@ -1,14 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Platform } from 'react-native'
 import { Button, Paragraph, Text, XStack, YStack } from 'tamagui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useUpdateUser } from '../../../features/settings'
 import NotificationPermissions from '../../../components/NotificationPermissions'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { useTrainingProfileStore } from '../../../features/training-profile/stores/trainingProfileStore'
 
 export default function PermissionsScreen() {
   const { user } = useAuth()
+  const localFrequency = useTrainingProfileStore((state) => state.notificationFrequency)
   const { updateUserProfile, isUpdating, error } = useUpdateUser()
-  const [frequency, setFrequency] = useState(user?.notificationPreferences?.schedule?.length ?? 1)
+  const initialFrequency =
+    Platform.OS === 'web' ? (user?.notificationPreferences?.schedule?.length ?? 1) : localFrequency
+  const [frequency, setFrequency] = useState(initialFrequency)
+  useEffect(() => setFrequency(initialFrequency), [initialFrequency])
   const changeFrequency = async (value: number) => {
     const updated = await updateUserProfile({ notificationFrequency: value })
     if (updated) setFrequency(value)

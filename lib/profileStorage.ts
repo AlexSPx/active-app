@@ -1,8 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createJSONStorage } from 'zustand/middleware'
-import { useSettingsStore } from '../features/settings/stores/settingsStore'
+import { settingsProfileStorage, useSettingsStore } from '../features/settings/stores/settingsStore'
 import { useRunningWorkoutStore } from '../features/workout-session/stores/runningWorkoutStore'
 import { useWidgetStore } from '../stores/widgetStore'
+import {
+  hydrateTrainingProfileStore,
+  useTrainingProfileStore,
+  type TrainingProfileUpdate,
+} from '../features/training-profile/stores/trainingProfileStore'
+import { setActiveProfileOwner } from './profileScope'
 
 const LEGACY_OWNER_KEY = 'profile-storage-owner-v1'
 const legacyKeys = ['settings-storage', 'running-workout-storage', 'widget-storage'] as const
@@ -44,7 +50,12 @@ async function migrateLegacyStorage(ownerId: string, legacyOwnerId: string | nul
   )
 }
 
-async function hydrate(ownerId: string, legacyOwnerId: string | null): Promise<void> {
+async function hydrate(
+  ownerId: string,
+  legacyOwnerId: string | null,
+  seedFromCachedUser?: TrainingProfileUpdate
+): Promise<void> {
+  setActiveProfileOwner(ownerId)
   await migrateLegacyStorage(ownerId, legacyOwnerId)
 
   if (loadedOwner != null) {
@@ -59,7 +70,7 @@ async function hydrate(ownerId: string, legacyOwnerId: string | null): Promise<v
 
   useSettingsStore.persist.setOptions({
     name: storageKey('settings-storage', ownerId),
-    storage: profileStorage,
+    storage: settingsProfileStorage,
   })
   useRunningWorkoutStore.persist.setOptions({
     name: storageKey('running-workout-storage', ownerId),
@@ -74,6 +85,7 @@ async function hydrate(ownerId: string, legacyOwnerId: string | null): Promise<v
     useSettingsStore.persist.rehydrate(),
     useRunningWorkoutStore.persist.rehydrate(),
     useWidgetStore.persist.rehydrate(),
+    hydrateTrainingProfileStore(ownerId),
   ])
   if (
     !useSettingsStore.persist.hasHydrated() ||
@@ -82,13 +94,22 @@ async function hydrate(ownerId: string, legacyOwnerId: string | null): Promise<v
   ) {
     throw new Error(`Could not restore stored data for ${ownerId}`)
   }
+  if (seedFromCachedUser) {
+    await useTrainingProfileStore.getState().seedProfileIfMissing(seedFromCachedUser)
+  }
   loadedOwner = ownerId
 }
 
-export function hydrateProfileStores(ownerId: string, legacyOwnerId: string | null): Promise<void> {
+export function hydrateProfileStores(
+  ownerId: string,
+  legacyOwnerId: string | null,
+  seedFromCachedUser?: TrainingProfileUpdate
+): Promise<void> {
   const next = transition.then(async () => {
-    if (loadedOwner === ownerId) return
-    await hydrate(ownerId, legacyOwnerId)
+    if (loadedOwner !== ownerId) await hydrate(ownerId, legacyOwnerId, seedFromCachedUser)
+    else if (seedFromCachedUser) {
+      await useTrainingProfileStore.getState().seedProfileIfMissing(seedFromCachedUser)
+    }
   })
   transition = next.catch(() => {})
   return next

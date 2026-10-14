@@ -2,6 +2,7 @@ import { YStack, XStack, Text, Button, H1, Image } from 'tamagui'
 import { useRouter } from 'expo-router'
 import { Dumbbell, Zap, Target, ArrowRight } from '@tamagui/lucide-icons'
 import { WorkOSSignInButton } from '../../components/WorkOSSignInButton'
+import { Platform } from 'react-native'
 
 export default function WelcomeHome() {
   const router = useRouter()
@@ -13,7 +14,12 @@ export default function WelcomeHome() {
   return (
     <YStack flex={1} bg="$background" px="$6" justify="space-between">
       {/* Hero Section */}
-      <YStack items="center" animation="bouncy" enterStyle={{ opacity: 0, y: -20, scale: 0.9 }} mt="$4">
+      <YStack
+        items="center"
+        animation="bouncy"
+        enterStyle={{ opacity: 0, y: -20, scale: 0.9 }}
+        mt="$4"
+      >
         <Image
           source={require('../../assets/icons/splash-icon-light.png')}
           width={100}
@@ -23,7 +29,13 @@ export default function WelcomeHome() {
         />
 
         <YStack items="center" gap="$2">
-          <H1 fontSize="$9" fontWeight="900" color="$color12" letterSpacing={-1} style={{ textAlign: 'center' }}>
+          <H1
+            fontSize="$9"
+            fontWeight="900"
+            color="$color12"
+            letterSpacing={-1}
+            style={{ textAlign: 'center' }}
+          >
             ActiveNext
           </H1>
           <Text fontSize="$5" color="$color10" px="$4" style={{ textAlign: 'center' }}>
@@ -71,15 +83,33 @@ export default function WelcomeHome() {
           </Text>
         </Button>
 
-        <WorkOSSignInButton label="I already have an account" />
+        {Platform.OS === 'web' ? <WorkOSSignInButton label="I already have an account" /> : null}
       </YStack>
     </YStack>
   )
 }
 
-function FeatureRow({ icon, title, subtitle, bg }: { icon: any; title: string; subtitle: string; bg: any }) {
+function FeatureRow({
+  icon,
+  title,
+  subtitle,
+  bg,
+}: {
+  icon: any
+  title: string
+  subtitle: string
+  bg: any
+}) {
   return (
-    <XStack items="center" gap="$4" p="$3" rounded="$6" hoverStyle={{ bg: '$color2' }} pressStyle={{ bg: '$color3' }} animation="quick">
+    <XStack
+      items="center"
+      gap="$4"
+      p="$3"
+      rounded="$6"
+      hoverStyle={{ bg: '$color2' }}
+      pressStyle={{ bg: '$color3' }}
+      animation="quick"
+    >
       <XStack width={48} height={48} bg={bg} rounded="$5" items="center" justify="center">
         {icon}
       </XStack>

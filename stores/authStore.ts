@@ -24,6 +24,7 @@ import { AuthRepository, UserRepository } from 'lib/repositories'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { posthog } from '../services/posthog'
 import { networkPolicy } from './networkStore'
+import { isNativeOfflineLaunch, nativeLaunchPolicy } from '../config/launchPolicy'
 
 const isWeb = Platform.OS === 'web'
 const authRepository = new AuthRepository()
@@ -300,6 +301,11 @@ async function authenticate(
   set: (partial: Partial<AuthState>) => void,
   get: () => AuthState
 ): Promise<boolean> {
+  if (isNativeOfflineLaunch() && !nativeLaunchPolicy.accountsEnabled) {
+    set({ isLoading: false, error: 'Accounts are unavailable in this version.' })
+    return false
+  }
+
   const generation = authSessionGeneration
   set({ isLoading: true, error: null })
   try {
@@ -490,6 +496,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       fetchUser: async () => {
+        if (isNativeOfflineLaunch() && !nativeLaunchPolicy.accountsEnabled) return
+
         const generation = authSessionGeneration
         const requestScope = getProfileScope()
         try {
@@ -555,6 +563,8 @@ export const useAuthStore = create<AuthState>()(
       },
 
       updateUser: async (payload: UpdateUserRequest) => {
+        if (isNativeOfflineLaunch() && !nativeLaunchPolicy.accountsEnabled) return null
+
         const generation = authSessionGeneration
         const requestScope = getProfileScope()
         try {
@@ -657,9 +667,10 @@ export function initializeAuth(retry = false): Promise<void> {
 
 async function initializeAuthState(): Promise<void> {
   const generation = authSessionGeneration
+  const localLaunch = isNativeOfflineLaunch()
   let shouldRefreshProfile = false
   try {
-    await networkPolicy.ready()
+    if (!localLaunch) await networkPolicy.ready()
     const hydrationError = await waitForHydration(useAuthStore)
     if (hydrationError) throw hydrationError
     if (generation !== authSessionGeneration) return
@@ -672,7 +683,16 @@ async function initializeAuthState(): Promise<void> {
     if (cachedState.user?.profileVersion !== undefined) {
       mergeCurrentProfileVersion(getProfileScope(), cachedState.user.profileVersion)
     }
-    await hydrateProfileStores(ownerId, legacyOwnerId)
+    const cachedTrainingProfile =
+      localLaunch && cachedState.user
+        ? {
+            firstName: cachedState.user.firstName ?? '',
+            lastName: cachedState.user.lastName ?? '',
+            onboardingCompleted: cachedState.user.registrationCompleted !== false,
+            notificationFrequency: cachedState.user.notificationPreferences?.schedule?.length ?? 1,
+          }
+        : undefined
+    await hydrateProfileStores(ownerId, legacyOwnerId, cachedTrainingProfile)
     if (generation !== authSessionGeneration) return
     useAuthStore.setState({
       profileOwnerId: ownerId,
@@ -682,6 +702,24 @@ async function initializeAuthState(): Promise<void> {
 
     const hydratedState = useAuthStore.getState()
     try {
+      if (localLaunch) {
+        useAuthStore.setState({
+          isAuthenticated: !!hydratedState.user,
+          token: null,
+          refreshToken: null,
+          serverSession: 'unknown',
+        })
+        if (
+          !(await persistScrubbedAuthStateForGeneration(generation)) ||
+          generation !== authSessionGeneration
+        ) {
+          return
+        }
+        secureCredentialsMigrated = true
+        authPersistenceReady = true
+        return
+      }
+
       const credentials = await authRepository.migrateLegacyCredentials({
         token: hydratedState.token,
         refreshToken: hydratedState.refreshToken,

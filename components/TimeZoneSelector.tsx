@@ -27,7 +27,7 @@ export default function TimeZoneSelector({
   onValueChange,
   inline = false,
 }: TimeZoneSelectorProps) {
-  const { timeZone, setTimeZone } = useSettingsStore()
+  const { timeZone } = useSettingsStore()
   const { updateUserProfile, isUpdating, error } = useUpdateUser()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -50,7 +50,6 @@ export default function TimeZoneSelector({
     else {
       const user = await updateUserProfile({ timezone: zone })
       if (!user) return
-      setTimeZone(zone)
     }
     setOpen(false)
     setSearch('')

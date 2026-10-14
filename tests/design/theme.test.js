@@ -19,6 +19,10 @@ jest.mock('react-native', () => {
     Platform: { OS: 'android' },
   }
 })
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isNativeOfflineLaunch: () => false,
+}))
 jest.mock('@tamagui/core', () => ({ useEvent: (callback) => callback }))
 jest.mock(
   'expo-network',

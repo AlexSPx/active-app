@@ -55,9 +55,11 @@ function persisted(state) {
 function boot() {
   jest.resetModules()
   const { hydrateProfileStores } = require('../../lib/profileStorage')
+  const settingsStore = require('../../features/settings/stores/settingsStore')
   return {
     hydrateProfileStores,
-    settings: require('../../features/settings/stores/settingsStore').useSettingsStore,
+    settings: settingsStore.useSettingsStore,
+    flushSettingsPersistence: settingsStore.flushSettingsPersistence,
     widgets: require('../../stores/widgetStore').useWidgetStore,
     running: require('../../features/workout-session/stores/runningWorkoutStore')
       .useRunningWorkoutStore,
@@ -327,6 +329,7 @@ test('resetAllStores clears transient user and editor state but preserves profil
   const app = boot()
   await app.hydrateProfileStores(ALICE, ALICE)
   saveProfile(app, { owner: ALICE, theme: 'dark', weight: 81, restSeconds: 150 })
+  await app.flushSettingsPersistence()
 
   const { useUserStore } = require('../../features/settings/stores/userStore')
   const { useWorkoutStore } = require('../../features/workouts/stores/createWorkoutStore')

@@ -1,5 +1,6 @@
 const React = require('react')
 const { act, create } = require('react-test-renderer')
+let mockLocalNotificationFrequency = 1
 
 jest.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 80 }))
 jest.mock('react-native', () => ({
@@ -44,6 +45,10 @@ jest.mock('../../features/settings', () => ({
   useSettingsStore: jest.fn(),
   useUpdateUser: jest.fn(),
 }))
+jest.mock('../../features/training-profile/stores/trainingProfileStore', () => ({
+  useTrainingProfileStore: (selector) =>
+    selector({ notificationFrequency: mockLocalNotificationFrequency }),
+}))
 const { useSettingsStore, useUpdateUser } = require('../../features/settings')
 const {
   measurementText,
@@ -77,7 +82,16 @@ beforeEach(() => {
       settings[field] = value
     })
   }
-  update = jest.fn().mockResolvedValue({ id: 'user' })
+  update = jest.fn(async (updates, localPreferences) => {
+    if (updates.measurements) {
+      settings.bodyWeight = updates.measurements.weightKg
+      settings.height = updates.measurements.heightCm
+    }
+    if (updates.timezone !== undefined) settings.timeZone = updates.timezone
+    if (localPreferences?.bodyWeightUnit) settings.bodyWeightUnit = localPreferences.bodyWeightUnit
+    if (localPreferences?.heightUnit) settings.heightUnit = localPreferences.heightUnit
+    return { id: 'user' }
+  })
   useSettingsStore.mockImplementation(() => settings)
   useUpdateUser.mockReturnValue({ updateUserProfile: update, isUpdating: false, error: null })
 })
@@ -112,8 +126,11 @@ test('measurement changes stay staged and failed save preserves the draft', asyn
   expect(input().props.value).toBe('80')
   expect(save().props.disabled).toBe(false)
   await act(async () => save().props.onPress())
-  expect(update).toHaveBeenLastCalledWith({ measurements: { weightKg: 80, heightCm: null } })
-  expect(settings.setBodyWeight).toHaveBeenCalledWith(80)
+  expect(update).toHaveBeenLastCalledWith(
+    { measurements: { weightKg: 80, heightCm: null } },
+    { bodyWeightUnit: 'kg', heightUnit: 'cm' }
+  )
+  expect(settings.setBodyWeight).not.toHaveBeenCalled()
   expect(save().props.disabled).toBe(true)
   await act(async () => view.unmount())
 })
@@ -222,7 +239,7 @@ test('time-zone search accepts city names and failed updates keep the selected z
   expect(view.root.findByType('Input').props.value).toBe('New York')
   await act(async () => choices()[0].props.onPress())
   expect(update).toHaveBeenLastCalledWith({ timezone: 'America/New_York' })
-  expect(settings.setTimeZone).toHaveBeenCalledWith('America/New_York')
+  expect(settings.timeZone).toBe('America/New_York')
   await act(async () => view.unmount())
 })
 
@@ -275,7 +292,9 @@ test('Settings keyboard avoidance includes footer and uses the native header off
 
 test('reminder frequency accepts missing legacy preferences and preserves explicit Off', async () => {
   const { useAuth } = require('../../contexts/AuthContext')
+  const { Platform } = require('react-native')
   const PermissionsScreen = require('../../app/(tabs)/settings/permissions').default
+  Platform.OS = 'web'
   for (const [user, expected] of [
     [null, '1 / day'],
     [{ email: 'legacy@example.com' }, '1 / day'],
@@ -296,4 +315,18 @@ test('reminder frequency accepts missing legacy preferences and preserves explic
     expect(update).not.toHaveBeenCalled()
     await act(async () => view.unmount())
   }
+
+  Platform.OS = 'android'
+  mockLocalNotificationFrequency = 0
+  let view
+  await act(async () => {
+    view = create(React.createElement(PermissionsScreen))
+  })
+  const selected = view.root
+    .findAllByType('Button')
+    .find((button) => button.props.accessibilityState?.checked)
+  expect(selected.props.children).toBe('Off')
+  await act(async () => view.unmount())
+  Platform.OS = 'android'
+  mockLocalNotificationFrequency = 1
 })

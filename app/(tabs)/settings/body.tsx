@@ -23,12 +23,11 @@ export default function BodySettingsScreen() {
 
   const save = async () => {
     if (!valid || !dirty || isUpdating) return
-    const user = await updateUserProfile({ measurements: { weightKg: weight, heightCm: height } })
+    const user = await updateUserProfile(
+      { measurements: { weightKg: weight, heightCm: height } },
+      { bodyWeightUnit: weightUnit, heightUnit }
+    )
     if (!user) return
-    settings.setBodyWeight(weight)
-    settings.setHeight(height)
-    settings.setBodyWeightUnit(weightUnit)
-    settings.setHeightUnit(heightUnit)
     setSaved(true)
   }
 
