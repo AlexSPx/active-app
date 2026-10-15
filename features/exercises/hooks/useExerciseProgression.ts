@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
-import { useExerciseRepository } from '../../../lib/hooks/useRepository'
+import { useExerciseRepository, useWorkoutRepository } from '../../../lib/hooks/useRepository'
 import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
-import type { ExerciseLogResponse } from '../../../types/api'
+import { launchFacade } from '../../launch/launchFacade'
+import type { ExerciseLogResponse, WorkoutRecord } from '../../../types/api'
 
 export interface ProgressionDataPoint {
   date: string
@@ -127,15 +128,54 @@ function processExerciseLogs(logs: ExerciseLogResponse[]): ExerciseProgressionDa
   }
 }
 
-export function useExerciseProgression(exerciseId: string | null) {
+function localExerciseLogs(
+  records: WorkoutRecord[],
+  exerciseId: string,
+  exerciseName: string
+): ExerciseLogResponse[] {
+  return records.flatMap((record) =>
+    record.exerciseRecords.flatMap((exercise, index) => {
+      const matches = exercise.exerciseId
+        ? exercise.exerciseId === exerciseId
+        : exercise.exerciseName === exerciseId ||
+          exercise.exerciseName.trim().toLowerCase() === exerciseName.trim().toLowerCase()
+      if (!matches) return []
+
+      return [
+        {
+          exerciseRecordId: `${record.id}:${index}`,
+          exerciseId,
+          exerciseName,
+          createdAt: record.createdAt,
+          reps: exercise.reps,
+          weight: exercise.weight,
+          durationSeconds: exercise.durationSeconds ?? undefined,
+          notes: exercise.notes ?? undefined,
+          achievedOneRmValue: exercise.achievedOneRmValue ?? undefined,
+          achievedOneRmSetIndex: exercise.achievedOneRmSetIndex ?? undefined,
+          achievedTotalVolumeValue: exercise.achievedTotalVolumeValue ?? undefined,
+        },
+      ]
+    })
+  )
+}
+
+export function useExerciseProgression(exerciseId: string | null, exerciseName: string) {
   const repo = useExerciseRepository()
+  const workoutRepo = useWorkoutRepository()
   const ownerKeys = useProfileQueryKeys()
+  const local = launchFacade.api.backendMode() === 'device'
 
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ownerKeys.exercises.logs(exerciseId || ''),
+    queryKey: local
+      ? [...ownerKeys.records.all, 'exercise-progression', exerciseId, exerciseName]
+      : ownerKeys.exercises.logs(exerciseId || ''),
+    networkMode: local ? 'always' : 'online',
     queryFn: async () => {
       if (!exerciseId) throw new Error('No exercise ID provided')
-      const logs = await repo.getLogs(exerciseId)
+      const logs = local
+        ? localExerciseLogs(await workoutRepo.getAllRecords(), exerciseId, exerciseName)
+        : await repo.getLogs(exerciseId)
       return processExerciseLogs(logs)
     },
     enabled: !!exerciseId,

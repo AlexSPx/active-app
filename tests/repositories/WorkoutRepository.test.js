@@ -295,6 +295,7 @@ describe('WorkoutRepository', () => {
     expect(result.workoutRecord.startTime).toBe(new Date(recordRequest.startTime).toISOString())
     expect(result.workoutRecord.exerciseRecords).toEqual([
       {
+        exerciseId: 'barbell_row',
         exerciseName: 'barbell_row',
         reps: [8, 8, 8],
         weight: [80, 80, 80],

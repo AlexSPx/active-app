@@ -178,6 +178,7 @@ export interface WorkoutRecordRequest {
 }
 
 export interface WorkoutRecordExercise {
+  exerciseId?: string
   exerciseName: string
   reps: number[]
   weight: number[]

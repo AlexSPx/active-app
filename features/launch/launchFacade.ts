@@ -7,7 +7,6 @@ import {
 } from '../../config/launchPolicy'
 import { LOCAL_PROFILE_OWNER, LOCAL_USER_ID } from '../../lib/profileScope'
 import type { User, UpdateUserRequest, WorkoutRecord, WorkoutRecordExercise } from '../../types/api'
-import type { WidgetConfig } from '../../stores/widgetStore'
 
 type RouteSegment = string | undefined
 type AuthDestination = '/welcome' | '/welcome/register' | '/(tabs)' | '/settings/profile'
@@ -349,11 +348,6 @@ export const launchFacade = {
     syncPage: syncSettingsPage,
   },
   training: {
-    getWidgets(widgets: WidgetConfig[]): WidgetConfig[] | null {
-      return isBackendEnabledForLaunch()
-        ? [...widgets].sort((a, b) => a.position - b.position)
-        : null
-    },
     getReminderFrequency(user: User | null): number | null {
       if (!isBackendEnabledForLaunch()) return null
       return Platform.OS === 'web'

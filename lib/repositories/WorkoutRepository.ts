@@ -274,6 +274,7 @@ export class WorkoutRepository extends BaseRepository {
 
       // Build the exercise records array for local storage
       const exerciseRecords: WorkoutRecordExercise[] = recordRequest.exerciseRecords.map((er) => ({
+        exerciseId: er.exerciseId,
         exerciseName:
           exercises.find((exercise) => exercise.exerciseId === er.exerciseId)?.exerciseTitle ||
           er.exerciseId,

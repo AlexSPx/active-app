@@ -22,7 +22,10 @@ interface ProgressionWidgetProps {
 }
 
 export function ProgressionWidget({ config, preview = false }: ProgressionWidgetProps) {
-  const { data, isLoading, error, refetch } = useExerciseProgression(config.exerciseId)
+  const { data, isLoading, error, refetch } = useExerciseProgression(
+    config.exerciseId,
+    config.exerciseName
+  )
   const theme = useTheme()
   const [width, setWidth] = useState(0)
   const points =
