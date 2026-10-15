@@ -221,12 +221,28 @@ describe('RegisterPage with native offline launch', () => {
       getNextBtn().props.onPress()
     })
 
-    // Step 3 (Time Zone): click Next
+    expect(root.root.findAllByType('Text').some((t) => t.props.children === 'Notifications')).toBe(
+      true
+    )
+    expect(root.root.findAllByType('Text').some((t) => t.props.children === 'Time Zone')).toBe(
+      false
+    )
+    expect(
+      root.root
+        .findAllByType('Text')
+        .some((t) => JSON.stringify(t.props.children) === JSON.stringify(['Step ', 4, ' of ', 4]))
+    ).toBe(true)
+
+    const backButton = root.root
+      .findAllByType('Button')
+      .find((button) => button.findAllByType('Text').some((text) => text.props.children === 'Back'))
+    await act(async () => backButton.props.onPress())
+    expect(root.root.findAllByType('Text').some((t) => t.props.children === 'Body')).toBe(true)
     await act(async () => {
       getNextBtn().props.onPress()
     })
 
-    // Step 4 (Notifications): click Finish
+    // Step 3 (Notifications): click Finish
     await act(async () => {
       getNextBtn().props.onPress()
     })
@@ -240,6 +256,25 @@ describe('RegisterPage with native offline launch', () => {
     })
     expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
 
+    await act(async () => root.unmount())
+  })
+
+  it('keeps the time-zone step for connected onboarding', async () => {
+    mockNativeOfflineLaunch = false
+    mockUser = { id: 'account:alex', registrationCompleted: false }
+    let root
+    await act(async () => {
+      root = create(React.createElement(RegisterPage))
+    })
+    const nextButton = () =>
+      root.root
+        .findAllByType('Button')
+        .find((button) =>
+          button.findAllByType('Text').some((text) => text.props.children === 'Next')
+        )
+    await act(async () => nextButton().props.onPress())
+    await act(async () => nextButton().props.onPress())
+    expect(root.root.findAllByType('Text').some((t) => t.props.children === 'Time Zone')).toBe(true)
     await act(async () => root.unmount())
   })
 })

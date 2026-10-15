@@ -17,9 +17,11 @@ import { InputField } from '../../components/ui/InputField'
 import { registrationFormSchema, type RegistrationFormData } from '../../lib/schemas/forms'
 import { launchFacade } from '../../features/launch/launchFacade'
 
-const STEPS = ['Account', 'Personal', 'Body', 'Time Zone', 'Notifications']
-
 const RegisterPage = () => {
+  const localProfile = launchFacade.auth.getStartupPlan().kind === 'local-profile'
+  const STEPS = localProfile
+    ? ['Account', 'Personal', 'Body', 'Notifications']
+    : ['Account', 'Personal', 'Body', 'Time Zone', 'Notifications']
   const router = useRouter()
   const toast = useToastController()
   const { user, logout } = useAuthStore()
@@ -243,8 +245,8 @@ const RegisterPage = () => {
 
   // --- Render Components ---
   const renderStepContent = () => {
-    switch (step) {
-      case 0:
+    switch (STEPS[step]) {
+      case 'Account':
         return (
           <YStack gap="$4" items="center" justify="center" flex={1}>
             <Text fontSize="$5" style={{ textAlign: 'center' }} color="$color11" mb="$4">
@@ -294,7 +296,7 @@ const RegisterPage = () => {
             </Text>
           </YStack>
         )
-      case 1:
+      case 'Personal':
         return (
           <YStack gap="$4">
             <YStack gap="$2">
@@ -329,7 +331,7 @@ const RegisterPage = () => {
             </YStack>
           </YStack>
         )
-      case 2:
+      case 'Body':
         return (
           <YStack gap="$4">
             <YStack bg="$color2" p="$4" rounded="$6" gap="$4">
@@ -423,7 +425,7 @@ const RegisterPage = () => {
             </YStack>
           </YStack>
         )
-      case 3:
+      case 'Time Zone':
         return (
           <YStack gap="$4">
             <YStack bg="$color2" p="$4" rounded="$6" gap="$4">
@@ -437,7 +439,7 @@ const RegisterPage = () => {
             </YStack>
           </YStack>
         )
-      case 4:
+      case 'Notifications':
         return (
           <YStack gap="$4">
             <NotificationPermissions onStatusChange={() => {}} />
