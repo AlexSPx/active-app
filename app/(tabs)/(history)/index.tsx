@@ -15,6 +15,7 @@ import {
   toISODate,
 } from '../../../features/history'
 import { parseServerUtcDate } from '../../../utils/date'
+import { getTrainingFacade } from '../../../features/training/trainingFacade'
 
 export default function HistoryPage() {
   const router = useRouter()
@@ -37,6 +38,7 @@ export default function HistoryPage() {
             (sum, ex) => sum + (ex.reps?.length || 0),
             0
           )
+          const achievements = getTrainingFacade().getWorkoutAchievements(record)
           return {
             id: record.id || `${record.workoutId}-${record.createdAt}`,
             name: record.workoutTitle,
@@ -49,8 +51,8 @@ export default function HistoryPage() {
             intervals: totalSets - strengthSets,
             totalVolume: computeVolumeForRecord(record),
             exerciseNames: record.exerciseRecords.map((ex) => ex.exerciseName),
-            prOneRm: record.exerciseRecords.some((ex) => (ex.achievedOneRmValue ?? 0) > 0),
-            prVolume: record.exerciseRecords.some((ex) => (ex.achievedTotalVolumeValue ?? 0) > 0),
+            prOneRm: achievements.some((achievement) => achievement.type === '1RM'),
+            prVolume: achievements.some((achievement) => achievement.type === 'VOLUME'),
           }
         })
         .sort((a, b) => b.date.getTime() - a.date.getTime()),

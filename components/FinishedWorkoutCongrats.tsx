@@ -13,23 +13,19 @@ import {
   H4,
 } from 'tamagui'
 import { Trophy, Timer as TimerIcon, Dumbbell, BarChart2 } from '@tamagui/lucide-icons'
-import type { WorkoutRecord, StreakUpdateResponse } from '../types/api'
-import { StreakView } from './StreakView'
+import { getTrainingFacade } from '../features/training/trainingFacade'
+import type { WorkoutRecord } from '../types/api'
 
 export type FinishedWorkoutCongratsProps = {
   data: WorkoutRecord
   visible?: boolean
   onClose?: () => void
-  streak?: StreakUpdateResponse
-  userName?: string
 }
 
 export function FinishedWorkoutCongrats({
   data,
   visible = true,
   onClose,
-  streak,
-  userName = 'You',
 }: FinishedWorkoutCongratsProps) {
   // Start the sheet at the middle snap point (50%)
   const [position, setPosition] = useState(1)
@@ -60,7 +56,10 @@ export function FinishedWorkoutCongrats({
 
   // Derive from WorkoutRecord
   const derived = (() => {
-    const totalSets = data.exerciseRecords.reduce((acc, ex) => acc + ex.reps.length, 0)
+    const totalSets = data.exerciseRecords.reduce(
+      (acc, ex) => acc + Math.max(ex.reps.length, ex.durationSeconds?.length ?? 0),
+      0
+    )
     const totalVolume = data.exerciseRecords.reduce((acc, ex) => {
       return acc + ex.reps.reduce((s, r, i) => s + r * (ex.weight[i] || 0), 0)
     }, 0)
@@ -82,55 +81,8 @@ export function FinishedWorkoutCongrats({
     }
   })()
 
-  const pr1rm = (() => {
-    let best = { value: 0, setIndex: null as number | null, name: '' }
-    for (const ex of data.exerciseRecords) {
-      const v = ex.achievedOneRmValue || 0
-      if (v > best.value) {
-        best = {
-          value: v,
-          setIndex: typeof ex.achievedOneRmSetIndex === 'number' ? ex.achievedOneRmSetIndex : null,
-          name: ex.exerciseName,
-        }
-      }
-    }
-    return best.value > 0 ? best : null
-  })()
-
-  const prVol = (() => {
-    let best = { value: 0, name: '' }
-    for (const ex of data.exerciseRecords) {
-      const v = ex.achievedTotalVolumeValue || 0
-      if (v > best.value) {
-        best = { value: v, name: ex.exerciseName }
-      }
-    }
-    return best.value > 0 ? best : null
-  })()
-
   const snapPoints = [85, 50, 25]
-
-  // Collect all achievements so we can render them in a scrollable list
-  const achievements = data.exerciseRecords.flatMap((ex) => {
-    const items: Array<{
-      type: '1RM' | 'VOLUME'
-      value: number
-      exercise: string
-      setIndex?: number | null
-    }> = []
-    if (typeof ex.achievedOneRmValue === 'number' && ex.achievedOneRmValue > 0) {
-      items.push({
-        type: '1RM',
-        value: ex.achievedOneRmValue,
-        exercise: ex.exerciseName,
-        setIndex: ex.achievedOneRmSetIndex ?? null,
-      })
-    }
-    if (typeof ex.achievedTotalVolumeValue === 'number' && ex.achievedTotalVolumeValue > 0) {
-      items.push({ type: 'VOLUME', value: ex.achievedTotalVolumeValue, exercise: ex.exerciseName })
-    }
-    return items
-  })
+  const achievements = getTrainingFacade().getWorkoutAchievements(data)
 
   return (
     <>
@@ -173,17 +125,10 @@ export function FinishedWorkoutCongrats({
         <Sheet.Frame flex={1} p="$4" justify="flex-start" items="stretch" gap="$3" bg="$background">
           <YStack gap="$3" width="100%">
             <YStack gap="$2" width="100%">
-              <H3 style={{ textAlign: 'center' }}>
-                {streak?.status === 'WEEKLY_PROGRESS'
-                  ? 'Great Progress This Week!'
-                  : 'Keep Your Streak Going!'}
-              </H3>
+              <H3 style={{ textAlign: 'center' }}>Workout saved</H3>
               <Paragraph color="$color10" style={{ textAlign: 'center' }} fontSize="$3">
-                {streak?.status === 'WEEKLY_PROGRESS'
-                  ? `${userName}, you're on track to complete your weekly goal!`
-                  : `${userName}, you've been doing an amazing job!`}
+                Your workout is saved on this device.
               </Paragraph>
-              {streak && <StreakView streak={streak} />}
             </YStack>
 
             <YStack gap="$2" width="100%">

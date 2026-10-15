@@ -577,8 +577,7 @@ function OwnerDatabaseContent({ children }: { children: React.ReactNode }) {
       {children}
       {congratsVisible && payload && (
         <FinishedWorkoutCongrats
-          data={payload.record}
-          streak={payload.streak}
+          data={payload.workoutRecord}
           visible={congratsVisible}
           onClose={hideFinishedCongrats}
         />

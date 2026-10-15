@@ -6,6 +6,7 @@ import { useActiveRoutine } from '../features/routines'
 import { router } from 'expo-router'
 import { routinePatternIndex, sameDay, startOfWeek, formatWeekRange } from '../utils/date'
 import { useAuth } from '../contexts/AuthContext'
+import { getTrainingFacade } from '../features/training/trainingFacade'
 
 interface WeeklyViewProps {
   selectedDate: Date
@@ -25,6 +26,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const monday = startOfWeek(today)
   const routine = inactive ? null : activeRoutine
   const flexible = routine?.routineType === 'WEEKLY_COMPLETION'
+  const completed = getTrainingFacade().getWeeklyCompletion(user)
   const workoutIds = [
     ...new Set(
       routine?.pattern
@@ -32,7 +34,6 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
         .map((day) => day.workoutId!) ?? []
     ),
   ]
-  const completed = user?.streak?.weeklyCompletedWorkoutIds ?? []
 
   return (
     <YStack gap="$field">
@@ -50,13 +51,15 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
             <Text fontSize="$caption" color="$colorSubtle">
               Any order · Monday–Sunday
             </Text>
-            <Text fontSize="$caption" color="$primary">
-              {workoutIds.filter((id) => completed.includes(id)).length}/{workoutIds.length} done
-            </Text>
+            {completed !== null && (
+              <Text fontSize="$caption" color="$primary">
+                {workoutIds.filter((id) => completed.includes(id)).length}/{workoutIds.length} done
+              </Text>
+            )}
           </XStack>
           {workoutIds.map((id) => {
             const workout = workouts.find((item) => item.id === id)
-            const done = completed.includes(id)
+            const done = completed?.includes(id) ?? false
             return (
               <Button
                 key={id}
@@ -75,22 +78,28 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                   router.push({ pathname: '/(tabs)/(workouts)', params: { focusId: id } })
                 }
               >
-                {done && <Check size="$iconSmall" color="$primary" aria-hidden />}
+                {completed !== null && done && (
+                  <Check size="$iconSmall" color="$primary" aria-hidden />
+                )}
                 <Text flex={1} fontSize="$exerciseTitle" fontWeight="600">
                   {workout?.title ?? 'Unavailable workout'}
                 </Text>
-                <Text color="$colorSubtle" fontSize="$caption">
-                  {done ? 'Completed' : 'Remaining'}
-                </Text>
+                {completed !== null && (
+                  <Text color="$colorSubtle" fontSize="$caption">
+                    {done ? 'Completed' : 'Remaining'}
+                  </Text>
+                )}
                 <ArrowRight size="$iconSmall" color="$primary" aria-hidden />
               </Button>
             )
           })}
-          {workoutIds.length > 0 && workoutIds.every((id) => completed.includes(id)) && (
-            <Text color="$colorSubtle" fontSize="$caption">
-              All scheduled workouts are complete.
-            </Text>
-          )}
+          {completed !== null &&
+            workoutIds.length > 0 &&
+            workoutIds.every((id) => completed.includes(id)) && (
+              <Text color="$colorSubtle" fontSize="$caption">
+                All scheduled workouts are complete.
+              </Text>
+            )}
         </YStack>
       ) : (
         <XStack width="100%" gap="$compact" items="stretch">

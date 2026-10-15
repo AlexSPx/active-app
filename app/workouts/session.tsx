@@ -94,7 +94,7 @@ export default function WorkoutSessionScreen() {
             return false
           }
 
-          showFinishedCongrats(resp.workoutRecord, resp.streakUpdate)
+          showFinishedCongrats(resp)
           return true
         }}
         onCancelWorkout={cancelWorkout}

@@ -5,7 +5,7 @@ import type { ApiExercise } from '../../../types/api'
 import type {
   WorkoutRecordRequest,
   ExerciseRecord,
-  WorkoutRecordResponse,
+  LocalWorkoutRecordingResult,
 } from '../../../types/api'
 import { WorkoutRepository } from '../../../lib/repositories/WorkoutRepository'
 import { getDatabase } from '../../../lib/db/connection'
@@ -43,7 +43,7 @@ interface RunningWorkoutStore {
   startWorkout: (
     workout: Omit<RunningWorkout, 'startTime' | 'currentExerciseIndex' | 'completedExercises'>
   ) => void
-  stopWorkout: (notes?: string) => Promise<WorkoutRecordResponse | void>
+  stopWorkout: (notes?: string) => Promise<LocalWorkoutRecordingResult | void>
   cancelWorkout: () => void
   updateCurrentExercise: (index: number) => void
   completeExercise: () => void

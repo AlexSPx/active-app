@@ -195,7 +195,7 @@ export interface WorkoutRecord {
   workoutTitle: string
   notes?: string | null
   createdAt: string
-  // LocalDateTime string if provided when recording
+  // Local responses normalize this to ISO-8601; API payloads may use LocalDateTime.
   startTime?: string
   exerciseRecords: WorkoutRecordExercise[]
 }
@@ -225,6 +225,12 @@ export interface StreakUpdateResponse {
 export interface WorkoutRecordResponse {
   workoutRecord: WorkoutRecord
   streakUpdate: StreakUpdateResponse
+}
+
+/** A workout record saved locally before any server response is available. */
+export interface LocalWorkoutRecordingResult {
+  kind: 'local'
+  workoutRecord: WorkoutRecord
 }
 
 // TODO: Harmonize with WorkoutRecordExercise

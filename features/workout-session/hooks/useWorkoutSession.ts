@@ -4,7 +4,7 @@ import type { Exercise } from '../../../types/workout-session'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 import { useSettingsStore } from '../../settings'
 import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
-import type { WorkoutRecordResponse } from '../../../types/api'
+import type { LocalWorkoutRecordingResult } from '../../../types/api'
 import {
   scheduleRestNotification,
   cancelRestNotification,
@@ -39,7 +39,7 @@ export interface WorkoutSessionActions {
   startRestTimer: (setId: string) => void
   extendRestTimer: () => void
   skipRestTimer: () => void
-  finishWorkout: (notes?: string) => Promise<WorkoutRecordResponse | void>
+  finishWorkout: (notes?: string) => Promise<LocalWorkoutRecordingResult | void>
   cancelWorkout: () => void
 }
 
@@ -80,13 +80,6 @@ export function useWorkoutSession(
       return runningWorkout.exercises.map((ex) => ({
         ...ex, // Include all API exercise properties
         sets: ex.sessionSets,
-        lastWorkout: {
-          sets: Array.from({ length: ex.reps }, () => ({
-            reps: ex.reps,
-            weight: 185, // Mock weight for now
-          })),
-          date: '2024-01-20',
-        },
       }))
     }
 

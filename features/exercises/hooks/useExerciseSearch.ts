@@ -12,6 +12,7 @@ export function useExerciseSearch() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ownerKeys.exercises.search(searchQuery),
+    networkMode: repo.searchNetworkMode,
     queryFn: async () => {
       if (!searchQuery.trim()) return []
       return repo.search(searchQuery.trim())

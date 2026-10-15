@@ -318,10 +318,11 @@ test('reminder frequency accepts missing legacy preferences and preserves explic
   await act(async () => {
     view = create(React.createElement(PermissionsScreen))
   })
-  const selected = view.root
-    .findAllByType('Button')
-    .find((button) => button.props.accessibilityState?.checked)
-  expect(selected.props.children).toBe('Off')
+  const text = view.root.findAllByType('Text').map((node) => node.props.children)
+  expect(text).not.toContain('Streak reminders')
+  expect(
+    view.root.findAllByType('Button').some((button) => button.props.accessibilityRole === 'radio')
+  ).toBe(false)
   await act(async () => view.unmount())
   Platform.OS = 'android'
 })

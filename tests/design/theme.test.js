@@ -586,10 +586,7 @@ test('renders and dismisses the congrats portal under the current SQLite context
   await act(async () => {
     useUiStore
       .getState()
-      .showFinishedCongrats(
-        { workoutTitle: 'Offline workout' },
-        { status: 'WEEKLY_PROGRESS', currentStreak: 0 }
-      )
+      .showFinishedCongrats({ kind: 'local', workoutRecord: { workoutTitle: 'Offline workout' } })
   })
   expect(view.root.findByType('FinishedWorkoutCongrats').props).toMatchObject({
     database: databaseNameForProfile('local:device'),
@@ -621,12 +618,10 @@ test('logout hides the old congrats before switching to the local owner database
     view = create(React.createElement(Provider, {}, React.createElement(ThemeProbe)))
   })
   await act(async () => {
-    useUiStore
-      .getState()
-      .showFinishedCongrats(
-        { workoutTitle: 'Previous owner workout' },
-        { status: 'WEEKLY_PROGRESS', currentStreak: 0 }
-      )
+    useUiStore.getState().showFinishedCongrats({
+      kind: 'local',
+      workoutRecord: { workoutTitle: 'Previous owner workout' },
+    })
   })
   expect(view.root.findByType('FinishedWorkoutCongrats').props.database).toBe(
     databaseNameForProfile('user:previous')
@@ -649,12 +644,10 @@ test('logout hides the old congrats before switching to the local owner database
   expect(view.root.findAllByType('FinishedWorkoutCongrats')).toHaveLength(0)
 
   await act(async () => {
-    useUiStore
-      .getState()
-      .showFinishedCongrats(
-        { workoutTitle: 'Current owner workout' },
-        { status: 'WEEKLY_PROGRESS', currentStreak: 0 }
-      )
+    useUiStore.getState().showFinishedCongrats({
+      kind: 'local',
+      workoutRecord: { workoutTitle: 'Current owner workout' },
+    })
   })
   expect(view.root.findByType('FinishedWorkoutCongrats').props.database).toBe(
     databaseNameForProfile('local:device')

@@ -40,7 +40,7 @@ describe('running workout ID remapping', () => {
   })
 
   it('records against the current server ID after the workout is remapped', async () => {
-    const result = { workoutRecord: { id: 'record_1' }, streakUpdate: {} }
+    const result = { kind: 'local', workoutRecord: { id: 'record_1' } }
     const recordWorkout = jest.fn(async () => result)
     getDatabase.mockImplementation(async () => {
       remapRunningWorkoutId('local_workout_active', 'server_workout_active')
@@ -77,7 +77,7 @@ describe('running workout ID remapping', () => {
 
   it('ignores repeated Finish calls while a save is in progress', async () => {
     let resolveRecord
-    const result = { workoutRecord: { id: 'record_once' }, streakUpdate: {} }
+    const result = { kind: 'local', workoutRecord: { id: 'record_once' } }
     const recordWorkout = jest.fn(
       () =>
         new Promise((resolve) => {

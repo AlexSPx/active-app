@@ -16,13 +16,4 @@ export interface Set {
 export interface Exercise extends ApiExercise {
   sessionId: string
   sets: Set[]
-  previousBest?: {
-    weight: number
-    reps: number
-    date: string
-  }
-  lastWorkout?: {
-    sets: { reps: number; weight: number }[]
-    date: string
-  }
 }
