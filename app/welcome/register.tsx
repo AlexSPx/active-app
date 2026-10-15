@@ -248,7 +248,7 @@ const RegisterPage = () => {
     switch (STEPS[step]) {
       case 'Account':
         return (
-          <YStack gap="$4" items="center" justify="center" flex={1}>
+          <YStack gap="$4" items="center" mt="$6">
             <Text fontSize="$5" style={{ textAlign: 'center' }} color="$color11" mb="$4">
               {accountStep.description}
             </Text>
@@ -277,7 +277,7 @@ const RegisterPage = () => {
               />
             )}
 
-            <Text fontSize="$2" color="$color11" style={{ textAlign: 'center' }} mt="$4">
+            <Text fontSize="$2" color="$color11" style={{ textAlign: 'center' }} mt="$2" px="$2">
               {accountStep.action.kind === 'continue'
                 ? 'By setting up a local profile, you agree to our '
                 : 'By creating an account, you agree to our '}

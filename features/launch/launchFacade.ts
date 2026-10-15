@@ -67,12 +67,12 @@ function resolveAuthDestination(input: {
         ? input.user?.registrationCompleted !== true
         : input.user?.registrationCompleted === false
 
-    if (input.firstSegment === 'auth') return needsOnboarding ? '/welcome/register' : '/(tabs)'
+    if (input.firstSegment === 'auth') return needsOnboarding ? '/welcome' : '/(tabs)'
     if (input.firstSegment === '(tabs)' && input.secondSegment === 'settings') {
       if (input.thirdSegment === 'account') return '/settings/profile'
       if (input.thirdSegment === 'sync') return '/(tabs)'
     }
-    if (needsOnboarding && !isRegistering && !inLegalGroup) return '/welcome/register'
+    if (needsOnboarding && !inWelcomeGroup && !inLegalGroup) return '/welcome'
     if (!needsOnboarding && inWelcomeGroup) return '/(tabs)'
     return null
   }
@@ -161,7 +161,7 @@ function registrationAccountStep(): {
   return isNativeOfflineLaunch()
     ? {
         description: 'Set up your local profile to track your workouts and progress.',
-        action: { kind: 'continue', label: 'Get Started' },
+        action: { kind: 'continue', label: 'I Agree' },
       }
     : {
         description: 'Create an account to track your workouts and progress.',

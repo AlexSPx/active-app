@@ -109,13 +109,13 @@ describe('AuthGuard recovery actions', () => {
       root = create(React.createElement(AuthGuard))
     })
 
-    expect(mockReplace).toHaveBeenCalledWith('/welcome/register')
+    expect(mockReplace).toHaveBeenCalledWith('/welcome')
     await act(async () => root.unmount())
   })
 
   it('routes a cached completed native account directly to training without credentials', async () => {
     mockNativeOfflineLaunch = true
-    mockSegments = ['welcome', 'home']
+    mockSegments = ['welcome']
     mockAuthValue = {
       isAuthenticated: true,
       user: { id: 'cached-owner', registrationCompleted: true },
@@ -137,7 +137,7 @@ describe('AuthGuard recovery actions', () => {
 
   it('routes a completed native local profile directly to training', async () => {
     mockNativeOfflineLaunch = true
-    mockSegments = ['welcome', 'home']
+    mockSegments = ['welcome']
     mockAuthValue = {
       isAuthenticated: true,
       user: { id: 'local:device', registrationCompleted: true },
