@@ -173,12 +173,11 @@ describe('Home empty and setup states', () => {
         'Create workout',
         'Your training week',
         'Create a workout, then add it to a routine.',
-        'Your widgets',
-        'Choose an exercise and metric to track your progress here.',
       ])
     )
     expect(renderer.root.findByType('WeeklyView').props.inactive).toBe(true)
-    expect(getButton(renderer, 'Add widget')).toBeDefined()
+    expect(text).not.toContain('Your widgets')
+    expect(getButton(renderer, 'Add widget')).toBeUndefined()
 
     act(() => getButton(renderer, 'Create workout').props.onPress())
     expect(mockPush).toHaveBeenCalledWith('/workouts/new')
@@ -245,7 +244,7 @@ describe('Home empty and setup states', () => {
     expect(mockPush).toHaveBeenCalledWith('/(tabs)/(workouts)/routines')
   })
 
-  it('restores the active plan and configured widget actions for populated accounts', () => {
+  it('restores the active plan without showing backend-only progression widgets offline', () => {
     const widget = { id: 'widget-1', position: 0 }
     setHomeData({
       activeRoutine: { id: 'routine-1' },
@@ -258,23 +257,16 @@ describe('Home empty and setup states', () => {
     expect(renderer.root.findAllByType('TodayView')).toHaveLength(1)
     expect(renderer.root.findAllByType('WeeklyView')).toHaveLength(1)
     expect(renderer.root.findByType('WeeklyView').props.inactive).toBeUndefined()
-    const progressionWidget = renderer.root.findByType('ProgressionWidget')
-    expect(progressionWidget.props.config).toBe(widget)
-    act(() => getButton(renderer, 'Manage').props.onPress())
-    expect(renderer.root.findByType('WidgetManager').props.mode).toBe('manage')
-
-    act(() => getButton(renderer, 'Add').props.onPress())
-    expect(renderer.root.findByType('WidgetManager').props.isVisible).toBe(true)
+    expect(renderer.root.findAllByType('ProgressionWidget')).toHaveLength(0)
+    expect(renderer.root.findAllByType('WidgetManager')).toHaveLength(0)
+    expect(visibleText(renderer)).not.toContain('Your widgets')
   })
 
-  it('opens and closes the widget manager when no exercises are tracked', () => {
+  it('keeps the backend-only widget manager unavailable during offline launch', () => {
     setHomeData({ workouts: [{ id: 'workout-1' }] })
     const renderer = renderHome()
 
-    act(() => getButton(renderer, 'Add').props.onPress())
-    expect(renderer.root.findByType('WidgetManager').props.isVisible).toBe(true)
-    act(() => renderer.root.findByType('WidgetManager').props.onClose())
-    expect(renderer.root.findByType('WidgetManager').props.isVisible).toBe(false)
+    expect(renderer.root.findAllByType('WidgetManager')).toHaveLength(0)
   })
 
   it('keeps scheduled days selectable and marks the selected day in the active calendar', () => {
@@ -313,7 +305,7 @@ describe('Home empty and setup states', () => {
     expect(renderer.root.findAllByType('TodayView')).toHaveLength(0)
   })
 
-  it('updates weekly completion when the user streak changes and keeps unavailable references safe', () => {
+  it('ignores cached server weekly completion offline and keeps unavailable references safe', () => {
     setHomeData({
       activeRoutine: {
         name: 'Flexible week',
@@ -332,14 +324,17 @@ describe('Home empty and setup states', () => {
       renderer = create(React.createElement(ActualWeeklyView, props))
     })
     expect(visibleText(renderer)).toEqual(
-      expect.arrayContaining(['Upper body', 'Unavailable workout', '0/2 done'])
+      expect.arrayContaining(['Upper body', 'Unavailable workout'])
     )
+    expect(visibleText(renderer)).not.toContain('0/2 done')
+    expect(visibleText(renderer)).not.toContain('Remaining')
     expect(
       renderer.root.findAllByType('Button').filter((button) => button.props.disabled)
     ).toHaveLength(1)
     useAuth.mockReturnValue({ user: { streak: { weeklyCompletedWorkoutIds: ['workout-1'] } } })
     act(() => renderer.update(React.createElement(ActualWeeklyView, props)))
-    expect(visibleText(renderer)).toContain('1/2 done')
+    expect(visibleText(renderer)).not.toContain('1/2 done')
+    expect(visibleText(renderer)).not.toContain('Completed')
     expect(visibleText(renderer)).not.toContain('All scheduled workouts are complete.')
   })
 

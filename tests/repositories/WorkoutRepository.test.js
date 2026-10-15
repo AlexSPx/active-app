@@ -288,8 +288,11 @@ describe('WorkoutRepository', () => {
 
     const result = await repo.recordWorkout(recordRequest, 'Pull Day')
 
+    expect(result.kind).toBe('local')
+    expect(result).not.toHaveProperty('streakUpdate')
     expect(result.workoutRecord.id).toMatch(/^local_/)
     expect(result.workoutRecord.workoutId).toBe('workout_2')
+    expect(result.workoutRecord.startTime).toBe(new Date(recordRequest.startTime).toISOString())
     expect(result.workoutRecord.exerciseRecords).toEqual([
       {
         exerciseName: 'barbell_row',
@@ -307,6 +310,7 @@ describe('WorkoutRepository', () => {
       workout_id: 'workout_2',
       workout_title: 'Pull Day',
       notes: 'Felt strong',
+      start_time: new Date(recordRequest.startTime).toISOString(),
       is_synced: 0,
     })
 

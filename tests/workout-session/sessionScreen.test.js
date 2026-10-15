@@ -128,7 +128,7 @@ describe('workout session completion', () => {
     }
     let result
     await act(async () => {
-      resolveFinish({ workoutRecord: { id: 'old_record' }, streakUpdate: { currentStreak: 0 } })
+      resolveFinish({ kind: 'local', workoutRecord: { id: 'old_record' } })
       result = await finishPromise
     })
 
@@ -148,10 +148,7 @@ describe('workout session completion', () => {
       user: { id: 'user_a' },
     }
     const { finishPromise, renderer, resolveFinish } = await beginDeferredFinish()
-    const response = {
-      workoutRecord: { id: 'current_record' },
-      streakUpdate: { currentStreak: 2 },
-    }
+    const response = { kind: 'local', workoutRecord: { id: 'current_record' } }
     let result
     await act(async () => {
       resolveFinish(response)
@@ -161,10 +158,7 @@ describe('workout session completion', () => {
     expect(result).toBe(true)
     expect(useUiStore.getState().finishedCongrats).toEqual({
       visible: true,
-      payload: {
-        record: response.workoutRecord,
-        streak: response.streakUpdate,
-      },
+      payload: response,
     })
     expect(mockToastShow).not.toHaveBeenCalled()
     act(() => renderer.unmount())
@@ -190,7 +184,7 @@ describe('workout session completion', () => {
     }
     let result
     await act(async () => {
-      resolveFinish({ workoutRecord: { id: 'old_record' }, streakUpdate: { currentStreak: 0 } })
+      resolveFinish({ kind: 'local', workoutRecord: { id: 'old_record' } })
       result = await finishPromise
     })
 

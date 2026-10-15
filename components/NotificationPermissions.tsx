@@ -101,7 +101,7 @@ export default function NotificationPermissions({
         {
           title: 'Notifications',
           allowed: notifications,
-          description: 'Receive training reminders and app updates.',
+          description: 'Allow Active to send app notifications and rest timer alerts.',
           onPress: openNotifications,
         },
         ...(Platform.OS === 'android'
@@ -168,7 +168,7 @@ export default function NotificationPermissions({
       )}
       {notifications === false && (
         <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-          Reminders won’t arrive until notifications are allowed. Your reminder preference is kept.
+          Rest timer alerts won’t arrive until notifications are allowed.
         </Paragraph>
       )}
     </YStack>

@@ -16,7 +16,6 @@ const SWIPE_THRESHOLD = -80
 interface WorkoutSessionSetRowProps {
   set: Set
   index: number
-  previousSet?: { reps: number; weight: number }
   onUpdateSet: (field: 'reps' | 'weight', value: number) => void
   onToggleComplete: () => void
   onDelete: () => void
@@ -26,7 +25,6 @@ export const WorkoutSessionSetRow = memo(
   function WorkoutSessionSetRow({
     set,
     index,
-    previousSet,
     onUpdateSet,
     onToggleComplete,
     onDelete,
@@ -94,19 +92,6 @@ export const WorkoutSessionSetRow = memo(
                   >
                     {index + 1}
                   </Text>
-                </YStack>
-
-                {/* Previous Set Data */}
-                <YStack flex={1} items="center">
-                  {previousSet ? (
-                    <Text fontSize="$3" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
-                      {previousSet.weight}×{previousSet.reps}
-                    </Text>
-                  ) : (
-                    <Text fontSize="$3" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
-                      -
-                    </Text>
-                  )}
                 </YStack>
 
                 {/* Weight Input */}

@@ -6,6 +6,7 @@ import { useActiveRoutine } from '../features/routines'
 import { router } from 'expo-router'
 import { routinePatternIndex, sameDay, startOfWeek, formatWeekRange } from '../utils/date'
 import { useAuth } from '../contexts/AuthContext'
+import { isBackendEnabledForLaunch } from '../config/launchPolicy'
 
 interface WeeklyViewProps {
   selectedDate: Date
@@ -25,6 +26,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const monday = startOfWeek(today)
   const routine = inactive ? null : activeRoutine
   const flexible = routine?.routineType === 'WEEKLY_COMPLETION'
+  const showServerProgress = isBackendEnabledForLaunch()
   const workoutIds = [
     ...new Set(
       routine?.pattern
@@ -32,7 +34,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
         .map((day) => day.workoutId!) ?? []
     ),
   ]
-  const completed = user?.streak?.weeklyCompletedWorkoutIds ?? []
+  const completed = showServerProgress ? (user?.streak?.weeklyCompletedWorkoutIds ?? []) : []
 
   return (
     <YStack gap="$field">
@@ -50,9 +52,11 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
             <Text fontSize="$caption" color="$colorSubtle">
               Any order · Monday–Sunday
             </Text>
-            <Text fontSize="$caption" color="$primary">
-              {workoutIds.filter((id) => completed.includes(id)).length}/{workoutIds.length} done
-            </Text>
+            {showServerProgress && (
+              <Text fontSize="$caption" color="$primary">
+                {workoutIds.filter((id) => completed.includes(id)).length}/{workoutIds.length} done
+              </Text>
+            )}
           </XStack>
           {workoutIds.map((id) => {
             const workout = workouts.find((item) => item.id === id)
@@ -69,28 +73,34 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                 borderBottomWidth={1}
                 borderColor="$borderColor"
                 accessibilityRole="button"
-                accessibilityLabel={`View workout ${workout?.title ?? 'Unavailable workout'}${done ? ', completed' : ''}`}
+                accessibilityLabel={`View workout ${workout?.title ?? 'Unavailable workout'}${showServerProgress && done ? ', completed' : ''}`}
                 disabled={!workout}
                 onPress={() =>
                   router.push({ pathname: '/(tabs)/(workouts)', params: { focusId: id } })
                 }
               >
-                {done && <Check size="$iconSmall" color="$primary" aria-hidden />}
+                {showServerProgress && done && (
+                  <Check size="$iconSmall" color="$primary" aria-hidden />
+                )}
                 <Text flex={1} fontSize="$exerciseTitle" fontWeight="600">
                   {workout?.title ?? 'Unavailable workout'}
                 </Text>
-                <Text color="$colorSubtle" fontSize="$caption">
-                  {done ? 'Completed' : 'Remaining'}
-                </Text>
+                {showServerProgress && (
+                  <Text color="$colorSubtle" fontSize="$caption">
+                    {done ? 'Completed' : 'Remaining'}
+                  </Text>
+                )}
                 <ArrowRight size="$iconSmall" color="$primary" aria-hidden />
               </Button>
             )
           })}
-          {workoutIds.length > 0 && workoutIds.every((id) => completed.includes(id)) && (
-            <Text color="$colorSubtle" fontSize="$caption">
-              All scheduled workouts are complete.
-            </Text>
-          )}
+          {showServerProgress &&
+            workoutIds.length > 0 &&
+            workoutIds.every((id) => completed.includes(id)) && (
+              <Text color="$colorSubtle" fontSize="$caption">
+                All scheduled workouts are complete.
+              </Text>
+            )}
         </YStack>
       ) : (
         <XStack width="100%" gap="$compact" items="stretch">

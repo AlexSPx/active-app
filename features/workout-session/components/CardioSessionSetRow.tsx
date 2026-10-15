@@ -17,7 +17,6 @@ const SWIPE_THRESHOLD = -80
 interface CardioSessionSetRowProps {
   set: Set
   index: number
-  previousDuration?: number | null
   onUpdateDuration: (seconds: number) => void
   onToggleComplete: () => void
   onDelete: () => void
@@ -66,20 +65,10 @@ const secondsToDigits = (total: number): string => {
   return `${m}${String(s).padStart(2, '0')}`
 }
 
-// Format seconds to M:SS for non-editing display (previous duration, etc)
-const formatSeconds = (secs: number | null | undefined) => {
-  if (secs == null || isNaN(secs) || secs < 0) return '0:00'
-  const total = Math.floor(secs)
-  const m = Math.floor(total / 60)
-  const s = total % 60
-  return `${m}:${String(s).padStart(2, '0')}`
-}
-
 export const CardioSessionSetRow = memo(
   function CardioSessionSetRow({
     set,
     index,
-    previousDuration,
     onUpdateDuration,
     onToggleComplete,
     onDelete,
@@ -141,12 +130,6 @@ export const CardioSessionSetRow = memo(
                     color={set.completed ? '$onPrimary' : '$color'}
                   >
                     {index + 1}
-                  </Text>
-                </YStack>
-                {/* Previous Duration */}
-                <YStack flex={1} items="center">
-                  <Text fontSize="$3" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
-                    {previousDuration != null ? formatSeconds(previousDuration) : '-'}
                   </Text>
                 </YStack>
                 {/* Duration Input */}

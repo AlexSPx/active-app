@@ -16,6 +16,7 @@ import {
 } from '../../../../utils/workoutUtils'
 import { parseServerUtcDate } from '../../../../utils/date'
 import { recordDurationSeconds } from '../../../../features/history/components/record'
+import { isBackendEnabledForLaunch } from '../../../../config/launchPolicy'
 
 export default function RecordDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -265,8 +266,9 @@ export default function RecordDetailScreen() {
               const rows = cardio ? ex.durationSeconds || [] : ex.reps || []
               const volume =
                 ex.reps?.reduce((sum, reps, i) => sum + reps * (ex.weight?.[i] || 0), 0) || 0
-              const oneRm = (ex.achievedOneRmValue ?? 0) > 0
-              const volumePr = (ex.achievedTotalVolumeValue ?? 0) > 0
+              const showServerAchievements = isBackendEnabledForLaunch()
+              const oneRm = showServerAchievements && (ex.achievedOneRmValue ?? 0) > 0
+              const volumePr = showServerAchievements && (ex.achievedTotalVolumeValue ?? 0) > 0
               return (
                 <YStack
                   key={`${ex.exerciseName}-${index}`}

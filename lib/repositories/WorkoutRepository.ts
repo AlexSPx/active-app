@@ -15,8 +15,8 @@ import type {
   UpdateWorkoutRequest,
   WorkoutRecord,
   WorkoutRecordExercise,
+  LocalWorkoutRecordingResult,
   WorkoutRecordRequest,
-  WorkoutRecordResponse,
 } from '../../types/api'
 
 // ---------------------------------------------------------------------------
@@ -242,12 +242,12 @@ export class WorkoutRepository extends BaseRepository {
 
   /**
    * Record a completed workout. Saves locally first, then queues for server sync.
-   * Returns a WorkoutRecordResponse-shaped object for the UI (congrats screen, etc).
+   * Returns the locally saved record; server-only streak data arrives separately.
    */
   async recordWorkout(
     request: WorkoutRecordRequest,
     workoutTitle: string
-  ): Promise<WorkoutRecordResponse> {
+  ): Promise<LocalWorkoutRecordingResult> {
     return this.commitMutation(async (tx) => {
       const recordRequest = {
         ...request,
@@ -266,6 +266,11 @@ export class WorkoutRepository extends BaseRepository {
       }
       const localId = this.generateLocalId()
       const now = new Date().toISOString()
+      const parsedStartTime = recordRequest.startTime ? new Date(recordRequest.startTime) : null
+      const localStartTime =
+        parsedStartTime && !Number.isNaN(parsedStartTime.getTime())
+          ? parsedStartTime.toISOString()
+          : recordRequest.startTime
 
       // Build the exercise records array for local storage
       const exerciseRecords: WorkoutRecordExercise[] = recordRequest.exerciseRecords.map((er) => ({
@@ -286,7 +291,7 @@ export class WorkoutRepository extends BaseRepository {
         workoutTitle,
         request.notes || null,
         now,
-        request.startTime || null,
+        localStartTime || null,
         JSON.stringify(exerciseRecords),
         0
       )
@@ -298,21 +303,14 @@ export class WorkoutRepository extends BaseRepository {
         workoutTitle,
         notes: request.notes || null,
         createdAt: now,
-        startTime: request.startTime,
+        startTime: localStartTime,
         exerciseRecords,
       }
 
       return {
         value: {
+          kind: 'local',
           workoutRecord: localRecord,
-          streakUpdate: {
-            status: 'CONTINUED',
-            currentStreak: 0,
-            longestStreak: 0,
-            nextWorkoutId: null,
-            nextWorkoutDeadline: null,
-            streakFreezeCount: 0,
-          },
         },
         job: {
           apiMethod: 'recordWorkout',

@@ -5,7 +5,7 @@ export default function TimeZoneSettingsScreen() {
   return (
     <SettingsPage
       title="Time zone"
-      description="Choose the time zone for your workout history and reminders."
+      description="Choose the time zone used to display your workout history."
     >
       <TimeZoneSelector inline />
     </SettingsPage>

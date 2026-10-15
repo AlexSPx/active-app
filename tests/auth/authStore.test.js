@@ -527,12 +527,10 @@ describe('auth profile refresh', () => {
       refreshToken: 'refresh',
     })
     useUiStore.getState().reset()
-    useUiStore
-      .getState()
-      .showFinishedCongrats(
-        { workoutTitle: 'Previous owner workout' },
-        { status: 'WEEKLY_PROGRESS', currentStreak: 0 }
-      )
+    useUiStore.getState().showFinishedCongrats({
+      kind: 'local',
+      workoutRecord: { workoutTitle: 'Previous owner workout' },
+    })
 
     let releaseDrain
     let markDrainStarted

@@ -1,5 +1,5 @@
 import { YStack, XStack, Text, Button, Card, H3, Separator } from 'tamagui'
-import { Plus, MoreHorizontal, Timer, Target } from '@tamagui/lucide-icons'
+import { Plus, MoreHorizontal, Timer } from '@tamagui/lucide-icons'
 import { View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback, memo } from 'react'
@@ -38,7 +38,6 @@ export const WorkoutSessionExercise = memo(
             <CardioSessionSetRow
               set={set}
               index={index}
-              previousDuration={undefined}
               onUpdateDuration={(secs) => onUpdateSet(exercise.sessionId, set.id, 'duration', secs)}
               onToggleComplete={() => onToggleSetComplete(exercise.sessionId, set.id)}
               onDelete={() => onRemoveSet(exercise.sessionId, index)}
@@ -49,7 +48,6 @@ export const WorkoutSessionExercise = memo(
           <WorkoutSessionSetRow
             set={set}
             index={index}
-            previousSet={exercise.lastWorkout?.sets[index]}
             onUpdateSet={(field, value) => onUpdateSet(exercise.sessionId, set.id, field, value)}
             onToggleComplete={() => {
               onToggleSetComplete(exercise.sessionId, set.id)
@@ -64,7 +62,6 @@ export const WorkoutSessionExercise = memo(
       [
         isCardio,
         exercise.sessionId,
-        exercise.lastWorkout?.sets,
         onUpdateSet,
         onToggleSetComplete,
         onStartRestTimer,
@@ -86,27 +83,12 @@ export const WorkoutSessionExercise = memo(
             <Button size="$3" circular icon={MoreHorizontal} />
           </XStack>
 
-          {/* Previous Best */}
-          {exercise.previousBest && (
-            <XStack gap="$3" items="center" p="$2" bg="$backgroundHover" r="$3">
-              <Target size={16} color="$colorSubtle" />
-              <Text fontSize="$3" color="$colorSubtle">
-                PR: {exercise.previousBest.weight}kg × {exercise.previousBest.reps}
-              </Text>
-            </XStack>
-          )}
-
           {/* Sets Header */}
           {isCardio ? (
             <XStack justify="space-between" px="$1">
               <YStack flex={1} items="center">
                 <Text fontSize="$3" fontWeight="600" color="$color">
                   SET
-                </Text>
-              </YStack>
-              <YStack flex={1} items="center">
-                <Text fontSize="$3" fontWeight="600" color="$color">
-                  PREV
                 </Text>
               </YStack>
               <YStack flex={2} items="center">
@@ -125,11 +107,6 @@ export const WorkoutSessionExercise = memo(
               <YStack flex={1} items="center">
                 <Text fontSize="$3" fontWeight="600" color="$color">
                   SET
-                </Text>
-              </YStack>
-              <YStack flex={1} items="center">
-                <Text fontSize="$3" fontWeight="600" color="$color">
-                  PREVIOUS
                 </Text>
               </YStack>
               <YStack flex={1} items="center">

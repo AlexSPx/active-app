@@ -15,6 +15,7 @@ import {
   toISODate,
 } from '../../../features/history'
 import { parseServerUtcDate } from '../../../utils/date'
+import { isBackendEnabledForLaunch } from '../../../config/launchPolicy'
 
 export default function HistoryPage() {
   const router = useRouter()
@@ -49,8 +50,12 @@ export default function HistoryPage() {
             intervals: totalSets - strengthSets,
             totalVolume: computeVolumeForRecord(record),
             exerciseNames: record.exerciseRecords.map((ex) => ex.exerciseName),
-            prOneRm: record.exerciseRecords.some((ex) => (ex.achievedOneRmValue ?? 0) > 0),
-            prVolume: record.exerciseRecords.some((ex) => (ex.achievedTotalVolumeValue ?? 0) > 0),
+            prOneRm:
+              isBackendEnabledForLaunch() &&
+              record.exerciseRecords.some((ex) => (ex.achievedOneRmValue ?? 0) > 0),
+            prVolume:
+              isBackendEnabledForLaunch() &&
+              record.exerciseRecords.some((ex) => (ex.achievedTotalVolumeValue ?? 0) > 0),
           }
         })
         .sort((a, b) => b.date.getTime() - a.date.getTime()),

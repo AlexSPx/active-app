@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react'
 import type {
   WorkoutRecordRequest,
   ExerciseRecord,
-  WorkoutRecordResponse,
+  LocalWorkoutRecordingResult,
 } from '../../../types/api'
 import { WorkoutRepository } from '../../../lib/repositories/WorkoutRepository'
 import { getDatabase } from '../../../lib/db/connection'
@@ -12,7 +12,7 @@ export interface UseWorkoutRecordingReturn {
   recordWorkout: (
     workoutRecord: WorkoutRecordRequest,
     workoutTitle?: string
-  ) => Promise<WorkoutRecordResponse | null>
+  ) => Promise<LocalWorkoutRecordingResult | null>
   isRecording: boolean
   error: string | null
 }
