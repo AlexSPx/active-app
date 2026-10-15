@@ -106,7 +106,7 @@ describe('RegisterPage with native offline launch', () => {
     mockUser = { id: 'local:device', registrationCompleted: false }
   })
 
-  it('renders Step 0 with local profile setup and Get Started button replacing WorkOS', async () => {
+  it('renders Step 0 with local profile setup and I Agree button replacing WorkOS', async () => {
     let root
     await act(async () => {
       root = create(React.createElement(RegisterPage))
@@ -118,11 +118,11 @@ describe('RegisterPage with native offline launch', () => {
     // WorkOS button should not be rendered
     expect(root.root.findAllByType('mock-workos-button')).toHaveLength(0)
 
-    // Should find the "Get Started" button in Step 0
+    // Should find the "I Agree" button in Step 0
     const buttons = root.root.findAllByType('Button')
     const getStartedBtn = buttons.find((b) => {
       const text = b.findAllByType('Text')
-      return text.some((t) => t.props.children === 'Get Started')
+      return text.some((t) => t.props.children === 'I Agree')
     })
     expect(getStartedBtn).toBeDefined()
 
@@ -136,7 +136,7 @@ describe('RegisterPage with native offline launch', () => {
     await act(async () => root.unmount())
   })
 
-  it('advances from Step 0 to Step 1 upon tapping Get Started', async () => {
+  it('advances from Step 0 to Step 1 upon tapping I Agree', async () => {
     let root
     await act(async () => {
       root = create(React.createElement(RegisterPage))
@@ -145,7 +145,7 @@ describe('RegisterPage with native offline launch', () => {
     const buttons = root.root.findAllByType('Button')
     const getStartedBtn = buttons.find((b) => {
       const text = b.findAllByType('Text')
-      return text.some((t) => t.props.children === 'Get Started')
+      return text.some((t) => t.props.children === 'I Agree')
     })
 
     await act(async () => {

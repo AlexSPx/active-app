@@ -24,8 +24,18 @@ it('resolves local and connected auth destinations while preserving legal routes
     firstSegment: '(tabs)',
     secondSegment: undefined,
   }
-  expect(launchFacade.auth.resolveDestination(localRoute)).toBe('/welcome/register')
+  expect(launchFacade.auth.resolveDestination(localRoute)).toBe('/welcome')
   expect(launchFacade.auth.resolveDestination({ ...localRoute, firstSegment: 'legal' })).toBeNull()
+  expect(
+    launchFacade.auth.resolveDestination({ ...localRoute, firstSegment: 'welcome' })
+  ).toBeNull()
+  expect(
+    launchFacade.auth.resolveDestination({
+      ...localRoute,
+      firstSegment: 'welcome',
+      secondSegment: 'register',
+    })
+  ).toBeNull()
   expect(
     launchFacade.auth.resolveDestination({
       ...localRoute,
@@ -56,7 +66,7 @@ it('returns onboarding data and keeps late local hydration from requesting a ste
   })
   expect(launchFacade.onboarding.accountStep().action).toEqual({
     kind: 'continue',
-    label: 'Get Started',
+    label: 'I Agree',
   })
   expect(
     launchFacade.onboarding.isStepValid(1, {

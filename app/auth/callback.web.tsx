@@ -72,14 +72,14 @@ export default function AuthCallback() {
       const normalizedState = state ? state.replace(/\|(popup|redirect)$/, '') : null
       if (!savedState || !normalizedState || savedState !== normalizedState) {
         addLog('State mismatch or missing state in redirect flow')
-        setTimeout(() => router.replace('/welcome/home'), 3000)
+        setTimeout(() => router.replace('/welcome'), 3000)
         return
       }
 
       if (error) {
         addLog(`OAuth error: ${error}`)
         console.error('OAuth error:', error)
-        setTimeout(() => router.replace('/welcome/home'), 3000) // Delay to see logs
+        setTimeout(() => router.replace('/welcome'), 3000) // Delay to see logs
         return
       }
 
@@ -92,11 +92,11 @@ export default function AuthCallback() {
         } catch (err) {
           addLog(`Login failed: ${err}`)
           console.error('Login failed:', err)
-          setTimeout(() => router.replace('/welcome/home'), 3000)
+          setTimeout(() => router.replace('/welcome'), 3000)
         }
       } else {
         addLog('No code found, redirecting home')
-        setTimeout(() => router.replace('/welcome/home'), 3000)
+        setTimeout(() => router.replace('/welcome'), 3000)
       }
     }
 
