@@ -1,21 +1,17 @@
 import { YStack, XStack, Text, Button, ScrollView } from 'tamagui'
 import { useState } from 'react'
-import { ChevronRight, Plus } from '@tamagui/lucide-icons'
+import { ChevronRight } from '@tamagui/lucide-icons'
 import { useRouter } from 'expo-router'
 import { WeeklyView } from '../../components/WeeklyView'
 import { TodayView } from '../../components/TodayView'
-import { ProgressionWidget } from '../../components/ProgressionWidget'
-import { WidgetManager } from '../../components/WidgetManager'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { useRoutines, useActiveRoutine } from '../../features/routines'
 import { useWorkouts } from '../../features/workouts'
-import { useWidgetStore } from '../../stores/widgetStore'
-import { isBackendEnabledForLaunch } from '../../config/launchPolicy'
+import { TrainingWidgets } from '../../features/training/components/TrainingWidgets'
 
 export default function HomeScreen() {
   const router = useRouter()
-  const [widgetMode, setWidgetMode] = useState<'add' | 'manage' | null>(null)
   const [selectedDate, setSelectedDate] = useState(() => new Date())
   const {
     activeRoutine,
@@ -36,9 +32,6 @@ export default function HomeScreen() {
     refetch: refetchWorkouts,
   } = useWorkouts()
 
-  const { widgets } = useWidgetStore()
-  const showProgressionWidgets = isBackendEnabledForLaunch()
-  const sortedWidgets = [...widgets].sort((a, b) => a.position - b.position)
   const setupLoading = activeRoutineLoading || routinesLoading || workoutsLoading
   const setupError = activeRoutineError || routinesError || workoutsError
   const hasWorkouts = workouts.length > 0
@@ -139,74 +132,8 @@ export default function HomeScreen() {
           </YStack>
         )}
 
-        {showProgressionWidgets && (
-          <YStack pt="$section" pb="$section" gap="$field">
-            <XStack items="center" justify="space-between" gap="$compact" flexWrap="wrap">
-              <Text fontSize="$header" lineHeight="$header" fontWeight="600" color="$color">
-                Your widgets
-              </Text>
-              <XStack gap="$compact">
-                {sortedWidgets.length > 0 && (
-                  <Button
-                    chromeless
-                    minH="$touch"
-                    rounded="$day"
-                    onPress={() => setWidgetMode('manage')}
-                  >
-                    <Text color="$primary" fontSize="$caption" fontWeight="600">
-                      Manage
-                    </Text>
-                  </Button>
-                )}
-                <Button
-                  chromeless
-                  minH="$touch"
-                  rounded="$day"
-                  onPress={() => setWidgetMode('add')}
-                >
-                  <Plus size="$iconSmall" color="$primary" aria-hidden />
-                  <Text color="$primary" fontSize="$caption" fontWeight="600">
-                    Add
-                  </Text>
-                </Button>
-              </XStack>
-            </XStack>
-            {sortedWidgets.length > 0 ? (
-              sortedWidgets.map((widget) => <ProgressionWidget key={widget.id} config={widget} />)
-            ) : (
-              <YStack gap="$compact">
-                <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
-                  No widgets yet
-                </Text>
-                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                  Choose an exercise and metric to track your progress here.
-                </Text>
-              </YStack>
-            )}
-            <Button
-              height="$action"
-              rounded="$button"
-              bg="$surface"
-              borderColor="$borderColor"
-              borderWidth={1}
-              onPress={() => setWidgetMode('add')}
-            >
-              <Plus size="$iconSmall" color="$primary" aria-hidden />
-              <Text color="$primary" fontSize="$caption" fontWeight="600">
-                Add widget
-              </Text>
-            </Button>
-          </YStack>
-        )}
+        <TrainingWidgets />
       </YStack>
-      {showProgressionWidgets && (
-        <WidgetManager
-          isVisible={widgetMode !== null}
-          mode={widgetMode ?? 'add'}
-          onModeChange={setWidgetMode}
-          onClose={() => setWidgetMode(null)}
-        />
-      )}
     </ScrollView>
   )
 }

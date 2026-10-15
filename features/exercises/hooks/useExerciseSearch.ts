@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useExerciseRepository } from '../../../lib/hooks/useRepository'
 import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
-import { isBackendEnabledForLaunch } from '../../../config/launchPolicy'
 import type { ApiExercise } from '../../../types/api'
 
 export function useExerciseSearch() {
@@ -13,7 +12,7 @@ export function useExerciseSearch() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ownerKeys.exercises.search(searchQuery),
-    networkMode: isBackendEnabledForLaunch() ? 'online' : 'always',
+    networkMode: repo.searchNetworkMode,
     queryFn: async () => {
       if (!searchQuery.trim()) return []
       return repo.search(searchQuery.trim())

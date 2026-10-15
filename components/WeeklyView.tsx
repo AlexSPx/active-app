@@ -6,7 +6,7 @@ import { useActiveRoutine } from '../features/routines'
 import { router } from 'expo-router'
 import { routinePatternIndex, sameDay, startOfWeek, formatWeekRange } from '../utils/date'
 import { useAuth } from '../contexts/AuthContext'
-import { isBackendEnabledForLaunch } from '../config/launchPolicy'
+import { getTrainingFacade } from '../features/training/trainingFacade'
 
 interface WeeklyViewProps {
   selectedDate: Date
@@ -26,7 +26,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const monday = startOfWeek(today)
   const routine = inactive ? null : activeRoutine
   const flexible = routine?.routineType === 'WEEKLY_COMPLETION'
-  const showServerProgress = isBackendEnabledForLaunch()
+  const completed = getTrainingFacade().getWeeklyCompletion(user)
   const workoutIds = [
     ...new Set(
       routine?.pattern
@@ -34,7 +34,6 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
         .map((day) => day.workoutId!) ?? []
     ),
   ]
-  const completed = showServerProgress ? (user?.streak?.weeklyCompletedWorkoutIds ?? []) : []
 
   return (
     <YStack gap="$field">
@@ -52,7 +51,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
             <Text fontSize="$caption" color="$colorSubtle">
               Any order · Monday–Sunday
             </Text>
-            {showServerProgress && (
+            {completed !== null && (
               <Text fontSize="$caption" color="$primary">
                 {workoutIds.filter((id) => completed.includes(id)).length}/{workoutIds.length} done
               </Text>
@@ -60,7 +59,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
           </XStack>
           {workoutIds.map((id) => {
             const workout = workouts.find((item) => item.id === id)
-            const done = completed.includes(id)
+            const done = completed?.includes(id) ?? false
             return (
               <Button
                 key={id}
@@ -73,19 +72,19 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
                 borderBottomWidth={1}
                 borderColor="$borderColor"
                 accessibilityRole="button"
-                accessibilityLabel={`View workout ${workout?.title ?? 'Unavailable workout'}${showServerProgress && done ? ', completed' : ''}`}
+                accessibilityLabel={`View workout ${workout?.title ?? 'Unavailable workout'}${done ? ', completed' : ''}`}
                 disabled={!workout}
                 onPress={() =>
                   router.push({ pathname: '/(tabs)/(workouts)', params: { focusId: id } })
                 }
               >
-                {showServerProgress && done && (
+                {completed !== null && done && (
                   <Check size="$iconSmall" color="$primary" aria-hidden />
                 )}
                 <Text flex={1} fontSize="$exerciseTitle" fontWeight="600">
                   {workout?.title ?? 'Unavailable workout'}
                 </Text>
-                {showServerProgress && (
+                {completed !== null && (
                   <Text color="$colorSubtle" fontSize="$caption">
                     {done ? 'Completed' : 'Remaining'}
                   </Text>
@@ -94,7 +93,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
               </Button>
             )
           })}
-          {showServerProgress &&
+          {completed !== null &&
             workoutIds.length > 0 &&
             workoutIds.every((id) => completed.includes(id)) && (
               <Text color="$colorSubtle" fontSize="$caption">

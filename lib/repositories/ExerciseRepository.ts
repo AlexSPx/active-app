@@ -120,6 +120,10 @@ function overlayCachedExercise(
 }
 
 export class ExerciseRepository {
+  get searchNetworkMode(): 'online' | 'always' {
+    return isBackendEnabledForLaunch() ? 'online' : 'always'
+  }
+
   async search(query: string): Promise<ApiExercise[]> {
     const normalizedQuery = query.trim().toLowerCase()
     if (!normalizedQuery) return []

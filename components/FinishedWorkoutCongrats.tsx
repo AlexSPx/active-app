@@ -13,7 +13,7 @@ import {
   H4,
 } from 'tamagui'
 import { Trophy, Timer as TimerIcon, Dumbbell, BarChart2 } from '@tamagui/lucide-icons'
-import { isBackendEnabledForLaunch } from '../config/launchPolicy'
+import { getTrainingFacade } from '../features/training/trainingFacade'
 import type { WorkoutRecord } from '../types/api'
 
 export type FinishedWorkoutCongratsProps = {
@@ -81,61 +81,8 @@ export function FinishedWorkoutCongrats({
     }
   })()
 
-  const pr1rm = (() => {
-    let best = { value: 0, setIndex: null as number | null, name: '' }
-    for (const ex of data.exerciseRecords) {
-      const v = ex.achievedOneRmValue || 0
-      if (v > best.value) {
-        best = {
-          value: v,
-          setIndex: typeof ex.achievedOneRmSetIndex === 'number' ? ex.achievedOneRmSetIndex : null,
-          name: ex.exerciseName,
-        }
-      }
-    }
-    return best.value > 0 ? best : null
-  })()
-
-  const prVol = (() => {
-    let best = { value: 0, name: '' }
-    for (const ex of data.exerciseRecords) {
-      const v = ex.achievedTotalVolumeValue || 0
-      if (v > best.value) {
-        best = { value: v, name: ex.exerciseName }
-      }
-    }
-    return best.value > 0 ? best : null
-  })()
-
   const snapPoints = [85, 50, 25]
-
-  // Collect all achievements so we can render them in a scrollable list
-  const achievements = isBackendEnabledForLaunch()
-    ? data.exerciseRecords.flatMap((ex) => {
-        const items: Array<{
-          type: '1RM' | 'VOLUME'
-          value: number
-          exercise: string
-          setIndex?: number | null
-        }> = []
-        if (typeof ex.achievedOneRmValue === 'number' && ex.achievedOneRmValue > 0) {
-          items.push({
-            type: '1RM',
-            value: ex.achievedOneRmValue,
-            exercise: ex.exerciseName,
-            setIndex: ex.achievedOneRmSetIndex ?? null,
-          })
-        }
-        if (typeof ex.achievedTotalVolumeValue === 'number' && ex.achievedTotalVolumeValue > 0) {
-          items.push({
-            type: 'VOLUME',
-            value: ex.achievedTotalVolumeValue,
-            exercise: ex.exerciseName,
-          })
-        }
-        return items
-      })
-    : []
+  const achievements = getTrainingFacade().getWorkoutAchievements(data)
 
   return (
     <>

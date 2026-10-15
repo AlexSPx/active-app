@@ -2,7 +2,6 @@ jest.mock('../../lib/hooks/useRepository', () => ({ useExerciseRepository: jest.
 jest.mock('../../lib/hooks/useProfileQueryKeys', () => ({
   useProfileQueryKeys: () => ({ exercises: { search: (query) => ['exercises', query] } }),
 }))
-jest.mock('../../config/launchPolicy', () => ({ isBackendEnabledForLaunch: () => false }))
 
 const React = require('react')
 const { act, create } = require('react-test-renderer')
@@ -16,7 +15,10 @@ describe('useExerciseSearch', () => {
   })
 
   it('runs local exercise search while React Query is offline', async () => {
-    const repository = { search: jest.fn(async () => [{ id: 'local:exercise:bench' }]) }
+    const repository = {
+      searchNetworkMode: 'always',
+      search: jest.fn(async () => [{ id: 'local:exercise:bench' }]),
+    }
     useExerciseRepository.mockReturnValue(repository)
     onlineManager.setOnline(false)
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
