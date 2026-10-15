@@ -41,7 +41,7 @@ export function SettingsPage({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <YStack p="$page" gap="$section" width="100%" maxW="$content" self="center">
+          <YStack shrink={0} p="$page" gap="$section" width="100%" maxW="$content" self="center">
             <YStack gap="$field">
               <Text
                 accessibilityRole="header"

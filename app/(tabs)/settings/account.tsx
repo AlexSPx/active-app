@@ -73,14 +73,16 @@ export default function AccountSettingsScreen() {
       description={presentation.description}
     >
       <SettingsCard>
-        <YStack gap="$compact">
-          <Text fontSize="$caption" color="$colorSubtle">
-            Name
-          </Text>
-          <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
-            {fullName}
-          </Text>
-        </YStack>
+        {!presentation.profileEditor && (
+          <YStack gap="$compact">
+            <Text fontSize="$caption" color="$colorSubtle">
+              Name
+            </Text>
+            <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
+              {fullName}
+            </Text>
+          </YStack>
+        )}
         {presentation.email && (
           <YStack gap="$compact">
             <Text fontSize="$caption" color="$colorSubtle">
@@ -93,14 +95,6 @@ export default function AccountSettingsScreen() {
         )}
         {presentation.profileEditor && (
           <YStack gap="$field">
-            <YStack gap="$compact">
-              <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
-                {presentation.profileEditor.title}
-              </Text>
-              <Paragraph fontSize="$caption" color="$colorSubtle">
-                {presentation.profileEditor.description}
-              </Paragraph>
-            </YStack>
             <YStack gap="$compact">
               <Label htmlFor="account-training-first-name" fontSize="$caption" color="$colorSubtle">
                 {presentation.profileEditor.firstNameLabel}
