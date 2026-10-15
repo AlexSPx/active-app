@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useLegalRepository } from '../../../lib/hooks/useRepository'
 import { queryKeys } from '../../../lib/queryKeys'
+import { isNativeOfflineLaunch } from '../../../config/launchPolicy'
 
 type LegalContentType = 'privacy' | 'terms'
 
@@ -9,6 +10,7 @@ export function useLegal(type: LegalContentType) {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: type === 'privacy' ? queryKeys.legal.privacy : queryKeys.legal.terms,
+    networkMode: isNativeOfflineLaunch() ? 'always' : 'online',
     queryFn: async () => {
       if (type === 'privacy') {
         return repo.getPrivacyPolicy()

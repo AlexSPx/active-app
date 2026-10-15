@@ -43,6 +43,7 @@ const pausedStorage = createJSONStorage(() => ({
 }))
 
 let persistenceOperations: Promise<unknown> = Promise.resolve()
+let persistencePaused = false
 
 function enqueuePersistence<T>(operation: () => Promise<T>): Promise<T> {
   const next = persistenceOperations.then(operation, operation)
@@ -54,10 +55,21 @@ export async function flushSettingsPersistence(): Promise<void> {
   await persistenceOperations
 }
 
+export async function pauseSettingsProfilePersistence(): Promise<void> {
+  persistencePaused = true
+  await persistenceOperations
+}
+
+export function resumeSettingsProfilePersistence(): void {
+  persistencePaused = false
+}
+
 export const settingsProfileStorage = createJSONStorage(() => ({
   getItem: (name) => AsyncStorage.getItem(name),
-  setItem: (name, serializedValue) =>
-    enqueuePersistence(async () => {
+  setItem: (name, serializedValue) => {
+    if (persistencePaused) return Promise.resolve()
+    return enqueuePersistence(async () => {
+      if (persistencePaused) return
       const options = useSettingsStore.persist.getOptions()
       if (options.name !== name) {
         await AsyncStorage.setItem(name, serializedValue)
@@ -67,8 +79,14 @@ export const settingsProfileStorage = createJSONStorage(() => ({
       const currentState = useSettingsStore.getState()
       const state = options.partialize ? options.partialize(currentState) : currentState
       await AsyncStorage.setItem(name, JSON.stringify({ state, version: options.version }))
-    }),
-  removeItem: (name) => enqueuePersistence(() => AsyncStorage.removeItem(name)),
+    })
+  },
+  removeItem: (name) => {
+    if (persistencePaused) return Promise.resolve()
+    return enqueuePersistence(() =>
+      persistencePaused ? Promise.resolve() : AsyncStorage.removeItem(name)
+    )
+  },
 }))
 
 const defaultSettings = () => ({
@@ -137,7 +155,9 @@ export async function saveSettingsProfile(
   scope: ProfileScope,
   changes: SettingsProfileChanges
 ): Promise<void> {
+  if (persistencePaused) throw new Error('Settings are being cleared from this device.')
   return enqueuePersistence(async () => {
+    if (persistencePaused) throw new Error('Settings are being cleared from this device.')
     const expectedName = `settings-storage:${encodeURIComponent(scope.ownerId)}`
     const options = useSettingsStore.persist.getOptions()
     if (options.name !== expectedName || !options.storage) {

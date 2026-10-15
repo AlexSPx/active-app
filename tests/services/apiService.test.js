@@ -11,6 +11,7 @@ jest.mock(
   () => {
     mockSecureStorePackageLoads += 1
     return {
+      WHEN_UNLOCKED_THIS_DEVICE_ONLY: 42,
       getItemAsync: jest.fn(),
       setItemAsync: jest.fn(),
       deleteItemAsync: jest.fn(),
@@ -128,11 +129,13 @@ describe('API credential refresh', () => {
 
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
       config.STORAGE_KEYS.TOKEN,
-      'legacy-access'
+      'legacy-access',
+      { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY }
     )
     expect(SecureStore.setItemAsync).toHaveBeenCalledWith(
       config.STORAGE_KEYS.REFRESH_TOKEN,
-      'legacy-refresh'
+      'legacy-refresh',
+      { keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY }
     )
     expect(await AsyncStorage.getItem(config.STORAGE_KEYS.TOKEN)).toBeNull()
     expect(await AsyncStorage.getItem(config.STORAGE_KEYS.REFRESH_TOKEN)).toBeNull()

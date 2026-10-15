@@ -1,6 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createJSONStorage } from 'zustand/middleware'
-import { settingsProfileStorage, useSettingsStore } from '../features/settings/stores/settingsStore'
+import {
+  pauseSettingsProfilePersistence,
+  resumeSettingsProfilePersistence,
+  settingsProfileStorage,
+  useSettingsStore,
+} from '../features/settings/stores/settingsStore'
 import { useRunningWorkoutStore } from '../features/workout-session/stores/runningWorkoutStore'
 import { useWidgetStore } from '../stores/widgetStore'
 import { setActiveProfileOwner } from './profileScope'
@@ -9,12 +14,34 @@ const LEGACY_OWNER_KEY = 'profile-storage-owner-v1'
 const legacyKeys = ['settings-storage', 'running-workout-storage', 'widget-storage'] as const
 let transition = Promise.resolve()
 let loadedOwner: string | null = null
+let profilePersistencePaused = false
+let profilePersistenceOperations: Promise<unknown> = Promise.resolve()
+
+function enqueueProfilePersistence<T>(operation: () => Promise<T>): Promise<T> {
+  const next = profilePersistenceOperations.then(operation, operation)
+  profilePersistenceOperations = next.catch(() => {})
+  return next
+}
 const pausedStorage = createJSONStorage(() => ({
   getItem: async () => null,
   setItem: async () => {},
   removeItem: async () => {},
 }))
-const profileStorage = createJSONStorage(() => AsyncStorage)
+const profileStorage = createJSONStorage(() => ({
+  getItem: (name) => AsyncStorage.getItem(name),
+  setItem: (name, value) => {
+    if (profilePersistencePaused) return Promise.resolve()
+    return enqueueProfilePersistence(async () => {
+      if (!profilePersistencePaused) await AsyncStorage.setItem(name, value)
+    })
+  },
+  removeItem: (name) => {
+    if (profilePersistencePaused) return Promise.resolve()
+    return enqueueProfilePersistence(async () => {
+      if (!profilePersistencePaused) await AsyncStorage.removeItem(name)
+    })
+  },
+}))
 
 function storageKey(key: string, ownerId: string): string {
   return `${key}:${encodeURIComponent(ownerId)}`
@@ -72,6 +99,8 @@ async function hydrate(ownerId: string, legacyOwnerId: string | null): Promise<v
     storage: profileStorage,
   })
 
+  profilePersistencePaused = false
+  resumeSettingsProfilePersistence()
   await Promise.all([
     useSettingsStore.persist.rehydrate(),
     useRunningWorkoutStore.persist.rehydrate(),
@@ -93,4 +122,24 @@ export function hydrateProfileStores(ownerId: string, legacyOwnerId: string | nu
   })
   transition = next.catch(() => {})
   return next
+}
+
+/** Stops profile stores from recreating erased rows while local data is removed. */
+export async function suspendProfileStoresForDeviceErase(ownerId: string): Promise<void> {
+  await transition
+  profilePersistencePaused = true
+  await pauseSettingsProfilePersistence()
+  useSettingsStore.persist.setOptions({ storage: pausedStorage })
+  useRunningWorkoutStore.persist.setOptions({ storage: pausedStorage })
+  useWidgetStore.persist.setOptions({ storage: pausedStorage })
+  useSettingsStore.getState().reset()
+  useRunningWorkoutStore.getState().reset()
+  useWidgetStore.getState().reset()
+  await profilePersistenceOperations
+  loadedOwner = null
+  setActiveProfileOwner(ownerId)
+}
+
+export async function flushProfileStoragePersistence(): Promise<void> {
+  await profilePersistenceOperations
 }

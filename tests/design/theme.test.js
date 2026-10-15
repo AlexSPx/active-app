@@ -100,22 +100,18 @@ jest.mock('tamagui', () => {
     PortalProvider: require('@tamagui/portal').PortalProvider,
   }
 })
-jest.mock('expo-sqlite', () => {
+jest.mock('../../lib/db/ProfileSQLiteProvider', () => {
   const React = require('react')
   const SQLiteContext = React.createContext(null)
   return {
-    // Expo SQLite's installed provider compares DB props and ignores changed children.
-    SQLiteProvider: React.memo(
-      ({ children, databaseName }) =>
-        React.createElement(
-          SQLiteContext.Provider,
-          { value: mockSQLiteDatabase.current || databaseName },
-          children
-        ),
-      (before, after) =>
-        before.databaseName === after.databaseName && before.onInit === after.onInit
-    ),
-    useSQLiteContext: () => {
+    // Keep the database context stable across appearance changes.
+    ProfileSQLiteProvider: ({ children, databaseName }) =>
+      React.createElement(
+        SQLiteContext.Provider,
+        { value: mockSQLiteDatabase.current || databaseName },
+        children
+      ),
+    useProfileDatabase: () => {
       const database = React.useContext(SQLiteContext)
       if (!database) throw new Error('SQLite context is unavailable')
       return database
@@ -188,11 +184,11 @@ jest.mock('../../stores/authStore', () => {
 })
 jest.mock('../../components/FinishedWorkoutCongrats', () => {
   const React = require('react')
-  const { useSQLiteContext } = require('expo-sqlite')
+  const { useProfileDatabase } = require('../../lib/db/ProfileSQLiteProvider')
   const { PortalItem } = require('@tamagui/portal')
 
   function FinishedWorkoutSQLiteProbe({ data, visible }) {
-    const database = useSQLiteContext()
+    const database = useProfileDatabase()
     return React.createElement('FinishedWorkoutCongrats', {
       database,
       visible,

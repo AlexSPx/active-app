@@ -1,14 +1,26 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as SQLite from 'expo-sqlite'
+import * as FileSystem from 'expo-file-system/legacy'
 import { config } from '../config/api'
 import { useSettingsStore } from '../features/settings'
-import { saveSettingsProfile } from '../features/settings/stores/settingsStore'
+import {
+  flushSettingsPersistence,
+  saveSettingsProfile,
+} from '../features/settings/stores/settingsStore'
 import { useUiStore } from './uiStore'
 import { resetAllStores } from '../utils/storeReset'
 import { queryClient } from '../lib/queryClient'
 import { syncEngine } from '../lib/sync'
-import { hydrateProfileStores } from '../lib/profileStorage'
+import {
+  flushProfileStoragePersistence,
+  hydrateProfileStores,
+  suspendProfileStoresForDeviceErase,
+} from '../lib/profileStorage'
+import { waitForSharedDatabaseDetach } from '../lib/db/connection'
+import { completePendingDeviceErase, DEVICE_DATA_ERASE_PENDING_KEY } from '../lib/db/eraseJournal'
+import { cancelAllScheduledNotifications } from '../services/notificationService'
 import {
   getProfileScope,
   isCurrentProfile,
@@ -23,7 +35,7 @@ import {
 import { AuthRepository, UserRepository } from 'lib/repositories'
 
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
-import { networkPolicy } from './networkStore'
+import { networkPolicy, resetNetworkPreferenceAfterDeviceErase } from './networkStore'
 import { launchFacade } from '../features/launch/launchFacade'
 
 const authRepository = new AuthRepository()
@@ -171,6 +183,8 @@ interface AuthState {
   profileOwnerId: string
   legacyOwnerId: string | null
   isProfileTransitioning: boolean
+  isDeviceDataErasing: boolean
+  deviceDataEraseError: string | null
   logoutRetryRequired: boolean
   // Local access remains available when the remote session cannot be checked.
   isAuthenticated: boolean
@@ -189,6 +203,7 @@ interface AuthState {
   loginWithWorkOS: (code: string) => Promise<void>
   register: (payload: RegisterRequest) => Promise<void>
   logout: () => Promise<void>
+  eraseDeviceData: () => Promise<void>
   fetchUser: () => Promise<void>
   updateUser: (payload: UpdateUserRequest) => Promise<User | null>
   clearError: () => void
@@ -335,6 +350,8 @@ export const useAuthStore = create<AuthState>()(
       profileOwnerId: LOCAL_PROFILE_OWNER,
       legacyOwnerId: null,
       isProfileTransitioning: false,
+      isDeviceDataErasing: false,
+      deviceDataEraseError: null,
       logoutRetryRequired: false,
       isAuthenticated: false,
       serverSession: 'unknown',
@@ -475,6 +492,8 @@ export const useAuthStore = create<AuthState>()(
           }
         })
       },
+
+      eraseDeviceData: async () => runDeviceDataErase({ writeMarker: true, resumeStartup: true }),
 
       fetchUser: async () => {
         if (launchFacade.auth.profileFetchDecision() === 'skip') return
@@ -657,13 +676,20 @@ export function initializeAuth(retry = false): Promise<void> {
 }
 
 async function initializeAuthState(): Promise<void> {
-  const generation = authSessionGeneration
+  let generation = authSessionGeneration
   const startupPlan = launchFacade.auth.getStartupPlan()
   let shouldRefreshProfile = false
   try {
     if (startupPlan.kind !== 'local-profile') await networkPolicy.ready()
     const hydrationError = await waitForHydration(useAuthStore)
     if (hydrationError) throw hydrationError
+    if (generation !== authSessionGeneration) return
+
+    const resumedErase = await completePendingDeviceErase(AsyncStorage, () =>
+      runDeviceDataErase({ writeMarker: false, resumeStartup: false, removeMarker: false })
+    )
+    if (resumedErase) generation = authSessionGeneration
+    if (useAuthStore.getState().deviceDataEraseError) return
     if (generation !== authSessionGeneration) return
 
     // The last persisted auth user is the only identity allowed to claim legacy data.
@@ -685,6 +711,8 @@ async function initializeAuthState(): Promise<void> {
     const hydratedState = useAuthStore.getState()
     try {
       if (startupPlan.kind === 'local-profile') {
+        await authRepository.removeToken()
+        await authRepository.removeRefreshToken()
         useAuthStore.setState({
           isAuthenticated: !!hydratedState.user,
           token: null,
@@ -774,4 +802,204 @@ async function initializeAuthState(): Promise<void> {
       .fetchUser()
       .catch(() => {})
   }
+}
+
+const ERASED_ASYNC_STORAGE_KEYS = new Set([
+  'auth-storage',
+  'settings-storage',
+  'running-workout-storage',
+  'widget-storage',
+  'profile-storage-owner-v1',
+  'legacy_active_db_owner',
+  'legacy_active_db_import_owner',
+  'legacy_training_profile',
+  'user_token',
+  'user_refresh_token',
+  'user_data',
+  'manual-offline-v1',
+])
+const ERASED_ASYNC_STORAGE_PREFIXES = [
+  'settings-storage:',
+  'running-workout-storage:',
+  'widget-storage:',
+  'training-profile-storage:',
+]
+let deviceEraseOperation: Promise<void> | null = null
+
+function isOwnedTrainingDatabaseArtifact(name: string): boolean {
+  return (
+    name === 'active.db' ||
+    /^active\.db-(?:wal|shm|journal)$/.test(name) ||
+    /^profile-.*\.db(?:-(?:wal|shm|journal))?$/.test(name)
+  )
+}
+
+function isOwnedAsyncStorageKey(key: string): boolean {
+  return (
+    key !== DEVICE_DATA_ERASE_PENDING_KEY &&
+    (ERASED_ASYNC_STORAGE_KEYS.has(key) ||
+      ERASED_ASYNC_STORAGE_PREFIXES.some((prefix) => key.startsWith(prefix)))
+  )
+}
+
+async function eraseTrainingDatabases(): Promise<void> {
+  const directory = SQLite.defaultDatabaseDirectory
+  if (typeof directory !== 'string' || !directory) {
+    throw new Error('The local training database directory is unavailable.')
+  }
+  // SQLite exposes a native path; legacy FileSystem requires a file URI.
+  const directoryUri = directory.startsWith('file://') ? directory : `file://${directory}`
+  const info = await FileSystem.getInfoAsync(directoryUri)
+  if (!info.exists) return
+
+  const names = await FileSystem.readDirectoryAsync(directoryUri)
+  const databases = names.filter((name) => name === 'active.db' || /^profile-.*\.db$/.test(name))
+  const baseUri = directoryUri.endsWith('/') ? directoryUri : `${directoryUri}/`
+  for (const name of databases) {
+    await SQLite.deleteDatabaseAsync(encodeURIComponent(name), directory)
+    for (const suffix of ['-wal', '-shm', '-journal']) {
+      await FileSystem.deleteAsync(`${baseUri}${encodeURIComponent(name + suffix)}`, {
+        idempotent: true,
+      })
+    }
+  }
+
+  // SQLite may leave sidecars behind after an interrupted deletion.
+  for (const name of names.filter(isOwnedTrainingDatabaseArtifact)) {
+    if (!databases.includes(name)) {
+      await FileSystem.deleteAsync(`${baseUri}${encodeURIComponent(name)}`, { idempotent: true })
+    }
+  }
+
+  const remaining = (await FileSystem.readDirectoryAsync(directoryUri)).filter(
+    isOwnedTrainingDatabaseArtifact
+  )
+  if (remaining.length > 0) {
+    throw new Error('Some local training database files could not be removed.')
+  }
+}
+
+async function eraseOwnedAsyncStorage(): Promise<void> {
+  const keys = (await AsyncStorage.getAllKeys()).filter(isOwnedAsyncStorageKey)
+  if (keys.length > 0) await AsyncStorage.multiRemove(keys)
+  const remaining = (await AsyncStorage.getAllKeys()).filter(isOwnedAsyncStorageKey)
+  if (remaining.length > 0) {
+    throw new Error('Some saved profile or sign-in data could not be removed.')
+  }
+}
+
+async function eraseAppCache(): Promise<void> {
+  const directory = FileSystem.cacheDirectory
+  if (!directory) return
+  const info = await FileSystem.getInfoAsync(directory)
+  if (info.exists) await FileSystem.deleteAsync(directory, { idempotent: true })
+}
+
+function eraseFailureMessage(error: unknown): string {
+  if (error instanceof Error && error.message.trim()) return error.message
+  return 'Some data could not be removed. Retry to finish clearing this device.'
+}
+
+async function runDeviceDataErase(options: {
+  writeMarker: boolean
+  resumeStartup: boolean
+  removeMarker?: boolean
+}): Promise<void> {
+  if (deviceEraseOperation) return deviceEraseOperation
+
+  deviceEraseOperation = (async () => {
+    const generation = ++authSessionGeneration
+    authPersistenceReady = false
+    useAuthStore.setState({
+      isDeviceDataErasing: true,
+      deviceDataEraseError: null,
+      isProfileTransitioning: true,
+      isAuthenticated: false,
+      user: null,
+      token: null,
+      refreshToken: null,
+      isLoading: false,
+      isProfileLoading: false,
+      serverSession: 'unknown',
+      startupError: null,
+    })
+
+    try {
+      if (options.writeMarker) {
+        await AsyncStorage.setItem(DEVICE_DATA_ERASE_PENDING_KEY, String(Date.now()))
+      }
+      await serializeAuthTransition(async () => {
+        const pendingRequests = authRepository.invalidatePendingRequests()
+        await syncEngine.pauseAndDrain()
+        await pendingRequests
+        await queryClient.cancelQueries()
+        queryClient.clear()
+        useUiStore.getState().hideFinishedCongrats()
+
+        const erasingOwner = 'device:erase-pending'
+        setActiveProfileOwner(erasingOwner)
+        useAuthStore.setState({ profileOwnerId: erasingOwner })
+        await suspendProfileStoresForDeviceErase(erasingOwner)
+        await flushSettingsPersistence()
+        await flushProfileStoragePersistence()
+        await waitForSharedDatabaseDetach()
+        await new Promise<void>((resolve) => setTimeout(resolve, 0))
+        await cancelAllScheduledNotifications()
+        await resetAllStores()
+        await authRepository.removeToken()
+        await authRepository.removeRefreshToken()
+        await eraseTrainingDatabases()
+        await eraseAppCache()
+        await eraseOwnedAsyncStorage()
+        await resetNetworkPreferenceAfterDeviceErase()
+        setActiveProfileOwner(LOCAL_PROFILE_OWNER)
+        useAuthStore.setState({
+          profileOwnerId: LOCAL_PROFILE_OWNER,
+          legacyOwnerId: null,
+          isAuthenticated: false,
+          user: null,
+          token: null,
+          refreshToken: null,
+          serverSession: 'unknown',
+          isLoading: false,
+          isProfileLoading: false,
+          profileError: null,
+          error: null,
+          logoutRetryRequired: false,
+          isProfileTransitioning: false,
+        })
+        if (options.removeMarker !== false) {
+          await AsyncStorage.removeItem(DEVICE_DATA_ERASE_PENDING_KEY)
+        }
+      })
+
+      if (generation !== authSessionGeneration) return
+      useAuthStore.setState({ deviceDataEraseError: null })
+      if (options.resumeStartup) {
+        await initializeAuth(true)
+        if (generation !== authSessionGeneration) return
+        useAuthStore.setState({ isDeviceDataErasing: false })
+      }
+    } catch (error) {
+      console.error('Device data erase failed:', error)
+      useAuthStore.setState({
+        isDeviceDataErasing: true,
+        deviceDataEraseError: eraseFailureMessage(error),
+        isProfileTransitioning: true,
+        isAuthenticated: false,
+        user: null,
+        token: null,
+        refreshToken: null,
+        startupError: null,
+      })
+      throw error
+    } finally {
+      deviceEraseOperation = null
+      if (!useAuthStore.getState().deviceDataEraseError && !options.resumeStartup) {
+        useAuthStore.setState({ isDeviceDataErasing: false })
+      }
+    }
+  })()
+
+  return deviceEraseOperation
 }

@@ -9,6 +9,8 @@ import type {
 let Notifications: typeof import('expo-notifications') | null = null
 let initialized = false
 let scheduledId: string | null = null
+let scheduleGeneration = 0
+const pendingSchedules = new Set<Promise<void>>()
 
 /**
  * Lazily loads the expo-notifications module.
@@ -74,12 +76,26 @@ export async function initNotifications(): Promise<void> {
  * Cancels any existing 'rest' notification.
  */
 export async function scheduleRestNotification(deadlineMs: number): Promise<void> {
+  const operation = scheduleRestNotificationInternal(deadlineMs, scheduleGeneration)
+  pendingSchedules.add(operation)
+  try {
+    await operation
+  } finally {
+    pendingSchedules.delete(operation)
+  }
+}
+
+async function scheduleRestNotificationInternal(
+  deadlineMs: number,
+  generation: number
+): Promise<void> {
   const mod = await loadModule()
   if (!mod) return
 
   try {
     await cancelRestNotification()
 
+    if (generation !== scheduleGeneration) return
     const now = Date.now()
     let delayInSeconds = Math.ceil((deadlineMs - now) / 1000)
 
@@ -102,7 +118,11 @@ export async function scheduleRestNotification(deadlineMs: number): Promise<void
       content: content,
       trigger: trigger,
     })
-    scheduledId = id
+    if (generation !== scheduleGeneration) {
+      await mod.cancelScheduledNotificationAsync(id)
+    } else {
+      scheduledId = id
+    }
   } catch (error: unknown) {
     console.error('Failed to schedule notification:', error)
   }
@@ -123,4 +143,15 @@ export async function cancelRestNotification(): Promise<void> {
   } catch (error: unknown) {
     console.error('Failed to cancel notification:', error)
   }
+}
+
+/** Cancels every scheduled local notification as part of on-device data erasure. */
+export async function cancelAllScheduledNotifications(): Promise<void> {
+  scheduleGeneration += 1
+  await Promise.all(pendingSchedules)
+  const mod = await loadModule()
+  if (!mod)
+    throw new Error('Notifications are unavailable, so scheduled alerts could not be cleared.')
+  await mod.cancelAllScheduledNotificationsAsync()
+  scheduledId = null
 }

@@ -1,4 +1,6 @@
 import { apiService } from '../../services/apiService'
+import { isNativeOfflineLaunch } from '../../config/launchPolicy'
+import { PRIVACY_POLICY_CONTENT, TERMS_OF_SERVICE_CONTENT } from '../../features/legal/legalContent'
 
 const EXPORT_COMPLIANCE = `
 
@@ -8,10 +10,12 @@ You agree to comply with all applicable export and import laws and regulations, 
 
 export class LegalRepository {
   async getPrivacyPolicy(): Promise<string> {
+    if (isNativeOfflineLaunch()) return PRIVACY_POLICY_CONTENT
     return apiService.getPrivacyPolicy()
   }
 
   async getTermsOfService(): Promise<string> {
+    if (isNativeOfflineLaunch()) return TERMS_OF_SERVICE_CONTENT
     const data = await apiService.getTermsOfService()
     return data + EXPORT_COMPLIANCE
   }

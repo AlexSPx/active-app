@@ -43,11 +43,10 @@ function MenuRow({
 }
 
 export default function SettingsMenuScreen() {
-  const showSyncMenu = false
+  const localProfile = launchFacade.auth.getStartupPlan().kind === 'local-profile'
   const { logout, user } = useAuth()
   const settings = useSettingsStore()
   const account = launchFacade.settings.menuAccount(user)
-  const syncMenuEntry = launchFacade.settings.syncMenuEntry()
   const version = Application.nativeApplicationVersion || Constants.expoConfig?.version || 'Unknown'
   const confirmSignOut = () =>
     Alert.alert('Sign out of Active?', 'You’ll need to sign in again to access your account.', [
@@ -66,7 +65,7 @@ export default function SettingsMenuScreen() {
           <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
             Your settings
           </Text>
-          <Link href="/settings/account" asChild>
+          <Link href={launchFacade.settings.profileRoute() as any} asChild>
             <Button
               unstyled
               minH="$touch"
@@ -116,14 +115,19 @@ export default function SettingsMenuScreen() {
               }
               href="/settings/rest-timer"
             />
-            {showSyncMenu && (
-              <MenuRow
-                title={syncMenuEntry.title}
-                description={syncMenuEntry.description}
-                href="/settings/sync"
-              />
-            )}
           </YStack>
+          {localProfile && (
+            <YStack>
+              <Text fontSize="$caption" fontWeight="600" color="$colorSubtle" mb="$field">
+                Data
+              </Text>
+              <MenuRow
+                title="Data on this device"
+                description="Manage this training profile and erase saved data"
+                href="/settings/data"
+              />
+            </YStack>
+          )}
           <YStack>
             <Text fontSize="$caption" fontWeight="600" color="$colorSubtle" mb="$field">
               Preferences

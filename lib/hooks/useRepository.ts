@@ -5,7 +5,7 @@
  * Repositories are memoized per database instance.
  */
 import { useMemo } from 'react'
-import { useSQLiteContext } from 'expo-sqlite'
+import { useProfileDatabase } from '../db/ProfileSQLiteProvider'
 import { AuthRepository } from '../repositories/AuthRepository'
 import { ExerciseRepository } from '../repositories/ExerciseRepository'
 import { LegalRepository } from '../repositories/LegalRepository'
@@ -17,7 +17,7 @@ import { UserRepository } from '../repositories/UserRepository'
  * Returns a memoized WorkoutRepository bound to the current DB.
  */
 export function useWorkoutRepository(): WorkoutRepository {
-  const db = useSQLiteContext()
+  const db = useProfileDatabase()
   return useMemo(() => new WorkoutRepository(db), [db])
 }
 
@@ -25,7 +25,7 @@ export function useWorkoutRepository(): WorkoutRepository {
  * Returns a memoized RoutineRepository bound to the current DB.
  */
 export function useRoutineRepository(): RoutineRepository {
-  const db = useSQLiteContext()
+  const db = useProfileDatabase()
   return useMemo(() => new RoutineRepository(db), [db])
 }
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState, useColorScheme } from 'react-native'
-import { SQLiteProvider, useSQLiteContext, type SQLiteDatabase } from 'expo-sqlite'
+import type { SQLiteDatabase } from 'expo-sqlite'
+import { ProfileSQLiteProvider, useProfileDatabase } from '../lib/db/ProfileSQLiteProvider'
 import { TamaguiProvider, type TamaguiProviderProps, PortalProvider, Theme } from 'tamagui'
 import { ToastProvider, ToastViewport } from '@tamagui/toast'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -54,7 +55,7 @@ function SyncEngineBootstrap({
   children: React.ReactNode
   ownerId: string
 }) {
-  const db = useSQLiteContext()
+  const db = useProfileDatabase()
   const [readyDb, setReadyDb] = useState<SQLiteDatabase | null>(null)
   const [apiReadyOwner, setApiReadyOwner] = useState<string | null>(null)
   const apiReadyOwnerRef = useRef<string | null>(null)
@@ -584,6 +585,7 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
   const theme = useSettingsStore((state) => state.theme)
   const isStartupReady = useAuthStore((state) => state.isStartupReady)
   const startupError = useAuthStore((state) => state.startupError)
+  const isDeviceDataErasing = useAuthStore((state) => state.isDeviceDataErasing)
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
   const legacyOwnerId = useAuthStore((state) => state.legacyOwnerId)
   const activeTheme = theme === 'system' ? colorScheme : theme
@@ -690,21 +692,27 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
     [legacyOwnerId, profileOwnerId]
   )
 
+  const onDatabaseError = useCallback((error: Error) => {
+    console.error('[Provider] Could not open or close profile database:', error)
+    useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
+  }, [])
+
   useEffect(() => {
     initNotifications().catch(() => {})
   }, [])
 
   const content =
-    isStartupReady && !startupError ? (
-      <SQLiteProvider
+    isStartupReady && !startupError && !isDeviceDataErasing ? (
+      <ProfileSQLiteProvider
         key={profileOwnerId}
         databaseName={databaseNameForProfile(profileOwnerId)}
         onInit={onInit}
+        onError={onDatabaseError}
       >
         <SyncEngineBootstrap ownerId={profileOwnerId}>
           <OwnerDatabaseContent>{children}</OwnerDatabaseContent>
         </SyncEngineBootstrap>
-      </SQLiteProvider>
+      </ProfileSQLiteProvider>
     ) : (
       children
     )

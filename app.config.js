@@ -13,6 +13,7 @@ export default {
     },
     assetBundlePatterns: ['**/*'],
     ios: {
+      bundleIdentifier: 'com.alexspx.activenext',
       supportsTablet: true,
       icon: {
         dark: './assets/icons/ios-dark.png',
@@ -45,7 +46,13 @@ export default {
     },
     plugins: [
       'expo-sqlite',
-      'expo-secure-store',
+      [
+        'expo-secure-store',
+        {
+          configureAndroidBackup: false,
+        },
+      ],
+      './plugins/with-backup-exclusions',
       'expo-router',
       'expo-font',
       [
