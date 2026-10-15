@@ -3,16 +3,11 @@ import { Button, Text, XStack, YStack } from 'tamagui'
 import { Plus } from '@tamagui/lucide-icons'
 import { ProgressionWidget } from '../../../components/ProgressionWidget'
 import { WidgetManager } from '../../../components/WidgetManager'
-import { useWidgetStore, type WidgetConfig } from '../../../stores/widgetStore'
-import { launchFacade } from '../../launch/launchFacade'
+import { useWidgetStore } from '../../../stores/widgetStore'
 
 export function TrainingWidgets() {
   const { widgets } = useWidgetStore()
-  const sortedWidgets = launchFacade.training.getWidgets(widgets)
-  return sortedWidgets === null ? null : <WidgetSection widgets={sortedWidgets} />
-}
-
-function WidgetSection({ widgets: sortedWidgets }: { widgets: WidgetConfig[] }) {
+  const sortedWidgets = [...widgets].sort((a, b) => a.position - b.position)
   const [widgetMode, setWidgetMode] = useState<'add' | 'manage' | null>(null)
   return (
     <>

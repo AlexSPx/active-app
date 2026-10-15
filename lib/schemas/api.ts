@@ -164,6 +164,7 @@ export const workoutsArraySchema = z.array(workoutSchema)
 // ==========================================
 
 export const workoutRecordExerciseSchema = z.object({
+  exerciseId: z.string().optional(),
   exerciseName: z.string(),
   reps: z.array(z.number()),
   weight: z.array(z.number()),

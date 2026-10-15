@@ -87,6 +87,8 @@ jest.mock('../../components/ui/LoadingSpinner', () => {
 
 const React = require('react')
 const { act, create } = require('react-test-renderer')
+const { Platform } = require('react-native')
+const originalPlatform = Platform.OS
 const { useRouter } = require('expo-router')
 const { useActiveRoutine, useRoutines } = require('../../features/routines')
 const { useWorkouts } = require('../../features/workouts')
@@ -160,6 +162,10 @@ beforeEach(() => {
   useAuth.mockReturnValue({ user: null })
 })
 
+afterEach(() => {
+  Platform.OS = originalPlatform
+})
+
 describe('Home empty and setup states', () => {
   it('shows setup and a non-interactive week preview for a new account', () => {
     setHomeData()
@@ -176,8 +182,9 @@ describe('Home empty and setup states', () => {
       ])
     )
     expect(renderer.root.findByType('WeeklyView').props.inactive).toBe(true)
-    expect(text).not.toContain('Your widgets')
-    expect(getButton(renderer, 'Add widget')).toBeUndefined()
+    expect(text).toContain('Your widgets')
+    expect(text).toContain('No widgets yet')
+    expect(getButton(renderer, 'Add widget')).toBeDefined()
 
     act(() => getButton(renderer, 'Create workout').props.onPress())
     expect(mockPush).toHaveBeenCalledWith('/workouts/new')
@@ -244,29 +251,52 @@ describe('Home empty and setup states', () => {
     expect(mockPush).toHaveBeenCalledWith('/(tabs)/(workouts)/routines')
   })
 
-  it('restores the active plan without showing backend-only progression widgets offline', () => {
-    const widget = { id: 'widget-1', position: 0 }
-    setHomeData({
-      activeRoutine: { id: 'routine-1' },
-      routines: [{ id: 'routine-1' }],
-      workouts: [{ id: 'workout-1' }],
-      widgets: [widget],
-    })
-    const renderer = renderHome()
+  it.each(['android', 'ios', 'web'])(
+    'restores the active plan and saved charts in position order on %s',
+    (platform) => {
+      Platform.OS = platform
+      const widgets = [
+        { id: 'later', position: 2, exerciseId: 'squat', exerciseName: 'Squat', metric: 'volume' },
+        { id: 'first', position: 1, exerciseId: 'bench', exerciseName: 'Bench', metric: 'oneRm' },
+      ]
+      setHomeData({
+        activeRoutine: { id: 'routine-1' },
+        routines: [{ id: 'routine-1' }],
+        workouts: [{ id: 'workout-1' }],
+        widgets,
+      })
+      const renderer = renderHome()
 
-    expect(renderer.root.findAllByType('TodayView')).toHaveLength(1)
-    expect(renderer.root.findAllByType('WeeklyView')).toHaveLength(1)
-    expect(renderer.root.findByType('WeeklyView').props.inactive).toBeUndefined()
-    expect(renderer.root.findAllByType('ProgressionWidget')).toHaveLength(0)
-    expect(renderer.root.findAllByType('WidgetManager')).toHaveLength(0)
-    expect(visibleText(renderer)).not.toContain('Your widgets')
-  })
+      expect(renderer.root.findAllByType('TodayView')).toHaveLength(1)
+      expect(renderer.root.findAllByType('WeeklyView')).toHaveLength(1)
+      expect(renderer.root.findByType('WeeklyView').props.inactive).toBeUndefined()
+      expect(
+        renderer.root.findAllByType('ProgressionWidget').map((widget) => widget.props.config)
+      ).toEqual([widgets[1], widgets[0]])
+      expect(widgets.map((widget) => widget.id)).toEqual(['later', 'first'])
+      expect(visibleText(renderer)).toContain('Your widgets')
+      act(() => getButton(renderer, 'Manage').props.onPress())
+      expect(renderer.root.findByType('WidgetManager').props).toMatchObject({
+        isVisible: true,
+        mode: 'manage',
+      })
+      act(() => getButton(renderer, 'Add widget').props.onPress())
+      expect(renderer.root.findByType('WidgetManager').props).toMatchObject({
+        isVisible: true,
+        mode: 'add',
+      })
+    }
+  )
 
-  it('keeps the backend-only widget manager unavailable during offline launch', () => {
+  it('opens the existing widget add flow during offline launch', () => {
     setHomeData({ workouts: [{ id: 'workout-1' }] })
     const renderer = renderHome()
 
-    expect(renderer.root.findAllByType('WidgetManager')).toHaveLength(0)
+    act(() => getButton(renderer, 'Add widget').props.onPress())
+    expect(renderer.root.findByType('WidgetManager').props).toMatchObject({
+      isVisible: true,
+      mode: 'add',
+    })
   })
 
   it('keeps scheduled days selectable and marks the selected day in the active calendar', () => {
