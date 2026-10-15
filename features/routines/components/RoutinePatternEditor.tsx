@@ -133,7 +133,7 @@ export function RoutinePatternEditor({
             {pattern.length === 1 ? 'Repeats every day' : `Repeats every ${pattern.length} days`} ·{' '}
             {training} training · {pattern.length - training} rest
           </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexShrink: 0 }}>
             <XStack gap="$compact">
               {pattern.map((item, itemIndex) => (
                 <Button
