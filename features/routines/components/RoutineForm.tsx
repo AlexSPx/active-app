@@ -31,6 +31,7 @@ interface RoutineFormProps {
 }
 
 export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFormProps) {
+  const isEditing = !!initialValues
   const navigation = useNavigation()
   const insets = useSafeAreaInsets()
   const theme = useTheme()
@@ -90,7 +91,7 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
   })
   useEffect(() => {
     navigation.setOptions({
-      title: 'Routines',
+      title: isEditing ? 'Edit routine' : 'Create routine',
       headerBackVisible: false,
       headerRight: () => (
         <Button
@@ -104,7 +105,7 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
         </Button>
       ),
     })
-  }, [navigation, busy])
+  }, [navigation, busy, isEditing])
   useEffect(() => {
     if (saved) router.back()
   }, [saved])
@@ -135,9 +136,6 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
           showsVerticalScrollIndicator={false}
         >
           <YStack width="100%" maxW="$content" self="center" p="$page" gap="$section">
-            <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
-              {initialValues ? 'Edit routine' : 'Create routine'}
-            </Text>
             {error && (
               <Text
                 accessibilityRole="alert"
@@ -149,9 +147,24 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
               </Text>
             )}
             <YStack gap="$field">
-              <Text fontSize="$caption" fontWeight="600">
-                Routine name
-              </Text>
+              <XStack items="center" justify="space-between">
+                <Text fontSize="$caption" fontWeight="600">
+                  Routine name
+                </Text>
+                <Button
+                  chromeless
+                  color="$primary"
+                  minH="$touch"
+                  px="$0"
+                  accessibilityLabel={
+                    notesOpen ? 'Hide routine notes' : 'Edit optional routine notes'
+                  }
+                  accessibilityState={{ expanded: notesOpen }}
+                  onPress={() => setNotesOpen(!notesOpen)}
+                >
+                  {notesOpen ? 'Hide notes' : data.description ? 'Edit notes' : '+ Notes'}
+                </Button>
+              </XStack>
               <Input
                 accessibilityLabel="Routine name"
                 value={data.name}
@@ -163,22 +176,6 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
                 bg="$surface"
                 fontSize="$body"
               />
-              <XStack items="center" justify="space-between">
-                <Text fontSize="$caption" fontWeight="600">
-                  Notes{' '}
-                  <Text color="$colorSubtle" fontWeight="400">
-                    (optional)
-                  </Text>
-                </Text>
-                <Button
-                  chromeless
-                  color="$primary"
-                  minH="$touch"
-                  onPress={() => setNotesOpen(!notesOpen)}
-                >
-                  {notesOpen ? 'Hide' : data.description ? 'Edit' : 'Add'}
-                </Button>
-              </XStack>
               {notesOpen && (
                 <TextArea
                   accessibilityLabel="Routine notes"
@@ -216,11 +213,6 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
                   </Button>
                 ))}
               </XStack>
-              <Text color="$colorSubtle" fontSize="$caption" lineHeight="$caption">
-                {data.routineType === 'SEQUENTIAL'
-                  ? 'Repeat training and rest days in a set order.'
-                  : 'Complete your workouts each week, in any order.'}
-              </Text>
               <RoutinePatternEditor
                 key={data.routineType}
                 pattern={data.pattern}
