@@ -4,11 +4,11 @@ import { Plus } from '@tamagui/lucide-icons'
 import { ProgressionWidget } from '../../../components/ProgressionWidget'
 import { WidgetManager } from '../../../components/WidgetManager'
 import { useWidgetStore, type WidgetConfig } from '../../../stores/widgetStore'
-import { getTrainingFacade } from '../trainingFacade'
+import { launchFacade } from '../../launch/launchFacade'
 
 export function TrainingWidgets() {
   const { widgets } = useWidgetStore()
-  const sortedWidgets = getTrainingFacade().getWidgets(widgets)
+  const sortedWidgets = launchFacade.training.getWidgets(widgets)
   return sortedWidgets === null ? null : <WidgetSection widgets={sortedWidgets} />
 }
 

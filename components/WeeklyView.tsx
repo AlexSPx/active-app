@@ -6,7 +6,7 @@ import { useActiveRoutine } from '../features/routines'
 import { router } from 'expo-router'
 import { routinePatternIndex, sameDay, startOfWeek, formatWeekRange } from '../utils/date'
 import { useAuth } from '../contexts/AuthContext'
-import { getTrainingFacade } from '../features/training/trainingFacade'
+import { launchFacade } from '../features/launch/launchFacade'
 
 interface WeeklyViewProps {
   selectedDate: Date
@@ -26,7 +26,7 @@ export const WeeklyView: React.FC<WeeklyViewProps> = ({
   const monday = startOfWeek(today)
   const routine = inactive ? null : activeRoutine
   const flexible = routine?.routineType === 'WEEKLY_COMPLETION'
-  const completed = getTrainingFacade().getWeeklyCompletion(user)
+  const completed = launchFacade.training.getWeeklyCompletion(user)
   const workoutIds = [
     ...new Set(
       routine?.pattern

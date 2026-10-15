@@ -4,8 +4,7 @@ import { useEffect } from 'react'
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router'
 import { Button, Text, YStack, Spinner } from 'tamagui'
 import { initializeAuth, useAuthStore } from '../stores/authStore'
-import { LOCAL_PROFILE_OWNER } from '../lib/profileScope'
-import { isNativeOfflineLaunch } from '../config/launchPolicy'
+import { launchFacade } from '../features/launch/launchFacade'
 
 export function AuthGuard() {
   const { isAuthenticated, user, isLoading } = useAuth()
@@ -26,41 +25,14 @@ export function AuthGuard() {
     // Wait until the root navigation is mounted to avoid navigating before mount
     if (!navigationState?.key || !isStartupReady) return
 
-    const inWelcomeGroup = segments[0] === 'welcome'
-    const inLegalGroup = segments[0] === 'legal'
-    const isPublicRoute = inWelcomeGroup || inLegalGroup
-    const isRegistering = segments[1] === 'register'
-
-    if (isNativeOfflineLaunch()) {
-      const needsOnboarding =
-        profileOwnerId === LOCAL_PROFILE_OWNER
-          ? user?.registrationCompleted !== true
-          : user?.registrationCompleted === false
-
-      if (needsOnboarding && !isRegistering && !inLegalGroup) {
-        router.replace('/welcome/register' as any)
-      } else if (!needsOnboarding && inWelcomeGroup) {
-        router.replace('/(tabs)' as any)
-      }
-      return
-    }
-
-    if (!isAuthenticated && !isPublicRoute) {
-      // Redirect to welcome screen if not authenticated
-      router.replace('/welcome' as any)
-    } else if (isAuthenticated) {
-      // If authenticated but registration not completed, force to register screen
-      // unless already there.
-      // Backwards compatibility: only redirect if explicitly false (not undefined)
-      if (user && user.registrationCompleted === false && !isRegistering) {
-        router.replace('/welcome/register' as any)
-      }
-      // If authenticated AND registration completed (or legacy/undefined), and trying to access welcome pages
-      // redirect to main app. Allow legal pages.
-      else if (user && user.registrationCompleted !== false && inWelcomeGroup) {
-        router.replace('/(tabs)' as any)
-      }
-    }
+    const destination = launchFacade.auth.resolveDestination({
+      isAuthenticated,
+      user,
+      profileOwnerId,
+      firstSegment: segments[0],
+      secondSegment: segments[1],
+    })
+    if (destination) router.replace(destination as any)
   }, [isAuthenticated, isStartupReady, segments, navigationState?.key, profileOwnerId, user])
 
   if (!isStartupReady || isAuthenticated == null || (isLoading && !isAuthenticated)) {

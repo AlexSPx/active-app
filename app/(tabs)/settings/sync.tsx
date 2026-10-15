@@ -2,8 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert } from 'react-native'
 import { Stack, useFocusEffect } from 'expo-router'
 import { Button, Label, Paragraph, Switch, Text, XStack, YStack } from 'tamagui'
-import { isSyncEnabledForLaunch } from '../../../config/launchPolicy'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { launchFacade } from '../../../features/launch/launchFacade'
 import { WorkOSSignInButton } from '../../../components/WorkOSSignInButton'
 import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 import { syncEngine } from '../../../lib/sync'
@@ -51,24 +51,27 @@ function jobMessage(job: SyncJob): string {
 }
 
 export default function SyncSettingsScreen() {
-  if (!isSyncEnabledForLaunch()) return <LocalStorageScreen />
-  return <SyncSettingsContent />
+  const presentation = launchFacade.settings.syncPage()
+  if (presentation.kind === 'local-storage') {
+    return <LocalStorageScreen title={presentation.title} description={presentation.description} />
+  }
+  return <SyncSettingsContent title={presentation.title} description={presentation.description} />
 }
 
-function LocalStorageScreen() {
+function LocalStorageScreen({ title, description }: { title: string; description: string }) {
   return (
     <>
-      <Stack.Screen options={{ title: 'Local storage' }} />
-      <SettingsPage title="Local storage">
+      <Stack.Screen options={{ title }} />
+      <SettingsPage title={title}>
         <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle" selectable>
-          Your training data is saved on this device.
+          {description}
         </Paragraph>
       </SettingsPage>
     </>
   )
 }
 
-function SyncSettingsContent() {
+function SyncSettingsContent({ title, description }: { title: string; description: string }) {
   const { manualOffline, isReady, restoreError, setManualOffline, retryRestore } = useNetworkStore()
   const networkReady = isReady && !restoreError
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
@@ -199,11 +202,8 @@ function SyncSettingsContent() {
 
   return (
     <>
-      <Stack.Screen options={{ title: 'Synchronization' }} />
-      <SettingsPage
-        title="Synchronization"
-        description="Changes stay on this device until they sync with your account."
-      >
+      <Stack.Screen options={{ title }} />
+      <SettingsPage title={title} description={description}>
         <XStack items="center" justify="space-between" gap="$field">
           <YStack flex={1} gap="$compact">
             <Label htmlFor="sync-offline" fontSize="$body" fontWeight="600">

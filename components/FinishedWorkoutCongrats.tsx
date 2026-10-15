@@ -13,7 +13,7 @@ import {
   H4,
 } from 'tamagui'
 import { Trophy, Timer as TimerIcon, Dumbbell, BarChart2 } from '@tamagui/lucide-icons'
-import { getTrainingFacade } from '../features/training/trainingFacade'
+import { launchFacade } from '../features/launch/launchFacade'
 import type { WorkoutRecord } from '../types/api'
 
 export type FinishedWorkoutCongratsProps = {
@@ -82,7 +82,7 @@ export function FinishedWorkoutCongrats({
   })()
 
   const snapPoints = [85, 50, 25]
-  const achievements = getTrainingFacade().getWorkoutAchievements(data)
+  const achievements = launchFacade.training.getWorkoutAchievements(data)
 
   return (
     <>

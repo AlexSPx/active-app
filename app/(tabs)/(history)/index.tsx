@@ -15,7 +15,7 @@ import {
   toISODate,
 } from '../../../features/history'
 import { parseServerUtcDate } from '../../../utils/date'
-import { getTrainingFacade } from '../../../features/training/trainingFacade'
+import { launchFacade } from '../../../features/launch/launchFacade'
 
 export default function HistoryPage() {
   const router = useRouter()
@@ -38,7 +38,7 @@ export default function HistoryPage() {
             (sum, ex) => sum + (ex.reps?.length || 0),
             0
           )
-          const achievements = getTrainingFacade().getWorkoutAchievements(record)
+          const achievements = launchFacade.training.getWorkoutAchievements(record)
           return {
             id: record.id || `${record.workoutId}-${record.createdAt}`,
             name: record.workoutTitle,

@@ -1,7 +1,7 @@
 jest.mock('react-native', () => ({ Platform: { OS: 'android' } }))
 
 const { Platform } = require('react-native')
-const { getTrainingFacade } = require('../../features/training/trainingFacade')
+const { launchFacade } = require('../../features/launch/launchFacade')
 
 const exercise = {
   exerciseName: 'Bench press',
@@ -30,7 +30,7 @@ it.each(['android', 'ios'])(
   'omits unavailable training features on %s without changing cached data',
   (platform) => {
     Platform.OS = platform
-    const training = getTrainingFacade()
+    const training = launchFacade.training
 
     expect(training.getWidgets(widgets)).toBeNull()
     expect(training.getReminderFrequency(user)).toBeNull()
@@ -44,7 +44,7 @@ it.each(['android', 'ios'])(
 
 it('retains connected training features and explicit reminder Off on web', () => {
   Platform.OS = 'web'
-  const training = getTrainingFacade()
+  const training = launchFacade.training
 
   expect(training.getWidgets(widgets).map((widget) => widget.id)).toEqual(['first', 'later'])
   expect(widgets.map((widget) => widget.id)).toEqual(['later', 'first'])

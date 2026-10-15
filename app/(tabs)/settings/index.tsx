@@ -4,11 +4,11 @@ import { Button, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui'
 import { ChevronRight, LogOut } from '@tamagui/lucide-icons'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
-import { isNativeOfflineLaunch, isSyncEnabledForLaunch } from '../../../config/launchPolicy'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useSettingsStore } from '../../../features/settings'
 import { measurementText } from '../../../features/settings/inputs'
 import NotificationPermissions from '../../../components/NotificationPermissions'
+import { launchFacade } from '../../../features/launch/launchFacade'
 
 function MenuRow({
   title,
@@ -44,12 +44,10 @@ function MenuRow({
 
 export default function SettingsMenuScreen() {
   const showSyncMenu = false
-  const isNativeOffline = isNativeOfflineLaunch()
-  const isNativeLocalOnly = !isSyncEnabledForLaunch()
   const { logout, user } = useAuth()
   const settings = useSettingsStore()
-  const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ')
-  const name = userName || (isNativeOffline ? 'Training profile' : user?.username || 'Your account')
+  const account = launchFacade.settings.menuAccount(user)
+  const syncMenuEntry = launchFacade.settings.syncMenuEntry()
   const version = Application.nativeApplicationVersion || Constants.expoConfig?.version || 'Unknown'
   const confirmSignOut = () =>
     Alert.alert('Sign out of Active?', 'You’ll need to sign in again to access your account.', [
@@ -74,21 +72,21 @@ export default function SettingsMenuScreen() {
               minH="$touch"
               py="$field"
               pressStyle={{ bg: '$backgroundPress' }}
-              accessibilityLabel={isNativeOffline ? 'Training profile' : 'Your account'}
+              accessibilityLabel={account.accessibilityLabel}
             >
               <XStack gap="$field" items="center">
                 <YStack flex={1} gap="$compact">
                   <Text fontSize="$sectionTitle" lineHeight="$sectionTitle" fontWeight="600">
-                    {name}
+                    {account.name}
                   </Text>
-                  {!isNativeOffline && !!user?.email && (
+                  {account.email && (
                     <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                      {user.email}
+                      {account.email}
                     </Text>
                   )}
                 </YStack>
                 <Text fontSize="$caption" color="$primary">
-                  {isNativeOffline ? 'Profile →' : 'Account →'}
+                  {account.linkLabel}
                 </Text>
               </XStack>
             </Button>
@@ -120,12 +118,8 @@ export default function SettingsMenuScreen() {
             />
             {showSyncMenu && (
               <MenuRow
-                title={isNativeLocalOnly ? 'Local storage' : 'Synchronization'}
-                description={
-                  isNativeLocalOnly
-                    ? 'Your training data is saved on this device'
-                    : 'Review queued changes and retry uploads'
-                }
+                title={syncMenuEntry.title}
+                description={syncMenuEntry.description}
                 href="/settings/sync"
               />
             )}
@@ -150,7 +144,7 @@ export default function SettingsMenuScreen() {
               href="/settings/permissions"
             />
           </YStack>
-          {!isNativeOffline && (
+          {account.signOutAction && (
             <Button
               chromeless
               self="flex-start"
@@ -159,7 +153,7 @@ export default function SettingsMenuScreen() {
               icon={<LogOut size="$iconSmall" />}
               onPress={confirmSignOut}
             >
-              Sign out
+              {account.signOutAction.label}
             </Button>
           )}
           <YStack gap="$compact">
