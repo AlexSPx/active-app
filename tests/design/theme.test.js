@@ -22,6 +22,8 @@ jest.mock('react-native', () => {
 jest.mock('../../config/launchPolicy', () => ({
   ...jest.requireActual('../../config/launchPolicy'),
   isNativeOfflineLaunch: () => false,
+  isBackendEnabledForLaunch: () => true,
+  isSyncEnabledForLaunch: () => true,
 }))
 jest.mock('@tamagui/core', () => ({ useEvent: (callback) => callback }))
 jest.mock(

@@ -6,6 +6,10 @@ jest.mock('../../lib/sync', () => ({
     resolveId: jest.fn((_table, id) => id),
   },
 }))
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isSyncEnabledForLaunch: () => true,
+}))
 
 const { syncEngine } = require('../../lib/sync')
 const { WorkoutRepository } = require('../../lib/repositories/WorkoutRepository')

@@ -1,4 +1,8 @@
 jest.mock('../../services/apiService', () => ({ apiService: {} }))
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isSyncEnabledForLaunch: () => true,
+}))
 
 const { FakeDb, createApi, makeJob } = require('../helpers/syncTestUtils')
 

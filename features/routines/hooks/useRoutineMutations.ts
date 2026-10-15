@@ -28,12 +28,14 @@ export function useRoutineMutations() {
   }
 
   const createMutation = useMutation({
+    networkMode: 'always',
     mutationFn: (payload: CreateRoutineRequest) => repo.create(payload),
     retry: false,
     onSuccess: invalidateRoutines,
   })
 
   const updateMutation = useMutation({
+    networkMode: 'always',
     mutationFn: ({ routineId, payload }: { routineId: string; payload: UpdateRoutineRequest }) =>
       repo.update(routineId, payload),
     retry: false,
@@ -41,6 +43,7 @@ export function useRoutineMutations() {
   })
 
   const deleteMutation = useMutation({
+    networkMode: 'always',
     mutationFn: (routineId: string) => repo.delete(routineId),
     retry: false,
     onSuccess: invalidateRoutines,

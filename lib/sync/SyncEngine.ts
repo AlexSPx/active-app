@@ -14,6 +14,7 @@
 import { type SQLiteDatabase } from 'expo-sqlite'
 import * as Network from 'expo-network'
 import { AppState, type AppStateStatus } from 'react-native'
+import { isSyncEnabledForLaunch } from '../../config/launchPolicy'
 import type { WorkoutRecord, EntityVersion } from '../../types/api'
 import { syncApi, type SyncApi } from './api'
 import { replaceQueuedIdReferences } from './queuePayloadRemap'
@@ -337,17 +338,14 @@ export class SyncEngine {
     this.db = db
     this.dbScope = scope
     this.authenticationPaused = false
+    if (!isSyncEnabledForLaunch()) {
+      this.uploadsEnabled = false
+      this.enableAfterInit = false
+      this.resumeAfterDrain = false
+    }
 
     // A stopped processor must settle before abandoned jobs become eligible again.
     await this.drainPromise?.catch(() => {})
-    if (lifecycleGeneration !== this.lifecycleGeneration || !this.isCurrentEngine(db, scope)) return
-    await this.writeQueue(
-      db,
-      scope,
-      'UPDATE sync_queue SET status = ? WHERE status = ?',
-      'pending',
-      'processing'
-    )
     if (lifecycleGeneration !== this.lifecycleGeneration || !this.isCurrentEngine(db, scope)) return
 
     // Ensure pragmas on this handle
@@ -363,6 +361,18 @@ export class SyncEngine {
       this.remappedIds.set(`${remap.table_name}:${remap.old_id}`, remap.new_id)
       this.emitIdRemap(remap.table_name, remap.old_id, remap.new_id)
     }
+
+    // Local-only launches keep queue rows untouched and never activate its processor.
+    if (!isSyncEnabledForLaunch()) return
+
+    await this.writeQueue(
+      db,
+      scope,
+      'UPDATE sync_queue SET status = ? WHERE status = ?',
+      'pending',
+      'processing'
+    )
+    if (lifecycleGeneration !== this.lifecycleGeneration || !this.isCurrentEngine(db, scope)) return
 
     this.authenticationPaused = !!(await db.getFirstAsync<{ id: string }>(
       'SELECT id FROM sync_queue WHERE status = ? LIMIT 1',
@@ -392,8 +402,8 @@ export class SyncEngine {
   }
 
   setUploadsEnabled(enabled: boolean): void {
-    this.uploadsEnabled = enabled
-    if (!enabled) {
+    this.uploadsEnabled = enabled && isSyncEnabledForLaunch()
+    if (!this.uploadsEnabled) {
       this.clearRetryTimer()
       this.enableAfterInit = false
       this.resumeAfterDrain = false
@@ -536,6 +546,9 @@ export class SyncEngine {
   }
 
   async retryJob(jobId: string): Promise<void> {
+    if (!isSyncEnabledForLaunch()) {
+      throw new Error('Sync is disabled by the native launch policy.')
+    }
     const db = this.db
     const scope = this.dbScope
     if (!db || !scope || !this.isCurrentEngine(db, scope)) {
@@ -567,6 +580,9 @@ export class SyncEngine {
   }
 
   async discardJob(jobId: string): Promise<void> {
+    if (!isSyncEnabledForLaunch()) {
+      throw new Error('Sync is disabled by the native launch policy.')
+    }
     const db = this.db
     const scope = this.dbScope
     if (!db || !scope || !this.isCurrentEngine(db, scope)) {
@@ -609,6 +625,7 @@ export class SyncEngine {
     db: SQLiteDatabase | null = this.db,
     options: EnqueueOptions = {}
   ): Promise<void> {
+    if (!isSyncEnabledForLaunch()) return
     if (!db) {
       console.warn('[SyncEngine] enqueue called before init — ignoring')
       return
@@ -649,6 +666,7 @@ export class SyncEngine {
   // -----------------------------------------------------------------------
 
   async processQueue(): Promise<void> {
+    if (!isSyncEnabledForLaunch()) return
     if (this.drainPromise) {
       this.drainRequested = true
       return this.drainPromise

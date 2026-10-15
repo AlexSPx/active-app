@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Alert } from 'react-native'
 import { Stack, useFocusEffect } from 'expo-router'
 import { Button, Label, Paragraph, Switch, Text, XStack, YStack } from 'tamagui'
+import { isSyncEnabledForLaunch } from '../../../config/launchPolicy'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
 import { WorkOSSignInButton } from '../../../components/WorkOSSignInButton'
 import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
@@ -50,6 +51,24 @@ function jobMessage(job: SyncJob): string {
 }
 
 export default function SyncSettingsScreen() {
+  if (!isSyncEnabledForLaunch()) return <LocalStorageScreen />
+  return <SyncSettingsContent />
+}
+
+function LocalStorageScreen() {
+  return (
+    <>
+      <Stack.Screen options={{ title: 'Local storage' }} />
+      <SettingsPage title="Local storage">
+        <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle" selectable>
+          Your training data is saved on this device.
+        </Paragraph>
+      </SettingsPage>
+    </>
+  )
+}
+
+function SyncSettingsContent() {
   const { manualOffline, isReady, restoreError, setManualOffline, retryRestore } = useNetworkStore()
   const networkReady = isReady && !restoreError
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
@@ -137,18 +156,14 @@ export default function SyncSettingsScreen() {
     const message = job.request_payload
       ? 'This stops retries. The server may already have applied this change if its reply was lost. Your local training data and related queued changes stay on this device.'
       : 'This stops only this upload. Your local training data and related queued changes stay on this device.'
-    Alert.alert(
-      'Discard this queued change?',
-      message,
-      [
-        { text: 'Keep change', style: 'cancel' },
-        {
-          text: 'Discard change',
-          style: 'destructive',
-          onPress: () => void runJobAction(job.id, () => syncEngine.discardJob(job.id)),
-        },
-      ]
-    )
+    Alert.alert('Discard this queued change?', message, [
+      { text: 'Keep change', style: 'cancel' },
+      {
+        text: 'Discard change',
+        style: 'destructive',
+        onPress: () => void runJobAction(job.id, () => syncEngine.discardJob(job.id)),
+      },
+    ])
   }
 
   const updateManualOffline = async (nextValue: boolean) => {

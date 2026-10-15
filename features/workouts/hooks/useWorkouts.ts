@@ -16,6 +16,7 @@ export function useWorkouts(): UseWorkoutsReturn {
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ownerKeys.workouts.list(),
+    networkMode: 'always',
     queryFn: async () => {
       return repo.getAll()
     },

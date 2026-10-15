@@ -1,9 +1,10 @@
-import { Alert, Platform } from 'react-native'
+import { Alert } from 'react-native'
 import { Link } from 'expo-router'
 import { Button, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui'
 import { ChevronRight, LogOut } from '@tamagui/lucide-icons'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
+import { isNativeOfflineLaunch, isSyncEnabledForLaunch } from '../../../config/launchPolicy'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useSettingsStore } from '../../../features/settings'
 import { measurementText } from '../../../features/settings/inputs'
@@ -42,7 +43,9 @@ function MenuRow({
 }
 
 export default function SettingsMenuScreen() {
-  const isNativeOffline = Platform.OS !== 'web'
+  const showSyncMenu = false
+  const isNativeOffline = isNativeOfflineLaunch()
+  const isNativeLocalOnly = !isSyncEnabledForLaunch()
   const { logout, user } = useAuth()
   const settings = useSettingsStore()
   const userName = [user?.firstName, user?.lastName].filter(Boolean).join(' ')
@@ -115,11 +118,17 @@ export default function SettingsMenuScreen() {
               }
               href="/settings/rest-timer"
             />
-            <MenuRow
-              title="Synchronization"
-              description="Review queued changes and retry uploads"
-              href="/settings/sync"
-            />
+            {showSyncMenu && (
+              <MenuRow
+                title={isNativeLocalOnly ? 'Local storage' : 'Synchronization'}
+                description={
+                  isNativeLocalOnly
+                    ? 'Your training data is saved on this device'
+                    : 'Review queued changes and retry uploads'
+                }
+                href="/settings/sync"
+              />
+            )}
           </YStack>
           <YStack>
             <Text fontSize="$caption" fontWeight="600" color="$colorSubtle" mb="$field">

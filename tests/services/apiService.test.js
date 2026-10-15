@@ -22,6 +22,11 @@ jest.mock(
 const AsyncStorage = require('@react-native-async-storage/async-storage')
 const SecureStore = require('expo-secure-store')
 const { config } = require('../../config/api')
+jest.mock('../../config/launchPolicy', () => ({
+  ...jest.requireActual('../../config/launchPolicy'),
+  isBackendEnabledForLaunch: () => true,
+}))
+
 const { apiService } = require('../../services/apiService')
 let secureItems = new Map()
 

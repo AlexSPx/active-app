@@ -28,7 +28,12 @@ import { isMissingLocalUserProfile, UserRepository } from '../lib/repositories/U
 import { useNetworkStore } from '../stores/networkStore'
 import { apiService } from '../services/apiService'
 import { remapRunningWorkoutId } from '../features/workout-session/stores/runningWorkoutStore'
-import { isNativeOfflineLaunch, nativeLaunchPolicy } from '../config/launchPolicy'
+import {
+  isBackendEnabledForLaunch,
+  isNativeOfflineLaunch,
+  isSyncEnabledForLaunch,
+  nativeLaunchPolicy,
+} from '../config/launchPolicy'
 import {
   databaseNameForProfile,
   getProfileScope,
@@ -98,7 +103,7 @@ function SyncEngineBootstrap({
 
     setReadyDb(null)
     syncEngine.setConnectivityManaged(true)
-    if (isNativeOfflineLaunch() && !nativeLaunchPolicy.syncEnabled) {
+    if (!isSyncEnabledForLaunch()) {
       syncEngine.setUploadsEnabled(false)
     }
     syncEngine
@@ -157,7 +162,7 @@ function SyncEngineBootstrap({
   ])
 
   useEffect(() => {
-    if (isNativeOfflineLaunch() && !nativeLaunchPolicy.backendEnabled) {
+    if (!isBackendEnabledForLaunch()) {
       apiReadyOwnerRef.current = null
       setApiReadyOwner(null)
       syncEngine.setUploadsEnabled(false)
@@ -362,7 +367,7 @@ function SyncEngineBootstrap({
   ])
 
   useEffect(() => {
-    if (isNativeOfflineLaunch() && !nativeLaunchPolicy.backendEnabled) return
+    if (!isBackendEnabledForLaunch()) return
 
     if (
       readyDb !== db ||
