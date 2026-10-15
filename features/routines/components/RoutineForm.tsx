@@ -16,6 +16,7 @@ import {
   useTheme,
 } from 'tamagui'
 import DateTimePicker from '@react-native-community/datetimepicker'
+import { Check } from '@tamagui/lucide-icons'
 import type { RoutinePatternItem, RoutineType } from '../../../types/routine'
 import { useWorkouts } from '../../workouts'
 import { syncEngine } from '../../../lib/sync'
@@ -240,7 +241,7 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
                   accessibilityLabel="Set as active routine"
                 >
                   <Checkbox.Indicator>
-                    <Text color="$onPrimary">✓</Text>
+                    <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
                   </Checkbox.Indicator>
                 </Checkbox>
                 <Button
