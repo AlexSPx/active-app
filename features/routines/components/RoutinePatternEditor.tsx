@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Keyboard } from 'react-native'
+import { Keyboard, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   MoreHorizontal,
@@ -9,7 +9,7 @@ import {
   Trash2,
   Plus,
 } from '@tamagui/lucide-icons'
-import { YStack, XStack, Text, Button, ScrollView, Sheet, getTokenValue } from 'tamagui'
+import { YStack, XStack, Text, Button, ScrollView, Sheet, Dialog, getTokenValue } from 'tamagui'
 import type { RoutinePatternItem } from '../../../types/routine'
 import { useWorkouts } from '../../workouts'
 import { RoutineEditorSheet } from './RoutineEditorSheet'
@@ -72,6 +72,62 @@ export function RoutinePatternEditor({
       <MoreHorizontal size="$icon" color="$colorSubtle" aria-hidden />
     </Button>
   )
+
+  // Selected day/workout actions - shared between Sheet (native) and Dialog (web).
+  const menuContent =
+    menu !== null && pattern[menu] ? (
+      <YStack gap="$field">
+        <Text fontSize="$header" lineHeight="$header" fontWeight="600">
+          {hideRestOption ? `Workout ${menu + 1}` : `Day ${menu + 1}`} actions
+        </Text>
+        <Text fontSize="$body" lineHeight="$body" color="$colorSubtle" numberOfLines={2}>
+          {pattern[menu].dayType === 'REST'
+            ? 'Rest'
+            : (workouts.find((item) => item.id === pattern[menu].workoutId)?.title ??
+              'Choose a saved workout')}
+        </Text>
+        <Button
+          chromeless
+          minH="$touch"
+          justify="flex-start"
+          disabled={menu === 0}
+          opacity={menu === 0 ? 0.4 : 1}
+          onPress={() => move(menu, menu - 1)}
+        >
+          <ArrowUp size="$icon" aria-hidden />
+          {`Move ${hideRestOption ? 'up' : 'earlier'}`}
+        </Button>
+        <Button
+          chromeless
+          minH="$touch"
+          justify="flex-start"
+          disabled={menu === pattern.length - 1}
+          opacity={menu === pattern.length - 1 ? 0.4 : 1}
+          onPress={() => move(menu, menu + 1)}
+        >
+          <ArrowDown size="$icon" aria-hidden />
+          {`Move ${hideRestOption ? 'down' : 'later'}`}
+        </Button>
+        <Button
+          chromeless
+          minH="$touch"
+          justify="flex-start"
+          color="$destructive"
+          onPress={() => remove(menu)}
+        >
+          <Trash2 size="$icon" color="$destructive" aria-hidden />
+          {`Remove ${hideRestOption ? 'workout' : 'day'}`}
+        </Button>
+        <Button
+          minH="$action"
+          rounded="$button"
+          bg="$backgroundHover"
+          onPress={() => setMenu(null)}
+        >
+          Cancel
+        </Button>
+      </YStack>
+    ) : null
 
   return (
     <YStack gap="$field">
@@ -294,77 +350,57 @@ export function RoutinePatternEditor({
           </Button>
         </YStack>
       )}
-      {menu !== null && pattern[menu] && (
-        <Sheet
-          open
-          onOpenChange={(open) => {
-            if (!open) setMenu(null)
-          }}
-          modal
-          snapPointsMode="fit"
-          dismissOnSnapToBottom
-        >
-          <Sheet.Overlay bg="$background" opacity={0.6} />
-          <Sheet.Handle bg="$colorMuted" />
-          <Sheet.Frame bg="$surface" borderTopLeftRadius="$sheet" borderTopRightRadius="$sheet">
-            <YStack
-              p="$page"
-              pb={Math.max(insets.bottom, getTokenValue('$page', 'space'))}
-              gap="$field"
-            >
-              <Text fontSize="$header" lineHeight="$header" fontWeight="600">
-                {hideRestOption ? `Workout ${menu + 1}` : `Day ${menu + 1}`} actions
-              </Text>
-              <Text fontSize="$body" lineHeight="$body" color="$colorSubtle" numberOfLines={2}>
-                {pattern[menu].dayType === 'REST'
-                  ? 'Rest'
-                  : (workouts.find((item) => item.id === pattern[menu].workoutId)?.title ??
-                    'Choose a saved workout')}
-              </Text>
-              <Button
-                chromeless
-                minH="$touch"
-                justify="flex-start"
-                disabled={menu === 0}
-                opacity={menu === 0 ? 0.4 : 1}
-                onPress={() => move(menu, menu - 1)}
+      {/* Use Dialog on web (Sheet does not trap focus or handle Escape there), Sheet on native */}
+      {menuContent &&
+        (Platform.OS === 'web' ? (
+          <Dialog
+            modal
+            open
+            onOpenChange={(open) => {
+              if (!open) setMenu(null)
+            }}
+          >
+            <Dialog.Portal>
+              <Dialog.Overlay
+                key="overlay"
+                animation="slow"
+                opacity={0.5}
+                enterStyle={{ opacity: 0 }}
+                exitStyle={{ opacity: 0 }}
+              />
+              <Dialog.Content
+                bordered
+                rounded="$menu"
+                key="content"
+                animation={['quick', { opacity: { overshootClamping: true } }]}
+                enterStyle={{ opacity: 0 }}
+                exitStyle={{ opacity: 0 }}
+                bg="$surface"
+                p="$page"
               >
-                <ArrowUp size="$icon" aria-hidden />
-                {`Move ${hideRestOption ? 'up' : 'earlier'}`}
-              </Button>
-              <Button
-                chromeless
-                minH="$touch"
-                justify="flex-start"
-                disabled={menu === pattern.length - 1}
-                opacity={menu === pattern.length - 1 ? 0.4 : 1}
-                onPress={() => move(menu, menu + 1)}
-              >
-                <ArrowDown size="$icon" aria-hidden />
-                {`Move ${hideRestOption ? 'down' : 'later'}`}
-              </Button>
-              <Button
-                chromeless
-                minH="$touch"
-                justify="flex-start"
-                color="$destructive"
-                onPress={() => remove(menu)}
-              >
-                <Trash2 size="$icon" color="$destructive" aria-hidden />
-                {`Remove ${hideRestOption ? 'workout' : 'day'}`}
-              </Button>
-              <Button
-                minH="$action"
-                rounded="$button"
-                bg="$backgroundHover"
-                onPress={() => setMenu(null)}
-              >
-                Cancel
-              </Button>
-            </YStack>
-          </Sheet.Frame>
-        </Sheet>
-      )}
+                {menuContent}
+              </Dialog.Content>
+            </Dialog.Portal>
+          </Dialog>
+        ) : (
+          <Sheet
+            open
+            onOpenChange={(open) => {
+              if (!open) setMenu(null)
+            }}
+            modal
+            snapPointsMode="fit"
+            dismissOnSnapToBottom
+          >
+            <Sheet.Overlay bg="$background" opacity={0.6} />
+            <Sheet.Handle bg="$colorMuted" />
+            <Sheet.Frame bg="$surface" borderTopLeftRadius="$sheet" borderTopRightRadius="$sheet">
+              <YStack p="$page" pb={Math.max(insets.bottom, getTokenValue('$page', 'space'))}>
+                {menuContent}
+              </YStack>
+            </Sheet.Frame>
+          </Sheet>
+        ))}
       <RoutineEditorSheet
         open={pickerOpen && !loading}
         onOpenChange={setPickerOpen}
