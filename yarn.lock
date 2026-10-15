@@ -1803,18 +1803,6 @@
   resolved "https://registry.yarnpkg.com/@pkgr/core/-/core-0.1.2.tgz#1cf95080bb7072fafaa3cb13b442fab4695c3893"
   integrity sha512-fdDH1LSGfZdTH2sxdpVMw31BanV28K/Gry0cVFxaNP77neJSkd82mM8ErPNYs9e+0O7SdHBLTDzDgwUuy18RnQ==
 
-"@posthog/core@1.27.5":
-  version "1.27.5"
-  resolved "https://registry.yarnpkg.com/@posthog/core/-/core-1.27.5.tgz#c2eaba25ab7b3f12a7807d4986cfd7647f18f1e6"
-  integrity sha512-sYCcUDuYKumYTjwGqGCPT8aUy086v9PKw5wD+UXCRSfCsxWy5R/ic6W13kGTn4O5B2cD1V19wJv19oIH5kHUiQ==
-  dependencies:
-    "@posthog/types" "1.372.1"
-
-"@posthog/types@1.372.1":
-  version "1.372.1"
-  resolved "https://registry.yarnpkg.com/@posthog/types/-/types-1.372.1.tgz#10ac883abe5c348b95f352dcd797034e02ebba35"
-  integrity sha512-yl2x2HgtdhFk8bvf6HuRSDzXnKmKGrzNxUahKvA/0mcwheweINvmWy5MsN55NevrcCrNXA6m8GPHS9o/y1mn4A==
-
 "@radix-ui/primitive@1.1.3":
   version "1.1.3"
   resolved "https://registry.yarnpkg.com/@radix-ui/primitive/-/primitive-1.1.3.tgz#e2dbc13bdc5e4168f4334f75832d7bdd3e2de5ba"
@@ -5152,13 +5140,6 @@ expo-image@^55.0.9, expo-image@~55.0.9:
   dependencies:
     sf-symbols-typescript "^2.2.0"
 
-expo-insights@~55.0.16:
-  version "55.0.16"
-  resolved "https://registry.yarnpkg.com/expo-insights/-/expo-insights-55.0.16.tgz#58abcfef39317d5b5b44f8dc4afd30c2abc0c7db"
-  integrity sha512-3BPe3lcufconTBywT0Zil83ZOsEXX47AqeaPPLr2gridYtiKOSqDtLDd9EKEK1D+p9u4LL3QFAz8J9crdQyc4Q==
-  dependencies:
-    expo-eas-client "~55.0.5"
-
 expo-json-utils@~55.0.2:
   version "55.0.2"
   resolved "https://registry.yarnpkg.com/expo-json-utils/-/expo-json-utils-55.0.2.tgz#ef79888b881ef5b92d27245d3a758bc5debcbccf"
@@ -7577,14 +7558,6 @@ postcss@~8.4.32:
     nanoid "^3.3.7"
     picocolors "^1.1.1"
     source-map-js "^1.2.1"
-
-posthog-react-native@^4.14.2:
-  version "4.43.5"
-  resolved "https://registry.yarnpkg.com/posthog-react-native/-/posthog-react-native-4.43.5.tgz#1125ac8273c9a86d93d87137cee5524bf1b6a70c"
-  integrity sha512-YzqhOfovNVzlsdWnb4mtv8dg9YrIzNKo0qNWGMkgnF+BQP6mpsFzxMsUOso6fMIa52QrQPGcg3rdl2Dix1eLDA==
-  dependencies:
-    "@posthog/core" "1.27.5"
-    "@posthog/types" "1.372.1"
 
 prettier@^3.6.2:
   version "3.8.3"

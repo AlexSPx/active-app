@@ -634,19 +634,6 @@ class ApiService {
     })
   }
 
-  async registerPushToken(token: string): Promise<User> {
-    if (!token || token.trim() === '') {
-      const err: ApiError = new Error('Token is required')
-      err.status = 400
-      throw err
-    }
-    const url = getApiUrl(config.API_ENDPOINTS.USER.PUSH_TOKEN)
-    return this.request<User>(url, {
-      method: 'POST',
-      body: JSON.stringify({ token }),
-    })
-  }
-
   async setToken(token: string): Promise<void> {
     this.credentialGeneration += 1
     if (isWeb) return

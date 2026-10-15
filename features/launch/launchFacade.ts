@@ -26,10 +26,6 @@ interface Achievement {
   setIndex?: number | null
 }
 
-interface ScreenTracker {
-  screen(pathname: string): void
-}
-
 function exerciseAchievements(exercise: WorkoutRecordExercise): Achievement[] {
   const achievements: Achievement[] = []
   if (typeof exercise.achievedOneRmValue === 'number' && exercise.achievedOneRmValue > 0) {
@@ -279,18 +275,6 @@ function profileUpdateHandling(user: User):
   return { kind: 'account-profile' }
 }
 
-function postHogOptions() {
-  const enabled = !isNativeOfflineLaunch() || nativeLaunchPolicy.telemetryEnabled
-  return {
-    disabled: !enabled,
-    defaultOptIn: enabled,
-    captureAppLifecycleEvents: enabled,
-    disableRemoteConfig: !enabled,
-    disableSurveys: !enabled,
-    preloadFeatureFlags: enabled,
-  }
-}
-
 export const launchFacade = {
   auth: {
     resolveDestination: resolveAuthDestination,
@@ -401,15 +385,6 @@ export const launchFacade = {
   profile: {
     databaseBootstrapAction(): 'restore-local-user' | 'database-only' {
       return isNativeOfflineLaunch() ? 'restore-local-user' : 'database-only'
-    },
-  },
-  telemetry: {
-    postHogOptions,
-    providerAutocapture(): false | undefined {
-      return postHogOptions().disabled ? false : undefined
-    },
-    trackScreen(pathname: string, tracker: ScreenTracker): void {
-      if (!postHogOptions().disabled) tracker.screen(pathname)
     },
   },
 }

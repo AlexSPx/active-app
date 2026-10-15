@@ -6,7 +6,6 @@ const { launchFacade } = require('../../features/launch/launchFacade')
 
 const localUser = { id: 'local:device', registrationCompleted: false }
 const accountUser = { id: 'account:alex', username: 'alex', registrationCompleted: false }
-const screenTracker = { screen: jest.fn() }
 
 beforeEach(() => {
   Platform.OS = 'android'
@@ -14,9 +13,7 @@ beforeEach(() => {
     accountsEnabled: false,
     backendEnabled: false,
     syncEnabled: false,
-    telemetryEnabled: false,
   })
-  screenTracker.screen.mockReset()
 })
 
 it('resolves local and connected auth destinations while preserving legal routes', () => {
@@ -115,20 +112,12 @@ it('builds account and sync settings presentation from the selected launch behav
   })
 })
 
-it('keeps backend, sync, accounts, and telemetry policies independently enforced', () => {
+it('keeps backend, sync, and account policies independently enforced', () => {
   expect(() => launchFacade.api.assertBackendRequestsAllowed()).toThrow(
     'Backend requests are disabled by the native launch policy'
   )
   expect(launchFacade.sync.queueMode()).toBe('local-only')
   expect(launchFacade.auth.accountActionDecision().kind).toBe('unavailable')
-  expect(launchFacade.telemetry.postHogOptions()).toMatchObject({
-    disabled: true,
-    defaultOptIn: false,
-    captureAppLifecycleEvents: false,
-  })
-  launchFacade.telemetry.trackScreen('/home', screenTracker)
-  expect(screenTracker.screen).not.toHaveBeenCalled()
-
   nativeLaunchPolicy.backendEnabled = true
   expect(launchFacade.api.backendMode()).toBe('remote')
   expect(launchFacade.sync.queueMode()).toBe('local-only')
@@ -136,17 +125,8 @@ it('keeps backend, sync, accounts, and telemetry policies independently enforced
 
   nativeLaunchPolicy.accountsEnabled = true
   nativeLaunchPolicy.syncEnabled = true
-  nativeLaunchPolicy.telemetryEnabled = true
   expect(launchFacade.auth.accountActionDecision().kind).toBe('available')
   expect(launchFacade.sync.queueMode()).toBe('active')
-  expect(launchFacade.telemetry.postHogOptions()).toMatchObject({
-    disabled: false,
-    defaultOptIn: true,
-    captureAppLifecycleEvents: true,
-  })
-  launchFacade.telemetry.trackScreen('/home', screenTracker)
-  expect(screenTracker.screen).toHaveBeenCalledWith('/home')
-
   nativeLaunchPolicy.backendEnabled = false
   expect(launchFacade.sync.queueMode()).toBe('local-only')
   expect(nativeLaunchPolicy.otaUpdatesEnabled).toBe(true)
@@ -154,5 +134,4 @@ it('keeps backend, sync, accounts, and telemetry policies independently enforced
   Platform.OS = 'web'
   expect(launchFacade.api.backendMode()).toBe('remote')
   expect(launchFacade.sync.queueMode()).toBe('active')
-  expect(launchFacade.telemetry.postHogOptions().disabled).toBe(false)
 })

@@ -9,12 +9,10 @@ import { config } from '../tamagui.config'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useUiStore } from '../stores/uiStore'
 import FinishedWorkoutCongrats from '../components/FinishedWorkoutCongrats'
-import { initNotifications, registerPushNotifications } from '../services/notificationService'
-import { PostHogProvider } from 'posthog-react-native'
+import { initNotifications } from '../services/notificationService'
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useSettingsStore } from '../features/settings'
 import { saveSettingsProfile } from '../features/settings/stores/settingsStore'
-import { posthog } from '../services/posthog'
 import { queryClient } from '../lib/queryClient'
 import { queryKeys } from '../lib/queryKeys'
 import { syncEngine } from '../lib/sync'
@@ -588,10 +586,6 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
   const startupError = useAuthStore((state) => state.startupError)
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
   const legacyOwnerId = useAuthStore((state) => state.legacyOwnerId)
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
-  const isProfileTransitioning = useAuthStore((state) => state.isProfileTransitioning)
-  const serverSession = useAuthStore((state) => state.serverSession)
-  const userId = useAuthStore((state) => state.user?.id)
   const activeTheme = theme === 'system' ? colorScheme : theme
 
   const onInit = useCallback(
@@ -700,21 +694,6 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
     initNotifications().catch(() => {})
   }, [])
 
-  useEffect(() => {
-    const state = useAuthStore.getState()
-    if (
-      !state.isStartupReady ||
-      state.startupError ||
-      state.isProfileTransitioning ||
-      !state.isAuthenticated ||
-      !state.user?.id ||
-      state.serverSession !== 'valid'
-    ) {
-      return
-    }
-    registerPushNotifications().catch(() => {})
-  }, [isStartupReady, isAuthenticated, isProfileTransitioning, serverSession, startupError, userId])
-
   const content =
     isStartupReady && !startupError ? (
       <SQLiteProvider
@@ -740,18 +719,13 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
         <Theme name={activeTheme === 'dark' ? 'dark' : 'light'}>
           <ThemeProvider value={activeTheme === 'dark' ? DarkTheme : DefaultTheme}>
             <QueryClientProvider client={queryClient}>
-              <PostHogProvider
-                client={posthog}
-                autocapture={launchFacade.telemetry.providerAutocapture()}
-              >
-                <PortalProvider>
-                  <ToastProvider swipeDirection="horizontal" duration={6000} native={[]}>
-                    {content}
-                    <CurrentToast />
-                    <ToastViewport top="$8" left={0} right={0} />
-                  </ToastProvider>
-                </PortalProvider>
-              </PostHogProvider>
+              <PortalProvider>
+                <ToastProvider swipeDirection="horizontal" duration={6000} native={[]}>
+                  {content}
+                  <CurrentToast />
+                  <ToastViewport top="$8" left={0} right={0} />
+                </ToastProvider>
+              </PortalProvider>
             </QueryClientProvider>
           </ThemeProvider>
         </Theme>

@@ -7,7 +7,6 @@ jest.mock('../../lib/sync', () => ({
   syncEngine: { resolveId: jest.fn((_table, id) => id) },
 }))
 jest.mock('../../utils/haptics', () => ({ haptics: { success: jest.fn() } }))
-jest.mock('../../services/posthog', () => ({ posthog: { capture: jest.fn() } }))
 
 const AsyncStorage = require('@react-native-async-storage/async-storage')
 const { getDatabase } = require('../../lib/db/connection')

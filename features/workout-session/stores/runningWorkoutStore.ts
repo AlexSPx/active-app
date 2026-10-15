@@ -12,7 +12,6 @@ import { getDatabase } from '../../../lib/db/connection'
 import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 import type { FinishedCongratsPayload } from '../../../types/congrats'
 import { haptics } from '../../../utils/haptics'
-import { posthog } from '../../../services/posthog'
 
 export interface RunningWorkoutExercise extends ApiExercise {
   sessionId: string
@@ -167,11 +166,6 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           set({ runningWorkout: null, isRecording: false })
           haptics.success()
 
-          posthog.capture('workout_completed', {
-            duration_seconds: (Date.now() - new Date(runningWorkout.startTime).getTime()) / 1000,
-            total_exercises: runningWorkout.exercises.length,
-          })
-
           return result
         } catch (error) {
           if (!isCurrentProfile(scope)) return
@@ -184,14 +178,6 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
 
       // Discard the current running workout without recording
       cancelWorkout: () => {
-        const state = get()
-        if (state.runningWorkout) {
-          posthog.capture('workout_cancelled', {
-            duration_seconds:
-              (Date.now() - new Date(state.runningWorkout.startTime).getTime()) / 1000,
-            total_exercises: state.runningWorkout.exercises.length,
-          })
-        }
         set({ runningWorkout: null, isRecording: false, recordingError: null })
       },
 

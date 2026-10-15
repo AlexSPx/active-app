@@ -141,7 +141,6 @@ jest.mock('@tanstack/react-query', () => ({ QueryClientProvider: ({ children }) 
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }) => children,
 }))
-jest.mock('posthog-react-native', () => ({ PostHogProvider: ({ children }) => children }))
 jest.mock('../../lib/db/migrations', () => ({ migrateDbIfNeeded: jest.fn() }))
 jest.mock('../../app/CurrentToast', () => ({ CurrentToast: () => null }))
 jest.mock('../../tamagui.config', () => ({ config: {} }))
@@ -213,9 +212,7 @@ jest.mock('../../components/FinishedWorkoutCongrats', () => {
 })
 jest.mock('../../services/notificationService', () => ({
   initNotifications: async () => {},
-  registerPushNotifications: async () => {},
 }))
-jest.mock('../../services/posthog', () => ({ posthog: {} }))
 jest.mock('../../lib/queryClient', () => ({
   queryClient: { setQueriesData: jest.fn(), invalidateQueries: jest.fn() },
 }))

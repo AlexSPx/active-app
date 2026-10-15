@@ -5,7 +5,6 @@ import { AppState, NativeModules, Platform } from 'react-native'
 import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
 import { useFocusEffect } from 'expo-router'
-import { registerPushNotifications } from '../services/notificationService'
 
 interface NotificationPermissionsProps {
   onStatusChange?: (status: { notifications: boolean; alarms: boolean }) => void
@@ -40,7 +39,6 @@ export default function NotificationPermissions({
       setAlarmUnavailable(alarmAllowed === null)
       setError(null)
       onStatusChange?.({ notifications: allowed, alarms: alarmAllowed === true })
-      if (allowed && !summaryOnly) registerPushNotifications().catch(console.error)
     } catch {
       setError('Unable to check permissions. Review access in device settings.')
     }
@@ -101,7 +99,7 @@ export default function NotificationPermissions({
         {
           title: 'Notifications',
           allowed: notifications,
-          description: 'Allow Active to send app notifications and rest timer alerts.',
+          description: 'Allow local rest timer alerts and reminders.',
           onPress: openNotifications,
         },
         ...(Platform.OS === 'android'

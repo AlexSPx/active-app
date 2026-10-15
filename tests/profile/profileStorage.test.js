@@ -36,7 +36,6 @@ jest.mock('@react-native-async-storage/async-storage', () => {
 
   return { __esModule: true, default: mockAsyncStorage }
 })
-jest.mock('../../services/posthog', () => ({ posthog: { capture: jest.fn() } }))
 
 const LEGACY_OWNER_KEY = 'profile-storage-owner-v1'
 const LEGACY_KEYS = ['settings-storage', 'running-workout-storage', 'widget-storage']

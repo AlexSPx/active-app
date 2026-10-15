@@ -27,7 +27,6 @@ jest.mock('../../features/workout-session/stores/runningWorkoutStore', () => ({
 }))
 jest.mock('../../utils/storeReset', () => ({ resetAllStores: jest.fn() }))
 jest.mock('../../lib/db/connection', () => ({ clearDatabase: jest.fn() }))
-jest.mock('../../services/posthog', () => ({ posthog: { capture: jest.fn(), reset: jest.fn() } }))
 jest.mock('lib/repositories', () => ({
   AuthRepository: jest.fn(() => ({
     getToken: async () => null,

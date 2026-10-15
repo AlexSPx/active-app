@@ -14,7 +14,6 @@ jest.mock('../../lib/sync', () => ({
 jest.mock('../../lib/profileStorage', () => ({
   hydrateProfileStores: (...args) => mockHydrateProfileStores(...args),
 }))
-jest.mock('../../services/posthog', () => ({ posthog: { capture: jest.fn(), reset: jest.fn() } }))
 jest.mock('lib/repositories', () => ({
   AuthRepository: jest.fn(() => ({
     getToken: jest.fn(async () => mockCredentials.token),
@@ -66,7 +65,6 @@ const mockCredentials = { token: null, refreshToken: null }
 const mockProfileHydration = { finish: null }
 const AsyncStorage = require('@react-native-async-storage/async-storage')
 const { config } = require('../../config/api')
-const { posthog } = require('../../services/posthog')
 const { resetAllStores } = require('../../utils/storeReset')
 const { useUiStore } = require('../../stores/uiStore')
 const { clearDatabase } = require('../../lib/db/connection')
@@ -354,17 +352,16 @@ describe('auth profile refresh', () => {
       error: fallback,
     })
     expect(mockGetCurrentUser).not.toHaveBeenCalled()
-    expect(posthog.capture).not.toHaveBeenCalled()
   })
 
   it.each([
-    ['login', { email: 'user@example.com', password: 'password' }, mockLogin, 'email'],
-    ['loginWithGoogle', 'id-token', mockLoginWithGoogle, 'google'],
-    ['loginWithWorkOS', 'code', mockLoginWithWorkOS, 'workos'],
-    ['register', { email: 'user@example.com', password: 'password' }, mockRegister, null],
+    ['login', { email: 'user@example.com', password: 'password' }, mockLogin],
+    ['loginWithGoogle', 'id-token', mockLoginWithGoogle],
+    ['loginWithWorkOS', 'code', mockLoginWithWorkOS],
+    ['register', { email: 'user@example.com', password: 'password' }, mockRegister],
   ])(
-    'preserves the session and analytics for %s after an offline profile fetch',
-    async (action, input, exchange, method) => {
+    'preserves the session for %s after an offline profile fetch',
+    async (action, input, exchange) => {
       exchange.mockResolvedValue({ token: 'access', refreshToken: 'refresh' })
       mockGetCurrentUser.mockRejectedValue(new Error('Offline'))
 
@@ -378,12 +375,6 @@ describe('auth profile refresh', () => {
         refreshToken: 'refresh',
         profileError: 'Offline',
       })
-      if (method) {
-        expect(posthog.capture).toHaveBeenCalledWith('user_logged_in', { method })
-      } else {
-        expect(posthog.capture).toHaveBeenCalledWith('user_signed_up')
-        expect(posthog.capture).toHaveBeenCalledWith('user_logged_in')
-      }
     }
   )
 

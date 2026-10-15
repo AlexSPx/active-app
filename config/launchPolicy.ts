@@ -4,7 +4,6 @@ export const nativeLaunchPolicy = {
   accountsEnabled: false,
   backendEnabled: false,
   syncEnabled: false,
-  telemetryEnabled: false,
   otaUpdatesEnabled: true,
 } as const
 

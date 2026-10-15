@@ -15,7 +15,6 @@ import {
 } from '../../../features/routines'
 import { useWorkouts } from '../../../features/workouts'
 import type { Routine } from '../../../types/routine'
-import { posthog } from '../../../services/posthog'
 import { CreateTopButton } from '../../../components/ui/CreateTopButton'
 
 export default function RoutinesTab() {
@@ -71,7 +70,6 @@ export default function RoutinesTab() {
     async (routineId: string) => {
       const updated = await activateRoutine(routineId)
       if (updated) {
-        posthog.capture('routine_activated')
         await refetchActive()
       }
     },
@@ -89,7 +87,6 @@ export default function RoutinesTab() {
         startDate: new Date().toISOString(),
       })
       if (updated) {
-        posthog.capture('routine_start_date_updated')
         await Promise.all([refetch(), refetchActive()])
       }
     },
@@ -123,7 +120,6 @@ export default function RoutinesTab() {
     if (!pendingDeleteId) return
     const ok = await deleteRoutine(pendingDeleteId)
     if (ok) {
-      posthog.capture('routine_deleted')
       await refetch()
     }
     setConfirmOpen(false)
