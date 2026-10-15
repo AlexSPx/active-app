@@ -3,6 +3,21 @@ import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useHeaderHeight } from '@react-navigation/elements'
 import { Paragraph, ScrollView, Text, YStack } from 'tamagui'
 
+export function SettingsCard({ children }: { children: ReactNode }) {
+  return (
+    <YStack
+      bg="$surface"
+      borderWidth={1}
+      borderColor="$borderColor"
+      rounded="$card"
+      p="$card"
+      gap="$field"
+    >
+      {children}
+    </YStack>
+  )
+}
+
 export function SettingsPage({
   title,
   description,
@@ -26,7 +41,7 @@ export function SettingsPage({
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          <YStack p="$page" gap="$section" width="100%" maxW="$content" self="center">
+          <YStack shrink={0} p="$page" gap="$section" width="100%" maxW="$content" self="center">
             <YStack gap="$field">
               <Text
                 accessibilityRole="header"

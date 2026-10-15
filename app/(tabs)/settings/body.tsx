@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Input, Label, Paragraph, Text, XStack, YStack } from 'tamagui'
-import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { SettingsCard, SettingsPage } from '../../../components/settings/SettingsPage'
 import { useSettingsStore, useUpdateUser } from '../../../features/settings'
 import { measurementText, parseMeasurement } from '../../../features/settings/inputs'
 
@@ -66,7 +66,7 @@ export default function BodySettingsScreen() {
         </>
       }
     >
-      <YStack gap="$field">
+      <SettingsCard>
         <XStack items="center" justify="space-between" gap="$field">
           <Label htmlFor="body-weight" fontSize="$body">
             Body weight{' '}
@@ -120,8 +120,8 @@ export default function BodySettingsScreen() {
             {weightUnit}
           </Text>
         </XStack>
-      </YStack>
-      <YStack gap="$field">
+      </SettingsCard>
+      <SettingsCard>
         <XStack items="center" justify="space-between" gap="$field">
           <Label htmlFor="body-height" fontSize="$body">
             Height{' '}
@@ -175,7 +175,7 @@ export default function BodySettingsScreen() {
             {heightUnit}
           </Text>
         </XStack>
-      </YStack>
+      </SettingsCard>
       <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
         Switching units converts the current value. Leave a measurement blank if you prefer not to
         add it.

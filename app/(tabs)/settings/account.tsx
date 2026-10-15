@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Button, Input, Label, Paragraph, Text, YStack } from 'tamagui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useAuthMutations } from '../../../features/auth'
-import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { SettingsCard, SettingsPage } from '../../../components/settings/SettingsPage'
 import { launchFacade } from '../../../features/launch/launchFacade'
 
 export default function AccountSettingsScreen() {
@@ -72,15 +72,17 @@ export default function AccountSettingsScreen() {
       title={presentation.profileEditor ? 'Training profile' : 'Account'}
       description={presentation.description}
     >
-      <YStack gap="$section">
-        <YStack gap="$compact">
-          <Text fontSize="$caption" color="$colorSubtle">
-            Name
-          </Text>
-          <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
-            {fullName}
-          </Text>
-        </YStack>
+      <SettingsCard>
+        {!presentation.profileEditor && (
+          <YStack gap="$compact">
+            <Text fontSize="$caption" color="$colorSubtle">
+              Name
+            </Text>
+            <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
+              {fullName}
+            </Text>
+          </YStack>
+        )}
         {presentation.email && (
           <YStack gap="$compact">
             <Text fontSize="$caption" color="$colorSubtle">
@@ -93,14 +95,6 @@ export default function AccountSettingsScreen() {
         )}
         {presentation.profileEditor && (
           <YStack gap="$field">
-            <YStack gap="$compact">
-              <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
-                {presentation.profileEditor.title}
-              </Text>
-              <Paragraph fontSize="$caption" color="$colorSubtle">
-                {presentation.profileEditor.description}
-              </Paragraph>
-            </YStack>
             <YStack gap="$compact">
               <Label htmlFor="account-training-first-name" fontSize="$caption" color="$colorSubtle">
                 {presentation.profileEditor.firstNameLabel}
@@ -163,7 +157,7 @@ export default function AccountSettingsScreen() {
             </Button>
           </YStack>
         )}
-      </YStack>
+      </SettingsCard>
       {presentation.accountActions.map((action) =>
         action.kind === 'sign-out' ? (
           <Button
