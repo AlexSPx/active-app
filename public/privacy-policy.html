@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="description" content="Draft privacy policy for Active Next's native offline app." />
+    <title>Privacy Policy — Active Next</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          'Segoe UI',
+          sans-serif;
+        line-height: 1.65;
+        background: #f5f5f5;
+        color: #1d1d1d;
+      }
+      body {
+        margin: 0;
+      }
+      main {
+        box-sizing: border-box;
+        max-width: 48rem;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+        background: #fff;
+        min-height: 100vh;
+      }
+      .draft {
+        padding: 1rem;
+        border-left: 4px solid #a14b00;
+        background: #fff2df;
+        color: #352000;
+      }
+      h1,
+      h2 {
+        line-height: 1.25;
+      }
+      h2 {
+        margin-top: 2rem;
+      }
+      a {
+        color: #0058a8;
+        text-underline-offset: 0.15em;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          background: #111;
+          color: #f2f2f2;
+        }
+        main {
+          background: #1b1b1b;
+        }
+        .draft {
+          background: #38280f;
+          color: #fff2d9;
+          border-color: #ffb45e;
+        }
+        a {
+          color: #8fc6ff;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Privacy Policy</h1>
+      <p class="draft">
+        <strong>DRAFT — prepared October 15, 2026.</strong> Do not publish until the
+        publisher/contact details and release verification have been completed.
+      </p>
+
+      <p>
+        <strong>Publisher:</strong> [enter the legal name of the app publisher]<br />
+        <strong>Privacy contact:</strong> [enter a monitored privacy contact email]<br />
+        <strong>Effective date:</strong> [enter the date this policy is first published]
+      </p>
+
+      <h2>Scope</h2>
+      <p>
+        This draft describes the native iOS and Android version of Active Next configured for a
+        local training profile. The app also contains separate browser flows for accounts and online
+        services. Those browser flows are outside this notice and need their own verified
+        disclosures before this notice is used for a web service.
+      </p>
+
+      <h2>Information stored on your device</h2>
+      <p>
+        You can create a local training profile with a name and, optionally, a username. You can add
+        body weight and height, timezone, and notification preferences. Active Next also stores the
+        workout templates and routines you make, exercise and set details, repetitions, weights or
+        durations, workout dates and notes, completed workout history, and app preferences such as
+        units, theme, rest-timer settings, and progression widgets.
+      </p>
+      <p>
+        The native app stores this information in app-owned storage on your device. The current
+        native launch settings use a device-local profile and disable account access, backend
+        requests, and workout synchronization. The app does not send this profile, workout, routine,
+        or body-measurement content to the Active Next backend in this configuration. It does not
+        connect to Apple Health or Health Connect.
+      </p>
+
+      <h2>Network requests and updates</h2>
+      <p>
+        The native app can contact Expo Application Services (EAS) to check for and download
+        compatible over-the-air app updates. The app is configured with EAS Update, and release
+        builds can check for updates when they launch. Update requests can include the app platform,
+        runtime version and update channel, along with technical network information such as the
+        device IP address. Expo says that when an app uses EAS Update it may collect the device
+        operating system and randomized tokens used to determine whether an update was downloaded.
+        These requests support update delivery and service operation; they do not contain your
+        training profile or workout records in the current app configuration.
+      </p>
+      <p>
+        Expo processes update-service information under its own privacy policy:
+        <a href="https://expo.dev/privacy">Expo Privacy Policy</a>. Active Next does not include
+        app-level analytics, advertising, crash-reporting, or remote push-token registration code in
+        this native build. This statement does not mean that the app makes no network requests: EAS
+        Update remains enabled.
+      </p>
+
+      <h2>Notifications</h2>
+      <p>
+        If you grant notification permission, Active Next can schedule local rest-timer alerts on
+        your device. The alert content is generated by the app. The current native app does not
+        register an Expo remote push token. Your operating system controls notification delivery and
+        permissions.
+      </p>
+
+      <h2>Retention and deletion</h2>
+      <p>
+        Your native training information remains in the app's device storage until it is changed or
+        deleted on the device, or the app data is otherwise removed. We do not have a server copy of
+        that information from the current native local-profile workflow. We do not control device or
+        operating-system backups.
+      </p>
+      <p>
+        Use <strong>Settings → Data on this device → Erase data on this device</strong> to remove
+        all saved local profiles, workouts, routines, running sessions, preferences, saved
+        credentials, pending payloads, cached training data, and scheduled local notifications.
+        Confirmation is required. If cleanup fails, the app keeps local training closed and offers a
+        retry; restarting resumes the pending cleanup. This action cannot delete data previously
+        sent to a remote service by an earlier account-enabled version or remove existing
+        operating-system backups. Contact the publisher using the address above for
+        historical-account deletion guidance.
+      </p>
+
+      <h2>Service providers</h2>
+      <p>
+        Expo provides the EAS Update service described above. Apple or Google may process
+        information as part of app distribution and device operating-system services, including
+        local notification delivery. Their handling is governed by their own privacy notices. Active
+        Next does not use advertising networks in this native launch configuration.
+      </p>
+
+      <h2>Your choices and contact</h2>
+      <p>
+        You can choose what profile and workout information to enter, manage notification
+        permissions in device settings, and erase app data through the local data settings. For
+        questions or privacy requests, contact
+        <strong>[enter a monitored privacy contact email]</strong>. Replace this placeholder with an
+        address that is monitored before publication.
+      </p>
+
+      <h2>Changes to this policy</h2>
+      <p>
+        We will update this page when the app's data practices change. The effective date above
+        identifies the version in force.
+      </p>
+    </main>
+  </body>
+</html>

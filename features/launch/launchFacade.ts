@@ -10,7 +10,7 @@ import type { User, UpdateUserRequest, WorkoutRecord, WorkoutRecordExercise } fr
 import type { WidgetConfig } from '../../stores/widgetStore'
 
 type RouteSegment = string | undefined
-type AuthDestination = '/welcome' | '/welcome/register' | '/(tabs)'
+type AuthDestination = '/welcome' | '/welcome/register' | '/(tabs)' | '/settings/profile'
 type RegistrationDraft = {
   firstName: string
   lastName: string
@@ -55,6 +55,7 @@ function resolveAuthDestination(input: {
   profileOwnerId: string
   firstSegment: RouteSegment
   secondSegment: RouteSegment
+  thirdSegment?: RouteSegment
 }): AuthDestination | null {
   const inWelcomeGroup = input.firstSegment === 'welcome'
   const inLegalGroup = input.firstSegment === 'legal'
@@ -67,6 +68,11 @@ function resolveAuthDestination(input: {
         ? input.user?.registrationCompleted !== true
         : input.user?.registrationCompleted === false
 
+    if (input.firstSegment === 'auth') return needsOnboarding ? '/welcome/register' : '/(tabs)'
+    if (input.firstSegment === '(tabs)' && input.secondSegment === 'settings') {
+      if (input.thirdSegment === 'account') return '/settings/profile'
+      if (input.thirdSegment === 'sync') return '/(tabs)'
+    }
     if (needsOnboarding && !isRegistering && !inLegalGroup) return '/welcome/register'
     if (!needsOnboarding && inWelcomeGroup) return '/(tabs)'
     return null
@@ -336,6 +342,9 @@ export const launchFacade = {
   settings: {
     menuAccount: settingsAccount,
     accountPage: settingsAccountPage,
+    profileRoute(): '/settings/profile' | '/settings/account' {
+      return isNativeOfflineLaunch() ? '/settings/profile' : '/settings/account'
+    },
     syncMenuEntry,
     syncPage: syncSettingsPage,
   },

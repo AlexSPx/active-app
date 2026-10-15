@@ -276,7 +276,9 @@ const RegisterPage = () => {
             )}
 
             <Text fontSize="$2" color="$color11" style={{ textAlign: 'center' }} mt="$4">
-              By creating an account, you agree to our{' '}
+              {accountStep.action.kind === 'continue'
+                ? 'By setting up a local profile, you agree to our '
+                : 'By creating an account, you agree to our '}
               <Link href="/legal/terms-of-service" asChild>
                 <Text color="$blue9" textDecorationLine="underline">
                   Terms of Service

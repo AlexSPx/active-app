@@ -136,3 +136,11 @@ export const networkPolicy = {
 }
 
 void restorePreference()
+
+/** Resets the device-local offline preference without writing it back to storage. */
+export async function resetNetworkPreferenceAfterDeviceErase(): Promise<void> {
+  restoreAttempt += 1
+  await preferenceWrites
+  await AsyncStorage.removeItem(STORAGE_KEY)
+  updatePolicy({ manualOffline: false, isReady: true, restoreError: null })
+}

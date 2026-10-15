@@ -46,8 +46,9 @@ const isWeb = Platform.OS === 'web'
 const shouldLogApi = process.env.NODE_ENV === 'development'
 
 interface SecureStoreModule {
+  WHEN_UNLOCKED_THIS_DEVICE_ONLY: number
   getItemAsync(key: string): Promise<string | null>
-  setItemAsync(key: string, value: string): Promise<void>
+  setItemAsync(key: string, value: string, options?: { keychainAccessible: number }): Promise<void>
   deleteItemAsync(key: string): Promise<void>
 }
 
@@ -89,6 +90,16 @@ function loadSecureStore(): Promise<SecureStoreModule> {
     })
   }
   return secureStorePromise
+}
+
+function writeSecureCredential(
+  secureStore: SecureStoreModule,
+  key: string,
+  value: string
+): Promise<void> {
+  return secureStore.setItemAsync(key, value, {
+    keychainAccessible: secureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+  })
 }
 
 async function removeLegacyCredentialKeys(token: string | null, refreshToken: string | null) {
@@ -147,9 +158,9 @@ class ApiService {
     return this.serializeCredentialWrite(async () => {
       if (generation !== this.credentialGeneration) return false
       const secureStore = await loadSecureStore()
-      await secureStore.setItemAsync(config.STORAGE_KEYS.TOKEN, token)
+      await writeSecureCredential(secureStore, config.STORAGE_KEYS.TOKEN, token)
       if (generation !== this.credentialGeneration) return false
-      await secureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken)
+      await writeSecureCredential(secureStore, config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken)
       return generation === this.credentialGeneration
     })
   }
@@ -639,7 +650,7 @@ class ApiService {
     if (isWeb) return
     await this.serializeCredentialWrite(() =>
       loadSecureStore().then((secureStore) =>
-        secureStore.setItemAsync(config.STORAGE_KEYS.TOKEN, token)
+        writeSecureCredential(secureStore, config.STORAGE_KEYS.TOKEN, token)
       )
     )
   }
@@ -659,7 +670,7 @@ class ApiService {
     if (isWeb) return
     await this.serializeCredentialWrite(() =>
       loadSecureStore().then((secureStore) =>
-        secureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, token)
+        writeSecureCredential(secureStore, config.STORAGE_KEYS.REFRESH_TOKEN, token)
       )
     )
   }
@@ -705,10 +716,10 @@ class ApiService {
       const refreshToken = legacyRefreshToken ?? storedRefreshToken ?? authState.refreshToken
 
       if (generation !== this.credentialGeneration) throw this.authSessionChangedError()
-      if (token) await secureStore.setItemAsync(config.STORAGE_KEYS.TOKEN, token)
+      if (token) await writeSecureCredential(secureStore, config.STORAGE_KEYS.TOKEN, token)
       if (generation !== this.credentialGeneration) throw this.authSessionChangedError()
       if (refreshToken) {
-        await secureStore.setItemAsync(config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken)
+        await writeSecureCredential(secureStore, config.STORAGE_KEYS.REFRESH_TOKEN, refreshToken)
       }
       if (generation !== this.credentialGeneration) throw this.authSessionChangedError()
 

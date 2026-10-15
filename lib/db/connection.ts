@@ -9,6 +9,10 @@ import * as SQLite from 'expo-sqlite'
 import { syncEngine } from '../sync'
 
 let _db: SQLite.SQLiteDatabase | null = null
+let providerMounted = false
+let providerToken = 0
+let closeError: Error | null = null
+const detachWaiters = new Set<{ resolve: () => void; reject: (error: Error) => void }>()
 let _dbResolver: ((db: SQLite.SQLiteDatabase) => void) | null = null
 let _initPromise: Promise<SQLite.SQLiteDatabase> = new Promise((resolve) => {
   _dbResolver = resolve
@@ -58,4 +62,53 @@ export async function clearDatabase(): Promise<void> {
   } catch (error) {
     console.warn('Failed to clear sqlite database:', error)
   }
+}
+
+/** Marks the start of an owned profile database provider lifecycle. */
+export function markSharedDatabaseProviderMounted(): number {
+  providerMounted = true
+  closeError = null
+  return ++providerToken
+}
+
+/** Waits until the active profile database has completed closeAsync. */
+export async function waitForSharedDatabaseDetach(): Promise<void> {
+  if (!providerMounted && !_db && !closeError) return
+  if (!providerMounted && _db && closeError) {
+    const db = _db
+    await db.closeAsync()
+    markSharedDatabaseDetached(db, providerToken)
+    return
+  }
+  return new Promise((resolve, reject) => detachWaiters.add({ resolve, reject }))
+}
+
+/** Called only after the provider-owned database connection has closed. */
+export function markSharedDatabaseDetached(db: SQLite.SQLiteDatabase | null, token: number): void {
+  if (db && _db && _db !== db) return
+  if (db && _db === db) {
+    _db = null
+    _initPromise = new Promise((resolve) => {
+      _dbResolver = resolve
+    })
+  }
+  if (token !== providerToken) return
+  providerMounted = false
+  closeError = null
+  detachWaiters.forEach(({ resolve }) => resolve())
+  detachWaiters.clear()
+}
+
+/** Keeps erasure retryable if a native close fails. */
+export function markSharedDatabaseCloseFailed(
+  cause: unknown,
+  db: SQLite.SQLiteDatabase,
+  token: number
+): void {
+  if (token !== providerToken || (_db && _db !== db)) return
+  if (!_db) _db = db
+  closeError = cause instanceof Error ? cause : new Error('Could not close local data.')
+  providerMounted = false
+  detachWaiters.forEach(({ reject }) => reject(closeError!))
+  detachWaiters.clear()
 }

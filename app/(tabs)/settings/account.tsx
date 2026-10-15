@@ -68,7 +68,10 @@ export default function AccountSettingsScreen() {
       ]
     )
   return (
-    <SettingsPage title="Account" description={presentation.description}>
+    <SettingsPage
+      title={presentation.profileEditor ? 'Training profile' : 'Account'}
+      description={presentation.description}
+    >
       <YStack gap="$section">
         <YStack gap="$compact">
           <Text fontSize="$caption" color="$colorSubtle">
