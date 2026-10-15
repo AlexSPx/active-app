@@ -29,9 +29,6 @@ jest.mock('tamagui', () => {
   components.Switch.Thumb = (props) => React.createElement('Thumb', props)
   return components
 })
-jest.mock('../../components/settings/SettingsPage', () => ({
-  SettingsPage: (props) => require('react').createElement('Page', {}, props.children, props.footer),
-}))
 jest.mock('../../contexts/AuthContext', () => ({ useAuth: jest.fn() }))
 jest.mock('../../components/NotificationPermissions', () => ({
   __esModule: true,

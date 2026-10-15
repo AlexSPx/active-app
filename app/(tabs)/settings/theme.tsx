@@ -13,12 +13,16 @@ export default function ThemeSettingsScreen() {
   ] as const
   return (
     <SettingsPage title="Appearance" description="Choose how Active looks on this device.">
-      <YStack>
+      <YStack gap="$field">
         {options.map((option) => (
           <Button
             key={option.value}
             unstyled
-            py="$card"
+            p="$card"
+            rounded="$card"
+            borderWidth={1}
+            borderColor={theme === option.value ? '$primary' : '$borderColor'}
+            bg={theme === option.value ? '$backgroundAccent' : '$surface'}
             minH="$touch"
             accessibilityRole="radio"
             accessibilityState={{ checked: theme === option.value }}
@@ -42,11 +46,6 @@ export default function ThemeSettingsScreen() {
                   {option.description}
                 </Text>
               </YStack>
-              {theme === option.value && (
-                <Text fontSize="$caption" color="$primary">
-                  Selected
-                </Text>
-              )}
             </XStack>
           </Button>
         ))}

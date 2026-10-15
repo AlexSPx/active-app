@@ -3,6 +3,21 @@ import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useHeaderHeight } from '@react-navigation/elements'
 import { Paragraph, ScrollView, Text, YStack } from 'tamagui'
 
+export function SettingsCard({ children }: { children: ReactNode }) {
+  return (
+    <YStack
+      bg="$surface"
+      borderWidth={1}
+      borderColor="$borderColor"
+      rounded="$card"
+      p="$card"
+      gap="$field"
+    >
+      {children}
+    </YStack>
+  )
+}
+
 export function SettingsPage({
   title,
   description,

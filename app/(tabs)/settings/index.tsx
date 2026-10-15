@@ -1,7 +1,18 @@
 import { Alert } from 'react-native'
-import { Link } from 'expo-router'
+import type { ReactNode } from 'react'
+import { Link, type Href } from 'expo-router'
 import { Button, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui'
-import { ChevronRight, LogOut } from '@tamagui/lucide-icons'
+import {
+  Bell,
+  ChevronRight,
+  Clock3,
+  Database,
+  Globe2,
+  LogOut,
+  Palette,
+  Ruler,
+  UserRound,
+} from '@tamagui/lucide-icons'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
 import { useAuth } from '../../../contexts/AuthContext'
@@ -14,15 +25,36 @@ function MenuRow({
   title,
   description,
   href,
+  icon,
 }: {
   title: string
-  description: React.ReactNode
-  href: string
+  description: ReactNode
+  href: Href
+  icon: ReactNode
 }) {
   return (
-    <Link href={href as any} asChild>
-      <Button unstyled py="$card" minH="$touch" pressStyle={{ bg: '$backgroundPress' }}>
+    <Link href={href} asChild>
+      <Button
+        unstyled
+        p="$card"
+        minH="$touch"
+        rounded="$card"
+        bg="$surface"
+        borderWidth={1}
+        borderColor="$borderColor"
+        pressStyle={{ bg: '$surfacePress' }}
+      >
         <XStack gap="$field" items="center" justify="space-between">
+          <YStack
+            width="$touch"
+            height="$touch"
+            rounded="$control"
+            bg="$backgroundAccent"
+            items="center"
+            justify="center"
+          >
+            {icon}
+          </YStack>
           <YStack flex={1} gap="$compact">
             <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
               {title}
@@ -62,18 +94,29 @@ export default function SettingsMenuScreen() {
     <YStack flex={1} bg="$background">
       <ScrollView showsVerticalScrollIndicator={false}>
         <YStack p="$page" gap="$section" width="100%" maxW="$content" self="center">
-          <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
-            Your settings
-          </Text>
           <Link href={launchFacade.settings.profileRoute() as any} asChild>
             <Button
               unstyled
               minH="$touch"
-              py="$field"
-              pressStyle={{ bg: '$backgroundPress' }}
+              p="$card"
+              rounded="$card"
+              bg="$surface"
+              borderWidth={1}
+              borderColor="$borderColor"
+              pressStyle={{ bg: '$surfacePress' }}
               accessibilityLabel={account.accessibilityLabel}
             >
               <XStack gap="$field" items="center">
+                <YStack
+                  width="$action"
+                  height="$action"
+                  rounded="$button"
+                  bg="$backgroundAccent"
+                  items="center"
+                  justify="center"
+                >
+                  <UserRound size={24} color="$primary" />
+                </YStack>
                 <YStack flex={1} gap="$compact">
                   <Text fontSize="$sectionTitle" lineHeight="$sectionTitle" fontWeight="600">
                     {account.name}
@@ -84,18 +127,23 @@ export default function SettingsMenuScreen() {
                     </Text>
                   )}
                 </YStack>
-                <Text fontSize="$caption" color="$primary">
-                  {account.linkLabel}
-                </Text>
+                <ChevronRight size="$icon" color="$colorMuted" />
               </XStack>
             </Button>
           </Link>
-          <YStack>
-            <Text fontSize="$caption" fontWeight="600" color="$colorSubtle" mb="$field">
+          <YStack gap="$field">
+            <Text
+              accessibilityRole="header"
+              fontSize="$body"
+              fontWeight="600"
+              color="$primary"
+              px="$compact"
+            >
               Training
             </Text>
             <MenuRow
               title="Body measurements"
+              icon={<Ruler size={22} color="$primary" />}
               description={[
                 settings.bodyWeight == null
                   ? 'Weight not set'
@@ -108,6 +156,7 @@ export default function SettingsMenuScreen() {
             />
             <MenuRow
               title="Rest timer"
+              icon={<Clock3 size={22} color="$primary" />}
               description={
                 settings.restTimerEnabled
                   ? `On · ${Math.floor(settings.restTimerDefaultSeconds / 60)} min ${settings.restTimerDefaultSeconds % 60} sec`
@@ -117,33 +166,49 @@ export default function SettingsMenuScreen() {
             />
           </YStack>
           {localProfile && (
-            <YStack>
-              <Text fontSize="$caption" fontWeight="600" color="$colorSubtle" mb="$field">
+            <YStack gap="$field">
+              <Text
+                accessibilityRole="header"
+                fontSize="$body"
+                fontWeight="600"
+                color="$primary"
+                px="$compact"
+              >
                 Data
               </Text>
               <MenuRow
                 title="Data on this device"
+                icon={<Database size={22} color="$primary" />}
                 description="Manage this training profile and erase saved data"
                 href="/settings/data"
               />
             </YStack>
           )}
-          <YStack>
-            <Text fontSize="$caption" fontWeight="600" color="$colorSubtle" mb="$field">
+          <YStack gap="$field">
+            <Text
+              accessibilityRole="header"
+              fontSize="$body"
+              fontWeight="600"
+              color="$primary"
+              px="$compact"
+            >
               Preferences
             </Text>
             <MenuRow
               title="Appearance"
+              icon={<Palette size={22} color="$primary" />}
               description={settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1)}
               href="/settings/theme"
             />
             <MenuRow
               title="Time zone"
+              icon={<Globe2 size={22} color="$primary" />}
               description={settings.timeZone.replace(/_/g, ' ').replace(/\//g, ' / ')}
               href="/settings/time-zone"
             />
             <MenuRow
               title="Permissions"
+              icon={<Bell size={22} color="$primary" />}
               description={<NotificationPermissions summaryOnly />}
               href="/settings/permissions"
             />

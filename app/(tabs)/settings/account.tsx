@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { Button, Input, Label, Paragraph, Text, YStack } from 'tamagui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useAuthMutations } from '../../../features/auth'
-import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { SettingsCard, SettingsPage } from '../../../components/settings/SettingsPage'
 import { launchFacade } from '../../../features/launch/launchFacade'
 
 export default function AccountSettingsScreen() {
@@ -72,7 +72,7 @@ export default function AccountSettingsScreen() {
       title={presentation.profileEditor ? 'Training profile' : 'Account'}
       description={presentation.description}
     >
-      <YStack gap="$section">
+      <SettingsCard>
         <YStack gap="$compact">
           <Text fontSize="$caption" color="$colorSubtle">
             Name
@@ -163,7 +163,7 @@ export default function AccountSettingsScreen() {
             </Button>
           </YStack>
         )}
-      </YStack>
+      </SettingsCard>
       {presentation.accountActions.map((action) =>
         action.kind === 'sign-out' ? (
           <Button
