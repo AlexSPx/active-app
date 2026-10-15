@@ -1,5 +1,5 @@
 import { forwardRef } from 'react'
-import { Button, Card, Text, View, XStack, YStack } from 'tamagui'
+import { Card, Text, View, XStack, YStack } from 'tamagui'
 import { ArrowRight } from '@tamagui/lucide-icons'
 import { FlashList } from '@shopify/flash-list'
 import type { FlashListRef } from '@shopify/flash-list'
@@ -22,54 +22,40 @@ export type HistoryListItem = {
 
 type Props = {
   data: HistoryListItem[]
-  onCreateWorkout: () => void
   onPressItem: (item: HistoryListItem) => void
   refreshing?: boolean
   onRefresh?: () => void
 }
 
 const HistoryList = forwardRef<FlashListRef<HistoryListItem>, Props>(
-  ({ data, onCreateWorkout, onPressItem, refreshing, onRefresh }, ref) => (
+  ({ data, onPressItem, refreshing, onRefresh }, ref) => (
     <FlashList
       ref={ref}
       data={data}
       keyExtractor={(item) => item.id}
       refreshing={refreshing}
       onRefresh={onRefresh}
+      contentContainerStyle={data.length === 0 ? { flexGrow: 1 } : undefined}
       ListHeaderComponent={
-        <YStack pt="$section" gap="$compact">
-          <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600" color="$color">
-            Your history
-          </Text>
-          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-            {data.length} completed {data.length === 1 ? 'session' : 'sessions'}
-          </Text>
-        </YStack>
+        data.length > 0 ? (
+          <YStack pt="$section" gap="$compact">
+            <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600" color="$color">
+              Your history
+            </Text>
+            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+              {data.length} completed {data.length === 1 ? 'session' : 'sessions'}
+            </Text>
+          </YStack>
+        ) : null
       }
       ListEmptyComponent={
-        <YStack py="$section" gap="$field">
-          <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600" color="$color">
-            No history yet
+        <YStack flex={1} py="$section" items="center" justify="center">
+          <Text fontSize="$body" lineHeight="$body" color="$colorSubtle" text="center">
+            No records yet
           </Text>
-          <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
-            Complete your first workout to see your recorded sets here.
-          </Text>
-          <Button
-            unstyled
-            minH="$action"
-            bg="$primary"
-            rounded="$button"
-            items="center"
-            justify="center"
-            onPress={onCreateWorkout}
-          >
-            <Text fontSize="$body" lineHeight="$body" fontWeight="600" color="$onPrimary">
-              Choose a workout
-            </Text>
-          </Button>
         </YStack>
       }
-      ListFooterComponent={<View py="$field" />}
+      ListFooterComponent={data.length > 0 ? <View py="$field" /> : null}
       ItemSeparatorComponent={() => <View py="$2" />}
       renderItem={({ item, index }) => {
         const showHeader =

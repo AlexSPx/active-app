@@ -115,18 +115,21 @@ export function HistoryCalendar({
                   minW="$0"
                   minH="$touch"
                   py="$compact"
-                  gap="$compact"
+                  flexDirection="column"
+                  space={0}
                   rounded="$day"
                   items="center"
                   justify="center"
                   borderWidth="$0.5"
                   borderColor={day.isSelected ? '$primary' : '$backgroundTransparent'}
                   bg={
-                    day.isSelected
-                      ? '$backgroundAccent'
-                      : day.inCurrentMonth
-                        ? '$backgroundStrong'
-                        : '$backgroundTransparent'
+                    day.isToday
+                      ? '$primary'
+                      : day.isSelected
+                        ? '$backgroundAccent'
+                        : day.inCurrentMonth
+                          ? '$backgroundStrong'
+                          : '$backgroundTransparent'
                   }
                   accessibilityLabel={`${day.date.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${day.isToday ? ', today' : ''}${hasWorkouts ? ', completed session' : ''}`}
                   accessibilityState={{ selected: day.isSelected }}
@@ -136,18 +139,31 @@ export function HistoryCalendar({
                     fontSize="$caption"
                     lineHeight="$caption"
                     color={
-                      day.isSelected ? '$primary' : day.inCurrentMonth ? '$color' : '$colorSubtle'
+                      day.isToday
+                        ? '$onPrimary'
+                        : day.isSelected
+                          ? '$primary'
+                          : day.inCurrentMonth
+                            ? '$color'
+                            : '$colorSubtle'
                     }
-                    fontWeight={day.isSelected ? '600' : '400'}
-                    textDecorationLine={day.isToday ? 'underline' : 'none'}
+                    fontWeight={day.isToday || day.isSelected ? '600' : '400'}
                   >
                     {day.date.getDate()}
                   </Text>
                   <View
+                    position="absolute"
+                    b="$compact"
                     width="$0.5"
                     height="$0.5"
                     rounded="$block"
-                    bg={hasWorkouts ? '$primary' : '$backgroundTransparent'}
+                    bg={
+                      hasWorkouts
+                        ? day.isToday
+                          ? '$onPrimary'
+                          : '$primary'
+                        : '$backgroundTransparent'
+                    }
                   />
                 </Button>
               )
@@ -155,12 +171,6 @@ export function HistoryCalendar({
           </XStack>
         ))}
       </YStack>
-      <XStack items="center" gap="$compact" mt="$compact">
-        <View width="$0.5" height="$0.5" rounded="$block" bg="$primary" />
-        <Text flex={1} fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-          Completed session · underlined date is today
-        </Text>
-      </XStack>
     </YStack>
   )
 }

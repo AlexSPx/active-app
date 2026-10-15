@@ -272,7 +272,7 @@ test('selecting a calendar date jumps to its session week and Today selects the 
   jest.useRealTimers()
 })
 
-test('empty history keeps its calendar and refreshable list with a useful workout action', () => {
+test('empty history keeps its calendar and refreshable list with a quiet records message', () => {
   mockRecords = []
   const tree = mount(React.createElement(HistoryPage))
   expect(
@@ -281,7 +281,15 @@ test('empty history keeps its calendar and refreshable list with a useful workou
       .some((button) => button.props.accessibilityLabel === 'Expand month calendar')
   ).toBe(true)
   expect(tree.root.findByType('FlashList').props.onRefresh).toEqual(expect.any(Function))
-  pressLabel(tree, 'Choose a workout')
-  expect(mockPush).toHaveBeenCalledWith('/(tabs)/(workouts)')
+  expect(
+    tree.root.findAllByType('Text').some((text) => text.props.children === 'No records yet')
+  ).toBe(true)
+  expect(
+    tree.root.findAllByType('Text').some((text) => text.props.children === 'Your history')
+  ).toBe(false)
+  expect(
+    tree.root.findAllByType('Text').some((text) => text.props.children === 'Choose a workout')
+  ).toBe(false)
+  expect(mockPush).not.toHaveBeenCalled()
   act(() => tree.unmount())
 })
