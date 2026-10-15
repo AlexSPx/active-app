@@ -33,12 +33,12 @@ const renderers = []
 const clients = []
 const settle = () => new Promise((resolve) => setTimeout(resolve, 10))
 
-function renderProgression(id = exerciseId) {
+function renderProgression(id = exerciseId, name = exerciseName) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   clients.push(client)
   let state
   function Probe() {
-    state = useExerciseProgression(id, exerciseName)
+    state = useExerciseProgression(id, name)
     return null
   }
   let renderer
@@ -162,6 +162,38 @@ it.each([
   expect(view.state().data).toBeNull()
   expect(view.state().error).toBe('No exercise data available')
   expect(apiService.getExerciseLogs).not.toHaveBeenCalled()
+})
+
+it('ignores blank exercise names when matching legacy records', async () => {
+  Platform.OS = 'android'
+  onlineManager.setOnline(false)
+  const repo = new WorkoutRepository(new FakeDb())
+  useWorkoutRepository.mockReturnValue(repo)
+  const workout = await repo.create(
+    { title: 'Upper', template: { exercises: [{ exerciseId, reps: [5], weight: [45] }] } },
+    [
+      {
+        id: exerciseId,
+        name: exerciseName,
+        category: 'STRENGTH',
+        primaryMuscles: [],
+        secondaryMuscles: [],
+      },
+    ]
+  )
+  await repo.hydrateRecords([
+    {
+      id: 'legacy-blank',
+      workoutId: workout.id,
+      workoutTitle: 'Upper',
+      createdAt: '2026-09-01T12:00:00Z',
+      exerciseRecords: [{ exerciseName: '   ', reps: [8], weight: [40] }],
+    },
+  ])
+  const view = renderProgression(exerciseId, '   ')
+  await act(settle)
+  expect(view.state().data).toBeNull()
+  expect(view.state().error).toBe('No exercise data available')
 })
 
 it('keeps web progression on the existing API and query key', async () => {

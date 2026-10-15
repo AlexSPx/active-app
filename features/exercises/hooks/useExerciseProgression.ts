@@ -135,10 +135,11 @@ function localExerciseLogs(
 ): ExerciseLogResponse[] {
   return records.flatMap((record) =>
     record.exerciseRecords.flatMap((exercise, index) => {
+      const wanted = exerciseName.trim().toLowerCase()
       const matches = exercise.exerciseId
         ? exercise.exerciseId === exerciseId
         : exercise.exerciseName === exerciseId ||
-          exercise.exerciseName.trim().toLowerCase() === exerciseName.trim().toLowerCase()
+          (wanted !== '' && exercise.exerciseName.trim().toLowerCase() === wanted)
       if (!matches) return []
 
       return [
