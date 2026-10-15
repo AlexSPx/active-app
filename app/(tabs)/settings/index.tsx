@@ -21,6 +21,31 @@ import { measurementText } from '../../../features/settings/inputs'
 import NotificationPermissions from '../../../components/NotificationPermissions'
 import { launchFacade } from '../../../features/launch/launchFacade'
 
+function MenuSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <YStack gap="$field">
+      <Text
+        accessibilityRole="header"
+        fontSize="$body"
+        fontWeight="600"
+        color="$primary"
+        px="$compact"
+      >
+        {title}
+      </Text>
+      <YStack
+        bg="$surface"
+        borderWidth={1}
+        borderColor="$borderColor"
+        rounded="$card"
+        overflow="hidden"
+      >
+        {children}
+      </YStack>
+    </YStack>
+  )
+}
+
 function MenuRow({
   title,
   description,
@@ -34,16 +59,7 @@ function MenuRow({
 }) {
   return (
     <Link href={href} asChild>
-      <Button
-        unstyled
-        p="$card"
-        minH="$touch"
-        rounded="$card"
-        bg="$surface"
-        borderWidth={1}
-        borderColor="$borderColor"
-        pressStyle={{ bg: '$surfacePress' }}
-      >
+      <Button unstyled px="$card" py="$field" minH="$touch" pressStyle={{ bg: '$surfacePress' }}>
         <XStack gap="$field" items="center" justify="space-between">
           <YStack
             width="$touch"
@@ -131,16 +147,7 @@ export default function SettingsMenuScreen() {
               </XStack>
             </Button>
           </Link>
-          <YStack gap="$field">
-            <Text
-              accessibilityRole="header"
-              fontSize="$body"
-              fontWeight="600"
-              color="$primary"
-              px="$compact"
-            >
-              Training
-            </Text>
+          <MenuSection title="Training">
             <MenuRow
               title="Body measurements"
               icon={<Ruler size={22} color="$primary" />}
@@ -164,36 +171,18 @@ export default function SettingsMenuScreen() {
               }
               href="/settings/rest-timer"
             />
-          </YStack>
+          </MenuSection>
           {localProfile && (
-            <YStack gap="$field">
-              <Text
-                accessibilityRole="header"
-                fontSize="$body"
-                fontWeight="600"
-                color="$primary"
-                px="$compact"
-              >
-                Data
-              </Text>
+            <MenuSection title="Data">
               <MenuRow
                 title="Data on this device"
                 icon={<Database size={22} color="$primary" />}
                 description="Manage this training profile and erase saved data"
                 href="/settings/data"
               />
-            </YStack>
+            </MenuSection>
           )}
-          <YStack gap="$field">
-            <Text
-              accessibilityRole="header"
-              fontSize="$body"
-              fontWeight="600"
-              color="$primary"
-              px="$compact"
-            >
-              Preferences
-            </Text>
+          <MenuSection title="Preferences">
             <MenuRow
               title="Appearance"
               icon={<Palette size={22} color="$primary" />}
@@ -212,7 +201,7 @@ export default function SettingsMenuScreen() {
               description={<NotificationPermissions summaryOnly />}
               href="/settings/permissions"
             />
-          </YStack>
+          </MenuSection>
           {account.signOutAction && (
             <Button
               chromeless
