@@ -1,4 +1,4 @@
-import { ArrowUpRight } from '@tamagui/lucide-icons'
+import { ArrowRight } from '@tamagui/lucide-icons'
 import { useRouter } from 'expo-router'
 import { Platform, ScrollView } from 'react-native'
 import { Button, H1, Image, Text, XStack, YStack } from 'tamagui'
@@ -25,23 +25,14 @@ export default function WelcomeHome() {
         width="100%"
         maxW={560}
         self="center"
-        px="$5"
-        pt="$4"
-        pb="$4"
-        gap="$5"
-        $sm={{ px: '$7', pt: '$6', pb: '$6' }}
+        px="$page"
+        pt="$page"
+        pb="$page"
+        gap="$section"
       >
-        <XStack items="center" justify="space-between" gap="$3" flexWrap="wrap">
-          <Text fontSize={20} fontWeight="800" letterSpacing={-0.8} color="$color">
-            ActiveNext
-          </Text>
-          <XStack items="center" gap="$2">
-            <YStack width={6} height={6} rounded={3} bg="#FF9500" />
-            <Text fontSize={10} fontWeight="700" letterSpacing={1.5} color="$colorSubtle">
-              MADE FOR YOUR PACE
-            </Text>
-          </XStack>
-        </XStack>
+        <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600" color="$color">
+          ActiveNext
+        </Text>
 
         <YStack flex={1} justify="center" gap="$5" py="$3">
           <YStack items="center" py="$2">
@@ -56,38 +47,32 @@ export default function WelcomeHome() {
           </YStack>
 
           <YStack gap="$3">
-            <XStack items="center" gap="$3">
-              <YStack width={28} height={3} bg="#FF9500" />
-              <Text fontSize={11} fontWeight="700" letterSpacing={2} color="$colorSubtle">
-                ONE REP AT A TIME
-              </Text>
-            </XStack>
-            <H1
-              fontSize={48}
-              lineHeight={50}
-              fontWeight="900"
-              letterSpacing={-2.5}
-              color="$color"
-              $sm={{ fontSize: 60, lineHeight: 62 }}
-            >
+            <H1 fontSize={36} lineHeight={42} fontWeight="700" letterSpacing={-0.8} color="$color">
               Good things{'\n'}take reps.
             </H1>
-            <Text fontSize={16} lineHeight={24} color="$colorSubtle" maxW={350}>
+            <Text fontSize="$body" lineHeight="$body" color="$colorSubtle" maxW={350}>
               A place for your workouts, your routine, and every bit of progress along the way.
             </Text>
           </YStack>
         </YStack>
 
-        <XStack borderTopWidth={1} borderColor="$borderColor" pt="$4" gap="$3">
+        <XStack
+          bg="$surface"
+          borderWidth={1}
+          borderColor="$borderColor"
+          rounded="$card"
+          p="$card"
+          gap="$field"
+        >
           {trainingSteps.map((step) => (
             <YStack key={step.number} flex={1} gap="$1">
-              <Text fontSize={10} color="$colorSubtle" letterSpacing={1}>
+              <Text fontSize="$caption" lineHeight="$caption" color="$primary">
                 {step.number}
               </Text>
-              <Text fontSize={16} fontWeight="700" color="$color">
+              <Text fontSize="$body" lineHeight="$body" fontWeight="600" color="$color">
                 {step.title}
               </Text>
-              <Text fontSize={11} lineHeight={16} color="$colorSubtle">
+              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
                 {step.detail}
               </Text>
             </YStack>
@@ -96,20 +81,19 @@ export default function WelcomeHome() {
 
         <YStack gap="$2">
           <Button
-            height={60}
-            bg="#FF9500"
-            rounded="$4"
+            minH="$action"
+            bg="$primary"
+            rounded="$button"
             borderWidth={0}
             px="$5"
-            justify="space-between"
             onPress={() => router.push('/welcome/register')}
-            hoverStyle={{ bg: '#FFAA33' }}
-            pressStyle={{ bg: '#E68600' }}
+            hoverStyle={{ bg: '$primaryHover' }}
+            pressStyle={{ bg: '$primaryPress' }}
             focusVisibleStyle={{ outlineColor: '$color', outlineWidth: 2, outlineOffset: 4 }}
             accessibilityLabel="Get started"
-            iconAfter={<ArrowUpRight size={23} color="#171E27" />}
+            iconAfter={<ArrowRight size="$icon" color="$onPrimary" />}
           >
-            <Text fontSize={17} fontWeight="700" color="#171E27">
+            <Text fontSize="$body" fontWeight="600" color="$onPrimary">
               Get started
             </Text>
           </Button>
