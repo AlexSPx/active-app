@@ -189,12 +189,14 @@ export default function SettingsMenuScreen() {
               description={settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1)}
               href="/settings/theme"
             />
-            <MenuRow
-              title="Time zone"
-              icon={<Globe2 size={22} color="$primary" />}
-              description={settings.timeZone.replace(/_/g, ' ').replace(/\//g, ' / ')}
-              href="/settings/time-zone"
-            />
+            {!localProfile && (
+              <MenuRow
+                title="Time zone"
+                icon={<Globe2 size={22} color="$primary" />}
+                description={settings.timeZone.replace(/_/g, ' ').replace(/\//g, ' / ')}
+                href="/settings/time-zone"
+              />
+            )}
             <MenuRow
               title="Permissions"
               icon={<Bell size={22} color="$primary" />}
