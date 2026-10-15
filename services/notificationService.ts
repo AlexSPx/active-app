@@ -1,21 +1,14 @@
-import { Platform, Alert } from 'react-native'
-import * as Linking from 'expo-linking'
-import * as Application from 'expo-application'
+import { Platform } from 'react-native'
 import type {
   NotificationHandler,
   NotificationChannelInput,
   NotificationTriggerInput,
   NotificationContentInput,
-  NotificationPermissionsStatus,
 } from 'expo-notifications'
-import { apiService } from './apiService'
-import { useAuthStore } from '../stores/authStore'
 
 let Notifications: typeof import('expo-notifications') | null = null
 let initialized = false
 let scheduledId: string | null = null
-let lastRegisteredUserId: string | null = null
-let lastRegisteredPushToken: string | null = null
 
 /**
  * Lazily loads the expo-notifications module.
@@ -33,17 +26,8 @@ async function loadModule(): Promise<typeof import('expo-notifications') | null>
     return null
   }
 }
-async function openAlarmSettings() {
-  if (Platform.OS === 'android') {
-    const action = 'android.settings.REQUEST_SCHEDULE_EXACT_ALARM'
-    const alarmSettingsUri = `package:${Application.applicationId ?? ''}`
-    await Linking.sendIntent(action, [{ key: 'data', value: alarmSettingsUri }])
-  }
-}
-
 /**
- * Initializes the notification service, sets up the handler,
- * creates the Android channel, and requests permissions.
+ * Initializes local notifications and creates the Android rest-timer channel.
  */
 export async function initNotifications(): Promise<void> {
   if (initialized) return
@@ -77,77 +61,11 @@ export async function initNotifications(): Promise<void> {
       await mod.setNotificationChannelAsync('rest-timer', channelInput)
     }
 
-    // 5. Handle 'allowsScheduledNotifications' (This is the critical part)
-    // We do NOT request permissions here automatically anymore.
-    // Permissions are requested explicitly in the UI (e.g. Register screen or Settings).
+    // Permissions are requested explicitly in the settings UI.
   } catch (error: unknown) {
     console.error('Failed to initialize notifications:', error)
   } finally {
-    // Attempt to register push notifications/token once init path completes
     initialized = true
-  }
-}
-
-export async function registerPushNotifications(): Promise<void> {
-  if (Platform.OS === 'web') return
-
-  const mod = await loadModule()
-  if (!mod) return
-
-  const authState = useAuthStore.getState()
-  const userId = authState.user?.id ?? null
-  if (!authState.isAuthenticated || !userId) {
-    lastRegisteredUserId = null
-    lastRegisteredPushToken = null
-    return
-  }
-
-  const permissions = await mod.getPermissionsAsync()
-  const notificationsAllowed =
-    permissions.granted ||
-    permissions.ios?.status === mod.IosAuthorizationStatus.PROVISIONAL
-
-  if (!notificationsAllowed) {
-    return
-  }
-
-  if (Platform.OS === 'android') {
-    const channelInput: NotificationChannelInput = {
-      name: 'Streak Reminders',
-      importance: mod.AndroidImportance.HIGH,
-      vibrationPattern: [0, 250, 250, 250],
-      lightColor: '#FF7A00',
-      lockscreenVisibility: mod.AndroidNotificationVisibility.PUBLIC,
-    }
-    await mod.setNotificationChannelAsync('streak-reminders', channelInput)
-  }
-
-  try {
-    const tokenResponse = await mod.getExpoPushTokenAsync({
-      projectId: '8dee9569-7b46-47df-b72f-21833f59e85c',
-    })
-
-    const expoPushToken = tokenResponse.data
-
-    console.log('Push token: ', expoPushToken)
-
-    if (expoPushToken && expoPushToken.trim() !== '') {
-      if (lastRegisteredUserId === userId && lastRegisteredPushToken === expoPushToken) {
-        return
-      }
-
-      try {
-        const updated = await apiService.registerPushToken(expoPushToken)
-        // Update user in auth store to reflect any server-side changes
-        useAuthStore.getState().setUser(updated)
-        lastRegisteredUserId = userId
-        lastRegisteredPushToken = expoPushToken
-      } catch (e) {
-        console.error('Failed to register push token with server:', e)
-      }
-    }
-  } catch (error) {
-    console.error('Failed to get push notification token:', error)
   }
 }
 

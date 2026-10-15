@@ -8,9 +8,6 @@ jest.mock('../../config/launchPolicy', () => ({
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
-jest.mock('../../services/posthog', () => ({
-  posthog: { capture: jest.fn() },
-}))
 
 const { createApi, makeJob, runQueue, FakeDb } = require('../helpers/syncTestUtils')
 

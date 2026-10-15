@@ -23,7 +23,6 @@ import {
 import { AuthRepository, UserRepository } from 'lib/repositories'
 
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
-import { posthog } from '../services/posthog'
 import { networkPolicy } from './networkStore'
 import { launchFacade } from '../features/launch/launchFacade'
 
@@ -349,49 +348,29 @@ export const useAuthStore = create<AuthState>()(
 
       // Actions
       loginWithWorkOS: async (code: string) => {
-        if (
-          await authenticate(
-            () => authRepository.loginWithWorkOS(code),
-            'WorkOS login failed',
-            set,
-            get
-          )
-        ) {
-          posthog.capture('user_logged_in', { method: 'workos' })
-        }
+        await authenticate(
+          () => authRepository.loginWithWorkOS(code),
+          'WorkOS login failed',
+          set,
+          get
+        )
       },
 
       login: async (credentials: LoginRequest) => {
-        if (await authenticate(() => authRepository.login(credentials), 'Login failed', set, get)) {
-          posthog.capture('user_logged_in', { method: 'email' })
-        }
+        await authenticate(() => authRepository.login(credentials), 'Login failed', set, get)
       },
 
       register: async (payload) => {
-        if (
-          await authenticate(
-            () => authRepository.register(payload),
-            'Registration failed',
-            set,
-            get
-          )
-        ) {
-          posthog.capture('user_signed_up')
-          posthog.capture('user_logged_in')
-        }
+        await authenticate(() => authRepository.register(payload), 'Registration failed', set, get)
       },
 
       loginWithGoogle: async (idToken: string) => {
-        if (
-          await authenticate(
-            () => authRepository.loginWithGoogle(idToken),
-            'Google login failed',
-            set,
-            get
-          )
-        ) {
-          posthog.capture('user_logged_in', { method: 'google' })
-        }
+        await authenticate(
+          () => authRepository.loginWithGoogle(idToken),
+          'Google login failed',
+          set,
+          get
+        )
       },
 
       logout: async () => {
@@ -450,7 +429,6 @@ export const useAuthStore = create<AuthState>()(
             await resetAllStores()
             clearAuthState(set)
             authRepository.resumePendingRequests()
-            posthog.reset()
             await AsyncStorage.removeItem('auth-storage')
             authPersistenceReady = true
           } catch (error) {

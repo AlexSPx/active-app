@@ -1,6 +1,5 @@
 import { RoutineForm } from '../../features/routines/components/RoutineForm'
 import { useRoutineMutations } from '../../features/routines'
-import { posthog } from '../../services/posthog'
 
 export default function NewRoutinePage() {
   const { createRoutine, loading, error } = useRoutineMutations()
@@ -23,12 +22,6 @@ export default function NewRoutinePage() {
         }
         const created = await createRoutine(payload)
         if (!created) return false
-        posthog.capture('routine_created', {
-          routineType: data.routineType,
-          workoutDays: payload.pattern.filter((day) => day.dayType === 'WORKOUT').length,
-          restDays: payload.pattern.filter((day) => day.dayType === 'REST').length,
-          active: data.active,
-        })
         return true
       }}
     />
