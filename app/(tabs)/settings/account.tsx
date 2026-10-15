@@ -1,14 +1,15 @@
-import { Alert, Platform } from 'react-native'
+import { Alert } from 'react-native'
 import { useEffect, useState } from 'react'
 import { Button, Input, Label, Paragraph, Text, YStack } from 'tamagui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useAuthMutations } from '../../../features/auth'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { launchFacade } from '../../../features/launch/launchFacade'
 
 export default function AccountSettingsScreen() {
-  const isNativeOffline = Platform.OS !== 'web'
   const { logout, updateUser, user } = useAuth()
   const { deleteAccount, deleteAccountPending: deleting, error: deleteError } = useAuthMutations()
+  const presentation = launchFacade.settings.accountPage(user)
   const [firstName, setFirstName] = useState(user?.firstName ?? '')
   const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [saving, setSaving] = useState(false)
@@ -16,9 +17,7 @@ export default function AccountSettingsScreen() {
   const [saved, setSaved] = useState(false)
   const currentFirstName = user?.firstName ?? ''
   const currentLastName = user?.lastName ?? ''
-  const fullName =
-    [currentFirstName, currentLastName].filter(Boolean).join(' ') ||
-    (isNativeOffline ? 'Training profile' : user?.username || 'Your account')
+  const fullName = presentation.fullName
   const dirty = firstName.trim() !== currentFirstName || lastName.trim() !== currentLastName
 
   useEffect(() => {
@@ -69,14 +68,7 @@ export default function AccountSettingsScreen() {
       ]
     )
   return (
-    <SettingsPage
-      title="Account"
-      description={
-        isNativeOffline
-          ? 'Your training profile is stored on this device.'
-          : 'Your signed-in account.'
-      }
-    >
+    <SettingsPage title="Account" description={presentation.description}>
       <YStack gap="$section">
         <YStack gap="$compact">
           <Text fontSize="$caption" color="$colorSubtle">
@@ -86,29 +78,29 @@ export default function AccountSettingsScreen() {
             {fullName}
           </Text>
         </YStack>
-        {!isNativeOffline && (
+        {presentation.email && (
           <YStack gap="$compact">
             <Text fontSize="$caption" color="$colorSubtle">
-              Email
+              {presentation.email.label}
             </Text>
             <Text fontSize="$body" lineHeight="$body">
-              {user?.email ?? 'Not set'}
+              {presentation.email.value}
             </Text>
           </YStack>
         )}
-        {isNativeOffline && (
+        {presentation.profileEditor && (
           <YStack gap="$field">
             <YStack gap="$compact">
               <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
-                Training profile
+                {presentation.profileEditor.title}
               </Text>
               <Paragraph fontSize="$caption" color="$colorSubtle">
-                Your training name is stored on this device.
+                {presentation.profileEditor.description}
               </Paragraph>
             </YStack>
             <YStack gap="$compact">
               <Label htmlFor="account-training-first-name" fontSize="$caption" color="$colorSubtle">
-                First name
+                {presentation.profileEditor.firstNameLabel}
               </Label>
               <Input
                 id="account-training-first-name"
@@ -128,7 +120,7 @@ export default function AccountSettingsScreen() {
             </YStack>
             <YStack gap="$compact">
               <Label htmlFor="account-training-last-name" fontSize="$caption" color="$colorSubtle">
-                Last name
+                {presentation.profileEditor.lastNameLabel}
               </Label>
               <Input
                 id="account-training-last-name"
@@ -164,50 +156,52 @@ export default function AccountSettingsScreen() {
               opacity={!dirty || saving ? 0.5 : 1}
               onPress={saveTrainingName}
             >
-              {saving ? 'Saving…' : 'Save training name'}
+              {saving ? 'Saving…' : presentation.profileEditor.saveLabel}
             </Button>
           </YStack>
         )}
       </YStack>
-      {!isNativeOffline && (
-        <Button
-          height="$action"
-          rounded="$button"
-          bg="$backgroundStrong"
-          disabled={deleting}
-          onPress={confirmSignOut}
-        >
-          Sign out
-        </Button>
-      )}
-      {!isNativeOffline && (
-        <YStack gap="$field" mt="$section">
-          <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
-            Delete account
-          </Text>
-          <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle">
-            Permanently delete your account and training data, including your workouts, routines,
-            and recorded sessions.
-          </Paragraph>
+      {presentation.accountActions.map((action) =>
+        action.kind === 'sign-out' ? (
           <Button
+            key={action.kind}
             height="$action"
             rounded="$button"
             bg="$backgroundStrong"
-            color="$destructive"
             disabled={deleting}
-            onPress={confirmDelete}
+            onPress={confirmSignOut}
           >
-            {deleting ? 'Deleting…' : 'Delete account'}
+            Sign out
           </Button>
-          {!!deleteError && (
-            <Paragraph fontSize="$caption" color="$destructive" accessibilityLiveRegion="polite">
-              {deleteError}
+        ) : (
+          <YStack key={action.kind} gap="$field" mt="$section">
+            <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
+              Delete account
+            </Text>
+            <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle">
+              Permanently delete your account and training data, including your workouts, routines,
+              and recorded sessions.
             </Paragraph>
-          )}
-          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-            You’ll be asked to confirm before anything is deleted.
-          </Text>
-        </YStack>
+            <Button
+              height="$action"
+              rounded="$button"
+              bg="$backgroundStrong"
+              color="$destructive"
+              disabled={deleting}
+              onPress={confirmDelete}
+            >
+              {deleting ? 'Deleting…' : 'Delete account'}
+            </Button>
+            {!!deleteError && (
+              <Paragraph fontSize="$caption" color="$destructive" accessibilityLiveRegion="polite">
+                {deleteError}
+              </Paragraph>
+            )}
+            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+              You’ll be asked to confirm before anything is deleted.
+            </Text>
+          </YStack>
+        )
       )}
     </SettingsPage>
   )

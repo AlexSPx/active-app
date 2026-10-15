@@ -14,7 +14,7 @@
 import { type SQLiteDatabase } from 'expo-sqlite'
 import * as Network from 'expo-network'
 import { AppState, type AppStateStatus } from 'react-native'
-import { isSyncEnabledForLaunch } from '../../config/launchPolicy'
+import { launchFacade } from '../../features/launch/launchFacade'
 import type { WorkoutRecord, EntityVersion } from '../../types/api'
 import { syncApi, type SyncApi } from './api'
 import { replaceQueuedIdReferences } from './queuePayloadRemap'
@@ -338,7 +338,7 @@ export class SyncEngine {
     this.db = db
     this.dbScope = scope
     this.authenticationPaused = false
-    if (!isSyncEnabledForLaunch()) {
+    if (launchFacade.sync.queueMode() === 'local-only') {
       this.uploadsEnabled = false
       this.enableAfterInit = false
       this.resumeAfterDrain = false
@@ -363,7 +363,7 @@ export class SyncEngine {
     }
 
     // Local-only launches keep queue rows untouched and never activate its processor.
-    if (!isSyncEnabledForLaunch()) return
+    if (launchFacade.sync.queueMode() === 'local-only') return
 
     await this.writeQueue(
       db,
@@ -402,7 +402,7 @@ export class SyncEngine {
   }
 
   setUploadsEnabled(enabled: boolean): void {
-    this.uploadsEnabled = enabled && isSyncEnabledForLaunch()
+    this.uploadsEnabled = enabled && launchFacade.sync.queueMode() === 'active'
     if (!this.uploadsEnabled) {
       this.clearRetryTimer()
       this.enableAfterInit = false
@@ -546,8 +546,8 @@ export class SyncEngine {
   }
 
   async retryJob(jobId: string): Promise<void> {
-    if (!isSyncEnabledForLaunch()) {
-      throw new Error('Sync is disabled by the native launch policy.')
+    if (launchFacade.sync.queueMode() === 'local-only') {
+      throw launchFacade.sync.disabledOperationError()
     }
     const db = this.db
     const scope = this.dbScope
@@ -580,8 +580,8 @@ export class SyncEngine {
   }
 
   async discardJob(jobId: string): Promise<void> {
-    if (!isSyncEnabledForLaunch()) {
-      throw new Error('Sync is disabled by the native launch policy.')
+    if (launchFacade.sync.queueMode() === 'local-only') {
+      throw launchFacade.sync.disabledOperationError()
     }
     const db = this.db
     const scope = this.dbScope
@@ -625,7 +625,7 @@ export class SyncEngine {
     db: SQLiteDatabase | null = this.db,
     options: EnqueueOptions = {}
   ): Promise<void> {
-    if (!isSyncEnabledForLaunch()) return
+    if (launchFacade.sync.queueMode() === 'local-only') return
     if (!db) {
       console.warn('[SyncEngine] enqueue called before init — ignoring')
       return
@@ -666,7 +666,7 @@ export class SyncEngine {
   // -----------------------------------------------------------------------
 
   async processQueue(): Promise<void> {
-    if (!isSyncEnabledForLaunch()) return
+    if (launchFacade.sync.queueMode() === 'local-only') return
     if (this.drainPromise) {
       this.drainRequested = true
       return this.drainPromise

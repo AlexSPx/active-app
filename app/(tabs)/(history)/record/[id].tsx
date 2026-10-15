@@ -16,7 +16,7 @@ import {
 } from '../../../../utils/workoutUtils'
 import { parseServerUtcDate } from '../../../../utils/date'
 import { recordDurationSeconds } from '../../../../features/history/components/record'
-import { getTrainingFacade } from '../../../../features/training/trainingFacade'
+import { launchFacade } from '../../../../features/launch/launchFacade'
 
 export default function RecordDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
@@ -266,7 +266,7 @@ export default function RecordDetailScreen() {
               const rows = cardio ? ex.durationSeconds || [] : ex.reps || []
               const volume =
                 ex.reps?.reduce((sum, reps, i) => sum + reps * (ex.weight?.[i] || 0), 0) || 0
-              const achievements = getTrainingFacade().getExerciseAchievements(ex)
+              const achievements = launchFacade.training.getExerciseAchievements(ex)
               const oneRm = achievements.some((achievement) => achievement.type === '1RM')
               const volumePr = achievements.some((achievement) => achievement.type === 'VOLUME')
               return (

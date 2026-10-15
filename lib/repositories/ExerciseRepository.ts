@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isBackendEnabledForLaunch } from '../../config/launchPolicy'
+import { launchFacade } from '../../features/launch/launchFacade'
 import exerciseCatalogArtifact from '../data/exercise-catalog.json'
 import { apiService } from '../../services/apiService'
 import { getDatabase } from '../db/connection'
@@ -121,14 +121,14 @@ function overlayCachedExercise(
 
 export class ExerciseRepository {
   get searchNetworkMode(): 'online' | 'always' {
-    return isBackendEnabledForLaunch() ? 'online' : 'always'
+    return launchFacade.api.backendMode() === 'remote' ? 'online' : 'always'
   }
 
   async search(query: string): Promise<ApiExercise[]> {
     const normalizedQuery = query.trim().toLowerCase()
     if (!normalizedQuery) return []
 
-    if (isBackendEnabledForLaunch()) {
+    if (launchFacade.api.backendMode() === 'remote') {
       const response = await apiService.searchExercises(query)
       return exercisesArraySchema.parse(response)
     }

@@ -1,6 +1,6 @@
 import PostHog from 'posthog-react-native'
 import * as FileSystem from 'expo-file-system'
-import { isNativeOfflineLaunch, nativeLaunchPolicy } from '../config/launchPolicy'
+import { launchFacade } from '../features/launch/launchFacade'
 
 const CONFIG = {
   apiKey: process.env.EXPO_PUBLIC_POSTHOG_API_KEY || 'phc_eu_test_key',
@@ -14,10 +14,5 @@ export const posthog = new PostHog(CONFIG.apiKey, {
     storage: FileSystem,
   } as any,
   flushAt: 1,
-  disabled: isNativeOfflineLaunch() && !nativeLaunchPolicy.telemetryEnabled,
-  defaultOptIn: !isNativeOfflineLaunch() || nativeLaunchPolicy.telemetryEnabled,
-  captureAppLifecycleEvents: !isNativeOfflineLaunch() || nativeLaunchPolicy.telemetryEnabled,
-  disableRemoteConfig: isNativeOfflineLaunch() && !nativeLaunchPolicy.telemetryEnabled,
-  disableSurveys: isNativeOfflineLaunch() && !nativeLaunchPolicy.telemetryEnabled,
-  preloadFeatureFlags: !isNativeOfflineLaunch() || nativeLaunchPolicy.telemetryEnabled,
+  ...launchFacade.telemetry.postHogOptions(),
 })

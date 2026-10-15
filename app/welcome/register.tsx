@@ -14,9 +14,8 @@ import { Platform, KeyboardAvoidingView } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { WorkOSSignInButton } from '../../components/WorkOSSignInButton'
 import { InputField } from '../../components/ui/InputField'
-import { UpdateUserRequest } from 'types/api'
 import { registrationFormSchema, type RegistrationFormData } from '../../lib/schemas/forms'
-import { isNativeOfflineLaunch } from '../../config/launchPolicy'
+import { launchFacade } from '../../features/launch/launchFacade'
 
 const STEPS = ['Account', 'Personal', 'Body', 'Time Zone', 'Notifications']
 
@@ -30,7 +29,7 @@ const RegisterPage = () => {
   const [direction, setDirection] = useState(1)
   const [isLoading, setIsLoading] = useState(false)
   const [initialized, setInitialized] = useState(false)
-  const isOfflineLaunch = isNativeOfflineLaunch()
+  const accountStep = launchFacade.onboarding.accountStep()
 
   const {
     watch,
@@ -70,33 +69,24 @@ const RegisterPage = () => {
 
   // Effect to pre-fill data if user is already authenticated
   useEffect(() => {
-    if (isOfflineLaunch) {
-      if (user && !initialized) {
-        if (user.username) setValue('username', user.username)
-        if (user.firstName) setValue('firstName', user.firstName)
-        if (user.lastName) setValue('lastName', user.lastName)
-        if (user.timezone) setValue('timezone', user.timezone)
-        setInitialized(true)
-      }
-      return
-    }
-
-    if (user && !initialized && !user.registrationCompleted) {
-      if (user.email) setValue('email', user.email)
-      if (user.username) setValue('username', user.username)
-      if (user.firstName) setValue('firstName', user.firstName)
-      if (user.lastName) setValue('lastName', user.lastName)
-
-      setValue('isWorkOSAuth', true)
-      setStep(1)
-      setInitialized(true)
-
+    const initialization = launchFacade.onboarding.initialization(user)
+    if (!initialization || initialized) return
+    const values = initialization.values
+    if (values.email) setValue('email', values.email)
+    if (values.username) setValue('username', values.username)
+    if (values.firstName) setValue('firstName', values.firstName)
+    if (values.lastName) setValue('lastName', values.lastName)
+    if (values.timezone) setValue('timezone', values.timezone)
+    if (values.isWorkOSAuth) setValue('isWorkOSAuth', true)
+    if (initialization.startAt !== null) setStep(initialization.startAt)
+    setInitialized(true)
+    if (initialization.notice) {
       toast.show('Complete Profile', {
-        message: 'Please complete your profile details to continue.',
+        message: initialization.notice,
         duration: 3000,
       })
     }
-  }, [user, initialized, setValue, toast, isOfflineLaunch])
+  }, [user, initialized, setValue, toast])
 
   // --- Helpers for Body Step ---
   const weightValuesKg = useMemo(
@@ -147,25 +137,17 @@ const RegisterPage = () => {
   )
 
   // --- Step Validation ---
-  const isStepValid = useCallback(() => {
-    switch (step) {
-      case 0: // Account
-        return isOfflineLaunch // WorkOS button handles validation implicitly on web
-      case 1: // Personal
-        if (isOfflineLaunch) {
-          return true
-        }
-        return firstName.length > 0 && lastName.length > 0 && username.length > 0
-      case 2: // Body
-        return weight !== null && heightVal !== null
-      case 3: // Time Zone
-        return true
-      case 4: // Notifications
-        return true
-      default:
-        return false
-    }
-  }, [step, firstName, lastName, username, weight, heightVal, isOfflineLaunch])
+  const isStepValid = useCallback(
+    () =>
+      launchFacade.onboarding.isStepValid(step, {
+        firstName,
+        lastName,
+        username,
+        weight,
+        height: heightVal,
+      }),
+    [step, firstName, lastName, username, weight, heightVal]
+  )
 
   const handleNext = useCallback(() => {
     if (step < STEPS.length - 1) {
@@ -177,21 +159,23 @@ const RegisterPage = () => {
     }
   }, [step])
 
+  const backAction = launchFacade.onboarding.backAction({ step, isWorkOSAuth })
   const handleBack = useCallback(async () => {
-    if (!isOfflineLaunch && isWorkOSAuth && step === 1) {
-      await logout()
-      router.replace('/')
-      return
+    switch (backAction) {
+      case 'sign-out':
+        await logout()
+        router.replace('/')
+        return
+      case 'previous-step':
+        setDirection(-1)
+        setStep(step - 1)
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+        return
+      case 'leave-registration':
+        router.back()
+        return
     }
-
-    if (step > 0) {
-      setDirection(-1)
-      setStep(step - 1)
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
-    } else {
-      router.back()
-    }
-  }, [isWorkOSAuth, step, logout, router, isOfflineLaunch])
+  }, [backAction, step, logout, router])
 
   const handleWorkOSSuccess = useCallback(
     async (code: string) => {
@@ -220,22 +204,21 @@ const RegisterPage = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     try {
       const data = getValues()
-      if (!isOfflineLaunch && (!data.isWorkOSAuth || (user && user.registrationCompleted))) {
-        throw new Error('Please use WorkOS to sign up.')
-      }
+      const submissionError = launchFacade.onboarding.submissionError({
+        isWorkOSAuth: data.isWorkOSAuth,
+        registrationCompleted: user?.registrationCompleted,
+      })
+      if (submissionError) throw new Error(submissionError)
 
-      const updateUserRequest: UpdateUserRequest = {
-        username: data.username ? data.username.trim() : undefined,
-        firstName: data.firstName ? data.firstName.trim() : '',
-        lastName: data.lastName ? data.lastName.trim() : '',
+      const updateUserRequest = launchFacade.onboarding.createProfileUpdate({
+        username: data.username,
+        firstName: data.firstName,
+        lastName: data.lastName,
         timezone: data.timezone,
-        measurements: {
-          weightKg: data.weight,
-          heightCm: data.height,
-        },
-        registrationCompleted: true,
+        weight: data.weight,
+        height: data.height,
         notificationFrequency: data.notificationFrequency,
-      }
+      })
       const saved = await updateUserProfile(updateUserRequest, {
         bodyWeightUnit: data.weightUnit,
         heightUnit: data.heightUnit,
@@ -256,7 +239,7 @@ const RegisterPage = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [getValues, user, updateUserProfile, router, toast, isOfflineLaunch])
+  }, [getValues, user, updateUserProfile, router, toast])
 
   // --- Render Components ---
   const renderStepContent = () => {
@@ -265,11 +248,9 @@ const RegisterPage = () => {
         return (
           <YStack gap="$4" items="center" justify="center" flex={1}>
             <Text fontSize="$5" style={{ textAlign: 'center' }} color="$color11" mb="$4">
-              {isOfflineLaunch
-                ? 'Set up your local profile to track your workouts and progress.'
-                : 'Create an account to track your workouts and progress.'}
+              {accountStep.description}
             </Text>
-            {isOfflineLaunch ? (
+            {accountStep.action.kind === 'continue' ? (
               <Button
                 size="$5"
                 bg="$blue9"
@@ -284,11 +265,14 @@ const RegisterPage = () => {
                 animation="fast"
               >
                 <Text color="white" fontWeight="700" fontSize="$4">
-                  Get Started
+                  {accountStep.action.label}
                 </Text>
               </Button>
             ) : (
-              <WorkOSSignInButton onSuccess={handleWorkOSSuccess} label="Sign Up with WorkOS" />
+              <WorkOSSignInButton
+                onSuccess={handleWorkOSSuccess}
+                label={accountStep.action.label}
+              />
             )}
 
             <Text fontSize="$2" color="$color11" style={{ textAlign: 'center' }} mt="$4">
@@ -471,7 +455,7 @@ const RegisterPage = () => {
         {/* Header */}
         <YStack mb="$6" animation="quick" enterStyle={{ opacity: 0, y: -20 }} opacity={1} y={0}>
           <H2 fontSize="$8" fontWeight="bold" mb="$4">
-            {isOfflineLaunch ? 'Set Up Profile' : 'Create Account'}
+            {launchFacade.onboarding.title()}
           </H2>
 
           {/* Step Indicator */}
@@ -540,7 +524,7 @@ const RegisterPage = () => {
             color="$color11"
           >
             <Text>
-              {step === 0 || (!isOfflineLaunch && isWorkOSAuth && step === 1) ? 'Cancel' : 'Back'}
+              {backAction === 'leave-registration' || backAction === 'sign-out' ? 'Cancel' : 'Back'}
             </Text>
           </Button>
           <Button

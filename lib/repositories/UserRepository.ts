@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { isNativeOfflineLaunch } from '../../config/launchPolicy'
+import { launchFacade } from '../../features/launch/launchFacade'
 import { apiService } from '../../services/apiService'
 import { getDatabase } from '../db/connection'
 import { getProfileScope, isCurrentProfile, type ProfileScope } from '../profileScope'
@@ -26,7 +26,7 @@ export function isMissingLocalUserProfile(error: unknown): boolean {
 
 export class UserRepository {
   async getCurrentUser(): Promise<User> {
-    if (!isNativeOfflineLaunch()) return apiService.getUser()
+    if (launchFacade.auth.getStartupPlan().kind !== 'local-profile') return apiService.getUser()
 
     const scope = getProfileScope()
     return serializeLocalProfile(async () => {
@@ -47,7 +47,9 @@ export class UserRepository {
   }
 
   async updateCurrentUser(payload: UpdateUserRequest): Promise<User> {
-    if (!isNativeOfflineLaunch()) return apiService.updateCurrentUser(payload)
+    if (launchFacade.auth.getStartupPlan().kind !== 'local-profile') {
+      return apiService.updateCurrentUser(payload)
+    }
 
     const scope = getProfileScope()
     return serializeLocalProfile(async () => {

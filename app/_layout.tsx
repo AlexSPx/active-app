@@ -6,7 +6,7 @@ import { AuthProvider } from '../contexts/AuthContext'
 import { AuthGuard } from '../components/AuthGuard'
 import { usePathname } from 'expo-router'
 import { posthog } from '../services/posthog'
-import { isNativeOfflineLaunch, nativeLaunchPolicy } from '../config/launchPolicy'
+import { launchFacade } from '../features/launch/launchFacade'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -30,9 +30,7 @@ export default function RootLayout() {
   const pathname = usePathname()
 
   useEffect(() => {
-    if (pathname && (nativeLaunchPolicy.telemetryEnabled || !isNativeOfflineLaunch())) {
-      posthog.screen(pathname)
-    }
+    if (pathname) launchFacade.telemetry.trackScreen(pathname, posthog)
   }, [pathname])
 
   useEffect(() => {

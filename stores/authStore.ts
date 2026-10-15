@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import { Platform } from 'react-native'
 import { config } from '../config/api'
 import { useSettingsStore } from '../features/settings'
 import { saveSettingsProfile } from '../features/settings/stores/settingsStore'
@@ -26,9 +25,8 @@ import { AuthRepository, UserRepository } from 'lib/repositories'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { posthog } from '../services/posthog'
 import { networkPolicy } from './networkStore'
-import { isNativeOfflineLaunch, nativeLaunchPolicy } from '../config/launchPolicy'
+import { launchFacade } from '../features/launch/launchFacade'
 
-const isWeb = Platform.OS === 'web'
 const authRepository = new AuthRepository()
 const userRepository = new UserRepository()
 let authPersistenceReady = false
@@ -120,7 +118,7 @@ async function persistSession(
         if (generation !== authSessionGeneration) return false
       }
 
-      if (!isWeb) {
+      if (launchFacade.auth.sessionStorageKind() === 'secure-store') {
         await authRepository.setToken(response.token)
         if (generation !== authSessionGeneration) return false
         await authRepository.setRefreshToken(response.refreshToken)
@@ -207,7 +205,7 @@ interface AuthState {
 }
 
 async function persistScrubbedAuthState(state: AuthState): Promise<void> {
-  const user = isNativeOfflineLaunch() && state.user?.id === LOCAL_USER_ID ? null : state.user
+  const user = launchFacade.auth.persistedUser(state.user)
   await AsyncStorage.setItem(
     'auth-storage',
     JSON.stringify({
@@ -281,8 +279,9 @@ function beginAuthenticatedSession(
     isProfileTransitioning: true,
     isLoading: false,
     user: null,
-    token: isWeb ? null : response.token,
-    refreshToken: isWeb ? null : response.refreshToken,
+    token: launchFacade.auth.sessionStorageKind() === 'browser' ? null : response.token,
+    refreshToken:
+      launchFacade.auth.sessionStorageKind() === 'browser' ? null : response.refreshToken,
     serverSession: 'unknown',
     isProfileLoading: false,
     profileError: null,
@@ -304,8 +303,9 @@ async function authenticate(
   set: (partial: Partial<AuthState>) => void,
   get: () => AuthState
 ): Promise<boolean> {
-  if (isNativeOfflineLaunch() && !nativeLaunchPolicy.accountsEnabled) {
-    set({ isLoading: false, error: 'Accounts are unavailable in this version.' })
+  const accountAction = launchFacade.auth.accountActionDecision()
+  if (accountAction.kind === 'unavailable') {
+    set({ isLoading: false, error: accountAction.message })
     return false
   }
 
@@ -499,7 +499,7 @@ export const useAuthStore = create<AuthState>()(
       },
 
       fetchUser: async () => {
-        if (isNativeOfflineLaunch() && !nativeLaunchPolicy.accountsEnabled) return
+        if (launchFacade.auth.profileFetchDecision() === 'skip') return
 
         const generation = authSessionGeneration
         const requestScope = getProfileScope()
@@ -583,29 +583,26 @@ export const useAuthStore = create<AuthState>()(
           if (isStaleProfileSnapshot(updated)) {
             set({
               isLoading: false,
-              serverSession: isNativeOfflineLaunch() ? get().serverSession : 'valid',
+              serverSession: launchFacade.auth.profileUpdateSession(get().serverSession),
             })
             return get().user
           }
-          if (isNativeOfflineLaunch()) {
-            await saveSettingsProfile(requestScope, {
-              timeZone: updated.timezone || 'UTC',
-              bodyWeight: updated.measurements?.weightKg ?? null,
-              height: updated.measurements?.heightCm ?? null,
-            })
+          const profileUpdate = launchFacade.auth.profileUpdateHandling(updated)
+          if (profileUpdate.kind === 'device-profile') {
+            await saveSettingsProfile(requestScope, profileUpdate.settings)
             if (generation !== authSessionGeneration || !isCurrentProfile(requestScope)) return null
           }
           // Merge with existing state (server returns full user shape)
           set({
             user: updated,
             isLoading: false,
-            serverSession: isNativeOfflineLaunch() ? get().serverSession : 'valid',
+            serverSession: launchFacade.auth.profileUpdateSession(get().serverSession),
           })
           if (updated.profileVersion !== undefined) {
             mergeCurrentProfileVersion(requestScope, updated.profileVersion)
           }
 
-          if (!isNativeOfflineLaunch()) syncUserToSettings(updated)
+          if (profileUpdate.kind === 'account-profile') syncUserToSettings(updated)
           return updated
         } catch (error) {
           if (generation !== authSessionGeneration || !isCurrentProfile(requestScope)) return null
@@ -651,10 +648,10 @@ export const useAuthStore = create<AuthState>()(
       storage: authStorage,
       // Only persist essential data
       partialize: (state) => ({
-        ...(!isWeb && !secureCredentialsMigrated
+        ...(launchFacade.auth.sessionStorageKind() === 'secure-store' && !secureCredentialsMigrated
           ? { token: state.token, refreshToken: state.refreshToken }
           : {}),
-        user: isNativeOfflineLaunch() && state.user?.id === LOCAL_USER_ID ? null : state.user,
+        user: launchFacade.auth.persistedUser(state.user),
         isAuthenticated: state.isAuthenticated,
       }),
     }
@@ -683,10 +680,10 @@ export function initializeAuth(retry = false): Promise<void> {
 
 async function initializeAuthState(): Promise<void> {
   const generation = authSessionGeneration
-  const localLaunch = isNativeOfflineLaunch()
+  const startupPlan = launchFacade.auth.getStartupPlan()
   let shouldRefreshProfile = false
   try {
-    if (!localLaunch) await networkPolicy.ready()
+    if (startupPlan.kind !== 'local-profile') await networkPolicy.ready()
     const hydrationError = await waitForHydration(useAuthStore)
     if (hydrationError) throw hydrationError
     if (generation !== authSessionGeneration) return
@@ -709,7 +706,7 @@ async function initializeAuthState(): Promise<void> {
 
     const hydratedState = useAuthStore.getState()
     try {
-      if (localLaunch) {
+      if (startupPlan.kind === 'local-profile') {
         useAuthStore.setState({
           isAuthenticated: !!hydratedState.user,
           token: null,
@@ -733,7 +730,7 @@ async function initializeAuthState(): Promise<void> {
       })
       if (generation !== authSessionGeneration) return
 
-      if (isWeb) {
+      if (startupPlan.kind === 'browser-session') {
         // Browser sessions use cookies; legacy native token fields are no longer needed.
         useAuthStore.setState({ token: null, refreshToken: null })
         if (
@@ -775,7 +772,10 @@ async function initializeAuthState(): Promise<void> {
         shouldRefreshProfile = hasCredentials
       }
     } catch (error) {
-      if (!isWeb && (error as { code?: string })?.code === 'SECURE_STORE_UNAVAILABLE') {
+      if (
+        startupPlan.kind !== 'browser-session' &&
+        (error as { code?: string })?.code === 'SECURE_STORE_UNAVAILABLE'
+      ) {
         authPersistenceReady = true
         return
       }

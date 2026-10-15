@@ -1,4 +1,5 @@
 let mockNativeOfflineLaunch = true
+let mockUser = { id: 'local:device', registrationCompleted: false }
 const mockReplace = jest.fn()
 const mockBack = jest.fn()
 const mockUpdateUserProfile = jest.fn()
@@ -28,7 +29,7 @@ jest.mock('expo-haptics', () => ({
 
 jest.mock('../../stores/authStore', () => ({
   useAuthStore: () => ({
-    user: { id: 'local:device', registrationCompleted: false },
+    user: mockUser,
     logout: jest.fn(),
   }),
 }))
@@ -102,6 +103,7 @@ describe('RegisterPage with native offline launch', () => {
     mockBack.mockReset()
     mockUpdateUserProfile.mockReset()
     mockToastShow.mockReset()
+    mockUser = { id: 'local:device', registrationCompleted: false }
   })
 
   it('renders Step 0 with local profile setup and Get Started button replacing WorkOS', async () => {
@@ -157,6 +159,32 @@ describe('RegisterPage with native offline launch', () => {
     // Should have 3 input fields for Personal: Username, First Name, Last Name
     const inputs = root.root.findAllByType('mock-input')
     expect(inputs.length).toBe(3)
+
+    await act(async () => root.unmount())
+  })
+
+  it('keeps the current local step when the profile finishes hydrating', async () => {
+    mockUser = null
+    let root
+    await act(async () => {
+      root = create(React.createElement(RegisterPage))
+    })
+
+    const nextButton = root.root.findAllByType('Button').find((button) => {
+      const labels = button.findAllByType('Text')
+      return labels.some((label) => label.props.children === 'Next')
+    })
+    await act(async () => nextButton.props.onPress())
+
+    mockUser = { id: 'local:device', registrationCompleted: false }
+    await act(async () => {
+      root.update(React.createElement(RegisterPage))
+    })
+
+    const stepLabel = root.root
+      .findAllByType('Text')
+      .find((label) => label.props.children === 'Personal')
+    expect(stepLabel).toBeDefined()
 
     await act(async () => root.unmount())
   })

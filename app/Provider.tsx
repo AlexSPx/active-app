@@ -28,12 +28,7 @@ import { isMissingLocalUserProfile, UserRepository } from '../lib/repositories/U
 import { useNetworkStore } from '../stores/networkStore'
 import { apiService } from '../services/apiService'
 import { remapRunningWorkoutId } from '../features/workout-session/stores/runningWorkoutStore'
-import {
-  isBackendEnabledForLaunch,
-  isNativeOfflineLaunch,
-  isSyncEnabledForLaunch,
-  nativeLaunchPolicy,
-} from '../config/launchPolicy'
+import { launchFacade } from '../features/launch/launchFacade'
 import {
   databaseNameForProfile,
   getProfileScope,
@@ -103,7 +98,7 @@ function SyncEngineBootstrap({
 
     setReadyDb(null)
     syncEngine.setConnectivityManaged(true)
-    if (!isSyncEnabledForLaunch()) {
+    if (launchFacade.sync.queueMode() === 'local-only') {
       syncEngine.setUploadsEnabled(false)
     }
     syncEngine
@@ -162,7 +157,7 @@ function SyncEngineBootstrap({
   ])
 
   useEffect(() => {
-    if (!isBackendEnabledForLaunch()) {
+    if (launchFacade.api.backendMode() === 'device') {
       apiReadyOwnerRef.current = null
       setApiReadyOwner(null)
       syncEngine.setUploadsEnabled(false)
@@ -367,7 +362,7 @@ function SyncEngineBootstrap({
   ])
 
   useEffect(() => {
-    if (!isBackendEnabledForLaunch()) return
+    if (launchFacade.api.backendMode() === 'device') return
 
     if (
       readyDb !== db ||
@@ -617,7 +612,7 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
         }
         setSharedDatabase(db)
 
-        if (!isNativeOfflineLaunch()) return
+        if (launchFacade.profile.databaseBootstrapAction() !== 'restore-local-user') return
 
         const state = useAuthStore.getState()
 
@@ -747,11 +742,7 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
             <QueryClientProvider client={queryClient}>
               <PostHogProvider
                 client={posthog}
-                autocapture={
-                  isNativeOfflineLaunch() && !nativeLaunchPolicy.telemetryEnabled
-                    ? false
-                    : undefined
-                }
+                autocapture={launchFacade.telemetry.providerAutocapture()}
               >
                 <PortalProvider>
                   <ToastProvider swipeDirection="horizontal" duration={6000} native={[]}>

@@ -2,11 +2,11 @@ import { useEffect, useState } from 'react'
 import { Button, Paragraph, Text, XStack, YStack } from 'tamagui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useUpdateUser } from '../../settings'
-import { getTrainingFacade } from '../trainingFacade'
+import { launchFacade } from '../../launch/launchFacade'
 
 export function TrainingReminders() {
   const { user } = useAuth()
-  const frequency = getTrainingFacade().getReminderFrequency(user)
+  const frequency = launchFacade.training.getReminderFrequency(user)
   return frequency === null ? null : <ReminderControls initialFrequency={frequency} />
 }
 

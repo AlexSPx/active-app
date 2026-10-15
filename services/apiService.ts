@@ -26,7 +26,7 @@ import type {
   RoutineDeleteAck,
 } from '../types/routine'
 import { networkPolicy } from '../stores/networkStore'
-import { isBackendEnabledForLaunch } from '../config/launchPolicy'
+import { launchFacade } from '../features/launch/launchFacade'
 
 // Re-export types for backward compatibility
 export type {
@@ -263,11 +263,7 @@ class ApiService {
   }
 
   private async beginNetworkRequest(expectedGeneration?: number): Promise<number> {
-    if (!isBackendEnabledForLaunch()) {
-      const error: ApiError = new Error('Backend requests are disabled by the native launch policy')
-      error.code = 'BACKEND_DISABLED'
-      throw error
-    }
+    launchFacade.api.assertBackendRequestsAllowed()
     await networkPolicy.ready()
     return networkPolicy.assertOnline(expectedGeneration)
   }
