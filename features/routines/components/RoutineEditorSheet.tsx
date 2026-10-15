@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Keyboard, KeyboardAvoidingView } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Sheet, YStack, XStack, Text, Input, Button, ScrollView, getTokenValue } from 'tamagui'
+import { Check, Plus } from '@tamagui/lucide-icons'
 import { router } from 'expo-router'
 import type { ApiWorkout } from '../../../types/api'
 import { toggleWorkoutSelection, workoutMetadata } from '../routineDraft'
@@ -131,9 +132,22 @@ function WorkoutPicker({
                               .join(' · ')}
                           </Text>
                         </YStack>
-                        <Text color={checked ? '$primary' : '$colorMuted'} fontSize="$header">
-                          {checked ? '✓' : '○'}
-                        </Text>
+                        <YStack
+                          width="$2"
+                          height="$2"
+                          rounded="$button"
+                          bg={checked ? '$primary' : '$surface'}
+                          borderColor="$borderColor"
+                          borderWidth="$0.5"
+                          justify="center"
+                          items="center"
+                        >
+                          {checked ? (
+                            <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
+                          ) : (
+                            <Plus size="$iconSmall" color="$colorSubtle" strokeWidth={2} />
+                          )}
+                        </YStack>
                       </XStack>
                     </Button>
                   )
