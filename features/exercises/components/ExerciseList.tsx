@@ -1,4 +1,5 @@
 import { YStack, Text, XStack, View } from 'tamagui'
+import { Check, Plus } from '@tamagui/lucide-icons'
 import { FlashList } from '@shopify/flash-list'
 import { memo, useCallback } from 'react'
 import type { Exercise } from '../../../types/workout'
@@ -125,13 +126,11 @@ const ExerciseRow = memo(function ExerciseRow({
           justify="center"
           items="center"
         >
-          <Text
-            fontSize="$body"
-            color={isSelected ? '$onPrimary' : '$colorSubtle'}
-            fontWeight="$header"
-          >
-            {isSelected ? '✓' : '+'}
-          </Text>
+          {isSelected ? (
+            <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
+          ) : (
+            <Plus size="$iconSmall" color="$colorSubtle" strokeWidth={2} />
+          )}
         </YStack>
       </XStack>
     </XStack>
