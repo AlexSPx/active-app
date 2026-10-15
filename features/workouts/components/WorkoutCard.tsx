@@ -1,8 +1,7 @@
-import { YStack, XStack, Text, Card, Button, Portal } from 'tamagui'
+import { YStack, XStack, Text, Card, Button } from 'tamagui'
 import { MoreHorizontal, Edit3, Trash2, Play } from '@tamagui/lucide-icons'
 import { Popover } from '@tamagui/popover'
 import { useCallback, memo, useState, useMemo } from 'react'
-import { Pressable, StyleSheet } from 'react-native'
 import { ApiWorkout } from '../../../types/api'
 import { haptics } from '../../../utils/haptics'
 
@@ -108,14 +107,6 @@ export const WorkoutCard = memo(function WorkoutCard({
 
             {(onEdit || onDelete) && (
               <>
-                {menuOpen && (
-                  <Portal>
-                    <Pressable
-                      style={[StyleSheet.absoluteFillObject, { zIndex: 1 }]}
-                      onPress={() => setMenuOpen(false)}
-                    />
-                  </Portal>
-                )}
                 <Popover
                   open={menuOpen}
                   onOpenChange={(open) => {

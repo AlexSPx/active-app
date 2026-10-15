@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
 import { BackHandler, Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, router } from 'expo-router'
-import { YStack, Button, Text, XStack, Dialog } from 'tamagui'
+import { YStack, Button, Text, XStack, Dialog, getTokenValue } from 'tamagui'
 import { Sheet } from '@tamagui/sheet'
 import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
 
@@ -18,6 +19,8 @@ import type { Routine } from '../../../types/routine'
 import { CreateTopButton } from '../../../components/ui/CreateTopButton'
 
 export default function RoutinesTab() {
+  const insets = useSafeAreaInsets()
+  const pagePadding = getTokenValue('$page', 'space')
   const navigation = useNavigation()
   const { workouts } = useWorkouts()
   const workoutTitleById = useMemo(
@@ -246,7 +249,7 @@ export default function RoutinesTab() {
             </Dialog.Content>
           </Dialog.Portal>
         </Dialog>
-      ) : (
+      ) : confirmOpen ? (
         <Sheet
           open={confirmOpen}
           onOpenChange={setConfirmOpen}
@@ -261,11 +264,12 @@ export default function RoutinesTab() {
             borderTopLeftRadius="$sheet"
             borderTopRightRadius="$sheet"
             p="$page"
+            pb={insets.bottom + pagePadding}
           >
             {DeleteConfirmContent}
           </Sheet.Frame>
         </Sheet>
-      )}
+      ) : null}
     </YStack>
   )
 }
