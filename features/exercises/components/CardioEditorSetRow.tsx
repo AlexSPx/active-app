@@ -28,7 +28,7 @@ export function CardioEditorSetRow({
     <SwipeDeleteSetRow onDelete={onDelete}>
       <XStack items="center" gap="$compact" bg="$surface">
         <Text
-          width="$icon"
+          width="$setRow"
           text="center"
           fontSize="$caption"
           color="$colorSubtle"

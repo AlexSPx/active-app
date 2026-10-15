@@ -112,7 +112,7 @@ export default function ExerciseEditor({
       {expanded && (
         <YStack gap="$compact">
           <XStack gap="$compact" mb="$compact">
-            <Text width="$icon" text="center" fontSize="$caption" color="$colorSubtle">
+            <Text width="$setRow" text="center" fontSize="$caption" color="$colorSubtle">
               {cardio ? '#' : 'Set'}
             </Text>
             <Text flex={1} text="center" fontSize="$caption" color="$colorSubtle">
