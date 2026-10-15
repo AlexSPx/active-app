@@ -135,7 +135,6 @@ export default function HistoryPage() {
           <HistoryList
             ref={listRef}
             data={data}
-            onCreateWorkout={() => router.push('/(tabs)/(workouts)')}
             refreshing={refreshing}
             onRefresh={refresh}
             onPressItem={(item) =>
