@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react'
-import { Keyboard, ScrollView as NativeScrollView } from 'react-native'
+import { useState } from 'react'
+import { Keyboard } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   MoreHorizontal,
@@ -31,7 +31,6 @@ export function RoutinePatternEditor({
 }: RoutinePatternEditorProps) {
   const { workouts, loading, error } = useWorkouts()
   const insets = useSafeAreaInsets()
-  const dayTabs = useRef<NativeScrollView>(null)
   const pattern = rawPattern.map((day) => ({
     ...day,
     workoutId: day.workoutId ? syncEngine.resolveId('workouts', day.workoutId) : null,
@@ -43,12 +42,6 @@ export function RoutinePatternEditor({
   const day = pattern[index]
   const workout = workouts.find((item) => item.id === day?.workoutId)
   const training = pattern.filter((item) => item.dayType === 'WORKOUT').length
-  useEffect(() => {
-    dayTabs.current?.scrollTo({
-      x: index * (getTokenValue('$day', 'size') + getTokenValue('$compact', 'space')),
-      animated: true,
-    })
-  }, [index, pattern.length])
   const update = (next: RoutinePatternItem[]) => onChange(reindexPattern(next))
   const move = (from: number, to: number) => {
     if (to < 0 || to >= pattern.length) return
@@ -140,52 +133,64 @@ export function RoutinePatternEditor({
             {pattern.length === 1 ? 'Repeats every day' : `Repeats every ${pattern.length} days`} ·{' '}
             {training} training · {pattern.length - training} rest
           </Text>
-          <ScrollView ref={dayTabs} horizontal showsHorizontalScrollIndicator={false}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <XStack gap="$compact">
-              {pattern.map((item, itemIndex) => {
-                const title =
-                  item.dayType === 'REST'
-                    ? 'Rest'
-                    : (workouts.find((candidate) => candidate.id === item.workoutId)?.title ??
-                      'Choose workout')
-                return (
-                  <Button
-                    key={itemIndex}
-                    width="$day"
-                    height="auto"
-                    minH="$action"
-                    rounded="$control"
-                    px="$field"
-                    py="$compact"
-                    bg={index === itemIndex ? '$backgroundAccent' : '$backgroundHover'}
-                    borderWidth={1}
-                    borderColor={index === itemIndex ? '$primary' : '$backgroundTransparent'}
-                    accessibilityLabel={`Day ${itemIndex + 1}: ${title}`}
-                    accessibilityState={{ selected: index === itemIndex }}
-                    onPress={() => setSelectedDay(itemIndex)}
-                  >
-                    <YStack width="100%">
+              {pattern.map((item, itemIndex) => (
+                <Button
+                  key={itemIndex}
+                  width="$touch"
+                  height="$day"
+                  rounded="$day"
+                  p="$compact"
+                  bg={index === itemIndex ? '$backgroundAccent' : '$backgroundHover'}
+                  borderWidth={1}
+                  borderColor={index === itemIndex ? '$primary' : '$backgroundTransparent'}
+                  accessibilityLabel={`Day ${itemIndex + 1}: ${item.dayType === 'REST' ? 'Rest' : (workouts.find((candidate) => candidate.id === item.workoutId)?.title ?? 'Choose workout')}`}
+                  accessibilityState={{ selected: index === itemIndex }}
+                  onPress={() => {
+                    setSelectedDay(itemIndex)
+                    setMenu(null)
+                  }}
+                >
+                  <YStack height="100%" width="100%" gap="$compact">
+                    <Text fontSize="$caption" color="$colorSubtle" text="center">
+                      {itemIndex + 1}
+                    </Text>
+                    <YStack
+                      flex={1}
+                      rounded="$block"
+                      justify="center"
+                      items="center"
+                      bg={
+                        item.dayType === 'REST'
+                          ? '$backgroundTransparent'
+                          : item.workoutId
+                            ? '$primary'
+                            : '$surface'
+                      }
+                    >
                       <Text
-                        fontSize="$caption"
-                        lineHeight="$caption"
-                        color={index === itemIndex ? '$primary' : '$colorSubtle'}
-                      >
-                        Day {itemIndex + 1}
-                      </Text>
-                      <Text
-                        fontSize="$caption"
-                        lineHeight="$caption"
+                        color={
+                          item.dayType === 'REST'
+                            ? '$colorMuted'
+                            : item.workoutId
+                              ? '$onPrimary'
+                              : '$primary'
+                        }
+                        fontSize="$body"
                         fontWeight="600"
-                        numberOfLines={1}
                       >
-                        {title}
+                        {item.dayType === 'REST' ? '—' : item.workoutId ? 'T' : '+'}
                       </Text>
                     </YStack>
-                  </Button>
-                )
-              })}
+                  </YStack>
+                </Button>
+              ))}
             </XStack>
           </ScrollView>
+          <Text fontSize="$caption" color="$colorSubtle">
+            T · Training — · Rest
+          </Text>
           <YStack
             bg="$surface"
             rounded="$menu"
