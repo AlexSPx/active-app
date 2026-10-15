@@ -1,5 +1,5 @@
 import { memo, useCallback, useMemo, useState } from 'react'
-import { Card, YStack, XStack, Text, Button, Separator, Portal, ScrollView } from 'tamagui'
+import { Card, YStack, XStack, Text, Button, Separator, ScrollView } from 'tamagui'
 import { Popover } from '@tamagui/popover'
 import {
   MoreHorizontal,
@@ -10,7 +10,6 @@ import {
   Dumbbell,
 } from '@tamagui/lucide-icons'
 import type { Routine } from '../../../types/routine'
-import { Pressable, StyleSheet } from 'react-native'
 import { haptics } from '../../../utils/haptics'
 
 export interface RoutineCardProps {
@@ -100,14 +99,6 @@ export const RoutineCard = memo(function RoutineCard({
         </YStack>
         {(onEdit || onDelete || onStartFromToday || (onActivate && !isActive)) && (
           <>
-            {menuOpen && (
-              <Portal>
-                <Pressable
-                  style={[StyleSheet.absoluteFillObject, { zIndex: 1 }]}
-                  onPress={() => setMenuOpen(false)}
-                />
-              </Portal>
-            )}
             <Popover
               open={menuOpen}
               onOpenChange={(open) => {

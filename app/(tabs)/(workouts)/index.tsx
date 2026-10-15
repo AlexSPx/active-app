@@ -1,8 +1,9 @@
-import { YStack, XStack, Button, Text, Dialog } from 'tamagui'
+import { YStack, XStack, Button, Text, Dialog, getTokenValue } from 'tamagui'
 import { Sheet } from '@tamagui/sheet'
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router'
 import { BackHandler, Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
 import {
@@ -18,6 +19,8 @@ import { ApiWorkout } from '../../../types/api'
 import { CreateTopButton } from '../../../components/ui/CreateTopButton'
 
 export default function WorkoutsInnerTab() {
+  const insets = useSafeAreaInsets()
+  const pagePadding = getTokenValue('$page', 'space')
   const navigation = useNavigation()
   const router = useRouter()
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
@@ -213,6 +216,7 @@ export default function WorkoutsInnerTab() {
             borderTopLeftRadius="$sheet"
             borderTopRightRadius="$sheet"
             p="$page"
+            pb={insets.bottom + pagePadding}
           >
             {DeleteConfirmContent}
           </Sheet.Frame>

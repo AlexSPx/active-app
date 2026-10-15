@@ -2,6 +2,7 @@ const React = require('react')
 const { act, create } = require('react-test-renderer')
 
 jest.mock('tamagui', () => ({
+  getTokenValue: () => 20,
   YStack: (props) => require('react').createElement('YStack', props, props.children),
   XStack: (props) => require('react').createElement('XStack', props, props.children),
   Button: (props) => require('react').createElement('Button', props, props.children),
@@ -15,6 +16,7 @@ jest.mock('tamagui', () => ({
     }
   ),
 }))
+jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }))
 jest.mock('@tamagui/sheet', () => ({ Sheet: () => null }))
 jest.mock('@tamagui/lucide-icons', () => ({ AlertTriangle: () => null, Trash2: () => null }))
 jest.mock('react-native', () => ({
