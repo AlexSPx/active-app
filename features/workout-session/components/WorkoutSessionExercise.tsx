@@ -101,7 +101,7 @@ export const WorkoutSessionExercise = memo(
                 Reps
               </Text>
             )}
-            <Text width="$touch" text="center" fontSize="$caption" color="$colorSubtle">
+            <Text width="$setRow" text="center" fontSize="$caption" color="$colorSubtle">
               ✓
             </Text>
           </XStack>

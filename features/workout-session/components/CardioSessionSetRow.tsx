@@ -1,4 +1,4 @@
-import { YStack, XStack, Text, Button } from 'tamagui'
+import { YStack, XStack, Text, Checkbox } from 'tamagui'
 import { StyleSheet } from 'react-native'
 import { useEffect, memo, useState, useRef } from 'react'
 import { Check } from '@tamagui/lucide-icons'
@@ -115,10 +115,10 @@ export const CardioSessionSetRow = memo(
           </Animated.View>
           <GestureDetector gesture={gesture}>
             <Animated.View style={[styles.row, animatedStyle]}>
-              <XStack items="center" gap="$compact" bg={set.completed ? '$primary' : '$surface'}>
+              <XStack items="center" gap="$compact" bg="$surface">
                 {/* Set Number */}
                 <YStack width="$setRow" items="center">
-                  <Text fontSize="$caption" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
+                  <Text fontSize="$caption" color="$colorSubtle">
                     {index + 1}
                   </Text>
                 </YStack>
@@ -142,24 +142,26 @@ export const CardioSessionSetRow = memo(
                     placeholder="0:00"
                   />
                 </YStack>
-                {/* Complete Button */}
-                <YStack width="$touch" items="center">
-                  <Button
+                <YStack width="$setRow" items="center">
+                  <Checkbox
                     unstyled
-                    width="$touch"
-                    height="$touch"
-                    rounded="$control"
+                    width="$setRow"
+                    height="$setRow"
+                    rounded="$block"
                     items="center"
                     justify="center"
                     borderWidth="$0.5"
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: set.completed }}
+                    hitSlop={6}
+                    checked={set.completed}
+                    onCheckedChange={onToggleComplete}
                     accessibilityLabel={`Interval ${index + 1} completed`}
                     bg={set.completed ? '$primary' : '$backgroundStrong'}
                     borderColor={set.completed ? '$primary' : '$borderColor'}
-                    onPress={onToggleComplete}
-                    icon={set.completed ? <Check size={16} color="$onPrimary" /> : undefined}
-                  />
+                  >
+                    <Checkbox.Indicator>
+                      <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
+                    </Checkbox.Indicator>
+                  </Checkbox>
                 </YStack>
               </XStack>
             </Animated.View>
