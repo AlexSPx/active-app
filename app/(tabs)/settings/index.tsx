@@ -27,8 +27,10 @@ function MenuSection({ title, children }: { title: string; children: ReactNode }
   return (
     <YStack gap="$compact">
       <Text
+        fontFamily="$body"
         accessibilityRole="header"
-        fontSize="$body"
+        fontSize="$caption"
+        lineHeight={18}
         fontWeight="600"
         color="$primary"
         px="$compact"
@@ -73,12 +75,12 @@ function MenuRow({
           >
             {icon}
           </YStack>
-          <YStack flex={1} gap="$compact">
-            <Text fontSize="$exerciseTitle" lineHeight={18} fontWeight="600">
+          <YStack flex={1} gap={2}>
+            <Text fontFamily="$body" fontSize={16} lineHeight={20} fontWeight="500" color="$color">
               {title}
             </Text>
             {typeof description === 'string' ? (
-              <Paragraph fontSize="$caption" lineHeight={16} color="$colorSubtle">
+              <Paragraph fontSize={13} lineHeight={18} fontWeight="400" color="$colorSubtle">
                 {description}
               </Paragraph>
             ) : (
@@ -136,11 +138,22 @@ export default function SettingsMenuScreen() {
                   <UserRound size={24} color="$primary" />
                 </YStack>
                 <YStack flex={1} gap="$compact">
-                  <Text fontSize="$sectionTitle" lineHeight="$sectionTitle" fontWeight="600">
+                  <Text
+                    fontFamily="$body"
+                    fontSize="$header"
+                    lineHeight={24}
+                    fontWeight="500"
+                    color="$color"
+                  >
                     {account.name}
                   </Text>
                   {account.email && (
-                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$caption"
+                      lineHeight="$caption"
+                      color="$colorSubtle"
+                    >
                       {account.email}
                     </Text>
                   )}
@@ -233,7 +246,7 @@ export default function SettingsMenuScreen() {
             </Button>
           )}
           <YStack gap="$compact">
-            <Text fontSize="$caption" color="$colorMuted">
+            <Text fontFamily="$body" fontSize="$caption" color="$colorMuted">
               Active · Version {version}
             </Text>
           </YStack>

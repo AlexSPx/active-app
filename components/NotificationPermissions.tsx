@@ -78,7 +78,7 @@ export default function NotificationPermissions({
   }
   if (summaryOnly)
     return (
-      <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+      <Text fontFamily="$body" fontSize={13} lineHeight={18} fontWeight="400" color="$colorSubtle">
         {error
           ? 'Review device access'
           : notifications === null || (Platform.OS === 'android' && alarms === null)
