@@ -115,26 +115,23 @@ export const CardioSessionSetRow = memo(
           </Animated.View>
           <GestureDetector gesture={gesture}>
             <Animated.View style={[styles.row, animatedStyle]}>
-              <XStack
-                items="center"
-                gap="$2"
-                bg={set.completed ? '$primary' : '$surface'}
-                p="$1"
-                opacity={set.completed ? 0.8 : 1}
-              >
+              <XStack items="center" gap="$compact" bg={set.completed ? '$primary' : '$surface'}>
                 {/* Set Number */}
-                <YStack flex={1} items="center">
-                  <Text
-                    fontSize="$4"
-                    fontWeight="600"
-                    color={set.completed ? '$onPrimary' : '$color'}
-                  >
+                <YStack width="$setRow" items="center">
+                  <Text fontSize="$caption" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
                     {index + 1}
                   </Text>
                 </YStack>
                 {/* Duration Input */}
-                <YStack flex={2} items="center">
+                <YStack flex={1} items="center">
                   <SmartTimeInput
+                    height="$touch"
+                    rounded="$day"
+                    px="$compact"
+                    fontSize="$body"
+                    text="center"
+                    bg="$backgroundStrong"
+                    accessibilityLabel={`Interval ${index + 1} duration in minutes and seconds`}
                     seconds={displaySeconds}
                     onChangeSeconds={(secs) => {
                       // optimistic local update
@@ -146,12 +143,19 @@ export const CardioSessionSetRow = memo(
                   />
                 </YStack>
                 {/* Complete Button */}
-                <YStack width={40} items="center">
+                <YStack width="$touch" items="center">
                   <Button
-                    size="$3"
-                    width={40}
-                    circular
-                    bg={set.completed ? '$primary' : '$backgroundPress'}
+                    unstyled
+                    width="$touch"
+                    height="$touch"
+                    rounded="$control"
+                    items="center"
+                    justify="center"
+                    borderWidth="$0.5"
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: set.completed }}
+                    accessibilityLabel={`Interval ${index + 1} completed`}
+                    bg={set.completed ? '$primary' : '$backgroundStrong'}
                     borderColor={set.completed ? '$primary' : '$borderColor'}
                     onPress={onToggleComplete}
                     icon={set.completed ? <Check size={16} color="$onPrimary" /> : undefined}
@@ -177,7 +181,6 @@ export const CardioSessionSetRow = memo(
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    marginBottom: 4,
     position: 'relative',
     overflow: 'hidden',
     borderRadius: 8,
