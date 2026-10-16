@@ -11,7 +11,7 @@ export default function DeviceDataSettingsScreen() {
   const confirmErase = () => {
     Alert.alert(
       'Erase data on this device?',
-      'This permanently removes every local training profile, workout, routine, preference, saved sign-in credential, pending sync payload, and scheduled rest-timer alert on this device. It does not delete information previously sent to an online account.',
+      'This permanently deletes all training profiles, workouts, routines, workout history, measurements, and preferences saved on this device, and cancels local notifications. The app will return to profile setup. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -40,12 +40,12 @@ export default function DeviceDataSettingsScreen() {
     >
       <YStack gap="$field">
         <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle">
-          Erasing clears every saved local profile and its workouts, routines, measurements,
-          preferences, sign-in credentials, queued payloads, cached training data, and scheduled
-          local notifications. The app will return to profile setup.
+          Permanently delete all training profiles, workouts, routines, workout history,
+          measurements, and preferences saved on this device, and cancel local notifications. The
+          app will return to profile setup.
         </Paragraph>
         <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle">
-          Data previously sent to an online account is not removed by this device action.
+          This cannot be undone.
         </Paragraph>
         <Button
           height="$action"
