@@ -74,11 +74,11 @@ function MenuRow({
             {icon}
           </YStack>
           <YStack flex={1} gap="$compact">
-            <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
+            <Text fontSize="$exerciseTitle" lineHeight={18} fontWeight="600">
               {title}
             </Text>
             {typeof description === 'string' ? (
-              <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+              <Paragraph fontSize="$caption" lineHeight={16} color="$colorSubtle">
                 {description}
               </Paragraph>
             ) : (
@@ -209,13 +209,13 @@ export default function SettingsMenuScreen() {
           <MenuSection title="Legal">
             <MenuRow
               title="Privacy policy"
-              icon={<ShieldCheck size="$icon" color="$primary" />}
+              icon={<ShieldCheck size={22} color="$primary" />}
               description="How we handle your data"
               href="/legal/privacy-policy"
             />
             <MenuRow
               title="Terms of service"
-              icon={<ScrollText size="$icon" color="$primary" />}
+              icon={<ScrollText size={22} color="$primary" />}
               description="Terms for using Active"
               href="/legal/terms-of-service"
             />
