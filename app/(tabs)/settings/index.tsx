@@ -11,6 +11,8 @@ import {
   LogOut,
   Palette,
   Ruler,
+  ScrollText,
+  ShieldCheck,
   UserRound,
 } from '@tamagui/lucide-icons'
 import * as Application from 'expo-application'
@@ -23,10 +25,12 @@ import { launchFacade } from '../../../features/launch/launchFacade'
 
 function MenuSection({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <YStack gap="$field">
+    <YStack gap="$compact">
       <Text
+        fontFamily="$body"
         accessibilityRole="header"
-        fontSize="$body"
+        fontSize="$caption"
+        lineHeight={18}
         fontWeight="600"
         color="$primary"
         px="$compact"
@@ -59,11 +63,11 @@ function MenuRow({
 }) {
   return (
     <Link href={href} asChild>
-      <Button unstyled px="$card" py="$field" minH="$touch" pressStyle={{ bg: '$surfacePress' }}>
+      <Button unstyled px="$field" py="$compact" minH="$touch" pressStyle={{ bg: '$surfacePress' }}>
         <XStack gap="$field" items="center" justify="space-between">
           <YStack
-            width="$touch"
-            height="$touch"
+            width={36}
+            height={36}
             rounded="$control"
             bg="$backgroundAccent"
             items="center"
@@ -71,12 +75,12 @@ function MenuRow({
           >
             {icon}
           </YStack>
-          <YStack flex={1} gap="$compact">
-            <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
+          <YStack flex={1} gap={2}>
+            <Text fontFamily="$body" fontSize={16} lineHeight={20} fontWeight="500" color="$color">
               {title}
             </Text>
             {typeof description === 'string' ? (
-              <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+              <Paragraph fontSize={13} lineHeight={18} fontWeight="400" color="$colorSubtle">
                 {description}
               </Paragraph>
             ) : (
@@ -109,12 +113,12 @@ export default function SettingsMenuScreen() {
   return (
     <YStack flex={1} bg="$background">
       <ScrollView showsVerticalScrollIndicator={false}>
-        <YStack p="$page" gap="$section" width="100%" maxW="$content" self="center">
+        <YStack p="$field" gap="$field" width="100%" maxW="$content" self="center">
           <Link href={launchFacade.settings.profileRoute() as any} asChild>
             <Button
               unstyled
               minH="$touch"
-              p="$card"
+              p="$field"
               rounded="$card"
               bg="$surface"
               borderWidth={1}
@@ -124,8 +128,8 @@ export default function SettingsMenuScreen() {
             >
               <XStack gap="$field" items="center">
                 <YStack
-                  width="$action"
-                  height="$action"
+                  width="$touch"
+                  height="$touch"
                   rounded="$button"
                   bg="$backgroundAccent"
                   items="center"
@@ -134,11 +138,22 @@ export default function SettingsMenuScreen() {
                   <UserRound size={24} color="$primary" />
                 </YStack>
                 <YStack flex={1} gap="$compact">
-                  <Text fontSize="$sectionTitle" lineHeight="$sectionTitle" fontWeight="600">
+                  <Text
+                    fontFamily="$body"
+                    fontSize="$header"
+                    lineHeight={24}
+                    fontWeight="500"
+                    color="$color"
+                  >
                     {account.name}
                   </Text>
                   {account.email && (
-                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                    <Text
+                      fontFamily="$body"
+                      fontSize="$caption"
+                      lineHeight="$caption"
+                      color="$colorSubtle"
+                    >
                       {account.email}
                     </Text>
                   )}
@@ -204,6 +219,20 @@ export default function SettingsMenuScreen() {
               href="/settings/permissions"
             />
           </MenuSection>
+          <MenuSection title="Legal">
+            <MenuRow
+              title="Privacy policy"
+              icon={<ShieldCheck size={22} color="$primary" />}
+              description="How we handle your data"
+              href="/legal/privacy-policy"
+            />
+            <MenuRow
+              title="Terms of service"
+              icon={<ScrollText size={22} color="$primary" />}
+              description="Terms for using Active"
+              href="/legal/terms-of-service"
+            />
+          </MenuSection>
           {account.signOutAction && (
             <Button
               chromeless
@@ -217,19 +246,7 @@ export default function SettingsMenuScreen() {
             </Button>
           )}
           <YStack gap="$compact">
-            <XStack gap="$field" flexWrap="wrap">
-              <Link href="/legal/privacy-policy" asChild>
-                <Button chromeless size="$3" color="$colorSubtle">
-                  Privacy policy
-                </Button>
-              </Link>
-              <Link href="/legal/terms-of-service" asChild>
-                <Button chromeless size="$3" color="$colorSubtle">
-                  Terms of service
-                </Button>
-              </Link>
-            </XStack>
-            <Text fontSize="$caption" color="$colorMuted">
+            <Text fontFamily="$body" fontSize="$caption" color="$colorMuted">
               Active · Version {version}
             </Text>
           </YStack>
