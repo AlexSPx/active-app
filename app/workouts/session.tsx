@@ -43,9 +43,10 @@ export default function WorkoutSessionScreen() {
   const showFinishedCongrats = useUiStore((s) => s.showFinishedCongrats)
   const toast = useToastController()
 
-  const renderExercise = ({ item: exercise }: { item: Exercise }) => (
+  const renderExercise = ({ item: exercise, index }: { item: Exercise; index: number }) => (
     <WorkoutSessionExercise
       exercise={exercise}
+      index={index}
       onUpdateSet={updateSet}
       onToggleSetComplete={toggleSetComplete}
       onAddSet={addSet}

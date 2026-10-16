@@ -1,4 +1,4 @@
-import { YStack, XStack, Text, Button, Input } from 'tamagui'
+import { YStack, XStack, Text, Checkbox, Input } from 'tamagui'
 import { StyleSheet } from 'react-native'
 import { useEffect, memo } from 'react'
 import { Check } from '@tamagui/lucide-icons'
@@ -76,20 +76,10 @@ export const WorkoutSessionSetRow = memo(
           {/* Swipeable Row */}
           <GestureDetector gesture={gesture}>
             <Animated.View style={[styles.row, animatedStyle]}>
-              <XStack
-                items="center"
-                gap="$2"
-                bg={set.completed ? '$primary' : '$surface'}
-                p="$1"
-                opacity={set.completed ? 0.8 : 1}
-              >
+              <XStack items="center" gap="$compact" bg={set.completed ? '$primary' : '$surface'}>
                 {/* Set Number */}
-                <YStack flex={1} items="center">
-                  <Text
-                    fontSize="$4"
-                    fontWeight="600"
-                    color={set.completed ? '$onPrimary' : '$color'}
-                  >
+                <YStack width="$setRow" items="center">
+                  <Text fontSize="$caption" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
                     {index + 1}
                   </Text>
                 </YStack>
@@ -98,9 +88,14 @@ export const WorkoutSessionSetRow = memo(
                 <YStack flex={1} items="center">
                   <Input
                     width="100%"
-                    size="$3"
+                    height="$setRow"
+                    minH="$setRow"
+                    rounded="$day"
+                    text="center"
+                    fontSize="$body"
                     py="$0"
-                    px="$3"
+                    px="$compact"
+                    accessibilityLabel={`Set ${index + 1} weight in kilograms`}
                     placeholder="kg"
                     keyboardType="numeric"
                     value={set.weight?.toString() || ''}
@@ -112,10 +107,15 @@ export const WorkoutSessionSetRow = memo(
                       const weight = Number.parseFloat(text)
                       if (!Number.isNaN(weight)) onUpdateSet('weight', weight)
                     }}
-                    bg={set.completed ? '$surface' : '$backgroundPress'}
-                    borderColor={set.completed ? '$onPrimary' : '$borderColor'}
-                    color={set.completed ? '$color' : '$color'}
-                    opacity={set.completed ? 0.9 : 1}
+                    bg={set.completed ? '$primary' : '$backgroundStrong'}
+                    borderColor={set.completed ? '$primary' : '$borderColor'}
+                    color={set.completed ? '$onPrimary' : '$color'}
+                    placeholderTextColor={set.completed ? '$onPrimary' : '$placeholderColor'}
+                    focusStyle={
+                      set.completed
+                        ? { bg: '$primary', borderColor: '$onPrimary', color: '$onPrimary' }
+                        : undefined
+                    }
                   />
                 </YStack>
 
@@ -123,9 +123,14 @@ export const WorkoutSessionSetRow = memo(
                 <YStack flex={1} items="center">
                   <Input
                     width="100%"
-                    size="$3"
+                    height="$setRow"
+                    minH="$setRow"
+                    rounded="$day"
+                    text="center"
+                    fontSize="$body"
                     py="$0"
-                    px="$3"
+                    px="$compact"
+                    accessibilityLabel={`Set ${index + 1} reps`}
                     placeholder="reps"
                     keyboardType="numeric"
                     value={set.reps?.toString() || ''}
@@ -137,24 +142,38 @@ export const WorkoutSessionSetRow = memo(
                       const reps = Number.parseInt(text)
                       if (!Number.isNaN(reps)) onUpdateSet('reps', reps)
                     }}
-                    bg={set.completed ? '$surface' : '$backgroundPress'}
-                    borderColor={set.completed ? '$onPrimary' : '$borderColor'}
-                    color={set.completed ? '$color' : '$color'}
-                    opacity={set.completed ? 0.9 : 1}
+                    bg={set.completed ? '$primary' : '$backgroundStrong'}
+                    borderColor={set.completed ? '$primary' : '$borderColor'}
+                    color={set.completed ? '$onPrimary' : '$color'}
+                    placeholderTextColor={set.completed ? '$onPrimary' : '$placeholderColor'}
+                    focusStyle={
+                      set.completed
+                        ? { bg: '$primary', borderColor: '$onPrimary', color: '$onPrimary' }
+                        : undefined
+                    }
                   />
                 </YStack>
 
-                {/* Complete Button */}
-                <YStack width={40} items="center">
-                  <Button
-                    size="$3"
-                    width={40}
-                    circular
-                    bg={set.completed ? '$primary' : '$backgroundPress'}
+                <YStack width="$setRow" items="center">
+                  <Checkbox
+                    unstyled
+                    width="$setRow"
+                    height="$setRow"
+                    rounded="$block"
+                    items="center"
+                    justify="center"
+                    borderWidth="$0.5"
+                    hitSlop={6}
+                    checked={set.completed}
+                    onCheckedChange={onToggleComplete}
+                    accessibilityLabel={`Set ${index + 1} completed`}
+                    bg={set.completed ? '$primary' : '$backgroundStrong'}
                     borderColor={set.completed ? '$primary' : '$borderColor'}
-                    onPress={onToggleComplete}
-                    icon={set.completed ? <Check size={16} color="$onPrimary" /> : undefined}
-                  />
+                  >
+                    <Checkbox.Indicator>
+                      <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
+                    </Checkbox.Indicator>
+                  </Checkbox>
                 </YStack>
               </XStack>
             </Animated.View>
@@ -178,7 +197,6 @@ export const WorkoutSessionSetRow = memo(
 const styles = StyleSheet.create({
   container: {
     width: '100%',
-    marginBottom: 4,
     position: 'relative',
     overflow: 'hidden',
     borderRadius: 8,

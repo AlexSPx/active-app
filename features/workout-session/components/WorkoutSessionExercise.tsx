@@ -1,14 +1,14 @@
-import { YStack, XStack, Text, Button, Card, H3, Separator } from 'tamagui'
-import { Plus, MoreHorizontal, Timer } from '@tamagui/lucide-icons'
+import { YStack, XStack, Text, Button } from 'tamagui'
 import { View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback, memo } from 'react'
-import type { Exercise } from '../../../types/workout-session'
+import type { Exercise, Set } from '../../../types/workout-session'
 import { WorkoutSessionSetRow } from './WorkoutSessionSetRow'
 import { CardioSessionSetRow } from './CardioSessionSetRow'
 
 interface WorkoutSessionExerciseProps {
   exercise: Exercise
+  index: number
   onUpdateSet: (
     exerciseId: string,
     setId: string,
@@ -24,6 +24,7 @@ interface WorkoutSessionExerciseProps {
 export const WorkoutSessionExercise = memo(
   function WorkoutSessionExercise({
     exercise,
+    index,
     onUpdateSet,
     onToggleSetComplete,
     onAddSet,
@@ -32,7 +33,7 @@ export const WorkoutSessionExercise = memo(
   }: WorkoutSessionExerciseProps) {
     const isCardio = exercise.category === 'CARDIO'
     const renderSetRow = useCallback(
-      ({ item: set, index }: { item: any; index: number }) => {
+      ({ item: set, index }: { item: Set; index: number }) => {
         if (isCardio) {
           return (
             <CardioSessionSetRow
@@ -70,64 +71,40 @@ export const WorkoutSessionExercise = memo(
     )
 
     return (
-      <Card size="$4" mb="$3" p="$3" bg="$surface" borderColor="$borderColor">
-        <YStack gap="$2">
-          {/* Exercise Header */}
-          <XStack justify="space-between" items="center">
-            <YStack>
-              <H3 color="$color">{exercise.name}</H3>
-              <Text fontSize="$3" color="$colorSubtle">
-                {exercise.primaryMuscles[0] || 'Other'}
+      <YStack
+        p="$card"
+        gap="$field"
+        bg="$surface"
+        rounded="$card"
+        borderColor="$borderColor"
+        borderWidth="$0.5"
+      >
+        <YStack minH="$touch">
+          <Text fontSize="$header" lineHeight="$header" fontWeight="$screenTitle" color="$color">
+            {index + 1}. {exercise.name}
+          </Text>
+          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+            {exercise.primaryMuscles[0] || (isCardio ? 'Cardio' : 'Other')} · {exercise.sets.length}{' '}
+            {isCardio ? 'intervals' : 'sets'}
+          </Text>
+        </YStack>
+        <YStack gap="$compact">
+          <XStack gap="$compact" mb="$compact" items="center">
+            <Text width="$setRow" text="center" fontSize="$caption" color="$colorSubtle">
+              {isCardio ? '#' : 'Set'}
+            </Text>
+            <Text flex={1} text="center" fontSize="$caption" color="$colorSubtle">
+              {isCardio ? 'Duration (min:sec)' : 'Weight (kg)'}
+            </Text>
+            {!isCardio && (
+              <Text flex={1} text="center" fontSize="$caption" color="$colorSubtle">
+                Reps
               </Text>
-            </YStack>
-            <Button size="$3" circular icon={MoreHorizontal} />
+            )}
+            <Text width="$setRow" text="center" fontSize="$caption" color="$colorSubtle">
+              ✓
+            </Text>
           </XStack>
-
-          {/* Sets Header */}
-          {isCardio ? (
-            <XStack justify="space-between" px="$1">
-              <YStack flex={1} items="center">
-                <Text fontSize="$3" fontWeight="600" color="$color">
-                  SET
-                </Text>
-              </YStack>
-              <YStack flex={2} items="center">
-                <Text fontSize="$3" fontWeight="600" color="$color">
-                  DURATION
-                </Text>
-              </YStack>
-              <YStack width={40} items="center">
-                <Text fontSize="$3" fontWeight="600" color="$color">
-                  ✓
-                </Text>
-              </YStack>
-            </XStack>
-          ) : (
-            <XStack justify="space-between" px="$1">
-              <YStack flex={1} items="center">
-                <Text fontSize="$3" fontWeight="600" color="$color">
-                  SET
-                </Text>
-              </YStack>
-              <YStack flex={1} items="center">
-                <Text fontSize="$3" fontWeight="600" color="$color">
-                  WEIGHT
-                </Text>
-              </YStack>
-              <YStack flex={1} items="center">
-                <Text fontSize="$3" fontWeight="600" color="$color">
-                  REPS
-                </Text>
-              </YStack>
-              <YStack width={40} items="center">
-                <Text fontSize="$3" fontWeight="600" color="$color">
-                  ✓
-                </Text>
-              </YStack>
-            </XStack>
-          )}
-
-          <Separator />
 
           {/* Sets */}
           <View>
@@ -135,7 +112,7 @@ export const WorkoutSessionExercise = memo(
               data={exercise.sets}
               renderItem={renderSetRow}
               keyExtractor={(item) => item.id}
-              ItemSeparatorComponent={() => <View style={{ height: 8 }} />}
+              ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
             />
@@ -143,22 +120,24 @@ export const WorkoutSessionExercise = memo(
 
           {/* Add Set Button */}
           <Button
-            size="$3"
-            variant="outlined"
-            icon={Plus}
+            height="$touch"
+            mt="$compact"
+            rounded="$day"
+            bg="$backgroundStrong"
             onPress={() => onAddSet(exercise.sessionId)}
-            borderColor="$primary"
-            color="$primary"
           >
-            <Text color="$primary">Add {isCardio ? 'Interval' : 'Set'}</Text>
+            <Text color="$primary" fontSize="$caption">
+              + Add {isCardio ? 'interval' : 'set'}
+            </Text>
           </Button>
         </YStack>
-      </Card>
+      </YStack>
     )
   },
   (prevProps, nextProps) => {
     // Only re-render if exercise data has changed
     return (
+      prevProps.index === nextProps.index &&
       prevProps.exercise.sessionId === nextProps.exercise.sessionId &&
       prevProps.exercise.sets.length === nextProps.exercise.sets.length &&
       prevProps.exercise.sets.every((set, index) => {

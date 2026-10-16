@@ -39,37 +39,45 @@ export function WorkoutActions({
   }
 
   return (
-    <YStack gap="$3" px="$4" pb="$6">
+    <YStack gap="$field" pt="$section" pb="$section">
       {onAddExercise && (
-        <Button size="$4" bg="$primary" icon={Plus} mt="$2" onPress={onAddExercise}>
-          <Text color="$onPrimary">Add Exercise</Text>
+        <Button
+          height="$action"
+          rounded="$button"
+          bg="$backgroundStrong"
+          icon={<Plus size="$iconSmall" color="$primary" />}
+          onPress={onAddExercise}
+        >
+          <Text color="$primary" fontSize="$caption">
+            Add exercise
+          </Text>
         </Button>
       )}
 
       <Button
-        size="$5"
-        bg="$secondary"
-        mt="$4"
+        height="$action"
+        rounded="$button"
+        bg="$primary"
         onPress={handleFinishWorkout}
         disabled={isFinishing}
       >
-        <Text color="$onSecondary" fontSize="$5" fontWeight="600">
-          {isFinishing ? 'Saving Workout…' : 'Finish Workout'}
+        <Text color="$onPrimary" fontSize="$caption" fontWeight="$screenTitle">
+          {isFinishing ? 'Saving…' : 'Finish workout'}
         </Text>
       </Button>
 
       {onCancelWorkout && (
         <Button
-          size="$4"
-          bg="$red9"
-          mt="$2"
+          chromeless
+          height="$touch"
+          rounded="$button"
           onPress={() => {
             onCancelWorkout()
             onGoBack()
           }}
         >
-          <Text color="$onPrimary" fontSize="$4" fontWeight="600">
-            Cancel Workout
+          <Text color="$destructive" fontSize="$caption" fontWeight="$screenTitle">
+            Cancel workout
           </Text>
         </Button>
       )}
