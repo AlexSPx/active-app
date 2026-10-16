@@ -36,7 +36,7 @@ If you grant notification permission, Active Next can schedule local rest-timer 
 
 Your native training information remains in the app's device storage until it is changed or deleted on the device, or the app data is otherwise removed. We do not have a server copy of that information from the current native local-profile workflow. We do not control device or operating-system backups.
 
-Use **Settings → Data on this device → Erase data on this device** to remove all saved local profiles, workouts, routines, running sessions, preferences, saved credentials, pending payloads, cached training data, and scheduled local notifications. Confirmation is required. If cleanup fails, the app keeps local training closed and offers a retry; restarting resumes the pending cleanup. This action cannot delete data previously sent to a remote service by an earlier account-enabled version or remove existing operating-system backups. Contact the publisher using the address above for historical-account deletion guidance.
+Use **Settings → Data on this device → Erase data on this device** to remove all saved local profiles, workouts, routines, running sessions, preferences, cached training data, and scheduled local notifications. Confirmation is required. If cleanup fails, the app keeps local training closed and offers a retry; restarting resumes the pending cleanup. This action cannot delete data previously sent to a remote service by an earlier account-enabled version or remove existing operating-system backups. Contact the publisher using the address above for historical-account deletion guidance.
 
 ## Service providers
 
