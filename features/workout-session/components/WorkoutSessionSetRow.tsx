@@ -107,9 +107,15 @@ export const WorkoutSessionSetRow = memo(
                       const weight = Number.parseFloat(text)
                       if (!Number.isNaN(weight)) onUpdateSet('weight', weight)
                     }}
-                    bg="$backgroundStrong"
-                    borderColor="$borderColor"
-                    color="$color"
+                    bg={set.completed ? '$primary' : '$backgroundStrong'}
+                    borderColor={set.completed ? '$primary' : '$borderColor'}
+                    color={set.completed ? '$onPrimary' : '$color'}
+                    placeholderTextColor={set.completed ? '$onPrimary' : '$placeholderColor'}
+                    focusStyle={
+                      set.completed
+                        ? { bg: '$primary', borderColor: '$onPrimary', color: '$onPrimary' }
+                        : undefined
+                    }
                   />
                 </YStack>
 
@@ -136,9 +142,15 @@ export const WorkoutSessionSetRow = memo(
                       const reps = Number.parseInt(text)
                       if (!Number.isNaN(reps)) onUpdateSet('reps', reps)
                     }}
-                    bg="$backgroundStrong"
-                    borderColor="$borderColor"
-                    color="$color"
+                    bg={set.completed ? '$primary' : '$backgroundStrong'}
+                    borderColor={set.completed ? '$primary' : '$borderColor'}
+                    color={set.completed ? '$onPrimary' : '$color'}
+                    placeholderTextColor={set.completed ? '$onPrimary' : '$placeholderColor'}
+                    focusStyle={
+                      set.completed
+                        ? { bg: '$primary', borderColor: '$onPrimary', color: '$onPrimary' }
+                        : undefined
+                    }
                   />
                 </YStack>
 

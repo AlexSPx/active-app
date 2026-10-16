@@ -130,7 +130,15 @@ export const CardioSessionSetRow = memo(
                     px="$compact"
                     fontSize="$body"
                     text="center"
-                    bg="$backgroundStrong"
+                    bg={set.completed ? '$primary' : '$backgroundStrong'}
+                    borderColor={set.completed ? '$primary' : '$borderColor'}
+                    color={set.completed ? '$onPrimary' : '$color'}
+                    placeholderTextColor={set.completed ? '$onPrimary' : '$placeholderColor'}
+                    focusStyle={
+                      set.completed
+                        ? { bg: '$primary', borderColor: '$onPrimary', color: '$onPrimary' }
+                        : undefined
+                    }
                     accessibilityLabel={`Interval ${index + 1} duration in minutes and seconds`}
                     seconds={displaySeconds}
                     onChangeSeconds={(secs) => {
