@@ -76,10 +76,10 @@ export const WorkoutSessionSetRow = memo(
           {/* Swipeable Row */}
           <GestureDetector gesture={gesture}>
             <Animated.View style={[styles.row, animatedStyle]}>
-              <XStack items="center" gap="$compact" bg="$surface">
+              <XStack items="center" gap="$compact" bg={set.completed ? '$primary' : '$surface'}>
                 {/* Set Number */}
                 <YStack width="$setRow" items="center">
-                  <Text fontSize="$caption" color="$colorSubtle">
+                  <Text fontSize="$caption" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
                     {index + 1}
                   </Text>
                 </YStack>
