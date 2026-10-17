@@ -27,6 +27,7 @@ import { isMissingLocalUserProfile, UserRepository } from '../lib/repositories/U
 import { useNetworkStore } from '../stores/networkStore'
 import { apiService } from '../services/apiService'
 import { remapRunningWorkoutId } from '../features/workout-session/stores/runningWorkoutStore'
+import { Uniwind } from 'uniwind'
 import { launchFacade } from '../features/launch/launchFacade'
 import {
   databaseNameForProfile,
@@ -589,6 +590,10 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
   const legacyOwnerId = useAuthStore((state) => state.legacyOwnerId)
   const activeTheme = theme === 'system' ? colorScheme : theme
+
+  useEffect(() => {
+    Uniwind.setTheme(theme)
+  }, [theme])
 
   const onInit = useCallback(
     async (db: SQLiteDatabase) => {

@@ -1,5 +1,6 @@
 const { getDefaultConfig } = require('expo/metro-config')
 const { withTamagui } = require('@tamagui/metro-plugin')
+const { withUniwindConfig } = require('uniwind/metro')
 const path = require('path')
 
 const config = getDefaultConfig(__dirname, {
@@ -43,10 +44,20 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
 }
 // END: Fix for zustand v5 import.meta issue
 
-module.exports = withTamagui(config, {
-  components: ['tamagui'],
-  config: './tamagui.config.ts',
-  outputCSS: './tamagui.css',
+if (!config.resolver.assetExts.includes('wasm')) {
+  config.resolver.assetExts.push('wasm')
+}
 
-  disableExtraction: process.env.NODE_ENV === 'development',
-})
+module.exports = withUniwindConfig(
+  withTamagui(config, {
+    components: ['tamagui'],
+    config: './tamagui.config.ts',
+    outputCSS: './tamagui.css',
+
+    disableExtraction: process.env.NODE_ENV === 'development',
+  }),
+  {
+    cssEntryFile: './global.css',
+    dtsFile: './uniwind-types.d.ts',
+  }
+)
