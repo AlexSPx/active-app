@@ -1,17 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { AppState, useColorScheme } from 'react-native'
+import { AppState } from 'react-native'
 import type { SQLiteDatabase } from 'expo-sqlite'
 import { ProfileSQLiteProvider, useProfileDatabase } from '../lib/db/ProfileSQLiteProvider'
-import { TamaguiProvider, type TamaguiProviderProps, PortalProvider, Theme } from 'tamagui'
-import { ToastProvider, ToastViewport } from '@tamagui/toast'
+import { PortalProvider } from 'tamagui'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { CurrentToast } from './CurrentToast'
-import { config } from '../tamagui.config'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { useUiStore } from '../stores/uiStore'
 import FinishedWorkoutCongrats from '../components/FinishedWorkoutCongrats'
 import { initNotifications } from '../services/notificationService'
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useSettingsStore } from '../features/settings'
 import { saveSettingsProfile } from '../features/settings/stores/settingsStore'
 import { queryClient } from '../lib/queryClient'
@@ -27,7 +22,6 @@ import { isMissingLocalUserProfile, UserRepository } from '../lib/repositories/U
 import { useNetworkStore } from '../stores/networkStore'
 import { apiService } from '../services/apiService'
 import { remapRunningWorkoutId } from '../features/workout-session/stores/runningWorkoutStore'
-import { Uniwind } from 'uniwind'
 import { launchFacade } from '../features/launch/launchFacade'
 import {
   databaseNameForProfile,
@@ -581,20 +575,12 @@ function OwnerDatabaseContent({ children }: { children: React.ReactNode }) {
   )
 }
 
-export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'config'>) {
-  const colorScheme = useColorScheme()
-  const theme = useSettingsStore((state) => state.theme)
+export function AppLifecycleProvider({ children }: { children: React.ReactNode }) {
   const isStartupReady = useAuthStore((state) => state.isStartupReady)
   const startupError = useAuthStore((state) => state.startupError)
   const isDeviceDataErasing = useAuthStore((state) => state.isDeviceDataErasing)
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
   const legacyOwnerId = useAuthStore((state) => state.legacyOwnerId)
-  const activeTheme = theme === 'system' ? colorScheme : theme
-
-  useEffect(() => {
-    Uniwind.setTheme(theme)
-  }, [theme])
-
   const onInit = useCallback(
     async (db: SQLiteDatabase) => {
       const scope = getProfileScope()
@@ -722,29 +708,5 @@ export function Provider({ children, ...rest }: Omit<TamaguiProviderProps, 'conf
       children
     )
 
-  return (
-    <SafeAreaProvider>
-      <TamaguiProvider
-        config={config}
-        defaultTheme={activeTheme === 'dark' ? 'dark' : 'light'}
-        {...rest}
-      >
-        <Theme name={activeTheme === 'dark' ? 'dark' : 'light'}>
-          <ThemeProvider value={activeTheme === 'dark' ? DarkTheme : DefaultTheme}>
-            <QueryClientProvider client={queryClient}>
-              <PortalProvider>
-                <ToastProvider swipeDirection="horizontal" duration={6000} native={[]}>
-                  {content}
-                  <CurrentToast />
-                  <ToastViewport top="$8" left={0} right={0} />
-                </ToastProvider>
-              </PortalProvider>
-            </QueryClientProvider>
-          </ThemeProvider>
-        </Theme>
-      </TamaguiProvider>
-    </SafeAreaProvider>
-  )
+  return <QueryClientProvider client={queryClient}>{content}</QueryClientProvider>
 }
-
-export default Provider
