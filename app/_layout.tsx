@@ -5,7 +5,6 @@ import { SplashScreen } from 'expo-router'
 import Provider from './Provider'
 import { AuthProvider } from '../contexts/AuthContext'
 import { AuthGuard } from '../components/AuthGuard'
-import UniwindPreview from '../components/dev/uniwind-preview'
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -41,7 +40,6 @@ export default function RootLayout() {
     <Providers>
       <AuthProvider>
         <AuthGuard />
-        {__DEV__ && process.env.EXPO_PUBLIC_ALE96_UNIWIND_PREVIEW === '1' && <UniwindPreview />}
       </AuthProvider>
     </Providers>
   )
