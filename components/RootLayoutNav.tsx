@@ -1,22 +1,25 @@
 import { StatusBar } from 'expo-status-bar'
 import { Stack } from 'expo-router'
-import { useTheme, useThemeName, View } from 'tamagui'
+import { View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useResolveClassNames, useUniwind } from 'uniwind'
+import { useCadenceColors } from './ui/useCadenceColors'
 
 export function RootLayoutNav() {
-  const themeName = useThemeName()
-  const theme = useTheme()
+  const { theme } = useUniwind()
+  const colors = useCadenceColors()
+  const titleStyles = useResolveClassNames('text-header font-dm-semibold')
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background.val }}>
-      <View flex={1} bg="$background">
-        <StatusBar style={themeName === 'dark' ? 'light' : 'dark'} />
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+      <View className="flex-1 bg-background">
+        <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <Stack>
           <Stack.Screen
             name="welcome"
             options={{
               headerShown: false,
               contentStyle: {
-                backgroundColor: theme.background.val,
+                backgroundColor: colors.background,
               },
             }}
           />
@@ -26,7 +29,7 @@ export function RootLayoutNav() {
             options={{
               headerShown: false,
               contentStyle: {
-                backgroundColor: theme.background.val,
+                backgroundColor: colors.background,
               },
               animation: 'slide_from_right',
               animationDuration: 300,
@@ -38,9 +41,10 @@ export function RootLayoutNav() {
             options={{
               title: 'Search Exercises',
               headerStyle: {
-                backgroundColor: theme.background.val,
+                backgroundColor: colors.background,
               },
-              headerTintColor: theme.color.val,
+              headerTintColor: colors.foreground,
+              headerTitleStyle: { ...titleStyles, color: colors.foreground },
               animation: 'slide_from_right',
               animationDuration: 300,
             }}
@@ -51,9 +55,10 @@ export function RootLayoutNav() {
             options={{
               title: 'Create Routine',
               headerStyle: {
-                backgroundColor: theme.background.val,
+                backgroundColor: colors.background,
               },
-              headerTintColor: theme.color.val,
+              headerTintColor: colors.foreground,
+              headerTitleStyle: { ...titleStyles, color: colors.foreground },
               animation: 'slide_from_right',
               animationDuration: 300,
             }}
@@ -64,9 +69,10 @@ export function RootLayoutNav() {
             options={{
               title: 'Edit Routine',
               headerStyle: {
-                backgroundColor: theme.background.val,
+                backgroundColor: colors.background,
               },
-              headerTintColor: theme.color.val,
+              headerTintColor: colors.foreground,
+              headerTitleStyle: { ...titleStyles, color: colors.foreground },
               animation: 'slide_from_right',
               animationDuration: 300,
             }}
@@ -77,9 +83,10 @@ export function RootLayoutNav() {
             options={{
               title: 'Create Workout',
               headerStyle: {
-                backgroundColor: theme.background.val,
+                backgroundColor: colors.background,
               },
-              headerTintColor: theme.color.val,
+              headerTintColor: colors.foreground,
+              headerTitleStyle: { ...titleStyles, color: colors.foreground },
               animation: 'slide_from_right',
               animationDuration: 300,
             }}
@@ -90,9 +97,10 @@ export function RootLayoutNav() {
             options={{
               title: 'Workout Session',
               headerStyle: {
-                backgroundColor: theme.background.val,
+                backgroundColor: colors.background,
               },
-              headerTintColor: theme.color.val,
+              headerTintColor: colors.foreground,
+              headerTitleStyle: { ...titleStyles, color: colors.foreground },
               animation: 'fade',
             }}
           />
@@ -102,9 +110,10 @@ export function RootLayoutNav() {
             options={{
               title: 'Edit Workout',
               headerStyle: {
-                backgroundColor: theme.background.val,
+                backgroundColor: colors.background,
               },
-              headerTintColor: theme.color.val,
+              headerTintColor: colors.foreground,
+              headerTitleStyle: { ...titleStyles, color: colors.foreground },
               animation: 'slide_from_right',
               animationDuration: 300,
             }}
@@ -128,7 +137,7 @@ export function RootLayoutNav() {
               gestureEnabled: true,
               gestureDirection: 'horizontal',
               contentStyle: {
-                backgroundColor: theme.background.val,
+                backgroundColor: colors.background,
               },
             }}
           />

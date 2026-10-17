@@ -7,8 +7,34 @@
 @source not './tests';
 
 @theme {
+  --spacing-page: 20px;
+  --spacing-section: 24px;
+  --spacing-field: 12px;
+  --spacing-card: 16px;
+  --spacing-compact: 4px;
+  --spacing-touch: 44px;
+  --spacing-action: 48px;
+
   --radius-card: 1.25rem;
+  --radius-settings: 1.4375rem;
   --radius-control: 0.875rem;
+  --radius-button: 0.75rem;
+
+  --text-screen-title: 26px;
+  --text-screen-title--line-height: 32px;
+  --text-card-title: 18px;
+  --text-card-title--line-height: 24px;
+  --text-header: 18px;
+  --text-header--line-height: 24px;
+  --text-body: 14px;
+  --text-body--line-height: 21px;
+  --text-caption: 12px;
+  --text-caption--line-height: 18px;
+
+  --font-dm-sans: 'DM Sans';
+  --font-dm-regular: 'DM Sans';
+  --font-dm-medium: 'DM Sans Medium';
+  --font-dm-semibold: 'DM Sans Semibold';
 }
 
 @layer theme {
@@ -18,6 +44,7 @@
       --color-foreground: #2d2235;
       --color-muted: #76627e;
       --color-surface: #f0e9f5;
+      --color-settings-surface: #f0e9f5;
       --color-raised: #e9dff0;
       --color-divider: #dcd0e4;
       --color-accent: #624572;
@@ -30,6 +57,7 @@
       --color-foreground: #faf5fc;
       --color-muted: #c0afcb;
       --color-surface: #382b42;
+      --color-settings-surface: #392f41;
       --color-raised: #42314d;
       --color-divider: #51415d;
       --color-accent: #e3d7ee;

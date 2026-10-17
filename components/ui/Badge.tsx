@@ -1,21 +1,15 @@
-import { Text } from 'tamagui'
+import { UiBadge } from './Controls'
 
 interface BadgeProps {
   children: string
   variant?: 'primary' | 'secondary' | 'success' | 'warning'
+  className?: string
 }
 
-export function Badge({ children, variant = 'primary' }: BadgeProps) {
+export function Badge({ children, variant = 'primary', className }: BadgeProps) {
   return (
-    <Text
-      fontSize="$2"
-      color={variant === 'secondary' ? '$secondary' : '$primary'}
-      bg="$backgroundHover"
-      px="$2"
-      py="$1"
-      r="$2"
-    >
+    <UiBadge variant={variant} className={className}>
       {children}
-    </Text>
+    </UiBadge>
   )
 }

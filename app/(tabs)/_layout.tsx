@@ -1,29 +1,31 @@
 import { Tabs } from 'expo-router'
-import { getConfig, getVariableValue, useTheme, YStack } from 'tamagui'
+import { View } from 'react-native'
+import { useResolveClassNames } from 'uniwind'
 import { Dumbbell, History, Home, Settings as SettingsIcon } from '@tamagui/lucide-icons'
 import { RunningWorkoutFloat } from '../../features/workout-session'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
 
 export default function TabLayout() {
-  const theme = useTheme()
+  const colors = useCadenceColors()
+  const titleStyles = useResolveClassNames('text-header font-dm-semibold')
 
   return (
-    <YStack flex={1} bg="$background">
+    <View className="flex-1 bg-background">
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: theme.primary.val,
+          tabBarActiveTintColor: colors.accent,
           tabBarStyle: {
-            backgroundColor: theme.background.val,
-            borderTopColor: theme.borderColor.val,
+            backgroundColor: colors.background,
+            borderTopColor: colors.divider,
           },
           headerStyle: {
-            backgroundColor: theme.background.val,
+            backgroundColor: colors.background,
           },
-          headerTintColor: theme.color.val,
+          headerTintColor: colors.foreground,
           headerShadowVisible: false,
           headerTitleStyle: {
-            color: theme.color.val,
-            fontWeight: '700',
-            fontSize: getVariableValue(getConfig().fonts.body.size.header),
+            ...titleStyles,
+            color: colors.foreground,
           },
         }}
       >
@@ -62,6 +64,6 @@ export default function TabLayout() {
 
       {/* Running Workout - Floating above tab bar */}
       <RunningWorkoutFloat />
-    </YStack>
+    </View>
   )
 }

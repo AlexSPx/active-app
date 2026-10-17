@@ -2,11 +2,20 @@ const React = require('react')
 const { act, create } = require('react-test-renderer')
 
 jest.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 80 }))
-jest.mock('react-native', () => ({
-  Platform: { OS: 'android' },
-  KeyboardAvoidingView: (props) =>
-    require('react').createElement('KeyboardAvoidingView', props, props.children),
-}))
+jest.mock('react-native', () => {
+  const React = require('react')
+  const component = (name) => (props) => React.createElement(name, props, props.children)
+  return {
+    Platform: { OS: 'android' },
+    KeyboardAvoidingView: component('KeyboardAvoidingView'),
+    ScrollView: component('ScrollView'),
+    View: component('View'),
+    Text: component('Text'),
+    Pressable: component('Pressable'),
+    TextInput: component('TextInput'),
+    Switch: component('Switch'),
+  }
+})
 
 jest.mock('tamagui', () => {
   const React = require('react')
@@ -50,6 +59,7 @@ const {
 } = require('../../features/settings/inputs')
 const BodyScreen = require('../../app/(tabs)/settings/body').default
 const TimerScreen = require('../../app/(tabs)/settings/rest-timer').default
+const { Button: UiButton } = require('../../components/ui/Controls')
 
 let settings, update
 beforeEach(() => {
@@ -105,13 +115,13 @@ test('measurement changes stay staged and failed save preserves the draft', asyn
   await act(async () => {
     view = create(React.createElement(BodyScreen))
   })
-  const input = () => view.root.findByProps({ id: 'body-weight' })
+  const input = () => view.root.findByProps({ nativeID: 'body-weight' })
   await act(async () => input().props.onChangeText('80'))
   expect(settings.setBodyWeight).not.toHaveBeenCalled()
   expect(update).not.toHaveBeenCalled()
   const save = () =>
     view.root
-      .findAllByType('Button')
+      .findAllByType(UiButton)
       .find((button) => button.props.children === 'Save measurements')
   update.mockResolvedValueOnce(null)
   await act(async () => save().props.onPress())
@@ -133,20 +143,20 @@ test('unit switches preserve canonical values and invalid measurements cannot sa
   await act(async () => {
     view = create(React.createElement(BodyScreen))
   })
-  const buttons = () => view.root.findAllByType('Button')
+  const buttons = () => view.root.findAllByType(UiButton)
   await act(async () =>
     buttons()
       .find((button) => button.props.children === 'lb')
       .props.onPress()
   )
-  expect(view.root.findByProps({ id: 'body-weight' }).props.value).toBe('165.3')
+  expect(view.root.findByProps({ nativeID: 'body-weight' }).props.value).toBe('165.3')
   await act(async () =>
     buttons()
       .find((button) => button.props.children === 'kg')
       .props.onPress()
   )
-  expect(view.root.findByProps({ id: 'body-weight' }).props.value).toBe('75')
-  await act(async () => view.root.findByProps({ id: 'body-weight' }).props.onChangeText('-2'))
+  expect(view.root.findByProps({ nativeID: 'body-weight' }).props.value).toBe('75')
+  await act(async () => view.root.findByProps({ nativeID: 'body-weight' }).props.onChangeText('-2'))
   expect(
     buttons().find((button) => button.props.children === 'Save measurements').props.disabled
   ).toBe(true)
@@ -173,21 +183,21 @@ test('rest timer presets persist and turning it off keeps duration and disables 
   await act(async () => {
     view = create(React.createElement(TimerScreen))
   })
-  const input = (id) => view.root.findByProps({ id })
+  const input = (id) => view.root.findByProps({ nativeID: id })
   await act(async () => input('rest-seconds').props.onChangeText('60'))
   expect(settings.setRestTimerDefaultSeconds).not.toHaveBeenCalled()
   await act(async () =>
     view.root
-      .findAllByType('Button')
+      .findAllByType(UiButton)
       .find((button) => button.props.children === '2 min')
       .props.onPress()
   )
   expect(settings.restTimerDefaultSeconds).toBe(120)
-  await act(async () => view.root.findByType('Switch').props.onCheckedChange(false))
+  await act(async () => view.root.findByType('Switch').props.onValueChange(false))
   await act(async () => view.update(React.createElement(TimerScreen)))
   expect(settings.restTimerDefaultSeconds).toBe(120)
-  expect(input('rest-minutes').props.disabled).toBe(true)
-  expect(input('rest-seconds').props.disabled).toBe(true)
+  expect(input('rest-minutes').props.editable).toBe(false)
+  expect(input('rest-seconds').props.editable).toBe(false)
   await act(async () => view.unmount())
 })
 

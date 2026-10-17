@@ -1,7 +1,5 @@
-import { Alert } from 'react-native'
-import type { ReactNode } from 'react'
-import { Link, type Href } from 'expo-router'
-import { Button, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui'
+import { Alert, ScrollView, View } from 'react-native'
+import { Link } from 'expo-router'
 import {
   Bell,
   ChevronRight,
@@ -22,82 +20,20 @@ import { useSettingsStore } from '../../../features/settings'
 import { measurementText } from '../../../features/settings/inputs'
 import NotificationPermissions from '../../../components/NotificationPermissions'
 import { launchFacade } from '../../../features/launch/launchFacade'
-
-function MenuSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <YStack gap="$compact">
-      <Text
-        fontFamily="$body"
-        accessibilityRole="header"
-        fontSize="$caption"
-        lineHeight={18}
-        fontWeight="600"
-        color="$primary"
-        px="$compact"
-      >
-        {title}
-      </Text>
-      <YStack
-        bg="$surface"
-        borderWidth={1}
-        borderColor="$borderColor"
-        rounded="$card"
-        overflow="hidden"
-      >
-        {children}
-      </YStack>
-    </YStack>
-  )
-}
-
-function MenuRow({
-  title,
-  description,
-  href,
-  icon,
-}: {
-  title: string
-  description: ReactNode
-  href: Href
-  icon: ReactNode
-}) {
-  return (
-    <Link href={href} asChild>
-      <Button unstyled px="$field" py="$compact" minH="$touch" pressStyle={{ bg: '$surfacePress' }}>
-        <XStack gap="$field" items="center" justify="space-between">
-          <YStack
-            width={36}
-            height={36}
-            rounded="$control"
-            bg="$backgroundAccent"
-            items="center"
-            justify="center"
-          >
-            {icon}
-          </YStack>
-          <YStack flex={1} gap={2}>
-            <Text fontFamily="$body" fontSize={16} lineHeight={20} fontWeight="500" color="$color">
-              {title}
-            </Text>
-            {typeof description === 'string' ? (
-              <Paragraph fontSize={13} lineHeight={18} fontWeight="400" color="$colorSubtle">
-                {description}
-              </Paragraph>
-            ) : (
-              description
-            )}
-          </YStack>
-          <ChevronRight size="$icon" color="$colorMuted" />
-        </XStack>
-      </Button>
-    </Link>
-  )
-}
+import {
+  Button,
+  Divider,
+  SettingsGroup,
+  SettingsRow,
+  UiText,
+} from '../../../components/ui/Controls'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
 export default function SettingsMenuScreen() {
   const localProfile = launchFacade.auth.getStartupPlan().kind === 'local-profile'
   const { logout, user } = useAuth()
   const settings = useSettingsStore()
+  const colors = useCadenceColors()
   const account = launchFacade.settings.menuAccount(user)
   const version = Application.nativeApplicationVersion || Constants.expoConfig?.version || 'Unknown'
   const confirmSignOut = () =>
@@ -110,148 +46,139 @@ export default function SettingsMenuScreen() {
         },
       },
     ])
+
   return (
-    <YStack flex={1} bg="$background">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <YStack p="$field" gap="$field" width="100%" maxW="$content" self="center">
+    <View className="flex-1 bg-background">
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="w-full max-w-[720px] self-center gap-field p-page">
           <Link href={launchFacade.settings.profileRoute() as any} asChild>
             <Button
-              unstyled
-              minH="$touch"
-              p="$field"
-              rounded="$card"
-              bg="$surface"
-              borderWidth={1}
-              borderColor="$borderColor"
-              pressStyle={{ bg: '$surfacePress' }}
+              variant="surface"
+              shape="card"
+              density="card"
               accessibilityLabel={account.accessibilityLabel}
             >
-              <XStack gap="$field" items="center">
-                <YStack
-                  width="$touch"
-                  height="$touch"
-                  rounded="$button"
-                  bg="$backgroundAccent"
-                  items="center"
-                  justify="center"
-                >
-                  <UserRound size={24} color="$primary" />
-                </YStack>
-                <YStack flex={1} gap="$compact">
-                  <Text
-                    fontFamily="$body"
-                    fontSize="$header"
-                    lineHeight={24}
-                    fontWeight="500"
-                    color="$color"
-                  >
-                    {account.name}
-                  </Text>
-                  {account.email && (
-                    <Text
-                      fontFamily="$body"
-                      fontSize="$caption"
-                      lineHeight="$caption"
-                      color="$colorSubtle"
-                    >
-                      {account.email}
-                    </Text>
-                  )}
-                </YStack>
-                <ChevronRight size="$icon" color="$colorMuted" />
-              </XStack>
+              <View className="w-full flex-row items-center gap-field">
+                <View className="h-touch w-touch items-center justify-center rounded-button bg-raised">
+                  <UserRound size={24} color={colors.accent} />
+                </View>
+                <View className="flex-1 gap-compact">
+                  <UiText textRole="bodyEmphasis">{account.name}</UiText>
+                  {account.email && <UiText textRole="caption">{account.email}</UiText>}
+                </View>
+                <ChevronRight size={20} color={colors.muted} />
+              </View>
             </Button>
           </Link>
-          <MenuSection title="Training">
-            <MenuRow
-              title="Body measurements"
-              icon={<Ruler size={22} color="$primary" />}
-              description={[
-                settings.bodyWeight == null
-                  ? 'Weight not set'
-                  : `${measurementText(settings.bodyWeight, settings.bodyWeightUnit)} ${settings.bodyWeightUnit}`,
-                settings.height == null
-                  ? 'Height not set'
-                  : `${measurementText(settings.height, settings.heightUnit)} ${settings.heightUnit}`,
-              ].join(' · ')}
-              href="/settings/body"
-            />
-            <MenuRow
-              title="Rest timer"
-              icon={<Clock3 size={22} color="$primary" />}
-              description={
-                settings.restTimerEnabled
-                  ? `On · ${Math.floor(settings.restTimerDefaultSeconds / 60)} min ${settings.restTimerDefaultSeconds % 60} sec`
-                  : 'Off'
-              }
-              href="/settings/rest-timer"
-            />
-          </MenuSection>
+
+          <SettingsGroup title="Training">
+            <Link href="/settings/body" asChild>
+              <SettingsRow
+                title="Body measurements"
+                icon={<Ruler size={22} color={colors.accent} />}
+                description={[
+                  settings.bodyWeight == null
+                    ? 'Weight not set'
+                    : `${measurementText(settings.bodyWeight, settings.bodyWeightUnit)} ${settings.bodyWeightUnit}`,
+                  settings.height == null
+                    ? 'Height not set'
+                    : `${measurementText(settings.height, settings.heightUnit)} ${settings.heightUnit}`,
+                ].join(' · ')}
+                trailing={<ChevronRight size={20} color={colors.muted} />}
+              />
+            </Link>
+            <Divider className="ml-field" />
+            <Link href="/settings/rest-timer" asChild>
+              <SettingsRow
+                title="Rest timer"
+                icon={<Clock3 size={22} color={colors.accent} />}
+                description={
+                  settings.restTimerEnabled
+                    ? `On · ${Math.floor(settings.restTimerDefaultSeconds / 60)} min ${settings.restTimerDefaultSeconds % 60} sec`
+                    : 'Off'
+                }
+                trailing={<ChevronRight size={20} color={colors.muted} />}
+              />
+            </Link>
+          </SettingsGroup>
+
           {localProfile && (
-            <MenuSection title="Data">
-              <MenuRow
-                title="Data on this device"
-                icon={<Database size={22} color="$primary" />}
-                description="Manage this training profile and erase saved data"
-                href="/settings/data"
-              />
-            </MenuSection>
+            <SettingsGroup title="Data">
+              <Link href="/settings/data" asChild>
+                <SettingsRow
+                  title="Data on this device"
+                  icon={<Database size={22} color={colors.accent} />}
+                  description="Manage this training profile and erase saved data"
+                  trailing={<ChevronRight size={20} color={colors.muted} />}
+                />
+              </Link>
+            </SettingsGroup>
           )}
-          <MenuSection title="Preferences">
-            <MenuRow
-              title="Appearance"
-              icon={<Palette size={22} color="$primary" />}
-              description={settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1)}
-              href="/settings/theme"
-            />
-            {!localProfile && (
-              <MenuRow
-                title="Time zone"
-                icon={<Globe2 size={22} color="$primary" />}
-                description={settings.timeZone.replace(/_/g, ' ').replace(/\//g, ' / ')}
-                href="/settings/time-zone"
+
+          <SettingsGroup title="Preferences">
+            <Link href="/settings/theme" asChild>
+              <SettingsRow
+                title="Appearance"
+                icon={<Palette size={22} color={colors.accent} />}
+                description={settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1)}
+                trailing={<ChevronRight size={20} color={colors.muted} />}
               />
+            </Link>
+            {!localProfile && (
+              <>
+                <Divider className="ml-field" />
+                <Link href="/settings/time-zone" asChild>
+                  <SettingsRow
+                    title="Time zone"
+                    icon={<Globe2 size={22} color={colors.accent} />}
+                    description={settings.timeZone.replace(/_/g, ' ').replace(/\//g, ' / ')}
+                    trailing={<ChevronRight size={20} color={colors.muted} />}
+                  />
+                </Link>
+              </>
             )}
-            <MenuRow
-              title="Permissions"
-              icon={<Bell size={22} color="$primary" />}
-              description={<NotificationPermissions summaryOnly />}
-              href="/settings/permissions"
-            />
-          </MenuSection>
-          <MenuSection title="Legal">
-            <MenuRow
-              title="Privacy policy"
-              icon={<ShieldCheck size={22} color="$primary" />}
-              description="How we handle your data"
-              href="/legal/privacy-policy"
-            />
-            <MenuRow
-              title="Terms of service"
-              icon={<ScrollText size={22} color="$primary" />}
-              description="Terms for using Active"
-              href="/legal/terms-of-service"
-            />
-          </MenuSection>
+            <Divider className="ml-field" />
+            <Link href="/settings/permissions" asChild>
+              <SettingsRow
+                title="Permissions"
+                icon={<Bell size={22} color={colors.accent} />}
+                description={<NotificationPermissions summaryOnly />}
+                trailing={<ChevronRight size={20} color={colors.muted} />}
+              />
+            </Link>
+          </SettingsGroup>
+
+          <SettingsGroup title="Legal">
+            <Link href="/legal/privacy-policy" asChild>
+              <SettingsRow
+                title="Privacy policy"
+                icon={<ShieldCheck size={22} color={colors.accent} />}
+                description="How we handle your data"
+                trailing={<ChevronRight size={20} color={colors.muted} />}
+              />
+            </Link>
+            <Divider className="ml-field" />
+            <Link href="/legal/terms-of-service" asChild>
+              <SettingsRow
+                title="Terms of service"
+                icon={<ScrollText size={22} color={colors.accent} />}
+                description="Terms for using Active"
+                trailing={<ChevronRight size={20} color={colors.muted} />}
+              />
+            </Link>
+          </SettingsGroup>
+
           {account.signOutAction && (
-            <Button
-              chromeless
-              self="flex-start"
-              minH="$touch"
-              color="$colorSubtle"
-              icon={<LogOut size="$iconSmall" />}
-              onPress={confirmSignOut}
-            >
-              {account.signOutAction.label}
+            <Button variant="ghost" className="self-start" onPress={confirmSignOut}>
+              <View className="flex-row items-center gap-compact">
+                <LogOut size={20} color={colors.muted} />
+                <UiText textRole="bodyMuted">{account.signOutAction.label}</UiText>
+              </View>
             </Button>
           )}
-          <YStack gap="$compact">
-            <Text fontFamily="$body" fontSize="$caption" color="$colorMuted">
-              Active · Version {version}
-            </Text>
-          </YStack>
-        </YStack>
+          <UiText textRole="caption">Active · Version {version}</UiText>
+        </View>
       </ScrollView>
-    </YStack>
+    </View>
   )
 }

@@ -5,6 +5,7 @@ import { AppState, NativeModules, Platform } from 'react-native'
 import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
 import { useFocusEffect } from 'expo-router'
+import { UiText } from './ui/Controls'
 
 interface NotificationPermissionsProps {
   onStatusChange?: (status: { notifications: boolean; alarms: boolean }) => void
@@ -78,7 +79,7 @@ export default function NotificationPermissions({
   }
   if (summaryOnly)
     return (
-      <Text fontFamily="$body" fontSize={13} lineHeight={18} fontWeight="400" color="$colorSubtle">
+      <UiText textRole="caption">
         {error
           ? 'Review device access'
           : notifications === null || (Platform.OS === 'android' && alarms === null)
@@ -90,7 +91,7 @@ export default function NotificationPermissions({
                 ? 'Notifications and alarms allowed'
                 : 'Notifications allowed'
               : 'Permission needed · Review access'}
-      </Text>
+      </UiText>
     )
 
   return (
