@@ -24,6 +24,8 @@ export default function WorkoutsLayout() {
           <Button
             unstyled
             flex={1}
+            items="center"
+            justify="center"
             minH="$touch"
             py="$2"
             bg={current === 'workouts' ? '$surface' : '$backgroundTransparent'}
@@ -45,6 +47,8 @@ export default function WorkoutsLayout() {
           <Button
             unstyled
             flex={1}
+            items="center"
+            justify="center"
             minH="$touch"
             py="$2"
             bg={current === 'routines' ? '$surface' : '$backgroundTransparent'}
