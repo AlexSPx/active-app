@@ -26,6 +26,7 @@ jest.mock('../../config/launchPolicy', () => ({
   isSyncEnabledForLaunch: () => true,
 }))
 jest.mock('@tamagui/core', () => ({ useEvent: (callback) => callback }))
+jest.mock('uniwind', () => ({ Uniwind: { setTheme: jest.fn() } }))
 jest.mock(
   'expo-network',
   () => {
@@ -259,6 +260,7 @@ const expoNetwork = require('expo-network')
 const { ThemeContext } = require('tamagui')
 const { NavigationContext } = require('@react-navigation/native')
 const { useColorScheme } = require('react-native')
+const { Uniwind } = require('uniwind')
 function ThemeProbe() {
   return React.createElement('Probe', {
     appearance: React.useContext(ThemeContext),
@@ -267,21 +269,27 @@ function ThemeProbe() {
 }
 
 test('live appearance changes update both themes through the memoized database provider', async () => {
+  Uniwind.setTheme.mockClear()
   let view
   await act(async () => {
     view = create(React.createElement(Provider, {}, React.createElement(ThemeProbe)))
   })
   const probe = () => view.root.findByType('Probe').props
   expect(probe()).toMatchObject({ appearance: 'light', navigationDark: false })
+  expect(Uniwind.setTheme).toHaveBeenLastCalledWith('light')
   await act(async () => useSettingsStore.getState().setTheme('dark'))
   expect(probe()).toMatchObject({ appearance: 'dark', navigationDark: true })
+  expect(Uniwind.setTheme).toHaveBeenLastCalledWith('dark')
   await act(async () => useSettingsStore.getState().setTheme('system'))
   expect(probe()).toMatchObject({ appearance: 'light', navigationDark: false })
+  expect(Uniwind.setTheme).toHaveBeenLastCalledWith('system')
   useColorScheme.mockReturnValue('dark')
   await act(async () => useSettingsStore.getState().setTheme('light'))
   expect(probe()).toMatchObject({ appearance: 'light', navigationDark: false })
+  expect(Uniwind.setTheme).toHaveBeenLastCalledWith('light')
   await act(async () => useSettingsStore.getState().setTheme('system'))
   expect(probe()).toMatchObject({ appearance: 'dark', navigationDark: true })
+  expect(Uniwind.setTheme).toHaveBeenLastCalledWith('system')
   await act(async () => view.unmount())
 })
 

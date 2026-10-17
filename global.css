@@ -1,0 +1,40 @@
+@import 'tailwindcss';
+@import 'uniwind';
+
+@source not './promo';
+@source not './dist';
+@source not './docs';
+@source not './tests';
+
+@theme {
+  --radius-card: 1.25rem;
+  --radius-control: 0.875rem;
+}
+
+@layer theme {
+  :root {
+    @variant light {
+      --color-background: #faf7fc;
+      --color-foreground: #2d2235;
+      --color-muted: #76627e;
+      --color-surface: #f0e9f5;
+      --color-raised: #e9dff0;
+      --color-divider: #dcd0e4;
+      --color-accent: #624572;
+      --color-on-accent: #faf5fc;
+      --color-destructive: #a12549;
+    }
+
+    @variant dark {
+      --color-background: #2d2235;
+      --color-foreground: #faf5fc;
+      --color-muted: #c0afcb;
+      --color-surface: #382b42;
+      --color-raised: #42314d;
+      --color-divider: #51415d;
+      --color-accent: #e3d7ee;
+      --color-on-accent: #2d2235;
+      --color-destructive: #ffc0cd;
+    }
+  }
+}
