@@ -1,21 +1,10 @@
 import type { ReactNode } from 'react'
-import { KeyboardAvoidingView, Platform } from 'react-native'
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { useHeaderHeight } from '@react-navigation/elements'
-import { Paragraph, ScrollView, Text, YStack } from 'tamagui'
+import { Surface, UiText } from '../ui/Controls'
 
-export function SettingsCard({ children }: { children: ReactNode }) {
-  return (
-    <YStack
-      bg="$surface"
-      borderWidth={1}
-      borderColor="$borderColor"
-      rounded="$card"
-      p="$card"
-      gap="$field"
-    >
-      {children}
-    </YStack>
-  )
+export function SettingsCard({ children, className }: { children: ReactNode; className?: string }) {
+  return <Surface className={className}>{children}</Surface>
 }
 
 export function SettingsPage({
@@ -23,51 +12,37 @@ export function SettingsPage({
   description,
   children,
   footer,
+  className = '',
 }: {
   title: string
   description?: string
   children: ReactNode
   footer?: ReactNode
+  className?: string
 }) {
   const headerHeight = useHeaderHeight()
   return (
-    <YStack flex={1} bg="$background" asChild>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={headerHeight}
+    <KeyboardAvoidingView
+      className="flex-1 bg-background"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={headerHeight}
+    >
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
       >
-        <ScrollView
-          flex={1}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <YStack shrink={0} p="$page" gap="$section" width="100%" maxW="$content" self="center">
-            <YStack gap="$field">
-              <Text
-                accessibilityRole="header"
-                fontSize="$screenTitle"
-                lineHeight="$screenTitle"
-                fontWeight="600"
-              >
-                {title}
-              </Text>
-              {description && (
-                <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle">
-                  {description}
-                </Paragraph>
-              )}
-            </YStack>
-            {children}
-          </YStack>
-        </ScrollView>
-        {footer && (
-          <YStack p="$page" gap="$field" borderTopWidth={1} borderColor="$borderColor">
-            <YStack width="100%" maxW="$content" self="center" gap="$field">
-              {footer}
-            </YStack>
-          </YStack>
-        )}
-      </KeyboardAvoidingView>
-    </YStack>
+        <View className={`w-full max-w-[720px] self-center gap-section p-page ${className}`}>
+          <View className="gap-field">
+            <UiText accessibilityRole="header" textRole="screenTitle">
+              {title}
+            </UiText>
+            {description && <UiText textRole="bodyMuted">{description}</UiText>}
+          </View>
+          {children}
+        </View>
+      </ScrollView>
+      {footer && <View className="gap-field border-t border-divider p-page">{footer}</View>}
+    </KeyboardAvoidingView>
   )
 }

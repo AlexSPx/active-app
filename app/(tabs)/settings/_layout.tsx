@@ -1,23 +1,24 @@
 import { Stack } from 'expo-router'
-import { getConfig, getVariableValue, useTheme } from 'tamagui'
+import { useResolveClassNames } from 'uniwind'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
 export default function SettingsStackLayout() {
-  const theme = useTheme()
+  const colors = useCadenceColors()
+  const titleStyles = useResolveClassNames('text-header font-dm-semibold')
   return (
     <Stack
       screenOptions={{
         title: 'Settings',
         headerBackTitle: 'Settings',
         headerTitleAlign: 'left',
-        headerStyle: { backgroundColor: theme.background.val },
-        headerTintColor: theme.primary.val,
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.accent,
         headerTitleStyle: {
-          color: theme.color.val,
-          fontSize: getVariableValue(getConfig().fonts.body.size.header),
-          fontWeight: '700',
+          ...titleStyles,
+          color: colors.foreground,
         },
         headerShadowVisible: false,
-        contentStyle: { backgroundColor: theme.background.val },
+        contentStyle: { backgroundColor: colors.background },
       }}
     />
   )

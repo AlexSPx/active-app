@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { Button, Input, Label, Paragraph, Text, XStack, YStack } from 'tamagui'
+import { useState } from 'react'
+import { View } from 'react-native'
 import { SettingsCard, SettingsPage } from '../../../components/settings/SettingsPage'
+import { Button, SegmentedSelection, TextField, UiText } from '../../../components/ui/Controls'
 import { useSettingsStore, useUpdateUser } from '../../../features/settings'
 import { measurementText, parseMeasurement } from '../../../features/settings/inputs'
 
@@ -37,10 +38,8 @@ export default function BodySettingsScreen() {
       description="Your weight, height, and preferred units."
       footer={
         <>
-          <Paragraph
-            fontSize="$caption"
-            lineHeight="$caption"
-            color={error || !valid ? '$destructive' : '$colorSubtle'}
+          <UiText
+            textRole={error || !valid ? 'captionDestructive' : 'caption'}
             accessibilityLiveRegion="polite"
           >
             {error ||
@@ -51,14 +50,11 @@ export default function BodySettingsScreen() {
                   : saved
                     ? 'Measurements saved.'
                     : 'No changes to save.')}
-          </Paragraph>
+          </UiText>
           <Button
-            height="$action"
-            rounded="$button"
-            bg="$primary"
-            color="$onPrimary"
-            disabled={!valid || !dirty || isUpdating}
-            opacity={!valid || !dirty || isUpdating ? 0.5 : 1}
+            className="h-action"
+            disabled={!valid || !dirty}
+            loading={isUpdating}
             onPress={save}
           >
             {isUpdating ? 'Saving…' : 'Save measurements'}
@@ -67,45 +63,32 @@ export default function BodySettingsScreen() {
       }
     >
       <SettingsCard>
-        <XStack items="center" justify="space-between" gap="$field">
-          <Label htmlFor="body-weight" fontSize="$body">
-            Body weight{' '}
-            <Text color="$colorSubtle" fontSize="$caption">
-              (optional)
-            </Text>
-          </Label>
-          <XStack bg="$backgroundStrong" p="$compact" rounded="$control">
-            {(['kg', 'lb'] as const).map((unit) => (
-              <Button
-                key={unit}
-                size="$3"
-                height="$touch"
-                rounded="$day"
-                disabled={isUpdating}
-                bg={weightUnit === unit ? '$surface' : '$backgroundTransparent'}
-                color={weightUnit === unit ? '$primary' : '$colorSubtle'}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: weightUnit === unit }}
-                onPress={() => {
-                  setWeightUnit(unit)
-                  if (weight !== undefined) setWeightText(measurementText(weight, unit))
-                }}
-              >
-                {unit}
-              </Button>
-            ))}
-          </XStack>
-        </XStack>
-        <XStack items="center" gap="$field">
-          <Input
+        <View className="flex-row items-center justify-between gap-field">
+          <View className="flex-row items-baseline gap-compact">
+            <UiText>Body weight</UiText>
+            <UiText textRole="caption">(optional)</UiText>
+          </View>
+          <SegmentedSelection
+            value={weightUnit}
+            options={[
+              { label: 'kg', value: 'kg' },
+              { label: 'lb', value: 'lb' },
+            ]}
+            onValueChange={(unit) => {
+              setWeightUnit(unit)
+              if (weight !== undefined) setWeightText(measurementText(weight, unit))
+            }}
+            accessibilityLabel="Weight unit"
+            disabled={isUpdating}
+            className="w-32"
+          />
+        </View>
+        <View className="flex-row items-center gap-field">
+          <TextField
             id="body-weight"
             accessibilityLabel="Body weight"
-            flex={1}
-            height="$action"
-            rounded="$control"
-            bg="$surface"
-            borderColor={weight === undefined ? '$destructive' : '$borderColor'}
-            fontSize="$cardTitle"
+            className="flex-1"
+            invalid={weight === undefined}
             keyboardType="decimal-pad"
             placeholder="Not set"
             value={weightText}
@@ -116,51 +99,36 @@ export default function BodySettingsScreen() {
               setSaved(false)
             }}
           />
-          <Text fontSize="$body" color="$colorSubtle">
-            {weightUnit}
-          </Text>
-        </XStack>
+          <UiText textRole="caption">{weightUnit}</UiText>
+        </View>
       </SettingsCard>
       <SettingsCard>
-        <XStack items="center" justify="space-between" gap="$field">
-          <Label htmlFor="body-height" fontSize="$body">
-            Height{' '}
-            <Text color="$colorSubtle" fontSize="$caption">
-              (optional)
-            </Text>
-          </Label>
-          <XStack bg="$backgroundStrong" p="$compact" rounded="$control">
-            {(['cm', 'in'] as const).map((unit) => (
-              <Button
-                key={unit}
-                size="$3"
-                height="$touch"
-                rounded="$day"
-                disabled={isUpdating}
-                bg={heightUnit === unit ? '$surface' : '$backgroundTransparent'}
-                color={heightUnit === unit ? '$primary' : '$colorSubtle'}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: heightUnit === unit }}
-                onPress={() => {
-                  setHeightUnit(unit)
-                  if (height !== undefined) setHeightText(measurementText(height, unit))
-                }}
-              >
-                {unit}
-              </Button>
-            ))}
-          </XStack>
-        </XStack>
-        <XStack items="center" gap="$field">
-          <Input
+        <View className="flex-row items-center justify-between gap-field">
+          <View className="flex-row items-baseline gap-compact">
+            <UiText>Height</UiText>
+            <UiText textRole="caption">(optional)</UiText>
+          </View>
+          <SegmentedSelection
+            value={heightUnit}
+            options={[
+              { label: 'cm', value: 'cm' },
+              { label: 'in', value: 'in' },
+            ]}
+            onValueChange={(unit) => {
+              setHeightUnit(unit)
+              if (height !== undefined) setHeightText(measurementText(height, unit))
+            }}
+            accessibilityLabel="Height unit"
+            disabled={isUpdating}
+            className="w-32"
+          />
+        </View>
+        <View className="flex-row items-center gap-field">
+          <TextField
             id="body-height"
             accessibilityLabel="Height"
-            flex={1}
-            height="$action"
-            rounded="$control"
-            bg="$surface"
-            borderColor={height === undefined ? '$destructive' : '$borderColor'}
-            fontSize="$cardTitle"
+            className="flex-1"
+            invalid={height === undefined}
             keyboardType="decimal-pad"
             placeholder="Not set"
             value={heightText}
@@ -171,15 +139,13 @@ export default function BodySettingsScreen() {
               setSaved(false)
             }}
           />
-          <Text fontSize="$body" color="$colorSubtle">
-            {heightUnit}
-          </Text>
-        </XStack>
+          <UiText textRole="caption">{heightUnit}</UiText>
+        </View>
       </SettingsCard>
-      <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+      <UiText textRole="caption">
         Switching units converts the current value. Leave a measurement blank if you prefer not to
         add it.
-      </Paragraph>
+      </UiText>
     </SettingsPage>
   )
 }

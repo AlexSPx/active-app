@@ -20,19 +20,20 @@ export const unstable_settings = {
 SplashScreen.preventAutoHideAsync()
 
 export default function RootLayout() {
-  const [interLoaded, interError] = useFonts({
-    Inter: require('@tamagui/font-inter/otf/Inter-Medium.otf'),
-    InterBold: require('@tamagui/font-inter/otf/Inter-Bold.otf'),
+  const [fontsLoaded, fontError] = useFonts({
+    'DM Sans': require('../assets/fonts/DM-Sans-Regular.ttf'),
+    'DM Sans Medium': require('../assets/fonts/DM-Sans-Medium.ttf'),
+    'DM Sans Semibold': require('../assets/fonts/DM-Sans-SemiBold.ttf'),
   })
 
   useEffect(() => {
-    if (interLoaded || interError) {
+    if (fontsLoaded || fontError) {
       // Hide the splash screen after the fonts have loaded (or an error was returned) and the UI is ready.
       SplashScreen.hideAsync()
     }
-  }, [interLoaded, interError])
+  }, [fontsLoaded, fontError])
 
-  if (!interLoaded && !interError) {
+  if (!fontsLoaded && !fontError) {
     return null
   }
 

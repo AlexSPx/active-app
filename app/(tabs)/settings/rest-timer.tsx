@@ -1,8 +1,16 @@
 import { useState } from 'react'
-import { Button, Input, Label, Paragraph, Switch, Text, XStack, YStack } from 'tamagui'
+import { Switch, View } from 'react-native'
 import { SettingsCard, SettingsPage } from '../../../components/settings/SettingsPage'
+import { Button, TextField, UiText } from '../../../components/ui/Controls'
 import { useSettingsStore } from '../../../features/settings'
 import { parseRestDuration } from '../../../features/settings/inputs'
+
+const presets = [
+  { value: 30, label: '30 sec' },
+  { value: 60, label: '1 min' },
+  { value: 90, label: '1:30' },
+  { value: 120, label: '2 min' },
+] as const
 
 export default function RestTimerSettingsScreen() {
   const {
@@ -20,112 +28,86 @@ export default function RestTimerSettingsScreen() {
     const next = parseRestDuration(m, s)
     if (next !== null) setRestTimerDefaultSeconds(next)
   }
+
   return (
     <SettingsPage title="Rest timer" description="Choose how long to rest after a set.">
       <SettingsCard>
-        <XStack items="center" justify="space-between" gap="$field">
-          <YStack flex={1} gap="$compact">
-            <Label htmlFor="rest-enabled" fontSize="$body" fontWeight="600">
-              Start after each set
-            </Label>
-            <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-              Show the countdown when you finish a set.
-            </Paragraph>
-          </YStack>
+        <View className="flex-row items-center justify-between gap-field">
+          <View className="flex-1 gap-compact">
+            <UiText textRole="bodyEmphasis">Start after each set</UiText>
+            <UiText textRole="caption">Show the countdown when you finish a set.</UiText>
+          </View>
           <Switch
-            id="rest-enabled"
             accessibilityLabel="Start after each set"
-            checked={restTimerEnabled}
-            onCheckedChange={setRestTimerEnabled}
-            bg={restTimerEnabled ? '$primary' : '$backgroundStrong'}
-          >
-            <Switch.Thumb bg="$surface" />
-          </Switch>
-        </XStack>
+            accessibilityState={{ checked: restTimerEnabled }}
+            thumbColorClassName="accent-surface"
+            trackColorOnClassName="accent-accent"
+            trackColorOffClassName="accent-raised"
+            ios_backgroundColorClassName="accent-raised"
+            value={restTimerEnabled}
+            onValueChange={setRestTimerEnabled}
+          />
+        </View>
       </SettingsCard>
       <SettingsCard>
-        <YStack gap="$field" opacity={restTimerEnabled ? 1 : 0.5}>
-          <Text fontSize="$body" fontWeight="600">
-            Default duration
-          </Text>
-          <XStack gap="$field" items="center">
-            <YStack flex={1} gap="$compact">
-              <Input
+        <View className={`gap-field ${restTimerEnabled ? '' : 'opacity-50'}`}>
+          <UiText textRole="bodyEmphasis">Default duration</UiText>
+          <View className="flex-row items-center gap-field">
+            <View className="flex-1 gap-compact">
+              <TextField
                 id="rest-minutes"
                 accessibilityLabel="Rest minutes"
                 keyboardType="number-pad"
+                textAlign="center"
                 value={minutes}
                 onChangeText={(value) => updateDuration(value, seconds)}
                 disabled={!restTimerEnabled}
-                fontSize="$metric"
-                height="$6"
-                text="center"
-                rounded="$control"
-                bg="$surface"
-                borderColor="$borderColor"
               />
-              <Label htmlFor="rest-minutes" fontSize="$caption" color="$colorSubtle" text="center">
+              <UiText textRole="caption" className="text-center">
                 minutes
-              </Label>
-            </YStack>
-            <Text fontSize="$metric" color="$colorSubtle">
-              :
-            </Text>
-            <YStack flex={1} gap="$compact">
-              <Input
+              </UiText>
+            </View>
+            <UiText textRole="cardTitleMuted">:</UiText>
+            <View className="flex-1 gap-compact">
+              <TextField
                 id="rest-seconds"
                 accessibilityLabel="Rest seconds"
                 keyboardType="number-pad"
+                textAlign="center"
                 value={seconds}
                 onChangeText={(value) => updateDuration(minutes, value)}
                 disabled={!restTimerEnabled}
-                fontSize="$metric"
-                height="$6"
-                text="center"
-                rounded="$control"
-                bg="$surface"
-                borderColor="$borderColor"
               />
-              <Label htmlFor="rest-seconds" fontSize="$caption" color="$colorSubtle" text="center">
+              <UiText textRole="caption" className="text-center">
                 seconds
-              </Label>
-            </YStack>
-          </XStack>
-          <XStack gap="$compact" flexWrap="wrap">
-            {[
-              [30, '30 sec'],
-              [60, '1 min'],
-              [90, '1:30'],
-              [120, '2 min'],
-            ].map(([value, label]) => (
-              <Button
-                key={value}
-                flex={1}
-                height="$touch"
-                rounded="$day"
-                fontSize="$caption"
-                disabled={!restTimerEnabled}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: duration === value }}
-                bg={duration === value ? '$backgroundAccent' : '$backgroundStrong'}
-                color={duration === value ? '$primary' : '$colorSubtle'}
-                onPress={() =>
-                  updateDuration(String(Math.floor(Number(value) / 60)), String(Number(value) % 60))
-                }
-              >
-                {label}
-              </Button>
-            ))}
-          </XStack>
-          <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-            Used when the timer starts after a completed set.
-          </Paragraph>
-        </YStack>
+              </UiText>
+            </View>
+          </View>
+          <View className="flex-row flex-wrap gap-compact">
+            {presets.map(({ value, label }) => {
+              const selected = duration === value
+              return (
+                <Button
+                  key={value}
+                  variant={selected ? 'primary' : 'secondary'}
+                  shape="control"
+                  className="flex-1"
+                  disabled={!restTimerEnabled}
+                  accessibilityRole="radio"
+                  accessibilityLabel={label}
+                  accessibilityState={{ checked: selected }}
+                  onPress={() => updateDuration(String(Math.floor(value / 60)), String(value % 60))}
+                >
+                  {label}
+                </Button>
+              )
+            })}
+          </View>
+          <UiText textRole="caption">Used when the timer starts after a completed set.</UiText>
+        </View>
       </SettingsCard>
-      <Paragraph
-        fontSize="$caption"
-        lineHeight="$caption"
-        color={restTimerEnabled && duration === null ? '$destructive' : '$colorSubtle'}
+      <UiText
+        textRole={restTimerEnabled && duration === null ? 'captionDestructive' : 'caption'}
         accessibilityLiveRegion="polite"
       >
         {!restTimerEnabled
@@ -133,11 +115,11 @@ export default function RestTimerSettingsScreen() {
           : duration === null
             ? 'Enter a duration from 0:01 to 59:59.'
             : 'Changes apply automatically.'}
-      </Paragraph>
-      <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+      </UiText>
+      <UiText textRole="caption">
         Turn the timer off to train without an automatic countdown. Your duration is kept for next
         time.
-      </Paragraph>
+      </UiText>
     </SettingsPage>
   )
 }
