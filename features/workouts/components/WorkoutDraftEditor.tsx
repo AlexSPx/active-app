@@ -1,14 +1,14 @@
 import { useEffect, useState } from 'react'
-import { Alert, KeyboardAvoidingView, Platform } from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { useNavigation, usePreventRemove } from '@react-navigation/native'
 import { useHeaderHeight } from '@react-navigation/elements'
 import { Stack, useRouter, type Href } from 'expo-router'
-import { Button, Input, ScrollView, Text, TextArea, XStack, YStack } from 'tamagui'
+import { Button, TextField, UiText } from '../../../components/ui/Controls'
 import { ExerciseEditor } from '../../exercises'
 import { validateWorkoutData } from '../../../utils/workoutUtils'
 import type { WorkoutExercise, WorkoutSet } from '../../../types/workout'
 import { BackHeaderButton } from '../../../navigation/BackHeaderButton'
-import { useCadenceColors } from '../../../components/ui/useCadenceColors'
+import { moveWorkoutExercise } from '../workoutDraftUtils'
 
 interface Props {
   editing?: boolean
@@ -48,13 +48,14 @@ export function WorkoutDraftEditor({
   const router = useRouter()
   const navigation = useNavigation()
   const headerHeight = useHeaderHeight()
-  const colors = useCadenceColors()
   const [name, setName] = useState(initialName)
   const [notes, setNotes] = useState(initialNotes)
+
   useEffect(() => {
     setName(initialName)
     setNotes(initialNotes)
   }, [initialName, initialNotes])
+
   const dirty =
     name !== initialName || notes !== initialNotes || JSON.stringify(exercises) !== initialSignature
   usePreventRemove(dirty && !saving, ({ data }) => {
@@ -70,22 +71,17 @@ export function WorkoutDraftEditor({
       },
     ])
   })
+
   const validation = validateWorkoutData(name, exercises, notes)
   const canSave = !validation && !saving
-  const moveExercise = (index: number, direction: -1 | 1) => {
-    const moved = [...exercises]
-    const target = index + direction
-    if (target < 0 || target >= moved.length) return
-    ;[moved[index], moved[target]] = [moved[target], moved[index]]
-    setExercises(moved)
-  }
   const addExercises = () =>
     router.push({
       pathname: '/exercises/search',
       params: { ctx: editing ? 'edit' : 'create', workoutName: name.trim() },
     })
+
   return (
-    <YStack flex={1} bg="$background">
+    <View className="flex-1 bg-background">
       <Stack.Screen
         options={{
           title: '',
@@ -93,118 +89,92 @@ export function WorkoutDraftEditor({
           headerBackVisible: false,
           headerLeft: () => <BackHeaderButton label={backLabel} fallback={backFallback} />,
           headerRight: () => (
-            <Button chromeless height="$touch" onPress={() => router.back()} disabled={saving}>
-              <Text color={colors.accent} fontSize="$caption">
-                Cancel
-              </Text>
+            <Button
+              variant="ghost"
+              density="compact"
+              onPress={() => router.back()}
+              disabled={saving}
+            >
+              <UiText textRole="captionEmphasis">Cancel</UiText>
             </Button>
           ),
         }}
       />
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        className="flex-1"
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={headerHeight}
       >
         <ScrollView
-          flex={1}
+          className="flex-1"
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <YStack width="100%" maxW="$content" self="center" p="$page" gap="$section">
-            <YStack gap="$compact">
-              <Text
-                fontSize="$screenTitle"
-                lineHeight="$screenTitle"
-                fontWeight="$screenTitle"
-                color="$color"
-              >
-                {editing ? 'Edit workout' : 'Create workout'}
-              </Text>
-              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                Choose your exercises, then set your targets.
-              </Text>
-            </YStack>
-            <YStack gap="$field">
-              <YStack gap="$compact">
-                <Text fontSize="$caption" fontWeight="$screenTitle" color="$color">
-                  Workout name
-                </Text>
-                <Input
-                  height="$action"
-                  rounded="$control"
-                  bg="$surface"
-                  borderColor="$borderColor"
-                  fontSize="$body"
+          <View className="w-full max-w-3xl self-center gap-section p-page">
+            <View className="gap-compact">
+              <UiText textRole="screenTitle" accessibilityRole="header">
+                {editing ? 'Edit workout.' : 'Create workout.'}
+              </UiText>
+              <UiText textRole="bodyMuted">Choose your exercises, then set your targets.</UiText>
+            </View>
+
+            <View className="gap-field">
+              <View className="gap-compact">
+                <UiText textRole="bodyEmphasis">Workout name</UiText>
+                <TextField
                   accessibilityLabel="Workout name, required"
                   placeholder="e.g. Lower body foundations"
                   value={name}
                   onChangeText={setName}
                   maxLength={100}
+                  returnKeyType="next"
                 />
-              </YStack>
-              <YStack gap="$compact">
-                <Text fontSize="$caption" fontWeight="$screenTitle" color="$color">
-                  Notes{' '}
-                  <Text color="$colorSubtle" fontWeight="$body">
-                    (optional)
-                  </Text>
-                </Text>
-                <TextArea
-                  minH="$6"
-                  rounded="$control"
-                  bg="$surface"
-                  borderColor="$borderColor"
-                  fontSize="$body"
+              </View>
+              <View className="gap-compact">
+                <View className="flex-row items-center justify-between">
+                  <UiText textRole="bodyEmphasis">Notes</UiText>
+                  <UiText textRole="caption">Optional</UiText>
+                </View>
+                <TextField
+                  className="h-32 min-h-32 py-field"
                   accessibilityLabel="Notes, optional"
                   placeholder="Anything to remember for this session"
                   value={notes}
                   onChangeText={setNotes}
                   maxLength={1000}
+                  multiline
+                  textAlignVertical="top"
                 />
-              </YStack>
-            </YStack>
-            <YStack gap="$field">
-              <YStack gap="$compact">
-                <XStack justify="space-between" items="center">
-                  <Text
-                    fontSize="$cardTitle"
-                    lineHeight="$cardTitle"
-                    fontWeight="$cardTitle"
-                    color="$color"
-                  >
+              </View>
+            </View>
+
+            <View className="gap-field">
+              <View className="gap-compact">
+                <View className="flex-row items-center justify-between gap-field">
+                  <UiText textRole="cardTitle" accessibilityRole="header">
                     Exercises
-                  </Text>
-                  <Button chromeless height="$touch" onPress={addExercises}>
-                    <Text color="$primary" fontSize="$caption">
-                      + Add
-                    </Text>
-                  </Button>
-                </XStack>
-                <Text fontSize="$caption" color="$colorSubtle">
-                  {exercises.length} exercises ·{' '}
-                  {exercises.reduce((total, exercise) => total + exercise.sets.length, 0)} sets
-                </Text>
-              </YStack>
-              {exercises.length === 0 ? (
-                <YStack gap="$field" py="$field">
-                  <Text fontSize="$header" fontWeight="$screenTitle" color="$color">
-                    No exercises yet
-                  </Text>
-                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                    Add exercises, then choose the weight and reps or duration for each set.
-                  </Text>
+                  </UiText>
                   <Button
-                    height="$action"
-                    rounded="$button"
-                    bg="$backgroundStrong"
+                    variant="ghost"
+                    density="compact"
+                    accessibilityLabel="Add exercises"
                     onPress={addExercises}
                   >
-                    <Text color="$primary" fontSize="$caption">
-                      + Add exercises
-                    </Text>
+                    <UiText textRole="captionEmphasis">+ Add</UiText>
                   </Button>
-                </YStack>
+                </View>
+                <UiText textRole="caption">
+                  {exercises.length} exercises ·{' '}
+                  {exercises.reduce((total, exercise) => total + exercise.sets.length, 0)} sets
+                </UiText>
+              </View>
+              {exercises.length === 0 ? (
+                <View className="gap-field border-t border-divider pt-section">
+                  <UiText textRole="cardTitle">Start with an exercise.</UiText>
+                  <UiText textRole="bodyMuted">
+                    Add the lifts or cardio you want in this workout.
+                  </UiText>
+                </View>
               ) : (
                 exercises.map((exercise, index) => (
                   <ExerciseEditor
@@ -214,7 +184,9 @@ export function WorkoutDraftEditor({
                     onUpdateSets={updateExerciseSets}
                     onAddSet={addSetToExercise}
                     onRemoveSet={removeSetFromExercise}
-                    onMove={(direction) => moveExercise(index, direction)}
+                    onMove={(direction) =>
+                      setExercises(moveWorkoutExercise(exercises, index, direction))
+                    }
                     canMoveUp={index > 0}
                     canMoveDown={index < exercises.length - 1}
                     onRemove={() =>
@@ -223,50 +195,41 @@ export function WorkoutDraftEditor({
                   />
                 ))
               )}
+              <Button
+                variant="ghost"
+                className="h-action flex-row gap-compact border border-dashed border-divider"
+                onPress={addExercises}
+              >
+                <UiText textRole="captionEmphasis">+ Add exercises</UiText>
+              </Button>
               {error && (
-                <Text color="$destructive" fontSize="$caption" accessibilityRole="alert">
+                <UiText textRole="bodyDestructive" accessibilityRole="alert">
                   {error}
-                </Text>
+                </UiText>
               )}
-            </YStack>
-          </YStack>
+            </View>
+          </View>
         </ScrollView>
-        <YStack
-          borderTopColor="$borderColor"
-          borderTopWidth="$0.5"
-          bg="$background"
-          px="$page"
-          pt="$field"
-          pb="$field"
-        >
-          <YStack width="100%" maxW="$content" self="center" gap="$compact">
-            <Text
-              fontSize="$caption"
-              lineHeight="$caption"
-              color="$colorSubtle"
+
+        <View className="border-t border-divider bg-background px-page py-field">
+          <View className="w-full max-w-3xl self-center gap-compact">
+            <UiText
+              textRole={validation ? 'captionDestructive' : 'caption'}
               accessibilityLiveRegion="polite"
             >
               {validation ?? 'Ready to save your workout.'}
-            </Text>
+            </UiText>
             <Button
-              height="$action"
-              rounded="$button"
-              bg={canSave ? colors.accent : '$backgroundAccent'}
               disabled={!canSave}
+              loading={saving}
               accessibilityHint={validation ?? undefined}
-              onPress={() => onSave(name.trim(), notes)}
+              onPress={() => void onSave(name.trim(), notes)}
             >
-              <Text
-                fontSize="$caption"
-                fontWeight="$screenTitle"
-                color={canSave ? colors.onAccent : colors.muted}
-              >
-                {saving ? 'Saving…' : editing ? 'Save changes' : 'Save workout'}
-              </Text>
+              {saving ? 'Saving…' : editing ? 'Save changes' : 'Save workout'}
             </Button>
-          </YStack>
-        </YStack>
+          </View>
+        </View>
       </KeyboardAvoidingView>
-    </YStack>
+    </View>
   )
 }

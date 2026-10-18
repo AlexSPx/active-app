@@ -1,4 +1,5 @@
 import { Stack } from 'expo-router'
+import { View } from 'react-native'
 import { WorkoutDetailView } from '../../features/workouts/components/WorkoutDetailView'
 import { useWorkoutDetail } from '../../features/workouts/hooks/useWorkoutDetail'
 import { Button, UiText } from '../../components/ui/Controls'
@@ -21,9 +22,14 @@ export default function WorkoutDetailScreen() {
           headerTintColor: colors.accent,
           headerRight: detail.workout
             ? () => (
-                <Button variant="ghost" onPress={detail.editWorkout}>
-                  <UiText textRole="captionEmphasis">Edit</UiText>
-                </Button>
+                <View className="flex-row items-center">
+                  <Button variant="ghost" onPress={detail.editWorkout}>
+                    <UiText textRole="captionEmphasis">Edit</UiText>
+                  </Button>
+                  <Button variant="ghost" onPress={detail.duplicateWorkout}>
+                    <UiText textRole="captionEmphasis">Copy</UiText>
+                  </Button>
+                </View>
               )
             : undefined,
         }}

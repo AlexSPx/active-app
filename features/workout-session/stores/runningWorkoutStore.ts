@@ -279,13 +279,12 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         const state = get()
         if (state.runningWorkout) {
           const updatedExercises = state.runningWorkout.exercises.map((exercise) => {
-            if (exercise.sessionId === exerciseId) {
-              return {
-                ...exercise,
-                sessionSets: exercise.sessionSets.filter((_, index) => index !== setIndex),
-              }
+            if (exercise.sessionId !== exerciseId || exercise.sessionSets.length <= 1)
+              return exercise
+            return {
+              ...exercise,
+              sessionSets: exercise.sessionSets.filter((_, index) => index !== setIndex),
             }
-            return exercise
           })
 
           set({

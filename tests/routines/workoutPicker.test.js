@@ -1,34 +1,45 @@
-jest.mock(
-  '../../components/ui/CadenceOverlay',
-  () => ({
-    CadenceOverlay: ({ children, ...props }) =>
-      require('react').createElement('CadenceOverlay', props, props.open ? children : null),
-  }),
-  { virtual: true }
-)
-jest.mock('tamagui', () => {
+jest.mock('../../components/ui/Controls', () => {
   const React = require('react')
   const primitive = (name) =>
     function Primitive({ children, ...props }) {
       return React.createElement(name, props, children)
     }
   return {
-    Button: primitive('Button'),
-    Input: primitive('Input'),
-    ScrollView: primitive('ScrollView'),
-    Text: primitive('Text'),
-    XStack: primitive('XStack'),
-    YStack: primitive('YStack'),
+    Button: ({ children, ...props }) =>
+      React.createElement(
+        'Button',
+        props,
+        typeof children === 'string' ? React.createElement('Text', null, children) : children
+      ),
+    TextField: primitive('Input'),
+    UiText: primitive('Text'),
   }
 })
-jest.mock('react-native', () => ({
-  Platform: { OS: 'android' },
-  Keyboard: { dismiss: jest.fn() },
+jest.mock('../../components/ui/useCadenceColors', () => ({
+  useCadenceColors: () => ({ accent: '#624572', onAccent: '#faf5fc', muted: '#76627e' }),
+}))
+jest.mock('react-native', () => {
+  const React = require('react')
+  const primitive = (name) =>
+    function Primitive({ children, ...props }) {
+      return React.createElement(name, props, children)
+    }
+  return {
+    KeyboardAvoidingView: primitive('KeyboardAvoidingView'),
+    Platform: { OS: 'android' },
+    Keyboard: { dismiss: jest.fn() },
+    Modal: primitive('Modal'),
+    ScrollView: primitive('ScrollView'),
+    View: primitive('View'),
+  }
+})
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 24, bottom: 24 }),
 }))
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }))
 jest.mock('../../components/ui/icons', () => {
   const Icon = () => null
-  return { Check: Icon, Plus: Icon }
+  return { Check: Icon, ChevronLeft: Icon, Plus: Icon, Search: Icon }
 })
 jest.mock('../../lib/sync', () => ({
   syncEngine: { resolveId: jest.fn((_table, id) => id) },
@@ -95,11 +106,7 @@ function button(renderer, label) {
 function workoutRow(renderer, title) {
   return renderer.root
     .findAllByType('Button')
-    .find(
-      (item) =>
-        item.props.accessibilityRole === 'checkbox' &&
-        item.findAllByType('Text').some((text) => text.children.join('') === title)
-    )
+    .find((item) => item.props.accessibilityLabel === title)
 }
 
 function visibleText(renderer) {
@@ -115,25 +122,26 @@ afterEach(() => {
   act(() => renderers.splice(0).forEach((renderer) => renderer.unmount()))
 })
 
-test('empty saved-workout state is actionable and leaves the overlay compact', () => {
+test('empty full-screen picker offers a create-workout action', () => {
   const { renderer } = renderPicker({ workouts: [] })
 
-  expect(renderer.root.findByType('CadenceOverlay').props.snapPoints).toBeUndefined()
+  expect(renderer.root.findByType('Modal').props.presentationStyle).toBe('fullScreen')
   expect(visibleText(renderer)).toContain('No saved workouts yet')
-  expect(visibleText(renderer)).toContain('Create a workout before adding it to your routine.')
-  expect(button(renderer, 'Create workout ↗')).toBeDefined()
+  expect(visibleText(renderer)).toContain('Create a workout to add a session to this routine.')
+  expect(button(renderer, 'Create workout')).toBeDefined()
+  expect(button(renderer, 'Done')).toBeUndefined()
 })
 
 test('creating a workout closes the picker before routing to the workout editor', () => {
   const { renderer, setOpen } = renderPicker({ workouts: [] })
 
-  act(() => button(renderer, 'Create workout ↗').props.onPress())
+  act(() => button(renderer, 'Create workout').props.onPress())
 
   expect(Keyboard.dismiss).toHaveBeenCalledTimes(1)
   expect(baseProps.onOpenChange).toHaveBeenCalledWith(false)
   expect(router.push).toHaveBeenCalledWith('/workouts/new?returnTo=routine')
   setOpen(false)
-  expect(renderer.root.findAllByType('CadenceOverlay')).toHaveLength(0)
+  expect(renderer.root.findByType('Modal').props.visible).toBe(false)
 })
 
 test('cancel and reopen clears search and pending selection while retaining applied choices', () => {
@@ -163,6 +171,18 @@ test('cancel and reopen clears search and pending selection while retaining appl
   expect(onApply).toHaveBeenCalledWith(['upper'])
 })
 
+test('no-match state lets users clear their search', () => {
+  const { renderer } = renderPicker()
+
+  act(() => renderer.root.findByType('Input').props.onChangeText('deload'))
+
+  expect(visibleText(renderer)).toContain('No matching workouts.')
+  expect(button(renderer, 'Clear search')).toBeDefined()
+  act(() => button(renderer, 'Clear search').props.onPress())
+  expect(renderer.root.findByType('Input').props.value).toBe('')
+  expect(visibleText(renderer)).toContain('Upper body')
+})
+
 test('Done applies resolved selected workout ids exactly once', () => {
   const onApply = jest.fn()
   const onOpenChange = jest.fn()
@@ -177,4 +197,12 @@ test('Done applies resolved selected workout ids exactly once', () => {
   expect(syncEngine.resolveId).toHaveBeenCalledWith('workouts', 'local-upper')
   expect(onOpenChange).toHaveBeenCalledTimes(1)
   expect(onOpenChange).toHaveBeenCalledWith(false)
+})
+
+test('single-workout picker disables Done until a workout is selected', () => {
+  const { renderer } = renderPicker({ single: true })
+
+  expect(button(renderer, 'Done').props.disabled).toBe(true)
+  act(() => workoutRow(renderer, 'Upper body').props.onPress())
+  expect(button(renderer, 'Done').props.disabled).toBe(false)
 })

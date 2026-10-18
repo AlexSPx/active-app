@@ -1,7 +1,13 @@
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 const { ActivityIndicator } = require('react-native')
-const { Button, IconButton, TextField } = require('../../components/ui/Controls')
+const {
+  Button,
+  IconButton,
+  SegmentedSelection,
+  TextField,
+  UiText,
+} = require('../../components/ui/Controls')
 
 test('loading buttons expose a busy disabled state and an accessible label with a spinner', () => {
   let renderer
@@ -83,4 +89,28 @@ test('icon buttons preserve a 44 point minimum touch width', () => {
   })
 
   expect(renderer.toJSON().props.className).toContain('min-w-touch')
+})
+
+test('segmented choices render each label through UiText', () => {
+  let renderer
+
+  act(() => {
+    renderer = create(
+      <SegmentedSelection
+        value="all"
+        options={[
+          { value: 'all', label: 'All' },
+          { value: 'strength', label: 'Strength' },
+          { value: 'cardio', label: 'Cardio' },
+        ]}
+        accessibilityLabel="Exercise category"
+        onValueChange={() => {}}
+      />
+    )
+  })
+
+  const labels = renderer.root.findAllByType(Button).map((button) => button.props.children)
+
+  expect(labels).toHaveLength(3)
+  expect(labels.every((label) => React.isValidElement(label) && label.type === UiText)).toBe(true)
 })

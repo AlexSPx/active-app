@@ -5,6 +5,8 @@ export { Badge } from './Badge'
 export { ErrorDisplay } from './ErrorDisplay'
 export { LoadingSpinner } from './LoadingSpinner'
 export { useCadenceColors } from './useCadenceColors'
+export { DurationTargetInput, StrengthTargetInput } from './WorkoutSetFields'
+export { SwipeToDeleteRow } from './SwipeToDeleteRow'
 export {
   Button,
   Divider,

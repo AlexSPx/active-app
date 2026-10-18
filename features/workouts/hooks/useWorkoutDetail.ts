@@ -1,17 +1,18 @@
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useWorkouts } from './useWorkouts'
+import { useWorkout } from './useWorkout'
 import { useWorkoutManagement } from './useWorkoutManagement'
 import { useWorkoutIdRemap } from './useWorkoutIdRemap'
 import { summarizeWorkoutExercises } from '../../../utils/workoutUtils'
+import { syncEngine } from '../../../lib/sync'
 
 export function useWorkoutDetail() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
-  const { workouts, loading, error } = useWorkouts()
+  const workoutId = id && syncEngine.resolveId('workouts', id)
+  const { workout, loading, error } = useWorkout(workoutId || id)
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
   const running = isWorkoutRunning()
   useWorkoutIdRemap(id)
-  const workout = workouts.find((item) => item.id === id)
   const exercises = workout?.workoutTemplate.exercises ?? []
   const { strengthSets, intervals } = summarizeWorkoutExercises(exercises, 0)
   const totalSets = strengthSets + intervals
@@ -27,6 +28,9 @@ export function useWorkoutDetail() {
     goBack: () => router.back(),
     editWorkout: () => {
       if (workout) router.push({ pathname: '/workouts/edit', params: { id: workout.id } })
+    },
+    duplicateWorkout: () => {
+      if (workout) router.push({ pathname: '/workouts/new', params: { duplicateId: workout.id } })
     },
     startWorkout: () => {
       if (workout && !running && exercises.length) startWorkout(workout)

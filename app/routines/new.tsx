@@ -2,11 +2,12 @@ import { RoutineForm } from '../../features/routines/components/RoutineForm'
 import { useRoutineMutations } from '../../features/routines'
 
 export default function NewRoutinePage() {
-  const { createRoutine, loading, error } = useRoutineMutations()
+  const { createRoutine, loading, error, clearError } = useRoutineMutations()
   return (
     <RoutineForm
       loading={loading}
       error={error}
+      onClearError={clearError}
       onSave={async (data) => {
         const payload = {
           name: data.name.trim(),

@@ -51,7 +51,11 @@ export function useRoutineMutations() {
 
   const createRoutine = async (payload: CreateRoutineRequest): Promise<Routine | null> => {
     try {
-      return await createMutation.mutateAsync(payload)
+      const routine = await createMutation.mutateAsync(payload)
+      if (payload.active) {
+        queryClient.invalidateQueries({ queryKey: ownerKeys.routines.active() })
+      }
+      return routine
     } catch (e) {
       console.error('Failed to create routine:', e)
       return null
@@ -63,7 +67,11 @@ export function useRoutineMutations() {
     payload: UpdateRoutineRequest
   ): Promise<Routine | null> => {
     try {
-      return await updateMutation.mutateAsync({ routineId, payload })
+      const routine = await updateMutation.mutateAsync({ routineId, payload })
+      if (payload.active !== undefined) {
+        queryClient.invalidateQueries({ queryKey: ownerKeys.routines.active() })
+      }
+      return routine
     } catch (e) {
       console.error('Failed to update routine:', e)
       return null
@@ -81,15 +89,11 @@ export function useRoutineMutations() {
   }
 
   const activateRoutine = async (routineId: string): Promise<Routine | null> => {
-    const result = await updateRoutine(routineId, { active: true })
-    queryClient.invalidateQueries({ queryKey: ownerKeys.routines.active() })
-    return result
+    return updateRoutine(routineId, { active: true })
   }
 
   const clearActiveRoutine = async (routineId: string): Promise<Routine | null> => {
-    const result = await updateRoutine(routineId, { active: false })
-    queryClient.invalidateQueries({ queryKey: ownerKeys.routines.active() })
-    return result
+    return updateRoutine(routineId, { active: false })
   }
 
   const currentError = createMutation.error ?? updateMutation.error ?? deleteMutation.error ?? null

@@ -13,7 +13,7 @@ interface WorkoutSessionExerciseProps {
     exerciseId: string,
     setId: string,
     field: 'reps' | 'weight' | 'duration',
-    value: number
+    value: number | null
   ) => void
   onToggleSetComplete: (exerciseId: string, setId: string) => void
   onAddSet: (exerciseId: string) => void
@@ -39,6 +39,7 @@ export const WorkoutSessionExercise = memo(
             <CardioSessionSetRow
               set={set}
               index={index}
+              canDelete={exercise.sets.length > 1}
               onUpdateDuration={(secs) => onUpdateSet(exercise.sessionId, set.id, 'duration', secs)}
               onToggleComplete={() => onToggleSetComplete(exercise.sessionId, set.id)}
               onDelete={() => onRemoveSet(exercise.sessionId, index)}
@@ -49,6 +50,7 @@ export const WorkoutSessionExercise = memo(
           <WorkoutSessionSetRow
             set={set}
             index={index}
+            canDelete={exercise.sets.length > 1}
             onUpdateSet={(field, value) => onUpdateSet(exercise.sessionId, set.id, field, value)}
             onToggleComplete={() => {
               onToggleSetComplete(exercise.sessionId, set.id)
@@ -63,6 +65,7 @@ export const WorkoutSessionExercise = memo(
       [
         isCardio,
         exercise.sessionId,
+        exercise.sets.length,
         onUpdateSet,
         onToggleSetComplete,
         onStartRestTimer,

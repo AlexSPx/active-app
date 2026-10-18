@@ -42,6 +42,10 @@ export function toggleWorkoutSelection(selection: string[], id: string, single: 
       : [...selection, id]
 }
 
+export function routineActiveUpdate(initialActive: boolean, active: boolean) {
+  return initialActive === active ? {} : { active }
+}
+
 export function routineValidation(data: RoutineDraft, workoutIds: string[]) {
   if (!data.name.trim()) return 'Enter a routine name to save.'
   if (!data.pattern.length)

@@ -31,7 +31,7 @@ export interface WorkoutSessionActions {
     exerciseId: string,
     setId: string,
     field: 'reps' | 'weight' | 'duration',
-    value: number
+    value: number | null
   ) => void
   toggleSetComplete: (exerciseId: string, setId: string) => void
   addSet: (exerciseId: string) => void
@@ -126,7 +126,7 @@ export function useWorkoutSession(
     exerciseId: string,
     setId: string,
     field: 'reps' | 'weight' | 'duration',
-    value: number
+    value: number | null
   ) => {
     // Update in the store if running workout exists
     if (runningWorkout) {
@@ -220,7 +220,7 @@ export function useWorkoutSession(
       // Fallback to local state for non-running workouts
       setExercises((prev) =>
         prev.map((exercise) =>
-          exercise.sessionId === exerciseId
+          exercise.sessionId === exerciseId && exercise.sets.length > 1
             ? {
                 ...exercise,
                 sets: exercise.sets.filter((_, index) => index !== setIndex),
