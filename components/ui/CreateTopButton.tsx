@@ -1,5 +1,5 @@
 import { Button, Text } from 'tamagui'
-import { Plus } from '@tamagui/lucide-icons'
+import { Plus } from './icons'
 
 export interface CreateTopButtonProps {
   label: string

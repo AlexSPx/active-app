@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
-import { Button, Circle, Input, Paragraph, ScrollView, Sheet, Text, XStack, YStack } from 'tamagui'
-import { Check, ChevronDown } from '@tamagui/lucide-icons'
+import { Button, Circle, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui'
+import { CadenceOverlay } from './ui/CadenceOverlay'
+import { Check, ChevronDown } from './ui/icons'
 import { timeZonesNames } from '@vvo/tzdb'
 import { useSettingsStore, useUpdateUser } from '../features/settings'
 
@@ -149,21 +150,32 @@ export default function TimeZoneSelector({
           >
             {zoneName(current)}
           </Button>
-          <Sheet modal open={open} onOpenChange={setOpen} snapPoints={[85]} dismissOnSnapToBottom>
-            <Sheet.Overlay />
-            <Sheet.Frame bg="$background" rounded="$sheet" p="$page" gap="$field">
-              <Sheet.Handle />
-              <XStack items="center" justify="space-between">
-                <Text fontSize="$screenTitle" fontWeight="600">
-                  Time zone
-                </Text>
-                <Button chromeless onPress={() => setOpen(false)}>
+          <CadenceOverlay
+            open={open}
+            onOpenChange={(next) => {
+              setOpen(next)
+              if (!next) setSearch('')
+            }}
+            snapPoints={[85]}
+            title="Time zone"
+            dismissible={!isUpdating}
+          >
+            <YStack flex={1} gap="$field">
+              <XStack items="center" justify="flex-end">
+                <Button
+                  chromeless
+                  disabled={isUpdating}
+                  onPress={() => {
+                    setOpen(false)
+                    setSearch('')
+                  }}
+                >
                   Cancel
                 </Button>
               </XStack>
               <ScrollView keyboardShouldPersistTaps="handled">{choices}</ScrollView>
-            </Sheet.Frame>
-          </Sheet>
+            </YStack>
+          </CadenceOverlay>
         </>
       )}
     </YStack>

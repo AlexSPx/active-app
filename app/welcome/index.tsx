@@ -1,4 +1,4 @@
-import { ArrowRight } from '@tamagui/lucide-icons'
+import { ArrowRight } from '../../components/ui/icons'
 import { useRouter } from 'expo-router'
 import { Platform, ScrollView } from 'react-native'
 import { Button, H1, Image, Text, XStack, YStack } from 'tamagui'

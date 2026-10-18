@@ -1,3 +1,7 @@
+jest.mock('../../components/ui/CadenceOverlay', () => ({
+  CadenceOverlay: ({ open, children }) => (open ? children : null),
+}))
+
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 
@@ -32,7 +36,6 @@ jest.mock('tamagui', () => {
       'Separator',
       'Circle',
       'ScrollView',
-      'Sheet',
     ].map((name) => [name, (props) => React.createElement(name, props, props.children)])
   )
   components.Switch.Thumb = (props) => React.createElement('Thumb', props)
@@ -43,7 +46,7 @@ jest.mock('../../components/NotificationPermissions', () => ({
   __esModule: true,
   default: () => null,
 }))
-jest.mock('@tamagui/lucide-icons', () => ({ Check: () => null, ChevronDown: () => null }))
+jest.mock('../../components/ui/icons', () => ({ Check: () => null, ChevronDown: () => null }))
 jest.mock('@vvo/tzdb', () => ({ timeZonesNames: ['Europe/Sofia', 'America/New_York'] }))
 jest.mock('expo-linking', () => ({ openURL: jest.fn() }))
 jest.mock('../../features/settings', () => ({

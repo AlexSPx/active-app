@@ -1,14 +1,14 @@
+jest.mock('../../components/ui/CadenceOverlay', () => ({
+  CadenceOverlay: ({ children, ...props }) =>
+    require('react').createElement('CadenceOverlay', props, props.open ? children : null),
+}))
 jest.mock('tamagui', () => {
   const React = require('react')
   const primitive =
     (name) =>
     ({ children, ...props }) =>
       React.createElement(name, props, children)
-  const Sheet = primitive('Sheet')
-  for (const name of ['Overlay', 'Handle', 'Frame', 'ScrollView'])
-    Sheet[name] = primitive(`Sheet.${name}`)
   return {
-    Sheet,
     getTokenValue: () => 20,
     Button: primitive('Button'),
     Input: primitive('Input'),
@@ -19,7 +19,7 @@ jest.mock('tamagui', () => {
   }
 })
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: jest.fn() }))
-jest.mock('@tamagui/lucide-icons', () => {
+jest.mock('../../components/ui/icons', () => {
   const Icon = () => null
   return { Search: Icon, X: Icon, Plus: Icon, Check: Icon, ArrowUp: Icon, ArrowDown: Icon }
 })
@@ -159,16 +159,9 @@ test('removal respects persisted positions even if array order differs', () => {
   ])
 })
 
-test('keeps both sheet footers above system navigation and enables native keyboard handling', () => {
-  useSafeAreaInsets.mockReturnValue({ top: 0, right: 0, bottom: 24, left: 0 })
+test('picker scroll keeps the keyboard reachable without swallowing choices', () => {
   const renderer = render()
-  expect(renderer.root.findByType('Sheet.Frame').props.pb).toBe(44)
-  expect(renderer.root.findByType('Sheet').props.moveOnKeyboardChange).toBe(true)
-  expect(renderer.root.findByType('Sheet.ScrollView').props.keyboardShouldPersistTaps).toBe(
-    'handled'
-  )
-  expect(renderer.root.findByType('Sheet.ScrollView').props.keyboardDismissMode).toBe('on-drag')
-  useSafeAreaInsets.mockReturnValue({ top: 0, right: 0, bottom: 0, left: 0 })
-  act(() => renderer.update(React.createElement(WidgetManager, { ...props, mode: 'manage' })))
-  expect(renderer.root.findByType('Sheet.Frame').props.pb).toBe(20)
+  expect(renderer.root.findByType('CadenceOverlay').props.snapPoints).toEqual([90])
+  expect(renderer.root.findByType('ScrollView').props.keyboardShouldPersistTaps).toBe('handled')
+  expect(renderer.root.findByType('ScrollView').props.keyboardDismissMode).toBe('on-drag')
 })

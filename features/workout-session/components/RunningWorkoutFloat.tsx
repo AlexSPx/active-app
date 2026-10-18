@@ -1,4 +1,4 @@
-import { Clock, Play } from '@tamagui/lucide-icons'
+import { Clock, Play } from '../../../components/ui/icons'
 import { Button, Text, XStack, YStack } from 'tamagui'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'expo-router'

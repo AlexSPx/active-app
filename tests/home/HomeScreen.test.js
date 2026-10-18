@@ -16,7 +16,7 @@ jest.mock('tamagui', () => {
   }
 })
 
-jest.mock('@tamagui/lucide-icons', () => {
+jest.mock('../../components/ui/icons', () => {
   const Icon = () => null
   return {
     ChevronRight: Icon,

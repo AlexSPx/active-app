@@ -1,6 +1,6 @@
 import React from 'react'
 import { YStack, XStack, Text, Button } from 'tamagui'
-import { ArrowRight } from '@tamagui/lucide-icons'
+import { ArrowRight } from './ui/icons'
 import { useActiveRoutine } from '../features/routines'
 import { useWorkouts } from '../features/workouts'
 import { router } from 'expo-router'

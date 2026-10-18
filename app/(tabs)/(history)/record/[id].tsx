@@ -1,10 +1,8 @@
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { Button, Dialog, Text, YStack, XStack, View, ScrollView } from 'tamagui'
-import { Popover } from '@tamagui/popover'
-import { Sheet } from '@tamagui/sheet'
-import { MoreHorizontal } from '@tamagui/lucide-icons'
+import { Button, Text, YStack, XStack, View, ScrollView } from 'tamagui'
+import { ActionMenu } from '../../../../components/ui/ActionMenu'
+import { CadenceOverlay } from '../../../../components/ui/CadenceOverlay'
 import { useMemo, useState } from 'react'
-import { Platform } from 'react-native'
 import { useWorkoutRecords, useWorkoutMutations } from '../../../../features/workouts'
 import { LoadingSpinner } from '../../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../../components/ui/ErrorDisplay'
@@ -28,7 +26,6 @@ export default function RecordDetailScreen() {
     error: deleteError,
     clearError,
   } = useWorkoutMutations()
-  const [menuOpen, setMenuOpen] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const record = useMemo(
     () => workoutRecords.find((item) => (item.id ?? `${item.workoutId}-${item.createdAt}`) === id),
@@ -43,7 +40,6 @@ export default function RecordDetailScreen() {
     }
   }
   const openConfirmation = () => {
-    setMenuOpen(false)
     clearError()
     setConfirmOpen(true)
   }
@@ -83,26 +79,6 @@ export default function RecordDetailScreen() {
   const duration = recordDurationSeconds(record)
   const confirmContent = (
     <YStack gap="$field">
-      {Platform.OS === 'web' ? (
-        <Dialog.Title
-          fontSize="$sectionTitle"
-          lineHeight="$sectionTitle"
-          fontWeight="600"
-          color="$color"
-        >
-          Delete this record?
-        </Dialog.Title>
-      ) : (
-        <Text
-          accessibilityRole="header"
-          fontSize="$sectionTitle"
-          lineHeight="$sectionTitle"
-          fontWeight="600"
-          color="$color"
-        >
-          Delete this record?
-        </Text>
-      )}
       <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
         {record.workoutTitle} · {date.toLocaleDateString([], { day: 'numeric', month: 'long' })}.
         Its recorded sets and notes will be removed.
@@ -149,41 +125,17 @@ export default function RecordDetailScreen() {
         options={{
           headerRight: () =>
             record.id ? (
-              <Popover open={menuOpen} onOpenChange={setMenuOpen} placement="bottom-end">
-                <Popover.Trigger asChild>
-                  <Button
-                    unstyled
-                    width="$touch"
-                    height="$touch"
-                    rounded="$control"
-                    items="center"
-                    justify="center"
-                    accessibilityLabel="Session actions"
-                  >
-                    <MoreHorizontal size="$iconSmall" color="$colorSubtle" />
-                  </Button>
-                </Popover.Trigger>
-                <Popover.Content
-                  bg="$surface"
-                  p="$compact"
-                  rounded="$menu"
-                  borderWidth="$0.5"
-                  borderColor="$borderColor"
-                >
-                  <Button
-                    unstyled
-                    minH="$touch"
-                    px="$field"
-                    rounded="$control"
-                    justify="center"
-                    onPress={openConfirmation}
-                  >
-                    <Text fontSize="$body" lineHeight="$body" color="$destructive">
-                      Delete record
-                    </Text>
-                  </Button>
-                </Popover.Content>
-              </Popover>
+              <ActionMenu
+                label="Session actions"
+                actions={[
+                  {
+                    label: 'Delete record',
+                    onPress: openConfirmation,
+                    destructive: true,
+                    disabled: deleting,
+                  },
+                ]}
+              />
             ) : null,
         }}
       />
@@ -423,51 +375,14 @@ export default function RecordDetailScreen() {
           )}
         </YStack>
       </ScrollView>
-      {Platform.OS === 'web' ? (
-        <Dialog
-          modal
-          open={confirmOpen}
-          onOpenChange={(open) => {
-            if (!deleting) setConfirmOpen(open)
-          }}
-        >
-          <Dialog.Portal>
-            <Dialog.Overlay />
-            <Dialog.Content
-              accessibilityLabel="Delete this record?"
-              bg="$surface"
-              p="$section"
-              rounded="$sheet"
-              borderWidth="$0.5"
-              borderColor="$borderColor"
-              maxW="$content"
-            >
-              {confirmContent}
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog>
-      ) : (
-        <Sheet
-          open={confirmOpen}
-          onOpenChange={(open) => {
-            if (!deleting) setConfirmOpen(open)
-          }}
-          modal
-          dismissOnOverlayPress={!deleting}
-          snapPointsMode="fit"
-        >
-          <Sheet.Overlay bg="$background" />
-          <Sheet.Handle bg="$colorMuted" />
-          <Sheet.Frame
-            bg="$surface"
-            borderTopLeftRadius="$sheet"
-            borderTopRightRadius="$sheet"
-            p="$section"
-          >
-            {confirmContent}
-          </Sheet.Frame>
-        </Sheet>
-      )}
+      <CadenceOverlay
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete this record?"
+        dismissible={!deleting}
+      >
+        {confirmContent}
+      </CadenceOverlay>
     </YStack>
   )
 }

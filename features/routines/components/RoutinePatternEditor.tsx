@@ -1,6 +1,5 @@
 import { useState } from 'react'
-import { Keyboard, Platform } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Keyboard } from 'react-native'
 import {
   MoreHorizontal,
   ChevronRight,
@@ -8,8 +7,9 @@ import {
   ArrowDown,
   Trash2,
   Plus,
-} from '@tamagui/lucide-icons'
-import { YStack, XStack, Text, Button, ScrollView, Sheet, Dialog, getTokenValue } from 'tamagui'
+} from '../../../components/ui/icons'
+import { YStack, XStack, Text, Button, ScrollView } from 'tamagui'
+import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
 import type { RoutinePatternItem } from '../../../types/routine'
 import { useWorkouts } from '../../workouts'
 import { RoutineEditorSheet } from './RoutineEditorSheet'
@@ -30,7 +30,6 @@ export function RoutinePatternEditor({
   routineName,
 }: RoutinePatternEditorProps) {
   const { workouts, loading, error } = useWorkouts()
-  const insets = useSafeAreaInsets()
   const pattern = rawPattern.map((day) => ({
     ...day,
     workoutId: day.workoutId ? syncEngine.resolveId('workouts', day.workoutId) : null,
@@ -73,7 +72,6 @@ export function RoutinePatternEditor({
     </Button>
   )
 
-  // Selected day/workout actions - shared between Sheet (native) and Dialog (web).
   const menuContent =
     menu !== null && pattern[menu] ? (
       <YStack gap="$field">
@@ -350,57 +348,15 @@ export function RoutinePatternEditor({
           </Button>
         </YStack>
       )}
-      {/* Use Dialog on web (Sheet does not trap focus or handle Escape there), Sheet on native */}
-      {menuContent &&
-        (Platform.OS === 'web' ? (
-          <Dialog
-            modal
-            open
-            onOpenChange={(open) => {
-              if (!open) setMenu(null)
-            }}
-          >
-            <Dialog.Portal>
-              <Dialog.Overlay
-                key="overlay"
-                animation="slow"
-                opacity={0.5}
-                enterStyle={{ opacity: 0 }}
-                exitStyle={{ opacity: 0 }}
-              />
-              <Dialog.Content
-                bordered
-                rounded="$menu"
-                key="content"
-                animation={['quick', { opacity: { overshootClamping: true } }]}
-                enterStyle={{ opacity: 0 }}
-                exitStyle={{ opacity: 0 }}
-                bg="$surface"
-                p="$page"
-              >
-                {menuContent}
-              </Dialog.Content>
-            </Dialog.Portal>
-          </Dialog>
-        ) : (
-          <Sheet
-            open
-            onOpenChange={(open) => {
-              if (!open) setMenu(null)
-            }}
-            modal
-            snapPointsMode="fit"
-            dismissOnSnapToBottom
-          >
-            <Sheet.Overlay bg="$background" opacity={0.6} />
-            <Sheet.Handle bg="$colorMuted" />
-            <Sheet.Frame bg="$surface" borderTopLeftRadius="$sheet" borderTopRightRadius="$sheet">
-              <YStack p="$page" pb={Math.max(insets.bottom, getTokenValue('$page', 'space'))}>
-                {menuContent}
-              </YStack>
-            </Sheet.Frame>
-          </Sheet>
-        ))}
+      <CadenceOverlay
+        open={menu !== null}
+        onOpenChange={(open) => {
+          if (!open) setMenu(null)
+        }}
+        title="Training day actions"
+      >
+        {menuContent}
+      </CadenceOverlay>
       <RoutineEditorSheet
         open={pickerOpen && !loading}
         onOpenChange={setPickerOpen}

@@ -1,6 +1,6 @@
 import { useState, ReactNode } from 'react'
 import { YStack, XStack, Button, Card, Separator } from 'tamagui'
-import { ChevronDown, ChevronRight } from '@tamagui/lucide-icons'
+import { ChevronDown, ChevronRight } from './icons'
 
 interface ExpandableCardProps {
   header: ReactNode

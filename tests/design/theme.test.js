@@ -10,13 +10,11 @@ jest.mock('../../features/settings', () => ({
   })),
 }))
 jest.mock('../../tamagui.config', () => ({ config: {} }))
-jest.mock('../../components/feedback/CurrentToast', () => ({ CurrentToast: () => null }))
+jest.mock('../../components/feedback/FeedbackProvider', () => ({
+  FeedbackProvider: ({ children }) => children,
+}))
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }) => children,
-}))
-jest.mock('@tamagui/toast', () => ({
-  ToastProvider: ({ children }) => children,
-  ToastViewport: () => null,
 }))
 jest.mock('tamagui', () => {
   const React = require('react')
@@ -26,7 +24,6 @@ jest.mock('tamagui', () => {
     TamaguiProvider: ({ defaultTheme, children }) =>
       React.createElement(ThemeContext.Provider, { value: defaultTheme }, children),
     Theme: ({ children }) => children,
-    PortalProvider: ({ children }) => children,
   }
 })
 jest.mock('@react-navigation/native', () => {

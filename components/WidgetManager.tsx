@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { Keyboard } from 'react-native'
-import { YStack, XStack, Text, Button, Input, ScrollView, Sheet, getTokenValue } from 'tamagui'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Search, X, Plus, Check, ArrowUp, ArrowDown } from '@tamagui/lucide-icons'
+import { YStack, XStack, Text, Button, Input, ScrollView } from 'tamagui'
+import { CadenceOverlay } from './ui/CadenceOverlay'
+import { Search, X, Plus, Check, ArrowUp, ArrowDown } from './ui/icons'
 import { useWidgetStore, getMetricLabel, type ProgressionMetric } from '../stores/widgetStore'
 import { useExerciseSearch } from '../features/exercises'
 import { useWorkouts } from '../features/workouts'
@@ -22,7 +22,6 @@ const METRICS: { key: ProgressionMetric; help: string }[] = [
 ]
 
 export function WidgetManager({ isVisible, mode, onModeChange, onClose }: WidgetManagerProps) {
-  const insets = useSafeAreaInsets()
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedMetric, setSelectedMetric] = useState<ProgressionMetric>('maxWeight')
   const [selectedExercise, setSelectedExercise] = useState<{ id: string; name: string } | null>(
@@ -73,8 +72,8 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
   }
 
   return (
-    <Sheet
-      modal
+    <CadenceOverlay
+      title={mode === 'add' ? 'Add widget' : 'Your widgets'}
       open={isVisible}
       onOpenChange={(open) => {
         if (!open) {
@@ -82,25 +81,10 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
           onClose()
         }
       }}
-      snapPointsMode="percent"
       snapPoints={[90]}
-      dismissOnSnapToBottom
-      moveOnKeyboardChange
     >
-      <Sheet.Overlay bg="$color" opacity={0.2} />
-      <Sheet.Handle bg="$colorMuted" />
-      <Sheet.Frame
-        bg="$background"
-        borderTopLeftRadius="$sheet"
-        borderTopRightRadius="$sheet"
-        p="$page"
-        pb={insets.bottom + getTokenValue('$page', 'space')}
-        gap="$field"
-      >
-        <XStack items="center" justify="space-between" gap="$field">
-          <Text flex={1} fontSize="$sectionTitle" lineHeight="$sectionTitle" fontWeight="600">
-            {mode === 'add' ? 'Add widget' : 'Your widgets'}
-          </Text>
+      <YStack flex={1} gap="$field">
+        <XStack items="center" justify="flex-end" gap="$field">
           {mode === 'manage' && (
             <Button chromeless minH="$touch" onPress={() => onModeChange('add')}>
               <Plus size="$iconSmall" color="$primary" />
@@ -124,7 +108,8 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
             <X size="$icon" color="$colorSubtle" />
           </Button>
         </XStack>
-        <Sheet.ScrollView
+        <ScrollView
+          flex={1}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
@@ -378,7 +363,7 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
               </>
             )}
           </YStack>
-        </Sheet.ScrollView>
+        </ScrollView>
         <Button
           height="$action"
           rounded="$button"
@@ -403,8 +388,8 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
             Appears below your weekly board.
           </Text>
         )}
-      </Sheet.Frame>
-    </Sheet>
+      </YStack>
+    </CadenceOverlay>
   )
 }
 

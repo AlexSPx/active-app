@@ -1,8 +1,8 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
 import { YStack, XStack, Text, Button, H2, ScrollView, Label, AnimatePresence } from 'tamagui'
-import { Clock, Ruler, Weight } from '@tamagui/lucide-icons'
+import { Clock, Ruler, Weight } from '../../components/ui/icons'
 import { useRouter, Link } from 'expo-router'
-import { useToastController } from '@tamagui/toast'
+import { useFeedback } from '../../components/feedback/FeedbackProvider'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useAuthStore } from '../../stores/authStore'
@@ -23,7 +23,7 @@ const RegisterPage = () => {
     ? ['Account', 'Personal', 'Body', 'Notifications']
     : ['Account', 'Personal', 'Body', 'Time Zone', 'Notifications']
   const router = useRouter()
-  const toast = useToastController()
+  const toast = useFeedback()
   const { user, logout } = useAuthStore()
   const { updateUserProfile } = useUpdateUser()
 
@@ -232,12 +232,11 @@ const RegisterPage = () => {
       router.replace('/(tabs)' as any)
       toast.show('Welcome!', {
         message: 'Account created successfully.',
-        customData: { type: 'success' },
       })
     } catch (err: any) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
       const serverMsg = err?.message || 'Please try again.'
-      toast.show('Registration failed', { message: serverMsg, customData: { type: 'error' } })
+      toast.show('Registration failed', { message: serverMsg })
     } finally {
       setIsLoading(false)
     }

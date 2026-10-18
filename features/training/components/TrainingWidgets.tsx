@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Button, Text, XStack, YStack } from 'tamagui'
-import { Plus } from '@tamagui/lucide-icons'
+import { Plus } from '../../../components/ui/icons'
 import { ProgressionWidget } from '../../../components/ProgressionWidget'
 import { WidgetManager } from '../../../components/WidgetManager'
 import { useWidgetStore } from '../../../stores/widgetStore'

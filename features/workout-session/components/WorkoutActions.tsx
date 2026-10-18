@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { YStack, Button, Text } from 'tamagui'
-import { Plus } from '@tamagui/lucide-icons'
+import { Plus } from '../../../components/ui/icons'
 
 export interface WorkoutActionsProps {
   onAddExercise?: () => void

@@ -11,7 +11,7 @@ import {
   getConfig,
   getVariableValue,
 } from 'tamagui'
-import { ChevronRight } from '@tamagui/lucide-icons'
+import { ChevronRight } from '../../components/ui/icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRoutines, useActiveRoutine } from '../../features/routines'
 import { useWorkouts, MuscleHeatMap } from '../../features/workouts'

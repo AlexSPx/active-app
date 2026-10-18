@@ -15,8 +15,8 @@ jest.mock('expo-router', () => ({
   Link: ({ children }) => children,
 }))
 
-jest.mock('@tamagui/toast', () => ({
-  useToastController: () => ({ show: mockToastShow }),
+jest.mock('../../components/feedback/FeedbackProvider', () => ({
+  useFeedback: () => ({ show: mockToastShow }),
 }))
 
 jest.mock('expo-haptics', () => ({
@@ -86,7 +86,7 @@ jest.mock('tamagui', () => {
   }
 })
 
-jest.mock('@tamagui/lucide-icons', () => ({
+jest.mock('../../components/ui/icons', () => ({
   Clock: () => null,
   Ruler: () => null,
   Weight: () => null,

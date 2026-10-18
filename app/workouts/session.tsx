@@ -1,5 +1,5 @@
 import { useTheme, View, YStack } from 'tamagui'
-import { useToastController } from '@tamagui/toast'
+import { useFeedback } from '../../components/feedback/FeedbackProvider'
 import { FlashList } from '@shopify/flash-list'
 
 import {
@@ -41,7 +41,7 @@ export default function WorkoutSessionScreen() {
   } = useWorkoutSession()
 
   const showFinishedCongrats = useUiStore((s) => s.showFinishedCongrats)
-  const toast = useToastController()
+  const toast = useFeedback()
 
   const renderExercise = ({ item: exercise, index }: { item: Exercise; index: number }) => (
     <WorkoutSessionExercise

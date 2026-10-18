@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Keyboard, KeyboardAvoidingView } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Sheet, YStack, XStack, Text, Input, Button, ScrollView, getTokenValue } from 'tamagui'
-import { Check, Plus } from '@tamagui/lucide-icons'
+import { Keyboard } from 'react-native'
+import { YStack, XStack, Text, Input, Button, ScrollView } from 'tamagui'
+import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
+import { Check, Plus } from '../../../components/ui/icons'
 import { router } from 'expo-router'
 import type { ApiWorkout } from '../../../types/api'
 import { toggleWorkoutSelection, workoutMetadata } from '../routineDraft'
@@ -32,8 +32,6 @@ function WorkoutPicker({
   context,
   onApply,
 }: RoutineEditorSheetProps) {
-  const insets = useSafeAreaInsets()
-  const pagePadding = getTokenValue('$page', 'space')
   const changeOpen = (next: boolean) => {
     if (!next) Keyboard.dismiss()
     onOpenChange(next)
@@ -45,162 +43,143 @@ function WorkoutPicker({
     workout.title.toLowerCase().includes(query.trim().toLowerCase())
   )
   return (
-    <Sheet
+    <CadenceOverlay
       open={open}
       onOpenChange={changeOpen}
-      modal
-      snapPointsMode="percent"
-      snapPoints={[100]}
-      dismissOnSnapToBottom
+      title={single ? 'Choose a workout' : 'Add workouts'}
+      snapPoints={workouts.length ? [90] : undefined}
     >
-      <Sheet.Overlay bg="$backgroundTransparent" />
-      <Sheet.Frame bg="$background" borderTopLeftRadius="$sheet" borderTopRightRadius="$sheet">
-        <Sheet.Handle bg="$colorMuted" position="absolute" top={insets.top} left="$0" right="$0" />
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior="padding">
-          <YStack
-            flex={1}
-            gap="$field"
-            px="$page"
-            pt={insets.top + pagePadding}
-            pb={insets.bottom + pagePadding}
-          >
-            <XStack items="center" justify="space-between">
-              <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
-                {single ? 'Choose a workout' : 'Add workouts'}
-              </Text>
-              <Button chromeless minH="$touch" color="$primary" onPress={() => changeOpen(false)}>
-                Cancel
-              </Button>
-            </XStack>
-            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-              For {context}
-            </Text>
-            <Text fontSize="$caption" fontWeight="600">
-              Search saved workouts
-            </Text>
-            <Input
-              accessibilityLabel="Search saved workouts"
-              value={query}
-              onChangeText={setQuery}
-              returnKeyType="done"
-              onSubmitEditing={Keyboard.dismiss}
-              placeholder="Search by workout name"
-              rounded="$control"
-              minH="$action"
-              bg="$surface"
-              fontSize="$body"
-            />
-            <Text fontSize="$caption" color="$colorSubtle">
-              {results.length} {results.length === 1 ? 'workout' : 'workouts'}
-              {query ? ' found' : ' saved'}
-            </Text>
-            <ScrollView flex={1} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag">
-              <YStack gap="$compact">
-                {results.map((workout) => {
-                  const checked = selection.includes(workout.id)
-                  return (
-                    <Button
-                      key={workout.id}
-                      height="auto"
-                      minH="$action"
-                      p="$field"
-                      rounded="$control"
-                      bg={checked ? '$backgroundAccent' : '$background'}
-                      borderWidth={1}
-                      borderColor={checked ? '$primary' : '$borderColor'}
-                      accessibilityRole={single ? 'radio' : 'checkbox'}
-                      accessibilityState={{ checked }}
-                      onPress={() =>
-                        setPending(toggleWorkoutSelection(selection, workout.id, single))
-                      }
-                    >
-                      <XStack width="100%" items="center" gap="$field">
-                        <YStack flex={1} gap="$compact">
-                          <Text
-                            fontSize="$exerciseTitle"
-                            lineHeight="$exerciseTitle"
-                            fontWeight="600"
-                          >
-                            {workout.title}
-                          </Text>
-                          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                            {workoutMetadata(workout)}
-                          </Text>
-                          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                            {workout.workoutTemplate.exercises
-                              .map((exercise) => exercise.exerciseTitle)
-                              .join(' · ')}
-                          </Text>
-                        </YStack>
-                        <YStack
-                          width="$2"
-                          height="$2"
-                          rounded="$button"
-                          bg={checked ? '$primary' : '$surface'}
-                          borderColor="$borderColor"
-                          borderWidth="$0.5"
-                          justify="center"
-                          items="center"
-                        >
-                          {checked ? (
-                            <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
-                          ) : (
-                            <Plus size="$iconSmall" color="$colorSubtle" strokeWidth={2} />
-                          )}
-                        </YStack>
-                      </XStack>
-                    </Button>
-                  )
-                })}
-                {!results.length && (
-                  <YStack py="$section" gap="$field">
-                    <Text fontSize="$header" fontWeight="600">
-                      {workouts.length ? 'No matching workouts' : 'No saved workouts yet'}
-                    </Text>
-                    <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
-                      {workouts.length
-                        ? 'Try a different workout name.'
-                        : 'Create a workout before adding it to your routine.'}
-                    </Text>
-                  </YStack>
-                )}
+      <YStack flex={workouts.length ? 1 : undefined} gap="$field">
+        <XStack items="center" justify="flex-end">
+          <Button chromeless minH="$touch" color="$primary" onPress={() => changeOpen(false)}>
+            Cancel
+          </Button>
+        </XStack>
+        <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+          For {context}
+        </Text>
+        <Text fontSize="$caption" fontWeight="600">
+          Search saved workouts
+        </Text>
+        <Input
+          accessibilityLabel="Search saved workouts"
+          value={query}
+          onChangeText={setQuery}
+          returnKeyType="done"
+          onSubmitEditing={Keyboard.dismiss}
+          placeholder="Search by workout name"
+          rounded="$control"
+          minH="$action"
+          bg="$surface"
+          fontSize="$body"
+        />
+        <Text fontSize="$caption" color="$colorSubtle">
+          {results.length} {results.length === 1 ? 'workout' : 'workouts'}
+          {query ? ' found' : ' saved'}
+        </Text>
+        <ScrollView
+          flex={workouts.length ? 1 : undefined}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+        >
+          <YStack gap="$compact">
+            {results.map((workout) => {
+              const checked = selection.includes(workout.id)
+              return (
                 <Button
-                  bg="$backgroundHover"
-                  rounded="$button"
+                  key={workout.id}
+                  height="auto"
                   minH="$action"
-                  color="$primary"
-                  onPress={() => {
-                    changeOpen(false)
-                    router.push('/workouts/new?returnTo=routine')
-                  }}
+                  p="$field"
+                  rounded="$control"
+                  bg={checked ? '$backgroundAccent' : '$background'}
+                  borderWidth={1}
+                  borderColor={checked ? '$primary' : '$borderColor'}
+                  accessibilityRole={single ? 'radio' : 'checkbox'}
+                  accessibilityState={{ checked }}
+                  onPress={() => setPending(toggleWorkoutSelection(selection, workout.id, single))}
                 >
-                  Create workout ↗
+                  <XStack width="100%" items="center" gap="$field">
+                    <YStack flex={1} gap="$compact">
+                      <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
+                        {workout.title}
+                      </Text>
+                      <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                        {workoutMetadata(workout)}
+                      </Text>
+                      <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                        {workout.workoutTemplate.exercises
+                          .map((exercise) => exercise.exerciseTitle)
+                          .join(' · ')}
+                      </Text>
+                    </YStack>
+                    <YStack
+                      width="$2"
+                      height="$2"
+                      rounded="$button"
+                      bg={checked ? '$primary' : '$surface'}
+                      borderColor="$borderColor"
+                      borderWidth="$0.5"
+                      justify="center"
+                      items="center"
+                    >
+                      {checked ? (
+                        <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
+                      ) : (
+                        <Plus size="$iconSmall" color="$colorSubtle" strokeWidth={2} />
+                      )}
+                    </YStack>
+                  </XStack>
                 </Button>
+              )
+            })}
+            {!results.length && (
+              <YStack py="$section" gap="$field">
+                <Text fontSize="$header" fontWeight="600">
+                  {workouts.length ? 'No matching workouts' : 'No saved workouts yet'}
+                </Text>
+                <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+                  {workouts.length
+                    ? 'Try a different workout name.'
+                    : 'Create a workout before adding it to your routine.'}
+                </Text>
               </YStack>
-            </ScrollView>
-            <YStack borderTopWidth={1} borderColor="$borderColor" pt="$field" gap="$field">
-              <Text fontSize="$caption" color="$colorSubtle">
-                {single
-                  ? 'Choose one workout for this training day.'
-                  : `${pending.length} selected across all searches.`}
-              </Text>
-              <Button
-                bg={single && !pending.length ? '$backgroundHover' : '$primary'}
-                color={single && !pending.length ? '$colorMuted' : '$onPrimary'}
-                rounded="$button"
-                minH="$action"
-                disabled={single && !pending.length}
-                onPress={() => {
-                  onApply(selection)
-                  changeOpen(false)
-                }}
-              >
-                {single ? 'Done' : `Done · ${pending.length} selected`}
-              </Button>
-            </YStack>
+            )}
+            <Button
+              bg="$backgroundHover"
+              rounded="$button"
+              minH="$action"
+              color="$primary"
+              onPress={() => {
+                changeOpen(false)
+                router.push('/workouts/new?returnTo=routine')
+              }}
+            >
+              Create workout ↗
+            </Button>
           </YStack>
-        </KeyboardAvoidingView>
-      </Sheet.Frame>
-    </Sheet>
+        </ScrollView>
+        <YStack borderTopWidth={1} borderColor="$borderColor" pt="$field" gap="$field">
+          <Text fontSize="$caption" color="$colorSubtle">
+            {single
+              ? 'Choose one workout for this training day.'
+              : `${pending.length} selected across all searches.`}
+          </Text>
+          <Button
+            bg={single && !pending.length ? '$backgroundHover' : '$primary'}
+            color={single && !pending.length ? '$colorMuted' : '$onPrimary'}
+            rounded="$button"
+            minH="$action"
+            disabled={single && !pending.length}
+            onPress={() => {
+              onApply(selection)
+              changeOpen(false)
+            }}
+          >
+            {single ? 'Done' : `Done · ${pending.length} selected`}
+          </Button>
+        </YStack>
+      </YStack>
+    </CadenceOverlay>
   )
 }

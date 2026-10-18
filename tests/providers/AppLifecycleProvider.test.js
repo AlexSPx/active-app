@@ -100,7 +100,6 @@ jest.mock('tamagui', () => {
     TamaguiProvider: ({ defaultTheme, children }) =>
       React.createElement(ThemeContext.Provider, { value: defaultTheme }, children),
     Theme: ({ children }) => children,
-    PortalProvider: require('@tamagui/portal').PortalProvider,
   }
 })
 jest.mock('../../lib/db/ProfileSQLiteProvider', () => {
@@ -139,10 +138,6 @@ jest.mock('@react-navigation/native', () => {
       React.createElement(NavigationContext.Provider, { value }, children),
   }
 })
-jest.mock('@tamagui/toast', () => ({
-  ToastProvider: ({ children }) => children,
-  ToastViewport: () => null,
-}))
 jest.mock('@tanstack/react-query', () => ({
   QueryClientProvider: ({ children, client }) => {
     mockQueryClients.push(client)
@@ -153,7 +148,9 @@ jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }) => children,
 }))
 jest.mock('../../lib/db/migrations', () => ({ migrateDbIfNeeded: jest.fn() }))
-jest.mock('../../components/feedback/CurrentToast', () => ({ CurrentToast: () => null }))
+jest.mock('../../components/feedback/FeedbackProvider', () => ({
+  FeedbackProvider: ({ children }) => children,
+}))
 jest.mock('../../tamagui.config', () => ({ config: {} }))
 jest.mock('../../stores/uiStore', () => ({
   useUiStore: jest.requireActual('../../stores/uiStore').useUiStore,
@@ -200,7 +197,6 @@ jest.mock('../../stores/authStore', () => {
 jest.mock('../../components/FinishedWorkoutCongrats', () => {
   const React = require('react')
   const { useProfileDatabase } = require('../../lib/db/ProfileSQLiteProvider')
-  const { PortalItem } = require('@tamagui/portal')
 
   function FinishedWorkoutSQLiteProbe({ data, visible }) {
     const database = useProfileDatabase()
@@ -213,12 +209,7 @@ jest.mock('../../components/FinishedWorkoutCongrats', () => {
 
   return {
     __esModule: true,
-    default: (props) =>
-      React.createElement(
-        PortalItem,
-        { name: 'finished-workout-congrats-test', hostName: 'root' },
-        React.createElement(FinishedWorkoutSQLiteProbe, props)
-      ),
+    default: FinishedWorkoutSQLiteProbe,
   }
 })
 jest.mock('../../services/notificationService', () => ({
@@ -659,7 +650,7 @@ test('does not revalidate invalid, guest, switching, or background sessions', as
   }
 })
 
-test('renders and dismisses the congrats portal under the current SQLite context', async () => {
+test('renders and dismisses the congrats modal under the current SQLite context', async () => {
   const authState = useAuthStore.__state
   Object.assign(authState, {
     isStartupReady: true,

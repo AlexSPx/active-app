@@ -1,5 +1,5 @@
 import { View } from 'react-native'
-import { Check } from '@tamagui/lucide-icons'
+import { Check } from '../../../components/ui/icons'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
 import { Button, Surface, UiText } from '../../../components/ui/Controls'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
