@@ -1,177 +1,157 @@
-import { Button, Text, View, XStack, YStack } from 'tamagui'
+import { Pressable, useWindowDimensions, View } from 'react-native'
+import { IconButton, SegmentedSelection, UiText } from '../../../components/ui/Controls'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { ChevronLeft, ChevronRight } from '../../../components/ui/icons'
-import { formatMonthYear, generateCalendar, sameDay, startOfWeek, toISODate } from './date'
+import {
+  formatMonthYear,
+  generateCalendar,
+  sameDay,
+  startOfWeek,
+  toISODate,
+} from './date'
+
+export type HistoryCalendarView = 'month' | 'week'
 
 export type HistoryCalendarProps = {
   monthDate: Date
-  selectedDate: Date
-  collapsed: boolean
-  onMonthChange: (date: Date) => void
-  onToggleCollapsed: () => void
-  onSelectDate: (date: Date) => void
+  selectedDate: Date | null
+  view: HistoryCalendarView
   workoutDays: Set<string>
+  onNavigatePeriod: (offset: -1 | 1) => void
+  onViewChange: (view: HistoryCalendarView) => void
+  onSelectDate: (date: Date) => void
 }
+
+const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
 export function HistoryCalendar({
   monthDate,
   selectedDate,
-  collapsed,
-  onMonthChange,
-  onToggleCollapsed,
-  onSelectDate,
+  view,
   workoutDays,
+  onNavigatePeriod,
+  onViewChange,
+  onSelectDate,
 }: HistoryCalendarProps) {
+  const colors = useCadenceColors()
+  const { fontScale, width } = useWindowDimensions()
   const days = generateCalendar(monthDate, selectedDate)
-  const selectedWeek = startOfWeek(selectedDate)
-  const visibleDays = collapsed
-    ? days.filter((day) => sameDay(startOfWeek(day.date), selectedWeek))
-    : days
-  const changeMonth = (offset: number) => {
-    // Use the first day so January 31 cannot skip February.
-    const date = new Date(monthDate.getFullYear(), monthDate.getMonth() + offset, 1)
-    onMonthChange(date)
-    onSelectDate(date)
-  }
+  const selectedWeek = startOfWeek(selectedDate ?? monthDate)
+  const visibleDays =
+    view === 'week' ? days.filter((day) => sameDay(startOfWeek(day.date), selectedWeek)) : days
+  const period = formatMonthYear(monthDate)
+  const periodName = view === 'week' ? 'week' : 'month'
+  const headingOnOwnRow = width < 400 || fontScale > 1.15
+  const calendarViewWidth = fontScale > 1.15 ? 'w-44' : 'w-40'
 
   return (
-    <YStack py="$field" gap="$compact" borderBottomWidth="$0.5" borderColor="$borderColor">
-      <XStack justify="space-between" items="center" gap="$compact">
-        <Text
-          fontSize="$exerciseTitle"
-          lineHeight="$exerciseTitle"
-          fontWeight="600"
-          color="$color"
-          flex={1}
+    <View className="gap-field border-b border-divider pb-section">
+      <View className="flex-row flex-wrap items-center justify-between gap-compact">
+        <UiText
+          textRole="cardTitle"
+          className={headingOnOwnRow ? 'w-full' : 'min-w-0 flex-1'}
+          accessibilityRole="header"
         >
-          {formatMonthYear(monthDate)}
-        </Text>
-        <XStack items="center">
-          <Button
-            unstyled
-            width="$touch"
-            height="$touch"
-            rounded="$control"
-            items="center"
-            justify="center"
-            accessibilityLabel="Previous month"
-            onPress={() => changeMonth(-1)}
+          {period}
+        </UiText>
+        <View className="flex-row items-center gap-compact">
+          <IconButton
+            variant="ghost"
+            shape="control"
+            accessibilityLabel={`Previous ${periodName}`}
+            onPress={() => onNavigatePeriod(-1)}
+            className="px-0"
           >
-            <ChevronLeft size="$iconSmall" color="$colorSubtle" />
-          </Button>
-          <Button
-            unstyled
-            width="$touch"
-            height="$touch"
-            rounded="$control"
-            items="center"
-            justify="center"
-            accessibilityLabel="Next month"
-            onPress={() => changeMonth(1)}
+            <ChevronLeft size={18} color={colors.accent} />
+          </IconButton>
+          <IconButton
+            variant="ghost"
+            shape="control"
+            accessibilityLabel={`Next ${periodName}`}
+            onPress={() => onNavigatePeriod(1)}
+            className="px-0"
           >
-            <ChevronRight size="$iconSmall" color="$colorSubtle" />
-          </Button>
-          <Button
-            unstyled
-            minH="$touch"
-            px="$field"
-            bg="$backgroundStrong"
-            rounded="$day"
-            items="center"
-            justify="center"
-            accessibilityLabel={collapsed ? 'Expand month calendar' : 'Collapse to selected week'}
-            accessibilityState={{ expanded: !collapsed }}
-            onPress={onToggleCollapsed}
-          >
-            <Text fontSize="$caption" lineHeight="$caption" color="$color" fontWeight="600">
-              {collapsed ? 'Month' : 'Week'}
-            </Text>
-          </Button>
-        </XStack>
-      </XStack>
-      <XStack gap="$compact">
-        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => (
-          <Text
-            key={day}
-            flex={1}
-            text="center"
-            fontSize="$caption"
-            lineHeight="$caption"
-            color="$colorSubtle"
-          >
-            {day}
-          </Text>
-        ))}
-      </XStack>
-      <YStack gap="$compact">
-        {Array.from({ length: visibleDays.length / 7 }, (_, row) => (
-          <XStack key={row} gap="$compact">
-            {visibleDays.slice(row * 7, row * 7 + 7).map((day) => {
-              const hasWorkouts = workoutDays.has(toISODate(day.date))
-              return (
-                <Button
-                  key={toISODate(day.date)}
-                  unstyled
-                  flex={1}
-                  minW="$0"
-                  minH="$touch"
-                  py="$compact"
-                  flexDirection="column"
-                  space={0}
-                  rounded="$day"
-                  items="center"
-                  justify="center"
-                  borderWidth="$0.5"
-                  borderColor={day.isSelected ? '$primary' : '$backgroundTransparent'}
-                  bg={
-                    day.isToday
-                      ? '$primary'
-                      : day.isSelected
-                        ? '$backgroundAccent'
-                        : day.inCurrentMonth
-                          ? '$backgroundStrong'
-                          : '$backgroundTransparent'
-                  }
-                  accessibilityLabel={`${day.date.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}${day.isToday ? ', today' : ''}${hasWorkouts ? ', completed session' : ''}`}
-                  accessibilityState={{ selected: day.isSelected }}
-                  onPress={() => onSelectDate(day.date)}
-                >
-                  <Text
-                    fontSize="$caption"
-                    lineHeight="$caption"
-                    color={
-                      day.isToday
-                        ? '$onPrimary'
-                        : day.isSelected
-                          ? '$primary'
-                          : day.inCurrentMonth
-                            ? '$color'
-                            : '$colorSubtle'
-                    }
-                    fontWeight={day.isToday || day.isSelected ? '600' : '400'}
-                  >
-                    {day.date.getDate()}
-                  </Text>
-                  <View
-                    position="absolute"
-                    b="$compact"
-                    width="$0.5"
-                    height="$0.5"
-                    rounded="$block"
-                    bg={
-                      hasWorkouts
-                        ? day.isToday
-                          ? '$onPrimary'
-                          : '$primary'
-                        : '$backgroundTransparent'
-                    }
-                  />
-                </Button>
-              )
-            })}
-          </XStack>
-        ))}
-      </YStack>
-    </YStack>
+            <ChevronRight size={18} color={colors.accent} />
+          </IconButton>
+          <SegmentedSelection
+            value={view}
+            options={[
+              { value: 'month', label: 'Month' },
+              { value: 'week', label: 'Week' },
+            ]}
+            onValueChange={onViewChange}
+            accessibilityLabel="Calendar view"
+            className={`${calendarViewWidth} shrink-0`}
+          />
+        </View>
+      </View>
+
+      <View className="px-1">
+        <View className="flex-row">
+          {weekDays.map((day) => (
+            <UiText key={day} textRole="meta" className="flex-1 py-compact text-center">
+              {day}
+            </UiText>
+          ))}
+        </View>
+        <View>
+          {Array.from({ length: visibleDays.length / 7 }, (_, row) => {
+            const rowDays = visibleDays.slice(row * 7, row * 7 + 7)
+            return (
+              <View key={toISODate(rowDays[0].date)} className="flex-row">
+                {rowDays.map((day) => {
+                  const hasWorkouts = workoutDays.has(toISODate(day.date))
+                  const label = day.date.toLocaleDateString([], {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric',
+                  })
+                  const selected = day.isSelected
+                  const today = day.isToday
+                  return (
+                    <Pressable
+                      key={toISODate(day.date)}
+                      className={`min-h-touch min-w-touch flex-1 items-center justify-center active:opacity-75 ${
+                        selected
+                          ? 'rounded-full bg-accent'
+                          : today
+                            ? 'rounded-full border border-accent bg-transparent'
+                            : ''
+                      }`}
+                      accessibilityRole="button"
+                      accessibilityLabel={`${label}${today ? ', today' : ''}${hasWorkouts ? ', completed session' : ''}`}
+                      accessibilityState={{ selected }}
+                      onPress={() => onSelectDate(day.date)}
+                    >
+                      <UiText
+                        textRole={
+                          selected ? 'captionOnAccent' : today ? 'captionEmphasis' : 'caption'
+                        }
+                        className={!day.inCurrentMonth && view === 'month' ? 'opacity-60' : ''}
+                      >
+                        {day.date.getDate()}
+                      </UiText>
+                      <View
+                        className={`mt-0.5 h-1.5 w-1.5 rounded-full ${
+                          hasWorkouts ? (selected ? 'bg-on-accent' : 'bg-accent') : 'bg-transparent'
+                        }`}
+                        accessibilityElementsHidden
+                        importantForAccessibility="no-hide-descendants"
+                      />
+                    </Pressable>
+                  )
+                })}
+              </View>
+            )
+          })}
+        </View>
+      </View>
+      <View accessibilityRole="text" className="flex-row items-center gap-compact">
+        <View className="h-1.5 w-1.5 rounded-full bg-accent" />
+        <UiText textRole="meta">Completed session · outlined date is today</UiText>
+      </View>
+    </View>
   )
 }
 

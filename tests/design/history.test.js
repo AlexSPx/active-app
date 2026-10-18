@@ -4,42 +4,43 @@ const { act, create } = require('react-test-renderer')
 jest.mock('uniwind', () => ({
   useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
 }))
-
-jest.mock('tamagui', () => {
-  const React = require('react')
-  const component = (name) => (props) => React.createElement(name, props, props.children)
-  return Object.fromEntries(
-    ['Button', 'Text', 'YStack', 'XStack', 'View', 'ScrollView', 'Card'].map((name) => [
-      name,
-      component(name),
-    ])
-  )
-})
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}))
 jest.mock('../../components/ui/icons', () => ({
   ChevronLeft: 'ChevronLeft',
   ChevronRight: 'ChevronRight',
   MoreHorizontal: 'MoreHorizontal',
-  ArrowRight: 'ArrowRight',
 }))
-jest.mock(
-  '../../components/ui/CadenceOverlay',
-  () => ({
-    CadenceOverlay: (props) =>
-      require('react').createElement('Overlay', props, props.open ? props.children : null),
-  }),
-  { virtual: true }
-)
+jest.mock('../../components/ui/CadenceOverlay', () => {
+  const React = require('react')
+  return {
+    CadenceOverlay: ({ open, children, ...props }) =>
+      React.createElement(
+        'ConfirmationSheet',
+        { ...props, testID: 'confirmation-sheet', accessibilityState: { expanded: open } },
+        open ? children : null
+      ),
+  }
+})
 jest.mock('../../components/ui/ActionMenu', () => ({
   ActionMenu: ({ actions, label }) => {
     const React = require('react')
+    const { Pressable, Text, View } = require('react-native')
     return React.createElement(
-      'ActionMenu',
-      { label },
+      View,
+      { accessibilityLabel: label },
       actions.map((action) =>
         React.createElement(
-          'Button',
-          { key: action.label, onPress: action.onPress },
-          React.createElement('Text', null, action.label)
+          Pressable,
+          {
+            key: action.label,
+            accessibilityRole: 'button',
+            accessibilityLabel: action.label,
+            disabled: action.disabled,
+            onPress: action.onPress,
+          },
+          React.createElement(Text, null, action.label)
         )
       )
     )
@@ -49,50 +50,47 @@ jest.mock('@shopify/flash-list', () => {
   const React = require('react')
   return {
     FlashList: React.forwardRef((props, ref) => {
-      React.useImperativeHandle(ref, () => ({ scrollToIndex: mockScroll }))
+      React.useImperativeHandle(ref, () => ({ scrollToIndex: jest.fn() }))
+      const rows = props.data.map((item, index) =>
+        React.createElement(
+          React.Fragment,
+          { key: item.id },
+          props.renderItem({ item, index }),
+          index < props.data.length - 1 ? props.ItemSeparatorComponent?.() : null
+        )
+      )
       return React.createElement(
         'FlashList',
-        props,
+        { testID: 'history-flash-list', refreshing: props.refreshing, onRefresh: props.onRefresh },
         props.ListHeaderComponent,
-        props.data.length
-          ? props.data.map((item, index) =>
-              React.createElement(
-                React.Fragment,
-                { key: item.id },
-                props.renderItem({ item, index })
-              )
-            )
-          : props.ListEmptyComponent
+        props.data.length ? rows : props.ListEmptyComponent,
+        props.ListFooterComponent
       )
     }),
   }
 })
-jest.mock('expo-router', () => {
-  const React = require('react')
-  return {
-    Stack: {
-      Screen: (props) => React.createElement('Header', props, props.options?.headerRight?.()),
-    },
-    useLocalSearchParams: () => ({ id: 'record-1' }),
-    useRouter: () => ({ replace: mockReplace, push: mockPush }),
-  }
-})
+jest.mock('expo-router', () => ({
+  Stack: {
+    Screen: ({ options }) => options?.headerRight?.() ?? null,
+  },
+  useLocalSearchParams: () => ({ id: mockRouteId }),
+  useRouter: () => ({ replace: mockReplace, push: mockPush }),
+}))
 jest.mock('../../features/workouts', () => ({
   useWorkoutRecords: () => ({
     workoutRecords: mockRecords,
-    loading: false,
-    error: null,
-    refetch: jest.fn(),
+    loading: mockLoading,
+    error: mockError,
+    refetch: mockRefetch,
   }),
   useWorkoutMutations: () => ({
     deleteWorkoutRecord: mockDelete,
-    loading: false,
-    error: null,
-    clearError: jest.fn(),
+    loading: mockDeleting,
+    error: mockDeleteError,
+    clearError: mockClearError,
   }),
 }))
 jest.mock('../../components/ui/LoadingSpinner', () => ({ LoadingSpinner: 'LoadingSpinner' }))
-jest.mock('../../components/ui/ErrorDisplay', () => ({ ErrorDisplay: 'ErrorDisplay' }))
 
 const { HistoryCalendar } = require('../../features/history/components/HistoryCalendar')
 const { recordDurationSeconds } = require('../../features/history/components/record')
@@ -100,11 +98,17 @@ const { countSetsForRecord, computeVolumeForRecord } = require('../../utils/work
 const { parseServerUtcDate } = require('../../utils/date')
 const HistoryPage = require('../../app/(tabs)/(history)/index').default
 const RecordScreen = require('../../app/(tabs)/(history)/record/[id]').default
-const mockScroll = jest.fn()
 const mockPush = jest.fn()
-let mockRecords
-const mockDelete = jest.fn()
 const mockReplace = jest.fn()
+const mockDelete = jest.fn()
+const mockClearError = jest.fn()
+let mockRecords
+let mockLoading
+let mockError
+let mockDeleteError
+let mockDeleting
+let mockRefetch
+let mockRouteId
 const mockRecord = {
   id: 'record-1',
   workoutId: 'workout-1',
@@ -126,10 +130,16 @@ const mockRecord = {
 
 beforeEach(() => {
   mockRecords = [mockRecord]
-  mockScroll.mockReset()
+  mockLoading = false
+  mockError = null
+  mockDeleteError = null
+  mockDeleting = false
+  mockRouteId = 'record-1'
+  mockRefetch = jest.fn().mockResolvedValue(undefined)
   mockPush.mockReset()
-  mockDelete.mockReset()
   mockReplace.mockReset()
+  mockDelete.mockReset()
+  mockClearError.mockReset()
 })
 
 function mount(component) {
@@ -139,49 +149,104 @@ function mount(component) {
   })
   return tree
 }
-function pressLabel(tree, label) {
-  act(() => {
-    tree.root
-      .findAllByType('Button')
-      .find((button) => button.props.children?.props?.children === label)
-      .props.onPress()
-  })
+
+function findLabel(tree, label) {
+  const matches = tree.root.findAll((node) => node.props.accessibilityLabel === label)
+  const match =
+    matches.find(
+      (node) => typeof node.props.onPress === 'function' || typeof node.props.onClick === 'function'
+    ) ?? matches[0]
+  if (!match) throw new Error(`Could not find accessibility label: ${label}`)
+  return match
 }
-// Mirror HistoryCalendar's label formatting so the assertion does not depend on the host locale.
+
+function pressLabel(tree, label) {
+  const target = findLabel(tree, label)
+  act(() => (target.props.onPress ?? target.props.onClick)())
+}
+
+function textContent(value) {
+  if (typeof value === 'string' || typeof value === 'number') return String(value)
+  if (Array.isArray(value)) return value.map(textContent).join('')
+  if (React.isValidElement(value)) return textContent(value.props.children)
+  return ''
+}
+
+function hasText(tree, text) {
+  return tree.root.findAll((node) => textContent(node.props.children).includes(text)).length > 0
+}
+
 const longDate = (date) =>
   date.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
-test('month arrows anchor to day one and the compact calendar contains the selected week', () => {
-  const onMonthChange = jest.fn(),
-    onSelectDate = jest.fn()
-  const tree = mount(
+test('month and week calendars show the right period and expose 44px day targets', () => {
+  const onNavigatePeriod = jest.fn()
+  const onSelectDate = jest.fn()
+  const onViewChange = jest.fn()
+  const month = mount(
     React.createElement(HistoryCalendar, {
       monthDate: new Date(2026, 0, 31),
       selectedDate: new Date(2026, 0, 31),
-      collapsed: true,
+      view: 'month',
       workoutDays: new Set(['2026-01-31']),
-      onMonthChange,
+      onNavigatePeriod,
+      onViewChange,
       onSelectDate,
-      onToggleCollapsed: jest.fn(),
     })
   )
-  const days = tree.root
-    .findAllByType('Button')
-    .filter((button) => button.props.accessibilityState?.selected !== undefined)
-  expect(days).toHaveLength(7)
-  expect(days.filter((button) => button.props.accessibilityState.selected)).toHaveLength(1)
-  expect(
-    days.find((button) => button.props.accessibilityState.selected).props.accessibilityLabel
-  ).toContain('completed session')
-  act(() =>
-    tree.root
-      .findAllByType('Button')
-      .find((button) => button.props.accessibilityLabel === 'Next month')
-      .props.onPress()
+  const monthDays = month.root.findAll(
+    (node) =>
+      node.props.accessibilityState?.selected !== undefined &&
+      typeof node.props.accessibilityLabel === 'string'
   )
-  expect(onMonthChange).toHaveBeenCalledWith(new Date(2026, 1, 1))
-  expect(onSelectDate).toHaveBeenCalledWith(new Date(2026, 1, 1))
-  act(() => tree.unmount())
+  expect(new Set(monthDays.map((node) => node.props.accessibilityLabel)).size).toBe(35)
+  expect(
+    new Set(
+      monthDays
+        .filter((node) => node.props.accessibilityState.selected)
+        .map((node) => node.props.accessibilityLabel)
+    ).size
+  ).toBe(1)
+  expect(findLabel(month, 'Previous month')).toBeTruthy()
+  pressLabel(month, 'Next month')
+  expect(onNavigatePeriod).toHaveBeenCalledWith(1)
+  act(() => month.unmount())
+
+  const week = mount(
+    React.createElement(HistoryCalendar, {
+      monthDate: new Date(2026, 0, 31),
+      selectedDate: new Date(2026, 0, 31),
+      view: 'week',
+      workoutDays: new Set(),
+      onNavigatePeriod,
+      onViewChange,
+      onSelectDate,
+    })
+  )
+  const weekDays = week.root.findAll(
+    (node) =>
+      node.props.accessibilityState?.selected !== undefined &&
+      typeof node.props.accessibilityLabel === 'string'
+  )
+  expect(new Set(weekDays.map((node) => node.props.accessibilityLabel)).size).toBe(7)
+  expect(findLabel(week, 'Previous week')).toBeTruthy()
+  expect(findLabel(week, 'Next week')).toBeTruthy()
+  const dayTargets = week.root.findAll(
+    (node) =>
+      node.props.accessibilityState?.selected !== undefined &&
+      typeof node.props.accessibilityLabel === 'string' &&
+      node.props.className?.includes('min-h-touch') &&
+      node.props.className?.includes('min-w-touch')
+  )
+  expect(new Set(dayTargets.map((node) => node.props.accessibilityLabel)).size).toBe(7)
+  expect(
+    dayTargets.every(
+      (node) =>
+        node.props.className?.includes('min-h-touch') &&
+        node.props.className?.includes('min-w-touch')
+    )
+  ).toBe(true)
+  act(() => week.unmount())
 })
 
 test('record calculations retain strength volume, actual cardio intervals and UTC parsing', () => {
@@ -205,14 +270,14 @@ test('opening and cancelling a record never deletes data; explicit confirmation 
   expect(mockDelete).not.toHaveBeenCalled()
   pressLabel(tree, 'Delete record')
   expect(mockDelete).not.toHaveBeenCalled()
+  expect(
+    tree.root.findByProps({ testID: 'confirmation-sheet' }).props.accessibilityState.expanded
+  ).toBe(true)
   pressLabel(tree, 'Keep record')
   expect(mockDelete).not.toHaveBeenCalled()
   pressLabel(tree, 'Delete record')
-  const deleteButtons = tree.root
-    .findAllByType('Button')
-    .filter((button) => button.props.children?.props?.children === 'Delete record')
   await act(async () => {
-    await deleteButtons[deleteButtons.length - 1].props.onPress()
+    await findLabel(tree, 'Confirm delete record').props.onPress()
   })
   expect(mockDelete).toHaveBeenCalledTimes(1)
   expect(mockDelete).toHaveBeenCalledWith('record-1')
@@ -220,90 +285,141 @@ test('opening and cancelling a record never deletes data; explicit confirmation 
   act(() => tree.unmount())
 })
 
-test('failed deletion keeps the confirmation and recorded sets available', async () => {
-  mockDelete.mockResolvedValue(false)
+test('failed deletion keeps recorded strength/cardio values and the confirmation available for retry', async () => {
+  mockDelete.mockResolvedValueOnce(false).mockResolvedValueOnce(true)
   const tree = mount(React.createElement(RecordScreen))
   pressLabel(tree, 'Delete record')
-  const deleteButtons = tree.root
-    .findAllByType('Button')
-    .filter((button) => button.props.children?.props?.children === 'Delete record')
   await act(async () => {
-    await deleteButtons[deleteButtons.length - 1].props.onPress()
+    await findLabel(tree, 'Confirm delete record').props.onPress()
   })
   expect(mockReplace).not.toHaveBeenCalled()
-  expect(tree.root.findByType('Overlay').props.open).toBe(true)
-  expect(tree.root.findAllByType('Text').some((text) => text.props.children === '12:00')).toBe(true)
-  expect(tree.root.findAllByType('Text').some((text) => text.props.children === '8:00')).toBe(true)
+  expect(
+    tree.root.findByProps({ testID: 'confirmation-sheet' }).props.accessibilityState.expanded
+  ).toBe(true)
+  expect(hasText(tree, '12:00')).toBe(true)
+  expect(hasText(tree, '8:00')).toBe(true)
+  expect(hasText(tree, '60')).toBe(true)
+  expect(hasText(tree, 'Interval time')).toBe(true)
+  await act(async () => {
+    await findLabel(tree, 'Confirm delete record').props.onPress()
+  })
+  expect(mockDelete).toHaveBeenCalledTimes(2)
+  expect(mockDelete).toHaveBeenLastCalledWith('record-1')
+  expect(mockReplace).toHaveBeenCalledWith('/(tabs)/(history)')
   act(() => tree.unmount())
 })
 
-test('selecting a calendar date jumps to its session week and Today selects the current day', () => {
+test('date selection filters records; Today, Show all, and record navigation work', () => {
   jest.useFakeTimers().setSystemTime(new Date(2026, 9, 1, 12))
+  mockRecords = [
+    mockRecord,
+    {
+      ...mockRecord,
+      id: 'record-2',
+      workoutTitle: 'Today run',
+      createdAt: '2026-10-01T10:00:00',
+      startTime: '2026-10-01T09:00:00',
+      exerciseRecords: [{ exerciseName: 'Run', reps: [], weight: [], durationSeconds: [900, 600] }],
+    },
+  ]
   const tree = mount(React.createElement(HistoryPage))
-  act(() =>
-    tree.root
-      .findAllByType('Button')
-      .find((button) => button.props.accessibilityLabel === 'Previous month')
-      .props.onPress()
-  )
-  act(() =>
-    tree.root
-      .findAllByType('Button')
-      .find((button) => button.props.accessibilityLabel === 'Expand month calendar')
-      .props.onPress()
-  )
-  const completedDayLabel = `${longDate(new Date(2026, 8, 30))}, completed session`
-  act(() =>
-    tree.root
-      .findAllByType('Button')
-      .find((button) => button.props.accessibilityLabel === completedDayLabel)
-      .props.onPress()
-  )
-  expect(mockScroll).toHaveBeenLastCalledWith({ index: 0, animated: true, viewPosition: 0 })
-  pressLabel(tree, 'Today')
-  const selected = tree.root
-    .findAllByType('Button')
-    .find((button) => button.props.accessibilityState?.selected)
-  expect(selected.props.accessibilityLabel).toContain(
-    new Date(2026, 9, 1).toLocaleDateString([], { month: 'long', day: 'numeric' })
-  )
-  expect(
-    tree.root
-      .findAllByType('Text')
-      .some((text) => [].concat(text.props.children).join('') === '2 intervals')
-  ).toBe(true)
-  expect(
-    tree.root
-      .findAllByType('Text')
-      .some((text) => [].concat(text.props.children).join('') === '870 kg volume')
-  ).toBe(true)
-  act(() => tree.root.findByType('Card').props.onPress())
+  const completedDay = `${longDate(new Date(2026, 8, 30))}, completed session`
+  pressLabel(tree, completedDay)
+  expect(hasText(tree, '1 completed session')).toBe(true)
+  expect(hasText(tree, 'Mixed session')).toBe(true)
+  expect(hasText(tree, 'elapsed')).toBe(true)
+  expect(hasText(tree, 'Today run')).toBe(false)
+  pressLabel(tree, 'Show all sessions')
+  expect(hasText(tree, '2 completed sessions')).toBe(true)
+  pressLabel(tree, 'Go to today')
+  expect(hasText(tree, 'Today run')).toBe(true)
+  expect(hasText(tree, 'Mixed session')).toBe(false)
+  const todayLabel = `${longDate(new Date(2026, 9, 1))}, today, completed session`
+  expect(findLabel(tree, todayLabel)).toBeTruthy()
+  const recordButton = tree.root.findAll((node) =>
+    node.props.accessibilityLabel?.startsWith('View Today run,')
+  )[0]
+  act(() => recordButton.props.onPress())
   expect(mockPush).toHaveBeenCalledWith({
     pathname: '/(tabs)/(history)/record/[id]',
-    params: { id: 'record-1' },
+    params: { id: 'record-2' },
   })
   act(() => tree.unmount())
   jest.useRealTimers()
 })
 
-test('empty history keeps its calendar and refreshable list with a quiet records message', () => {
-  mockRecords = []
+test('history summaries use singular labels for one set and one interval', () => {
+  mockRecords = [
+    {
+      ...mockRecord,
+      id: 'record-single-counts',
+      exerciseRecords: [
+        { exerciseName: 'Squat', reps: [5], weight: [100] },
+        { exerciseName: 'Run', reps: [], weight: [], durationSeconds: [60] },
+      ],
+    },
+  ]
   const tree = mount(React.createElement(HistoryPage))
-  expect(
-    tree.root
-      .findAllByType('Button')
-      .some((button) => button.props.accessibilityLabel === 'Expand month calendar')
-  ).toBe(true)
-  expect(tree.root.findByType('FlashList').props.onRefresh).toEqual(expect.any(Function))
-  expect(
-    tree.root.findAllByType('Text').some((text) => text.props.children === 'No records yet')
-  ).toBe(true)
-  expect(
-    tree.root.findAllByType('Text').some((text) => text.props.children === 'Your history')
-  ).toBe(false)
-  expect(
-    tree.root.findAllByType('Text').some((text) => text.props.children === 'Choose a workout')
-  ).toBe(false)
-  expect(mockPush).not.toHaveBeenCalled()
+  expect(hasText(tree, '1 set')).toBe(true)
+  expect(hasText(tree, '1 interval')).toBe(true)
+  expect(hasText(tree, '1 sets')).toBe(false)
+  expect(hasText(tree, '1 intervals')).toBe(false)
+  act(() => tree.unmount())
+})
+
+test('period arrows navigate by a week in Week mode and a month in Month mode', () => {
+  jest.useFakeTimers().setSystemTime(new Date(2026, 9, 1, 12))
+  const tree = mount(React.createElement(HistoryPage))
+  pressLabel(tree, 'Week')
+  pressLabel(tree, 'Previous week')
+  expect(findLabel(tree, `${longDate(new Date(2026, 8, 24))}`)).toBeTruthy()
+  pressLabel(tree, 'Next week')
+  expect(findLabel(tree, `${longDate(new Date(2026, 9, 1))}, today`)).toBeTruthy()
+  pressLabel(tree, 'Month')
+  pressLabel(tree, 'Next month')
+  expect(findLabel(tree, `${longDate(new Date(2026, 10, 1))}`)).toBeTruthy()
+  act(() => tree.unmount())
+  jest.useRealTimers()
+})
+
+test('empty, loading, and error states keep the calendar usable and history refreshable', async () => {
+  mockRecords = []
+  mockLoading = true
+  let tree = mount(React.createElement(HistoryPage))
+  expect(findLabel(tree, 'Go to today')).toBeTruthy()
+  expect(findLabel(tree, 'Next month')).toBeTruthy()
+  expect(hasText(tree, 'Loading history…')).toBe(true)
+  act(() => tree.unmount())
+
+  mockLoading = false
+  mockError = 'offline'
+  tree = mount(React.createElement(HistoryPage))
+  expect(findLabel(tree, 'Previous month')).toBeTruthy()
+  expect(hasText(tree, 'Could not load history: offline')).toBe(true)
+  await act(async () => {
+    await findLabel(tree, 'Try again').props.onPress()
+  })
+  expect(mockRefetch).toHaveBeenCalledTimes(1)
+  act(() => tree.unmount())
+
+  mockError = null
+  mockRecords = []
+  tree = mount(React.createElement(HistoryPage))
+  expect(hasText(tree, 'No records yet')).toBe(true)
+  const list = tree.root.findByProps({ testID: 'history-flash-list' })
+  expect(list.props.onRefresh).toEqual(expect.any(Function))
+  await act(async () => {
+    await list.props.onRefresh()
+  })
+  expect(mockRefetch).toHaveBeenCalledTimes(2)
+  act(() => tree.unmount())
+})
+
+test('a refresh error retains cached records and offers retry', () => {
+  mockError = 'sync unavailable'
+  const tree = mount(React.createElement(HistoryPage))
+  expect(hasText(tree, 'Could not load history: sync unavailable')).toBe(true)
+  expect(hasText(tree, 'Mixed session')).toBe(true)
+  expect(findLabel(tree, 'Try again')).toBeTruthy()
   act(() => tree.unmount())
 })

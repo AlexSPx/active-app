@@ -1,10 +1,13 @@
-import { forwardRef } from 'react'
-import { Card, Text, View, XStack, YStack } from 'tamagui'
-import { ArrowRight } from '../../../components/ui/icons'
 import { FlashList } from '@shopify/flash-list'
-import type { FlashListRef } from '@shopify/flash-list'
-import { formatWeekRange, startOfWeek } from './date'
+import type { ReactNode } from 'react'
+import { Pressable, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Button, UiBadge, UiText } from '../../../components/ui/Controls'
+import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
+import { ChevronRight } from '../../../components/ui/icons'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { formatSeconds } from '../../../utils/workoutUtils'
+import { formatWeekRange, startOfWeek } from './date'
 
 export type HistoryListItem = {
   id: string
@@ -21,138 +24,212 @@ export type HistoryListItem = {
 }
 
 type Props = {
+  screenHeader: ReactNode
   data: HistoryListItem[]
+  filterDate: Date | null
+  loading: boolean
+  error: string | null
+  refreshing: boolean
+  onRefresh: () => void
+  onRetry: () => Promise<void>
+  onShowAll: () => void
   onPressItem: (item: HistoryListItem) => void
-  refreshing?: boolean
-  onRefresh?: () => void
 }
 
-const HistoryList = forwardRef<FlashListRef<HistoryListItem>, Props>(
-  ({ data, onPressItem, refreshing, onRefresh }, ref) => (
-    <FlashList
-      ref={ref}
-      data={data}
-      keyExtractor={(item) => item.id}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      contentContainerStyle={data.length === 0 ? { flexGrow: 1 } : undefined}
-      ListHeaderComponent={
-        data.length > 0 ? (
-          <YStack pt="$section" gap="$compact">
-            <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600" color="$color">
-              Your history
-            </Text>
-            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+function ErrorMessage({ error, onRetry }: { error: string; onRetry: () => Promise<void> }) {
+  return (
+    <View className="gap-compact rounded-control border border-divider bg-raised p-field">
+      <UiText accessibilityRole="alert" textRole="bodyMuted">
+        Could not load history: {error}
+      </UiText>
+      <Button
+        variant="secondary"
+        accessibilityLabel="Try again"
+        onPress={() => void onRetry()}
+        className="self-start"
+      >
+        Try again
+      </Button>
+    </View>
+  )
+}
+
+function HistoryRecordCard({ item, onPress }: { item: HistoryListItem; onPress: () => void }) {
+  const colors = useCadenceColors()
+  const dateLabel = item.date.toLocaleDateString([], {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const timeLabel = item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  const metrics = [
+    `${formatSeconds(item.duration)} elapsed`,
+    ...(item.strengthSets > 0
+      ? [`${item.strengthSets} ${item.strengthSets === 1 ? 'set' : 'sets'}`]
+      : []),
+    ...(item.intervals > 0
+      ? [`${item.intervals} ${item.intervals === 1 ? 'interval' : 'intervals'}`]
+      : []),
+    ...(item.strengthSets > 0 ? [`${item.totalVolume.toLocaleString()} kg volume`] : []),
+  ]
+
+  return (
+    <Pressable
+      className="min-h-touch flex-row items-center gap-field rounded-card border border-divider bg-surface p-compact active:bg-raised"
+      accessibilityRole="button"
+      accessibilityLabel={`View ${item.name}, ${dateLabel} at ${timeLabel}`}
+      onPress={onPress}
+    >
+      <View className="min-w-14 items-center justify-center rounded-control bg-raised px-compact py-compact">
+        <UiText textRole="meta">{item.date.toLocaleDateString([], { month: 'short' })}</UiText>
+        <UiText textRole="bodyEmphasis">{item.date.getDate()}</UiText>
+      </View>
+      <View className="min-w-0 flex-1 gap-compact">
+        <View className="flex-row items-start gap-compact">
+          <UiText textRole="bodyEmphasis" className="min-w-0 flex-1">
+            {item.name}
+          </UiText>
+          <ChevronRight size={16} color={colors.accent} />
+        </View>
+        <UiText textRole="meta">{timeLabel}</UiText>
+        <UiText textRole="caption">{metrics.join(' · ')}</UiText>
+        {!!item.exerciseNames.length && (
+          <UiText textRole="caption">{item.exerciseNames.join(' · ')}</UiText>
+        )}
+        {(item.prOneRm || item.prVolume) && <UiBadge variant="pill">Personal record</UiBadge>}
+      </View>
+    </Pressable>
+  )
+}
+
+export default function HistoryList({
+  screenHeader,
+  data,
+  filterDate,
+  loading,
+  error,
+  refreshing,
+  onRefresh,
+  onRetry,
+  onShowAll,
+  onPressItem,
+}: Props) {
+  const insets = useSafeAreaInsets()
+  const dateTitle = filterDate?.toLocaleDateString([], {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+  const listHeader = (
+    <View className="w-full max-w-3xl self-center gap-field">
+      {screenHeader}
+      <View className="gap-field px-page pb-field pt-section">
+        <View className="flex-row items-start justify-between gap-field">
+          <View className="min-w-0 flex-1 gap-compact">
+            <UiText textRole="bodyEmphasis" accessibilityRole="header">
+              {dateTitle ?? 'Your sessions'}
+            </UiText>
+            <UiText textRole="meta">
               {data.length} completed {data.length === 1 ? 'session' : 'sessions'}
-            </Text>
-          </YStack>
-        ) : null
-      }
-      ListEmptyComponent={
-        <YStack flex={1} py="$section" items="center" justify="center">
-          <Text fontSize="$body" lineHeight="$body" color="$colorSubtle" text="center">
-            No records yet
-          </Text>
-        </YStack>
-      }
-      ListFooterComponent={data.length > 0 ? <View py="$field" /> : null}
-      ItemSeparatorComponent={() => <View py="$2" />}
+            </UiText>
+          </View>
+          {filterDate && (
+            <Button
+              variant="ghost"
+              density="compact"
+              accessibilityLabel="Show all sessions"
+              onPress={onShowAll}
+            >
+              Show all
+            </Button>
+          )}
+        </View>
+        {!!error && data.length > 0 && <ErrorMessage error={error} onRetry={onRetry} />}
+      </View>
+    </View>
+  )
+
+  let emptyState: ReactNode
+  if (error) {
+    emptyState = (
+      <View className="flex-1 items-start justify-center gap-field py-section">
+        <UiText textRole="cardTitle" accessibilityRole="header">
+          History is unavailable
+        </UiText>
+        <ErrorMessage error={error} onRetry={onRetry} />
+      </View>
+    )
+  } else if (loading) {
+    emptyState = (
+      <View className="flex-1 items-center justify-center gap-field py-section">
+        <LoadingSpinner />
+        <UiText textRole="bodyMuted">Loading history…</UiText>
+      </View>
+    )
+  } else if (filterDate) {
+    emptyState = (
+      <View className="flex-1 items-start justify-center gap-field py-section">
+        <UiText textRole="cardTitle" accessibilityRole="header">
+          No sessions on this day
+        </UiText>
+        <UiText textRole="bodyMuted">Choose another date or show your full history.</UiText>
+        <Button variant="secondary" accessibilityLabel="Show all days" onPress={onShowAll}>
+          Show all days
+        </Button>
+      </View>
+    )
+  } else {
+    emptyState = (
+      <View className="flex-1 items-start justify-center gap-field py-section">
+        <UiText textRole="cardTitle" accessibilityRole="header">
+          No records yet
+        </UiText>
+        <UiText textRole="bodyMuted">Complete a session to see it in your history.</UiText>
+      </View>
+    )
+  }
+
+  return (
+    <FlashList
+      data={data}
       renderItem={({ item, index }) => {
-        const showHeader =
+        const showWeek =
           index === 0 ||
           startOfWeek(item.date).getTime() !== startOfWeek(data[index - 1].date).getTime()
         return (
-          <YStack>
-            {showHeader && (
-              <Text
-                mt="$section"
-                mb="$field"
-                fontSize="$caption"
-                lineHeight="$caption"
-                fontWeight="600"
-                color="$colorSubtle"
+          <View>
+            {showWeek && (
+              <UiText
+                textRole="captionEmphasis"
+                accessibilityRole="header"
+                className="mx-page mb-field mt-section"
               >
                 {formatWeekRange(item.date)}
-              </Text>
+              </UiText>
             )}
-            <Card
-              p="$card"
-              rounded="$card"
-              bg="$surface"
-              borderWidth="$0.5"
-              borderColor="$borderColor"
-              gap="$compact"
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel={`View ${item.name}, ${item.date.toLocaleDateString()}`}
-              onPress={() => onPressItem(item)}
-              pressStyle={{ bg: '$surfacePress' }}
-            >
-              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                {item.date.toLocaleDateString([], {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                })}{' '}
-                · {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-              <XStack gap="$field" minH="$touch" items="flex-start">
-                <Text
-                  flex={1}
-                  fontSize="$cardTitle"
-                  lineHeight="$cardTitle"
-                  fontWeight="600"
-                  color="$color"
-                >
-                  {item.name}
-                </Text>
-                <ArrowRight size="$iconSmall" color="$primary" />
-              </XStack>
-              <XStack flexWrap="wrap" gap="$field" mt="$compact">
-                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                  {formatSeconds(item.duration)}
-                </Text>
-                {item.strengthSets > 0 && (
-                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                    {item.strengthSets} sets
-                  </Text>
-                )}
-                {item.intervals > 0 && (
-                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                    {item.intervals} intervals
-                  </Text>
-                )}
-                {item.strengthSets > 0 && (
-                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                    {item.totalVolume.toLocaleString()} kg volume
-                  </Text>
-                )}
-              </XStack>
-              <Text mt="$compact" fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                {item.exerciseNames.join(' · ')}
-              </Text>
-              {(item.prOneRm || item.prVolume) && (
-                <Text
-                  self="flex-start"
-                  mt="$compact"
-                  px="$2"
-                  py="$compact"
-                  rounded="$badge"
-                  bg="$backgroundAccent"
-                  color="$primary"
-                  fontSize="$caption"
-                  lineHeight="$caption"
-                  fontWeight="600"
-                >
-                  Personal record
-                </Text>
-              )}
-            </Card>
-          </YStack>
+            <View className="px-page">
+              <HistoryRecordCard item={item} onPress={() => onPressItem(item)} />
+            </View>
+          </View>
         )
       }}
+      keyExtractor={(item) => item.id}
+      style={{ flex: 1 }}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{
+        paddingHorizontal: 0,
+        paddingBottom: 24 + insets.bottom,
+        flexGrow: data.length === 0 ? 1 : undefined,
+      }}
+      ListHeaderComponent={listHeader}
+      ListEmptyComponent={<View className="flex-1 px-page">{emptyState}</View>}
+      ItemSeparatorComponent={() => <View className="h-compact" />}
+      ListFooterComponent={data.length > 0 ? <View className="h-field" /> : null}
+      refreshing={refreshing}
+      onRefresh={onRefresh}
+      showsVerticalScrollIndicator={false}
     />
   )
-)
-
-export default HistoryList
+}
