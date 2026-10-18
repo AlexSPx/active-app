@@ -1,139 +1,87 @@
-import { YStack, XStack, Text, Button, ScrollView } from 'tamagui'
-import { useState } from 'react'
-import { ChevronRight } from '../../components/ui/icons'
-import { useRouter } from 'expo-router'
-import { WeeklyView } from '../../components/WeeklyView'
-import { TodayView } from '../../components/TodayView'
+import { ScrollView, View } from 'react-native'
+import { Button, UiText } from '../../components/ui/Controls'
+import { ArrowRight, Plus } from '../../components/ui/icons'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
-import { useRoutines, useActiveRoutine } from '../../features/routines'
-import { useWorkouts } from '../../features/workouts'
+import { TodayView } from '../../components/TodayView'
+import { WeeklyView } from '../../components/WeeklyView'
 import { TrainingWidgets } from '../../features/training/components/TrainingWidgets'
+import { useTrainingHomeController } from '../../features/training/hooks/useTrainingHomeController'
 
 export default function HomeScreen() {
-  const router = useRouter()
-  const [selectedDate, setSelectedDate] = useState(() => new Date())
-  const {
-    activeRoutine,
-    loading: activeRoutineLoading,
-    error: activeRoutineError,
-    refetch: refetchActiveRoutine,
-  } = useActiveRoutine()
-  const {
-    routines,
-    loading: routinesLoading,
-    error: routinesError,
-    refetch: refetchRoutines,
-  } = useRoutines()
-  const {
-    workouts,
-    loading: workoutsLoading,
-    error: workoutsError,
-    refetch: refetchWorkouts,
-  } = useWorkouts()
-
-  const setupLoading = activeRoutineLoading || routinesLoading || workoutsLoading
-  const setupError = activeRoutineError || routinesError || workoutsError
-  const hasWorkouts = workouts.length > 0
-  const canShowPlan = !setupLoading && !setupError && hasWorkouts && !!activeRoutine
-
-  const setupState = !hasWorkouts
-    ? {
-        title: 'Create your first workout',
-        description: 'Choose exercises and set your sets and reps.',
-        actionLabel: 'Create workout',
-        onAction: () => router.push('/workouts/new'),
-      }
-    : routines.length === 0
-      ? {
-          title: 'Set up your routine',
-          description: 'Your workouts are ready. Create a routine to plan your training.',
-          actionLabel: 'Create routine',
-          onAction: () => router.push('/routines/new'),
-        }
-      : {
-          title: 'Choose an active routine',
-          description: 'Select a routine to see your plan for today and this week.',
-          actionLabel: 'Manage routines',
-          onAction: () => router.push('/(tabs)/(workouts)/routines'),
-        }
-
-  const weekHelperText = !hasWorkouts
-    ? 'Create a workout, then add it to a routine.'
-    : routines.length === 0
-      ? 'Create a routine to see your training plan here.'
-      : 'Activate a routine to see its schedule here.'
+  const home = useTrainingHomeController()
+  const colors = useCadenceColors()
 
   return (
     <ScrollView
-      flex={1}
-      bg="$background"
-      showsVerticalScrollIndicator={false}
+      className="flex-1 bg-background"
       contentInsetAdjustmentBehavior="automatic"
+      showsVerticalScrollIndicator={false}
     >
-      <YStack width="100%" maxW="$content" self="center" px="$page" pt="$3">
-        {setupLoading ? (
-          <LoadingSpinner text="Loading your plan..." />
-        ) : setupError ? (
+      <View className="mx-auto w-full max-w-3xl gap-section px-page pb-section">
+        <UiText textRole="meta" className="pt-page">
+          {home.todayLabel}
+        </UiText>
+
+        {home.state.kind === 'loading' ? (
+          <View className="items-center py-section">
+            <LoadingSpinner text="Loading your plan..." />
+          </View>
+        ) : home.state.kind === 'error' ? (
           <ErrorDisplay
             title="Failed to load your plan"
-            message={setupError}
-            onRetry={() => {
-              void Promise.all([refetchActiveRoutine(), refetchRoutines(), refetchWorkouts()])
-            }}
+            message={home.state.message}
+            onRetry={() => void home.retry()}
           />
-        ) : (
-          <YStack gap="$section">
+        ) : home.state.kind === 'setup' ? (
+          <View className="gap-section">
             <WeeklyView
-              selectedDate={selectedDate}
-              onSelectDate={setSelectedDate}
-              inactive={canShowPlan ? undefined : true}
+              plan={home.state.weekPlan}
+              onSelectDate={home.selectDate}
+              onOpenWorkout={home.openWorkout}
             />
-            {canShowPlan ? (
-              activeRoutine.routineType !== 'WEEKLY_COMPLETION' && (
-                <TodayView selectedDate={selectedDate} />
-              )
-            ) : (
-              <YStack gap="$3" pb="$section" borderBottomWidth={1} borderColor="$borderColor">
-                <Text fontSize="$2" color="$colorSubtle">
-                  {weekHelperText}
-                </Text>
-                <YStack gap="$2">
-                  <Text
-                    fontSize="$sectionTitle"
-                    lineHeight="$sectionTitle"
-                    fontWeight="600"
-                    color="$color"
-                  >
-                    {setupState.title}
-                  </Text>
-                  <Text fontSize="$3" color="$colorSubtle" lineHeight="$body">
-                    {setupState.description}
-                  </Text>
-                </YStack>
-                <Button
-                  unstyled
-                  flexDirection="row"
-                  self="flex-start"
-                  minH="$touch"
-                  py="$2"
-                  items="center"
-                  gap="$2"
-                  onPress={setupState.onAction}
-                  pressStyle={{ opacity: 0.6 }}
-                >
-                  <Text color="$primary" fontWeight="600">
-                    {setupState.actionLabel}
-                  </Text>
-                  <ChevronRight size="$icon" color="$primary" aria-hidden />
-                </Button>
-              </YStack>
+            <View className="gap-field rounded-card bg-raised p-card">
+              <View className="gap-compact">
+                <UiText textRole="cardTitle" accessibilityRole="header">
+                  {home.state.setup.title}
+                </UiText>
+                <UiText textRole="bodyMuted">{home.state.setup.description}</UiText>
+              </View>
+              <Button onPress={home.state.setup.onAction} className="flex-row gap-compact">
+                {home.state.setup.kind === 'choose-routine' ? (
+                  <ArrowRight size={18} color={colors.onAccent} aria-hidden />
+                ) : (
+                  <Plus size={18} color={colors.onAccent} aria-hidden />
+                )}
+                <UiText textRole="buttonOnAccent" className="shrink">
+                  {home.state.setup.actionLabel}
+                </UiText>
+              </Button>
+            </View>
+          </View>
+        ) : (
+          <View className="gap-section">
+            <WeeklyView
+              plan={home.state.weekPlan}
+              onSelectDate={home.selectDate}
+              onOpenWorkout={home.openWorkout}
+            />
+            {home.state.weekPlan.kind === 'cycle' && home.state.selectedSession && (
+              <TodayView
+                session={home.state.selectedSession}
+                isWorkoutRunning={home.isWorkoutRunning}
+                onStartWorkout={home.startWorkout}
+                onOpenWorkout={home.openWorkout}
+                onBrowseWorkouts={home.browseWorkouts}
+                onManageRoutines={home.manageRoutines}
+              />
             )}
-          </YStack>
+          </View>
         )}
 
         <TrainingWidgets />
-      </YStack>
+      </View>
     </ScrollView>
   )
 }

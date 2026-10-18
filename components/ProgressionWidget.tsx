@@ -1,17 +1,9 @@
-import React, { useState } from 'react'
-import {
-  Card,
-  YStack,
-  XStack,
-  Text,
-  Button,
-  Spinner,
-  useTheme,
-  getTokenValue,
-  getConfig,
-  getVariableValue,
-} from 'tamagui'
+import { useState } from 'react'
+import { ActivityIndicator, View } from 'react-native'
 import { LineChart } from 'react-native-gifted-charts'
+import { ActionMenu } from './ui/ActionMenu'
+import { Button, UiText } from './ui/Controls'
+import { useCadenceColors } from './ui/useCadenceColors'
 import { useExerciseProgression } from '../features/exercises'
 import type { WidgetConfig } from '../stores/widgetStore'
 import { getMetricLabel, getMetricUnit } from '../stores/widgetStore'
@@ -19,14 +11,28 @@ import { getMetricLabel, getMetricUnit } from '../stores/widgetStore'
 interface ProgressionWidgetProps {
   config: Pick<WidgetConfig, 'exerciseId' | 'exerciseName' | 'metric'>
   preview?: boolean
+  onManage?: () => void
+  onRemove?: () => void
 }
 
-export function ProgressionWidget({ config, preview = false }: ProgressionWidgetProps) {
+function formatProgressionDate(date: string): string {
+  return new Date(`${date}T12:00:00`).toLocaleDateString('en-US', {
+    day: 'numeric',
+    month: 'short',
+  })
+}
+
+export function ProgressionWidget({
+  config,
+  preview = false,
+  onManage,
+  onRemove,
+}: ProgressionWidgetProps) {
   const { data, isLoading, error, refetch } = useExerciseProgression(
     config.exerciseId,
     config.exerciseName
   )
-  const theme = useTheme()
+  const colors = useCadenceColors()
   const [width, setWidth] = useState(0)
   const points =
     config.metric === 'oneRm'
@@ -34,117 +40,114 @@ export function ProgressionWidget({ config, preview = false }: ProgressionWidget
       : config.metric === 'volume'
         ? data?.volumeProgression
         : data?.maxWeightProgression
-  const chartData = (points ?? []).map((point) => ({
-    value: point.value,
-    label: new Date(`${point.date}T12:00:00`).toLocaleDateString('en-US', {
-      day: 'numeric',
-      month: 'short',
-    }),
-  }))
+  const chartData = (points ?? []).map((point) => ({ value: point.value, label: '' }))
   const value = data?.personalRecords[config.metric]
   const noHistory = error === 'No exercise data available'
-  const inset = getTokenValue('$field', 'space')
-  const chartWidth = Math.max(0, width - inset * 2)
+  const chartWidth = Math.max(0, width)
+  const firstDate = points?.[0]?.date
+  const lastDate = points?.[points.length - 1]?.date
+  const dateRangeLabel =
+    firstDate && lastDate
+      ? `Trend from ${formatProgressionDate(firstDate)} to ${formatProgressionDate(lastDate)}`
+      : undefined
 
   return (
-    <Card
-      p="$field"
-      bg="$surface"
-      borderColor="$borderColor"
-      borderWidth={1}
-      rounded={preview ? '$menu' : '$card'}
-      gap="$field"
-    >
-      <XStack items="center" justify="space-between" gap="$field">
-        <YStack flex={1} gap="$compact">
-          <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
+    <View className="w-full gap-field rounded-card border border-divider bg-surface p-card">
+      <View className="flex-row items-start justify-between gap-field">
+        <View className="min-w-0 flex-1 gap-compact">
+          <UiText textRole="bodyEmphasis" accessibilityRole="header">
             {data?.exerciseName ?? config.exerciseName}
-          </Text>
-          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-            {getMetricLabel(config.metric)}
-          </Text>
-        </YStack>
-        {value !== undefined && (
-          <XStack items="baseline" gap="$compact">
-            <Text fontSize="$metric" lineHeight="$metric" fontWeight="600">
-              {value.toLocaleString()}
-            </Text>
-            <Text fontSize="$caption" color="$colorSubtle">
-              {getMetricUnit(config.metric)}
-            </Text>
-          </XStack>
+          </UiText>
+          <UiText textRole="meta">{getMetricLabel(config.metric)}</UiText>
+        </View>
+        {!preview && (onManage || onRemove) && (
+          <ActionMenu
+            label={`Actions for ${config.exerciseName} progression widget`}
+            actions={[
+              ...(onManage ? [{ label: 'Manage widgets', onPress: onManage }] : []),
+              ...(onRemove
+                ? [{ label: 'Remove widget', destructive: true, onPress: onRemove }]
+                : []),
+            ]}
+          />
         )}
-      </XStack>
+      </View>
+
+      {value !== undefined && (
+        <View className="flex-row items-baseline gap-compact">
+          <UiText textRole="cardTitle" className="text-metric">
+            {value.toLocaleString()}
+          </UiText>
+          <UiText textRole="meta">{getMetricUnit(config.metric)}</UiText>
+        </View>
+      )}
+
       {isLoading && (
-        <YStack items="center" gap="$compact" py="$field">
-          <Spinner size="small" color="$primary" />
-          <Text fontSize="$caption" color="$colorSubtle">
-            Loading progression...
-          </Text>
-        </YStack>
+        <View className="items-center gap-compact py-field">
+          <ActivityIndicator size="small" color={colors.accent} />
+          <UiText textRole="caption">Loading progression...</UiText>
+        </View>
       )}
+
       {error && !noHistory && !isLoading && (
-        <YStack gap="$compact">
-          <Text fontSize="$caption" color="$destructive">
+        <View className="gap-compact">
+          <UiText textRole="captionDestructive" selectable>
             {error}
-          </Text>
-          <Button chromeless minH="$touch" onPress={() => void refetch()}>
-            <Text color="$primary">Retry</Text>
+          </UiText>
+          <Button variant="ghost" className="justify-start px-0" onPress={() => void refetch()}>
+            <UiText textRole="captionEmphasis">Retry</UiText>
           </Button>
-        </YStack>
+        </View>
       )}
+
       {chartData.length > 0 && (
-        <YStack onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
-          {chartWidth > 0 && (
-            <LineChart
-              data={chartData}
-              width={chartWidth}
-              height={getTokenValue('$day', 'size')}
-              color={theme.primary.val}
-              thickness={getTokenValue('$0.5', 'space')}
-              dataPointsColor={theme.primary.val}
-              dataPointsRadius={getTokenValue('$compact', 'space')}
-              spacing={Math.max(
-                getTokenValue('$touch', 'size'),
-                chartWidth / Math.max(chartData.length - 1, 1)
-              )}
-              hideYAxisText
-              xAxisLabelTextStyle={{
-                fontSize: getVariableValue(getConfig().fonts.body.size.caption),
-                color: theme.colorSubtle.val,
-              }}
-              hideRules
-              xAxisColor={theme.borderColor.val}
-              yAxisColor={theme.backgroundTransparent.val}
-              backgroundColor={theme.surface.val}
-              initialSpacing={inset}
-              endSpacing={inset}
-            />
-          )}
+        <View className="w-full gap-compact" accessible accessibilityLabel={dateRangeLabel}>
+          <View className="w-full" onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
+            {chartWidth > 0 && (
+              <LineChart
+                data={chartData}
+                width={chartWidth}
+                height={100}
+                color={colors.accent}
+                thickness={2}
+                dataPointsColor={colors.accent}
+                dataPointsRadius={3}
+                spacing={chartData.length > 1 ? chartWidth / (chartData.length - 1) : 0}
+                hideYAxisText
+                hideRules
+                xAxisColor={colors.divider}
+                yAxisColor="transparent"
+                backgroundColor="transparent"
+                initialSpacing={chartData.length === 1 ? chartWidth / 2 : 0}
+                endSpacing={chartData.length === 1 ? chartWidth / 2 : 0}
+              />
+            )}
+          </View>
+          <View className="flex-row justify-between gap-field">
+            {firstDate && <UiText textRole="meta">{formatProgressionDate(firstDate)}</UiText>}
+            {lastDate && lastDate !== firstDate && (
+              <UiText textRole="meta">{formatProgressionDate(lastDate)}</UiText>
+            )}
+          </View>
           {!preview && (
-            <XStack justify="space-between" gap="$field" flexWrap="wrap" mt="$compact">
-              <Text fontSize="$1" color="$colorSubtle">
+            <View className="flex-row flex-wrap justify-between gap-compact">
+              <UiText textRole="meta">
                 {chartData.length} {chartData.length === 1 ? 'session' : 'sessions'}
-              </Text>
-              {data?.lastWorkout && (
-                <Text fontSize="$1" color="$colorSubtle">
-                  Last recorded{' '}
-                  {new Date(data.lastWorkout.createdAt).toLocaleDateString('en-US', {
-                    day: 'numeric',
-                    month: 'short',
-                  })}
-                </Text>
+              </UiText>
+              {lastDate && (
+                <UiText textRole="meta">Last recorded {formatProgressionDate(lastDate)}</UiText>
               )}
-            </XStack>
+            </View>
           )}
-        </YStack>
+        </View>
       )}
+
       {!isLoading && (noHistory || (data && chartData.length === 0)) && (
-        <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+        <UiText textRole="caption">
           No recorded progress yet. Complete a workout with this exercise to see your trend.
-        </Text>
+        </UiText>
       )}
-    </Card>
+    </View>
   )
 }
 

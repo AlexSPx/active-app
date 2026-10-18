@@ -1,46 +1,40 @@
-jest.mock('tamagui', () => {
-  const React = require('react')
-  const primitive =
-    (name) =>
-    ({ children, ...props }) =>
-      React.createElement(name, props, children)
-  return {
-    Card: primitive('Card'),
-    YStack: primitive('YStack'),
-    XStack: primitive('XStack'),
-    Text: primitive('Text'),
-    Button: primitive('Button'),
-    Spinner: primitive('Spinner'),
-    useTheme: () => ({
-      primary: { val: 'accent' },
-      colorSubtle: { val: 'muted' },
-      borderColor: { val: 'border' },
-      backgroundTransparent: { val: 'transparent' },
-      surface: { val: 'surface' },
-    }),
-    getTokenValue: (token) => ({ $field: 12, $day: 96, '$0.5': 2, $compact: 4, $touch: 44 })[token],
-    getVariableValue: (value) => value,
-    getConfig: () => ({ fonts: { body: { size: { caption: 12 } } } }),
-  }
-})
 jest.mock('react-native-gifted-charts', () => {
   const React = require('react')
   return { LineChart: (props) => React.createElement('LineChart', props) }
 })
+jest.mock('../../components/ui/Controls', () => {
+  const React = require('react')
+  return {
+    Button: ({ children, ...props }) => React.createElement('Button', props, children),
+    UiText: ({ children, ...props }) => React.createElement('Text', props, children),
+  }
+})
+jest.mock('../../components/ui/ActionMenu', () => {
+  const React = require('react')
+  return { ActionMenu: (props) => React.createElement('ActionMenu', props) }
+})
+jest.mock('../../components/ui/useCadenceColors', () => ({
+  useCadenceColors: () => ({ accent: '#2D2235', divider: '#DCD0E4', muted: '#76627D' }),
+}))
 jest.mock('../../features/exercises', () => ({ useExerciseProgression: jest.fn() }))
 jest.mock('../../stores/widgetStore', () => ({
   getMetricLabel: (metric) => metric,
   getMetricUnit: () => 'kg',
 }))
+
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 const { useExerciseProgression } = require('../../features/exercises')
 const { ProgressionWidget } = require('../../components/ProgressionWidget')
+
 const refetch = jest.fn()
+const onManage = jest.fn()
+const onRemove = jest.fn()
 const config = { exerciseId: 'bench', exerciseName: 'Bench press', metric: 'maxWeight' }
-const renderers = []
 const text = (renderer) => renderer.root.findAllByType('Text').map((item) => item.children.join(''))
-function render(state) {
+const renderers = []
+
+function render(state, props = {}) {
   useExerciseProgression.mockReturnValue({
     data: null,
     isLoading: false,
@@ -50,11 +44,19 @@ function render(state) {
   })
   let renderer
   act(() => {
-    renderer = create(React.createElement(ProgressionWidget, { config }))
+    renderer = create(
+      React.createElement(ProgressionWidget, {
+        config,
+        onManage,
+        onRemove,
+        ...props,
+      })
+    )
   })
   renderers.push(renderer)
   return renderer
 }
+
 afterEach(() => {
   act(() => renderers.splice(0).forEach((renderer) => renderer.unmount()))
   jest.clearAllMocks()
@@ -62,19 +64,21 @@ afterEach(() => {
 
 test('keeps loading, empty history and retryable errors distinct', () => {
   const loading = render({ isLoading: true })
-  expect(loading.root.findAllByType('Spinner')).toHaveLength(1)
+  expect(text(loading)).toContain('Loading progression...')
+
   const empty = render({ error: 'No exercise data available' })
   expect(text(empty)).toContain(
     'No recorded progress yet. Complete a workout with this exercise to see your trend.'
   )
   expect(empty.root.findAllByType('Button')).toHaveLength(0)
+
   const failed = render({ error: 'Offline' })
   expect(text(failed)).toContain('Offline')
   act(() => failed.root.findByType('Button').props.onPress())
   expect(refetch).toHaveBeenCalledTimes(1)
 })
 
-test('uses the selected metric and measured width with theme and font configuration', () => {
+test('renders a full-width 100px chart with readable date endpoints and the selected metric', () => {
   const renderer = render({
     data: {
       personalRecords: { maxWeight: 45 },
@@ -87,14 +91,37 @@ test('uses the selected metric and measured width with theme and font configurat
       lastWorkout: { createdAt: '2026-09-28T12:00:00' },
     },
   })
-  const plot = renderer.root.findAllByType('YStack').find((item) => item.props.onLayout)
+  const plot = renderer.root.findAll((node) => typeof node.props.onLayout === 'function')[0]
   act(() => plot.props.onLayout({ nativeEvent: { layout: { width: 300 } } }))
+
   const chart = renderer.root.findByType('LineChart')
   expect(chart.props.data.map((point) => point.value)).toEqual([35, 45])
-  expect(chart.props.width).toBe(276)
-  expect(chart.props.color).toBe('accent')
-  expect(chart.props.xAxisLabelTextStyle).toEqual({ fontSize: 12, color: 'muted' })
+  expect(chart.props.width).toBe(300)
+  expect(chart.props.height).toBe(100)
   expect(text(renderer)).toEqual(
-    expect.arrayContaining(['45', '2 sessions', 'Last recorded Sep 28'])
+    expect.arrayContaining(['45', 'Sep 7', 'Sep 28', '2 sessions', 'Last recorded Sep 28'])
   )
+})
+
+test('exposes explicit actions on saved widgets but hides them in the picker preview', () => {
+  const renderer = render({
+    data: {
+      personalRecords: {},
+      maxWeightProgression: [],
+      volumeProgression: [],
+      oneRmProgression: [],
+    },
+  })
+  expect(renderer.root.findByType('ActionMenu').props).toMatchObject({
+    label: 'Actions for Bench press progression widget',
+  })
+  expect(
+    renderer.root.findByType('ActionMenu').props.actions.map((action) => action.label)
+  ).toEqual(['Manage widgets', 'Remove widget'])
+
+  const preview = render(
+    { data: null },
+    { preview: true, onManage: undefined, onRemove: undefined }
+  )
+  expect(preview.root.findAllByType('ActionMenu')).toHaveLength(0)
 })
