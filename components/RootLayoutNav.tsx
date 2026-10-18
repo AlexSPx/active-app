@@ -9,8 +9,18 @@ export function RootLayoutNav() {
   const { theme } = useUniwind()
   const colors = useCadenceColors()
   const titleStyles = useResolveClassNames('text-header font-dm-semibold')
+  const pageHeader = {
+    headerStyle: { backgroundColor: colors.background },
+    headerTintColor: colors.accent,
+    headerTitleAlign: 'left' as const,
+    headerShadowVisible: false,
+    headerTitleStyle: { ...titleStyles, color: colors.foreground },
+  }
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }}>
+    <SafeAreaView
+      edges={['bottom', 'left', 'right']}
+      style={{ flex: 1, backgroundColor: colors.background }}
+    >
       <View className="flex-1 bg-background">
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
         <Stack>
@@ -40,11 +50,8 @@ export function RootLayoutNav() {
             name="exercises/search"
             options={{
               title: 'Search Exercises',
-              headerStyle: {
-                backgroundColor: colors.background,
-              },
-              headerTintColor: colors.foreground,
-              headerTitleStyle: { ...titleStyles, color: colors.foreground },
+              headerBackTitle: 'Workouts',
+              ...pageHeader,
               animation: 'slide_from_right',
               animationDuration: 300,
             }}
@@ -54,11 +61,8 @@ export function RootLayoutNav() {
             name="routines/new"
             options={{
               title: 'Create Routine',
-              headerStyle: {
-                backgroundColor: colors.background,
-              },
-              headerTintColor: colors.foreground,
-              headerTitleStyle: { ...titleStyles, color: colors.foreground },
+              headerBackTitle: 'Routines',
+              ...pageHeader,
               animation: 'slide_from_right',
               animationDuration: 300,
             }}
@@ -68,11 +72,8 @@ export function RootLayoutNav() {
             name="routines/edit"
             options={{
               title: 'Edit Routine',
-              headerStyle: {
-                backgroundColor: colors.background,
-              },
-              headerTintColor: colors.foreground,
-              headerTitleStyle: { ...titleStyles, color: colors.foreground },
+              headerBackTitle: 'Routines',
+              ...pageHeader,
               animation: 'slide_from_right',
               animationDuration: 300,
             }}
@@ -82,11 +83,8 @@ export function RootLayoutNav() {
             name="workouts/new"
             options={{
               title: 'Create Workout',
-              headerStyle: {
-                backgroundColor: colors.background,
-              },
-              headerTintColor: colors.foreground,
-              headerTitleStyle: { ...titleStyles, color: colors.foreground },
+              headerBackTitle: 'Workouts',
+              ...pageHeader,
               animation: 'slide_from_right',
               animationDuration: 300,
             }}
@@ -96,11 +94,8 @@ export function RootLayoutNav() {
             name="workouts/session"
             options={{
               title: 'Workout Session',
-              headerStyle: {
-                backgroundColor: colors.background,
-              },
-              headerTintColor: colors.foreground,
-              headerTitleStyle: { ...titleStyles, color: colors.foreground },
+              headerBackTitle: 'Workouts',
+              ...pageHeader,
               animation: 'fade',
             }}
           />
@@ -109,11 +104,8 @@ export function RootLayoutNav() {
             name="workouts/edit"
             options={{
               title: 'Edit Workout',
-              headerStyle: {
-                backgroundColor: colors.background,
-              },
-              headerTintColor: colors.foreground,
-              headerTitleStyle: { ...titleStyles, color: colors.foreground },
+              headerBackTitle: 'Workouts',
+              ...pageHeader,
               animation: 'slide_from_right',
               animationDuration: 300,
             }}

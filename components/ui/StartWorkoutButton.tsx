@@ -1,5 +1,6 @@
 import { Button, Text } from 'tamagui'
 import { Play } from './icons'
+import { useCadenceColors } from './useCadenceColors'
 
 export interface StartWorkoutButtonProps {
   onPress: () => void
@@ -14,19 +15,22 @@ export function StartWorkoutButton({
   isWorkoutRunning = false,
   size = '$4',
 }: StartWorkoutButtonProps) {
+  const colors = useCadenceColors()
   return (
     <Button
       size={size}
-      bg="$primary"
+      bg={colors.accent}
       minH="$action"
       rounded="$button"
-      pressStyle={{ bg: '$primaryPress' }}
+      pressStyle={{ opacity: 0.88 }}
       disabled={disabled || isWorkoutRunning}
       onPress={onPress}
-      icon={Play}
+      icon={<Play size="$icon" color={colors.onAccent} aria-hidden />}
       opacity={disabled || isWorkoutRunning ? 0.5 : 1}
     >
-      <Text color="$onPrimary">{isWorkoutRunning ? 'Workout in Progress' : 'Start Workout'}</Text>
+      <Text color={colors.onAccent}>
+        {isWorkoutRunning ? 'Workout in Progress' : 'Start Workout'}
+      </Text>
     </Button>
   )
 }

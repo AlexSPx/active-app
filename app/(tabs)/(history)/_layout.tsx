@@ -1,24 +1,36 @@
 import { Stack } from 'expo-router'
-import { getConfig, useTheme } from 'tamagui'
+import { useResolveClassNames } from 'uniwind'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
+import { BackHeaderButton } from '../../../navigation/BackHeaderButton'
 
 export default function HistoryStackLayout() {
-  const theme = useTheme()
+  const colors = useCadenceColors()
+  const titleStyles = useResolveClassNames('text-header font-dm-semibold')
   return (
     <Stack
       screenOptions={{
         headerShadowVisible: false,
         headerShown: true,
-        headerStyle: { backgroundColor: theme.background.val },
-        headerTintColor: theme.primary.val,
+        headerTitleAlign: 'left',
+        headerStyle: { backgroundColor: colors.background },
+        headerTintColor: colors.accent,
         headerTitleStyle: {
-          color: theme.color.val,
-          fontWeight: '700',
-          fontSize: getConfig().fonts.body.size.header as number,
+          ...titleStyles,
+          color: colors.foreground,
         },
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen name="index" options={{ title: 'History' }} />
-      <Stack.Screen name="record/[id]" options={{ title: 'Session record' }} />
+      <Stack.Screen
+        name="record/[id]"
+        options={{
+          title: '',
+          headerBackTitle: 'History',
+          headerBackVisible: false,
+          headerLeft: () => <BackHeaderButton label="History" fallback="/(tabs)/(history)" />,
+        }}
+      />
     </Stack>
   )
 }

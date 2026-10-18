@@ -72,6 +72,7 @@ export const WorkoutSessionExercise = memo(
 
     return (
       <YStack
+        width="100%"
         p="$card"
         gap="$field"
         bg="$surface"
@@ -89,7 +90,7 @@ export const WorkoutSessionExercise = memo(
           </Text>
         </YStack>
         <YStack gap="$compact">
-          <XStack gap="$compact" mb="$compact" items="center">
+          <XStack width="100%" minW={0} gap="$compact" mb="$compact" items="center">
             <Text width="$setRow" text="center" fontSize="$caption" color="$colorSubtle">
               {isCardio ? '#' : 'Set'}
             </Text>

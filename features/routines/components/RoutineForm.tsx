@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import { useNavigation, router } from 'expo-router'
 import { usePreventRemove } from '@react-navigation/native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
   YStack,
   XStack,
@@ -12,7 +11,6 @@ import {
   Button,
   ScrollView,
   Checkbox,
-  getTokenValue,
   useTheme,
 } from 'tamagui'
 import DateTimePicker from '@react-native-community/datetimepicker'
@@ -22,6 +20,8 @@ import { useWorkouts } from '../../workouts'
 import { syncEngine } from '../../../lib/sync'
 import { RoutinePatternEditor } from './RoutinePatternEditor'
 import { routineValidation, switchPatternDraft, type RoutineDraft } from '../routineDraft'
+import { BackHeaderButton } from '../../../navigation/BackHeaderButton'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
 interface RoutineFormProps {
   initialValues?: RoutineDraft
@@ -33,8 +33,8 @@ interface RoutineFormProps {
 export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFormProps) {
   const isEditing = !!initialValues
   const navigation = useNavigation()
-  const insets = useSafeAreaInsets()
   const theme = useTheme()
+  const colors = useCadenceColors()
   const { workouts, loading: loadingWorkouts } = useWorkouts()
   const [initial] = useState<RoutineDraft>(
     () =>
@@ -91,13 +91,17 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
   })
   useEffect(() => {
     navigation.setOptions({
-      title: isEditing ? 'Edit routine' : 'Create routine',
+      title: '',
+      headerBackTitle: 'Routines',
       headerBackVisible: false,
+      headerLeft: () => (
+        <BackHeaderButton label="Routines" fallback="/(tabs)/(workouts)/routines" />
+      ),
       headerRight: () => (
         <Button
           chromeless
           minH="$touch"
-          color="$primary"
+          color={colors.accent}
           disabled={busy}
           onPress={() => router.back()}
         >
@@ -105,7 +109,7 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
         </Button>
       ),
     })
-  }, [navigation, busy, isEditing])
+  }, [navigation, busy, isEditing, colors.accent])
   useEffect(() => {
     if (saved) router.back()
   }, [saved])
@@ -136,6 +140,15 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
           showsVerticalScrollIndicator={false}
         >
           <YStack width="100%" maxW="$content" self="center" p="$page" gap="$section">
+            <Text
+              accessibilityRole="header"
+              fontSize="$screenTitle"
+              lineHeight="$screenTitle"
+              fontWeight="600"
+              color="$color"
+            >
+              {isEditing ? 'Edit routine' : 'Create routine'}
+            </Text>
             {error && (
               <Text
                 accessibilityRole="alert"
@@ -293,7 +306,7 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
           bg="$background"
           px="$page"
           pt="$field"
-          pb={Math.max(insets.bottom, getTokenValue('$card', 'space'))}
+          pb="$card"
         >
           <YStack width="100%" maxW="$content" self="center" gap="$field">
             <Text
@@ -312,8 +325,8 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
             <Button
               minH="$action"
               rounded="$button"
-              bg={issue || busy || loadingWorkouts ? '$backgroundHover' : '$primary'}
-              color={issue || busy || loadingWorkouts ? '$colorMuted' : '$onPrimary'}
+              bg={issue || busy || loadingWorkouts ? '$backgroundHover' : colors.accent}
+              color={issue || busy || loadingWorkouts ? colors.muted : colors.onAccent}
               disabled={!!issue || busy || loadingWorkouts}
               onPress={save}
             >

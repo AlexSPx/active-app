@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react'
 import { YStack, Button, Text } from 'tamagui'
 import { Plus } from '../../../components/ui/icons'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
 export interface WorkoutActionsProps {
   onAddExercise?: () => void
@@ -15,6 +16,7 @@ export function WorkoutActions({
   onCancelWorkout,
   onGoBack,
 }: WorkoutActionsProps) {
+  const colors = useCadenceColors()
   const finishingRef = useRef(false)
   const [isFinishing, setIsFinishing] = useState(false)
 
@@ -45,10 +47,10 @@ export function WorkoutActions({
           height="$action"
           rounded="$button"
           bg="$backgroundStrong"
-          icon={<Plus size="$iconSmall" color="$primary" />}
+          icon={<Plus size="$iconSmall" color={colors.accent} />}
           onPress={onAddExercise}
         >
-          <Text color="$primary" fontSize="$caption">
+          <Text color={colors.accent} fontSize="$caption">
             Add exercise
           </Text>
         </Button>
@@ -57,11 +59,11 @@ export function WorkoutActions({
       <Button
         height="$action"
         rounded="$button"
-        bg="$primary"
+        bg={colors.accent}
         onPress={handleFinishWorkout}
         disabled={isFinishing}
       >
-        <Text color="$onPrimary" fontSize="$caption" fontWeight="$screenTitle">
+        <Text color={colors.onAccent} fontSize="$caption" fontWeight="$screenTitle">
           {isFinishing ? 'Saving…' : 'Finish workout'}
         </Text>
       </Button>

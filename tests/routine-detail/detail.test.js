@@ -1,3 +1,6 @@
+jest.mock('uniwind', () => ({
+  useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
+}))
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 jest.mock('tamagui', () => ({
@@ -141,7 +144,7 @@ test('cycles preserve real day order and rest rows; flexible weeks use any-order
   expect(text(view)).toContain('Monday–Sunday')
   expect(text(view)).not.toMatch(/Day \d|Rest day|per cycle|Repeating cycle/)
   const footer = view.root.findAllByType('YStack').find((node) => node.props.borderTopWidth === 1)
-  expect(footer.props.pb).toBe(24)
+  expect(footer.props.pb).toBe('$page')
   expect(footer.findAllByType('ScrollView')).toHaveLength(0)
   act(() => view.unmount())
 })

@@ -1,18 +1,7 @@
 import { useEffect } from 'react'
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
-import {
-  YStack,
-  Text,
-  ScrollView,
-  XStack,
-  Button,
-  getTokenValue,
-  useTheme,
-  getConfig,
-  getVariableValue,
-} from 'tamagui'
+import { YStack, Text, ScrollView, XStack, Button } from 'tamagui'
 import { ChevronRight } from '../../components/ui/icons'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRoutines, useActiveRoutine } from '../../features/routines'
 import { useWorkouts, MuscleHeatMap } from '../../features/workouts'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
@@ -20,12 +9,13 @@ import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { useSettingsStore } from '../../features/settings'
 import { syncEngine } from '../../lib/sync'
 import { summarizeWorkoutExercises } from '../../utils/workoutUtils'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
+import { BackHeaderButton } from '../../navigation/BackHeaderButton'
 
 export default function RoutineDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
-  const theme = useTheme()
-  const insets = useSafeAreaInsets()
+  const colors = useCadenceColors()
   const { routines, loading, error } = useRoutines()
   const { activeRoutine } = useActiveRoutine()
   const { workouts, loading: workoutsLoading, error: workoutsError, refetch } = useWorkouts()
@@ -67,16 +57,15 @@ export default function RoutineDetailScreen() {
     <YStack flex={1} bg="$background">
       <Stack.Screen
         options={{
-          title: 'Routine',
+          title: '',
           headerBackTitle: 'Routines',
+          headerBackVisible: false,
+          headerLeft: () => (
+            <BackHeaderButton label="Routines" fallback="/(tabs)/(workouts)/routines" />
+          ),
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: theme.background.val },
-          headerTintColor: theme.primary.val,
-          headerTitleStyle: {
-            color: theme.color.val,
-            fontSize: getVariableValue(getConfig().fonts.body.size.header),
-            fontWeight: '700',
-          },
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.accent,
         }}
       />
       {loading && !routine ? (
@@ -103,7 +92,7 @@ export default function RoutineDetailScreen() {
           <ScrollView
             flex={1}
             showsVerticalScrollIndicator={false}
-            contentInsetAdjustmentBehavior="automatic"
+            contentInsetAdjustmentBehavior="never"
           >
             <YStack p="$page" gap="$section" width="100%" maxW="$content" self="center">
               <YStack gap="$field">
@@ -304,19 +293,13 @@ export default function RoutineDetailScreen() {
               </YStack>
             </YStack>
           </ScrollView>
-          <YStack
-            px="$page"
-            pt="$field"
-            pb={Math.max(insets.bottom, getTokenValue('$page', 'space'))}
-            borderTopWidth={1}
-            borderColor="$borderColor"
-          >
+          <YStack px="$page" pt="$field" pb="$page" borderTopWidth={1} borderColor="$borderColor">
             <YStack width="100%" maxW="$content" self="center">
               <Button
                 height="$action"
                 rounded="$button"
-                bg="$primary"
-                color="$onPrimary"
+                bg={colors.accent}
+                color={colors.onAccent}
                 fontSize="$caption"
                 fontWeight="600"
                 onPress={edit}
