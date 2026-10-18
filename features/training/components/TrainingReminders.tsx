@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Button, Paragraph, Text, XStack, YStack } from 'tamagui'
+import { View } from 'react-native'
+import { Button, UiText } from '../../../components/ui/Controls'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useUpdateUser } from '../../settings'
 import { launchFacade } from '../../launch/launchFacade'
@@ -19,45 +20,41 @@ function ReminderControls({ initialFrequency }: { initialFrequency: number }) {
     if (updated) setFrequency(value)
   }
   return (
-    <YStack gap="$field">
-      <Text fontSize="$body" fontWeight="600">
-        Streak reminders
-      </Text>
-      <Paragraph fontSize="$caption" color="$colorSubtle">
-        How often should Active remind you?
-      </Paragraph>
-      <XStack gap="$compact" flexWrap="wrap">
+    <View className="gap-field">
+      <UiText textRole="bodyEmphasis">Streak reminders</UiText>
+      <UiText textRole="caption">How often should Active remind you?</UiText>
+      <View
+        className="flex-row flex-wrap gap-compact"
+        accessibilityRole="radiogroup"
+        accessibilityLabel="Streak reminders"
+      >
         {[0, 1, 2, 3].map((value) => (
           <Button
             key={value}
-            flex={1}
-            height="$touch"
-            rounded="$day"
+            className="flex-1"
+            shape="control"
+            density="compact"
+            variant={frequency === value ? 'selected' : 'secondary'}
             disabled={isUpdating}
-            fontSize="$caption"
-            bg={frequency === value ? '$backgroundAccent' : '$backgroundStrong'}
-            color={frequency === value ? '$primary' : '$colorSubtle'}
             accessibilityRole="radio"
+            accessibilityLabel={value === 0 ? 'Off' : `${value} / day`}
             accessibilityState={{ checked: frequency === value }}
             onPress={() => changeFrequency(value)}
           >
-            {value === 0 ? 'Off' : `${value} / day`}
+            <UiText textRole={frequency === value ? 'captionEmphasis' : 'caption'}>
+              {value === 0 ? 'Off' : `${value} / day`}
+            </UiText>
           </Button>
         ))}
-      </XStack>
-      <Paragraph
-        fontSize="$caption"
-        lineHeight="$caption"
-        color={error ? '$destructive' : '$colorSubtle'}
-        accessibilityLiveRegion="polite"
-      >
+      </View>
+      <UiText textRole={error ? 'captionDestructive' : 'caption'} accessibilityLiveRegion="polite">
         {error ||
           (isUpdating
             ? 'Updating reminders…'
             : frequency === 0
               ? 'Streak reminders off.'
               : `${frequency === 1 ? 'One reminder' : `${frequency} reminders`} per day.`)}
-      </Paragraph>
-    </YStack>
+      </UiText>
+    </View>
   )
 }

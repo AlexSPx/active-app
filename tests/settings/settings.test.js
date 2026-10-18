@@ -42,6 +42,9 @@ jest.mock('tamagui', () => {
   return components
 })
 jest.mock('../../contexts/AuthContext', () => ({ useAuth: jest.fn() }))
+jest.mock('../../config/launchPolicy', () => ({
+  isBackendEnabledForLaunch: jest.fn(() => true),
+}))
 jest.mock('../../components/NotificationPermissions', () => ({
   __esModule: true,
   default: () => null,
@@ -296,18 +299,18 @@ test('Settings keyboard avoidance includes footer and uses the native header off
   Platform.OS = 'android'
 })
 
-test('reminder frequency accepts missing legacy preferences and preserves explicit Off', async () => {
+test('native reminder frequency defaults safely and preserves explicit Off', async () => {
   const { useAuth } = require('../../contexts/AuthContext')
+  const { isBackendEnabledForLaunch } = require('../../config/launchPolicy')
   const { Platform } = require('react-native')
   const PermissionsScreen = require('../../app/(tabs)/settings/permissions').default
-  Platform.OS = 'web'
+  Platform.OS = 'android'
   for (const [user, expected] of [
     [null, '1 / day'],
-    [{ email: 'legacy@example.com' }, '1 / day'],
-    [{ notificationPreferences: null }, '1 / day'],
-    [{ notificationPreferences: {} }, '1 / day'],
-    [{ notificationPreferences: { schedule: [] } }, 'Off'],
-    [{ notificationPreferences: { schedule: ['09:00', '18:00'] } }, '2 / day'],
+    [{ email: 'native@example.com' }, '1 / day'],
+    [{ notificationFrequency: undefined }, '1 / day'],
+    [{ notificationFrequency: 0 }, 'Off'],
+    [{ notificationFrequency: 2 }, '2 / day'],
   ]) {
     useAuth.mockReturnValue({ user })
     let view
@@ -315,24 +318,21 @@ test('reminder frequency accepts missing legacy preferences and preserves explic
       view = create(React.createElement(PermissionsScreen))
     })
     const selected = view.root
-      .findAllByType('Button')
-      .find((button) => button.props.accessibilityState?.checked)
-    expect(selected.props.children).toBe(expected)
+      .findAll((node) => node.props.accessibilityRole === 'radio')
+      .find((radio) => radio.props.accessibilityState?.checked)
+    expect(selected.props.accessibilityLabel).toBe(expected)
     expect(update).not.toHaveBeenCalled()
     await act(async () => view.unmount())
   }
 
   Platform.OS = 'android'
+  isBackendEnabledForLaunch.mockReturnValue(false)
   useAuth.mockReturnValue({ user: { notificationFrequency: 0 } })
   let view
   await act(async () => {
     view = create(React.createElement(PermissionsScreen))
   })
-  const text = view.root.findAllByType('Text').map((node) => node.props.children)
-  expect(text).not.toContain('Streak reminders')
-  expect(
-    view.root.findAllByType('Button').some((button) => button.props.accessibilityRole === 'radio')
-  ).toBe(false)
+  expect(view.root.findAll((node) => node.props.accessibilityRole === 'radio')).toHaveLength(0)
   await act(async () => view.unmount())
   Platform.OS = 'android'
 })

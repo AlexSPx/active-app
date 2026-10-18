@@ -6,9 +6,19 @@ let mockAuthState
 let mockSyncListeners
 let mockNetworkState
 
-jest.mock('react-native', () => ({
-  Alert: { alert: jest.fn() },
-}))
+jest.mock('react-native', () => {
+  const React = require('react')
+  const component = (name) => (props) => React.createElement(name, props, props.children)
+  return {
+    Alert: { alert: jest.fn() },
+    ActivityIndicator: component('ActivityIndicator'),
+    Platform: { OS: 'android' },
+    Pressable: component('Pressable'),
+    Switch: component('Switch'),
+    Text: component('Text'),
+    View: component('View'),
+  }
+})
 jest.mock('../../config/launchPolicy', () => ({
   ...jest.requireActual('../../config/launchPolicy'),
   isSyncEnabledForLaunch: () => true,
@@ -71,6 +81,23 @@ const { syncEngine } = require('../../lib/sync')
 const { useAuthStore } = require('../../stores/authStore')
 const SettingsScreen = require('../../app/(tabs)/settings/sync').default
 
+function buttonLabel(button) {
+  return button
+    .findAllByType('Text')
+    .map((item) => item.props.children)
+    .join('')
+}
+
+function buttons(root) {
+  return root
+    .findAllByType('Pressable')
+    .filter((button) => button.props.accessibilityRole === 'button')
+}
+
+function findButton(root, label) {
+  return buttons(root).find((button) => buttonLabel(button) === label)
+}
+
 function job(overrides = {}) {
   return {
     id: 'private-queue-id',
@@ -127,10 +154,8 @@ test('queued errors use readable item labels and retry the stored job', async ()
   syncEngine.listJobs.mockResolvedValue([job(), unsafeJob])
   const view = await renderScreen()
   const text = view.root.findAllByType('Text').map((item) => item.props.children)
-  const messages = view.root.findAllByType('Paragraph').map((item) => item.props.children)
-  const retry = view.root
-    .findAllByType('Button')
-    .find((button) => button.props.children === 'Retry')
+  const messages = text
+  const retry = findButton(view.root, 'Retry')
 
   expect(text).toContain('Create workout')
   expect(text).toContain('Needs attention')
@@ -152,9 +177,7 @@ test('discard asks for confirmation and keeps the change until confirmed', async
   const otherJob = job({ id: 'another-queue-id', endpoint: 'createRoutine' })
   syncEngine.listJobs.mockResolvedValueOnce([job(), otherJob]).mockResolvedValueOnce([otherJob])
   const view = await renderScreen()
-  const discard = view.root
-    .findAllByType('Button')
-    .find((button) => button.props.children === 'Discard')
+  const discard = findButton(view.root, 'Discard')
 
   await act(async () => discard.props.onPress())
   expect(Alert.alert).toHaveBeenCalledWith(
@@ -179,9 +202,7 @@ test('discard asks for confirmation and keeps the change until confirmed', async
 test('discard warns when a lost reply may hide a completed server change', async () => {
   syncEngine.listJobs.mockResolvedValue([job({ request_payload: '[{"title":"Sent"}]' })])
   const view = await renderScreen()
-  const discard = view.root
-    .findAllByType('Button')
-    .find((button) => button.props.children === 'Discard')
+  const discard = findButton(view.root, 'Discard')
 
   await act(async () => discard.props.onPress())
   expect(Alert.alert.mock.calls[0][1]).toContain('server may already have applied this change')
@@ -194,10 +215,8 @@ test('auth pause offers sign-in and disables retry without clearing queued chang
   const view = await renderScreen()
 
   expect(view.root.findByType('SignInButton').props.label).toBe('Sign in again')
-  expect(view.root.findAllByType('Button').map((button) => button.props.children)).not.toContain(
-    'Retry'
-  )
-  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).toContain(
+  expect(buttons(view.root).map(buttonLabel)).not.toContain('Retry')
+  expect(view.root.findAllByType('Text').map((item) => item.props.children)).toContain(
     'Sign in again to resume syncing.'
   )
   expect(syncEngine.retryJob).not.toHaveBeenCalled()
@@ -211,16 +230,14 @@ test('offline switch stays disabled until saved preferences are restored and off
 
   const offlineSwitch = view.root.findByType('Switch')
   expect(offlineSwitch.props.disabled).toBe(true)
-  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).toContain(
+  expect(view.root.findAllByType('Text').map((item) => item.props.children)).toContain(
     'Could not restore saved offline preference. Server actions are paused.'
   )
-  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).not.toContain(
+  expect(view.root.findAllByType('Text').map((item) => item.props.children)).not.toContain(
     'private storage error'
   )
 
-  const retryRestore = view.root
-    .findAllByType('Button')
-    .find((button) => button.props.children === 'Retry restore')
+  const retryRestore = findButton(view.root, 'Retry restore')
   await act(async () => retryRestore.props.onPress())
   expect(mockNetworkState.retryRestore).toHaveBeenCalledTimes(1)
   await act(async () => view.unmount())
@@ -240,13 +257,9 @@ test('manual offline mode disables server actions while keeping local discard av
   syncEngine.listJobs.mockResolvedValue([job({ status: 'failed' })])
   const view = await renderScreen()
 
-  expect(view.root.findByType('Switch').props.checked).toBe(true)
-  expect(view.root.findAllByType('Button').map((button) => button.props.children)).not.toContain(
-    'Retry'
-  )
-  expect(view.root.findAllByType('Button').map((button) => button.props.children)).toContain(
-    'Discard'
-  )
+  expect(view.root.findByType('Switch').props.value).toBe(true)
+  expect(buttons(view.root).map(buttonLabel)).not.toContain('Retry')
+  expect(buttons(view.root).map(buttonLabel)).toContain('Discard')
   await act(async () => view.unmount())
 })
 
@@ -254,13 +267,13 @@ test('offline preference save errors are handled without exposing storage detail
   mockNetworkState.setManualOffline.mockRejectedValue(new Error('private storage detail'))
   const view = await renderScreen()
 
-  await act(async () => view.root.findByType('Switch').props.onCheckedChange(true))
+  await act(async () => view.root.findByType('Switch').props.onValueChange(true))
 
   expect(mockNetworkState.setManualOffline).toHaveBeenCalledWith(true)
-  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).toContain(
+  expect(view.root.findAllByType('Text').map((item) => item.props.children)).toContain(
     'Could not save offline preference. Please try again.'
   )
-  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).not.toContain(
+  expect(view.root.findAllByType('Text').map((item) => item.props.children)).not.toContain(
     'private storage detail'
   )
   await act(async () => view.unmount())
@@ -284,7 +297,7 @@ test('an older queue snapshot cannot replace a newer refresh for the same accoun
   expect(view.root.findAllByType('Text').map((item) => item.props.children)).not.toContain(
     'Create routine'
   )
-  expect(view.root.findAllByType('Paragraph').map((item) => item.props.children)).toContain(
+  expect(view.root.findAllByType('Text').map((item) => item.props.children)).toContain(
     'You’re all caught up.'
   )
   await act(async () => view.unmount())
@@ -300,9 +313,7 @@ test('late queue results and captured actions are fenced after the account chang
   await act(async () => {
     view = create(React.createElement(SettingsScreen))
   })
-  const staleRetry = view.root
-    .findAllByType('Button')
-    .find((button) => button.props.children === 'Retry')
+  const staleRetry = findButton(view.root, 'Retry')
   const staleRetryAction = staleRetry.props.onPress
   const syncChange = mockSyncListeners.values().next().value
   await act(async () => syncChange())

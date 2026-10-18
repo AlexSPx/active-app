@@ -1,4 +1,4 @@
-import { Paragraph } from 'tamagui'
+import { UiText } from '../../../components/ui/Controls'
 import NotificationPermissions from '../../../components/NotificationPermissions'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
 import { TrainingReminders } from '../../../features/training/components/TrainingReminders'
@@ -11,9 +11,9 @@ export default function PermissionsScreen() {
     >
       <NotificationPermissions />
       <TrainingReminders />
-      <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+      <UiText textRole="caption">
         Your device controls permission access. You can change it at any time in device settings.
-      </Paragraph>
+      </UiText>
     </SettingsPage>
   )
 }

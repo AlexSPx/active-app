@@ -1,6 +1,6 @@
-import { Alert } from 'react-native'
-import { Button, Paragraph, Text, YStack } from 'tamagui'
+import { Alert, View } from 'react-native'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { Button, UiText } from '../../../components/ui/Controls'
 import { launchFacade } from '../../../features/launch/launchFacade'
 import { useAuthStore } from '../../../stores/authStore'
 
@@ -26,9 +26,9 @@ export default function DeviceDataSettingsScreen() {
   if (!localProfile) {
     return (
       <SettingsPage title="Data on this device">
-        <Paragraph color="$colorSubtle">
+        <UiText textRole="bodyMuted">
           Local profile data controls are available when using a device-only training profile.
-        </Paragraph>
+        </UiText>
       </SettingsPage>
     )
   }
@@ -38,27 +38,21 @@ export default function DeviceDataSettingsScreen() {
       title="Data on this device"
       description="Your training profile and workout history are stored on this device."
     >
-      <YStack gap="$field">
-        <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle">
+      <View className="gap-field">
+        <UiText textRole="bodyMuted">
           Permanently delete all training profiles, workouts, routines, workout history,
           measurements, and preferences saved on this device, and cancel local notifications. The
           app will return to profile setup.
-        </Paragraph>
-        <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle">
-          This cannot be undone.
-        </Paragraph>
+        </UiText>
+        <UiText textRole="bodyMuted">This cannot be undone.</UiText>
         <Button
-          height="$action"
-          rounded="$button"
-          bg="$backgroundStrong"
-          color="$destructive"
+          variant="surface"
+          accessibilityLabel="Erase data on this device"
           onPress={confirmErase}
         >
-          <Text color="$destructive" fontWeight="600">
-            Erase data on this device
-          </Text>
+          <UiText textRole="bodyDestructive">Erase data on this device</UiText>
         </Button>
-      </YStack>
+      </View>
     </SettingsPage>
   )
 }
