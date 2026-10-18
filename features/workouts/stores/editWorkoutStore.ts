@@ -53,7 +53,9 @@ export const useEditWorkoutStore = create<EditWorkoutState>((set) => ({
   removeSetFromExercise: (exerciseId, setIndex) =>
     set((state) => ({
       selectedExercises: state.selectedExercises.map((ex) =>
-        ex.id === exerciseId ? { ...ex, sets: ex.sets.filter((_, i) => i !== setIndex) } : ex
+        ex.id === exerciseId && ex.sets.length > 1
+          ? { ...ex, sets: ex.sets.filter((_, i) => i !== setIndex) }
+          : ex
       ),
     })),
   reset: () => set({ selectedExercises: [] }),

@@ -32,13 +32,14 @@ jest.mock('expo-router', () => ({
   Stack: { Screen: (props) => require('react').createElement('Screen', props) },
 }))
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 24 }) }))
-jest.mock('../../features/workouts/hooks/useWorkouts', () => ({ useWorkouts: jest.fn() }))
+jest.mock('../../features/workouts/hooks/useWorkout', () => ({ useWorkout: jest.fn() }))
 jest.mock('../../features/workouts/hooks/useWorkoutManagement', () => ({
   useWorkoutManagement: jest.fn(),
 }))
 jest.mock('../../features/workouts/hooks/useWorkoutIdRemap', () => ({
   useWorkoutIdRemap: jest.fn(),
 }))
+jest.mock('../../lib/sync', () => ({ syncEngine: { resolveId: (_table, id) => id } }))
 jest.mock('../../components/ui/StartWorkoutButton', () => ({
   StartWorkoutButton: (props) => require('react').createElement('Start', props),
 }))
@@ -49,13 +50,15 @@ jest.mock('../../components/ui/ErrorDisplay', () => ({
 const mockPush = jest.fn()
 const { MuscleHeatMap } = require('../../features/workouts/components/MuscleHeatMap')
 const Detail = require('../../app/workouts/[id]').default
-const { useWorkouts } = require('../../features/workouts/hooks/useWorkouts')
+const { useWorkout } = require('../../features/workouts/hooks/useWorkout')
 const { useWorkoutManagement } = require('../../features/workouts/hooks/useWorkoutManagement')
 const text = (view) =>
   view.root
     .findAllByType('Text')
     .map((node) => React.Children.toArray(node.props.children).join(''))
     .join('\n')
+const setWorkoutState = (workout, loading = false, error = null) =>
+  useWorkout.mockReturnValue({ workout, loading, error, refetch: jest.fn() })
 
 test('muscle diagrams preserve named groups, primary precedence, themed neutral parts and narrow widths', () => {
   let view
@@ -112,7 +115,7 @@ test('mixed targets expand to saved set details and Start respects an active wor
       ],
     },
   }
-  useWorkouts.mockReturnValue({ workouts: [workout], loading: false, error: null })
+  setWorkoutState(workout)
   const startWorkout = jest.fn()
   let running = false
   useWorkoutManagement.mockImplementation(() => ({ startWorkout, isWorkoutRunning: () => running }))
@@ -156,7 +159,7 @@ test('mixed targets expand to saved set details and Start respects an active wor
     .find((node) => node.props.className?.includes('border-t border-divider'))
   expect(footer.props.style.paddingBottom).toBe(24)
   expect(footer.findAllByType('ScrollView')).toHaveLength(0)
-  useWorkouts.mockReturnValue({ workouts: [], loading: false, error: null })
+  setWorkoutState(null)
   act(() => view.update(React.createElement(Detail)))
   expect(view.root.findByType('Error').props.message).toBe('Workout not found')
   expect(view.root.findAllByType('Start')).toHaveLength(0)
@@ -171,7 +174,7 @@ test('detail preserves long names and notes, opens the saved workout editor, and
     workoutTemplate: { exercises: [] },
   }
   const startWorkout = jest.fn()
-  useWorkouts.mockReturnValue({ workouts: [workout], loading: false, error: null })
+  setWorkoutState(workout)
   useWorkoutManagement.mockReturnValue({ startWorkout, isWorkoutRunning: () => false })
   let view, edit
   act(() => {
@@ -186,8 +189,14 @@ test('detail preserves long names and notes, opens the saved workout editor, and
   act(() => {
     edit = create(view.root.findByType('Screen').props.options.headerRight())
   })
-  act(() => edit.root.findByType('Pressable').props.onPress())
+  const actions = edit.root.findAllByType('Pressable')
+  act(() => actions[0].props.onPress())
   expect(mockPush).toHaveBeenCalledWith({ pathname: '/workouts/edit', params: { id: workout.id } })
+  act(() => actions[1].props.onPress())
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/workouts/new',
+    params: { duplicateId: workout.id },
+  })
   act(() => {
     edit.unmount()
     view.unmount()
@@ -195,7 +204,7 @@ test('detail preserves long names and notes, opens the saved workout editor, and
 })
 
 test('detail shows loading and missing-workout errors without a start action', () => {
-  useWorkouts.mockReturnValue({ workouts: [], loading: true, error: null })
+  setWorkoutState(null, true)
   useWorkoutManagement.mockReturnValue({ startWorkout: jest.fn(), isWorkoutRunning: () => false })
   let view
   act(() => {
@@ -203,7 +212,7 @@ test('detail shows loading and missing-workout errors without a start action', (
   })
   expect(text(view)).toContain('Loading workout…')
   expect(view.root.findAllByType('Start')).toHaveLength(0)
-  useWorkouts.mockReturnValue({ workouts: [], loading: false, error: 'Could not load workout' })
+  setWorkoutState(null, false, 'Could not load workout')
   act(() => view.update(React.createElement(Detail)))
   expect(view.root.findByType('Error').props.message).toBe('Could not load workout')
   expect(view.root.findAllByType('Start')).toHaveLength(0)

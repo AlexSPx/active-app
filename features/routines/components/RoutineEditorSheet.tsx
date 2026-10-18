@@ -1,9 +1,10 @@
-import { useState } from 'react'
-import { Keyboard } from 'react-native'
-import { YStack, XStack, Text, Input, Button, ScrollView } from 'tamagui'
-import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
-import { Check, Plus } from '../../../components/ui/icons'
+import { useEffect, useRef, useState } from 'react'
+import { Keyboard, KeyboardAvoidingView, Modal, Platform, ScrollView, View } from 'react-native'
 import { router } from 'expo-router'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Button, TextField, UiText } from '../../../components/ui/Controls'
+import { Check, ChevronLeft, Plus, Search } from '../../../components/ui/icons'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import type { ApiWorkout } from '../../../types/api'
 import { toggleWorkoutSelection, workoutMetadata } from '../routineDraft'
 import { syncEngine } from '../../../lib/sync'
@@ -19,8 +20,7 @@ export interface RoutineEditorSheetProps {
 }
 
 export function RoutineEditorSheet(props: RoutineEditorSheetProps) {
-  // Remount the picker when opened: pending choices are discarded on Cancel.
-  return props.open ? <WorkoutPicker {...props} /> : null
+  return <WorkoutPicker {...props} />
 }
 
 function WorkoutPicker({
@@ -32,154 +32,191 @@ function WorkoutPicker({
   context,
   onApply,
 }: RoutineEditorSheetProps) {
-  const changeOpen = (next: boolean) => {
-    if (!next) Keyboard.dismiss()
-    onOpenChange(next)
-  }
+  const colors = useCadenceColors()
+  const insets = useSafeAreaInsets()
+  const wasOpen = useRef(false)
   const [pending, setPending] = useState(selected)
   const [query, setQuery] = useState('')
   const selection = pending.map((id) => syncEngine.resolveId('workouts', id))
   const results = workouts.filter((workout) =>
     workout.title.toLowerCase().includes(query.trim().toLowerCase())
   )
+
+  useEffect(() => {
+    if (open && !wasOpen.current) {
+      setPending(selected)
+      setQuery('')
+    }
+    wasOpen.current = open
+  }, [open, selected])
+
+  const changeOpen = (next: boolean) => {
+    if (!next) Keyboard.dismiss()
+    onOpenChange(next)
+  }
+  const createWorkout = () => {
+    changeOpen(false)
+    router.push('/workouts/new?returnTo=routine')
+  }
+  const title = single ? 'Choose a workout.' : 'Choose workouts.'
+  const help = single
+    ? 'Choose one workout for this training day.'
+    : `${selection.length} selected across all searches.`
+
   return (
-    <CadenceOverlay
-      open={open}
-      onOpenChange={changeOpen}
-      title={single ? 'Choose a workout' : 'Add workouts'}
-      snapPoints={workouts.length ? [90] : undefined}
+    <Modal
+      visible={open}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={() => changeOpen(false)}
     >
-      <YStack flex={workouts.length ? 1 : undefined} gap="$field">
-        <XStack items="center" justify="flex-end">
-          <Button chromeless minH="$touch" color="$primary" onPress={() => changeOpen(false)}>
-            Cancel
-          </Button>
-        </XStack>
-        <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-          For {context}
-        </Text>
-        <Text fontSize="$caption" fontWeight="600">
-          Search saved workouts
-        </Text>
-        <Input
-          accessibilityLabel="Search saved workouts"
-          value={query}
-          onChangeText={setQuery}
-          returnKeyType="done"
-          onSubmitEditing={Keyboard.dismiss}
-          placeholder="Search by workout name"
-          rounded="$control"
-          minH="$action"
-          bg="$surface"
-          fontSize="$body"
-        />
-        <Text fontSize="$caption" color="$colorSubtle">
-          {results.length} {results.length === 1 ? 'workout' : 'workouts'}
-          {query ? ' found' : ' saved'}
-        </Text>
-        <ScrollView
-          flex={workouts.length ? 1 : undefined}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+      <KeyboardAvoidingView
+        className="flex-1 bg-background"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <View
+          className="flex-1 px-page"
+          style={{ paddingTop: insets.top + 4, paddingBottom: insets.bottom + 12 }}
         >
-          <YStack gap="$compact">
-            {results.map((workout) => {
-              const checked = selection.includes(workout.id)
-              return (
-                <Button
-                  key={workout.id}
-                  height="auto"
-                  minH="$action"
-                  p="$field"
-                  rounded="$control"
-                  bg={checked ? '$backgroundAccent' : '$background'}
-                  borderWidth={1}
-                  borderColor={checked ? '$primary' : '$borderColor'}
-                  accessibilityRole={single ? 'radio' : 'checkbox'}
-                  accessibilityState={{ checked }}
-                  onPress={() => setPending(toggleWorkoutSelection(selection, workout.id, single))}
-                >
-                  <XStack width="100%" items="center" gap="$field">
-                    <YStack flex={1} gap="$compact">
-                      <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
-                        {workout.title}
-                      </Text>
-                      <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                        {workoutMetadata(workout)}
-                      </Text>
-                      <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                        {workout.workoutTemplate.exercises
-                          .map((exercise) => exercise.exerciseTitle)
-                          .join(' · ')}
-                      </Text>
-                    </YStack>
-                    <YStack
-                      width="$2"
-                      height="$2"
-                      rounded="$button"
-                      bg={checked ? '$primary' : '$surface'}
-                      borderColor="$borderColor"
-                      borderWidth="$0.5"
-                      justify="center"
-                      items="center"
-                    >
-                      {checked ? (
-                        <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
-                      ) : (
-                        <Plus size="$iconSmall" color="$colorSubtle" strokeWidth={2} />
-                      )}
-                    </YStack>
-                  </XStack>
-                </Button>
-              )
-            })}
-            {!results.length && (
-              <YStack py="$section" gap="$field">
-                <Text fontSize="$header" fontWeight="600">
-                  {workouts.length ? 'No matching workouts' : 'No saved workouts yet'}
-                </Text>
-                <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
-                  {workouts.length
-                    ? 'Try a different workout name.'
-                    : 'Create a workout before adding it to your routine.'}
-                </Text>
-              </YStack>
-            )}
+          <View className="flex-row items-center justify-between">
             <Button
-              bg="$backgroundHover"
-              rounded="$button"
-              minH="$action"
-              color="$primary"
-              onPress={() => {
-                changeOpen(false)
-                router.push('/workouts/new?returnTo=routine')
-              }}
+              variant="ghost"
+              density="compact"
+              className="flex-row justify-start gap-compact pl-0"
+              accessibilityLabel="Back to routine"
+              onPress={() => changeOpen(false)}
             >
-              Create workout ↗
+              <ChevronLeft size={18} color={colors.muted} aria-hidden />
+              <UiText textRole="caption">Routine</UiText>
             </Button>
-          </YStack>
-        </ScrollView>
-        <YStack borderTopWidth={1} borderColor="$borderColor" pt="$field" gap="$field">
-          <Text fontSize="$caption" color="$colorSubtle">
-            {single
-              ? 'Choose one workout for this training day.'
-              : `${pending.length} selected across all searches.`}
-          </Text>
-          <Button
-            bg={single && !pending.length ? '$backgroundHover' : '$primary'}
-            color={single && !pending.length ? '$colorMuted' : '$onPrimary'}
-            rounded="$button"
-            minH="$action"
-            disabled={single && !pending.length}
-            onPress={() => {
-              onApply(selection)
-              changeOpen(false)
-            }}
-          >
-            {single ? 'Done' : `Done · ${pending.length} selected`}
-          </Button>
-        </YStack>
-      </YStack>
-    </CadenceOverlay>
+            <Button variant="ghost" density="compact" onPress={() => changeOpen(false)}>
+              <UiText textRole="captionEmphasis">Cancel</UiText>
+            </Button>
+          </View>
+
+          {workouts.length ? (
+            <View className="flex-1 gap-field pt-section">
+              <View className="gap-field">
+                <View className="gap-compact">
+                  <UiText textRole="screenTitle" accessibilityRole="header">
+                    {title}
+                  </UiText>
+                  <UiText textRole="bodyMuted">For {context}</UiText>
+                </View>
+                <View className="justify-center">
+                  <TextField
+                    accessibilityLabel="Search saved workouts"
+                    value={query}
+                    onChangeText={setQuery}
+                    returnKeyType="done"
+                    onSubmitEditing={Keyboard.dismiss}
+                    placeholder="Search saved workouts"
+                    className="pl-12"
+                  />
+                  <View className="absolute left-compact">
+                    <Search size={18} color={colors.muted} aria-hidden />
+                  </View>
+                </View>
+                <UiText textRole="caption">
+                  {workouts.length} {workouts.length === 1 ? 'workout' : 'workouts'} saved
+                </UiText>
+              </View>
+
+              <ScrollView
+                className="flex-1"
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
+                showsVerticalScrollIndicator={false}
+              >
+                <View className="gap-compact">
+                  {results.map((workout) => {
+                    const checked = selection.includes(workout.id)
+                    return (
+                      <Button
+                        key={workout.id}
+                        variant={checked ? 'selected' : 'surface'}
+                        shape="control"
+                        className="h-auto min-h-action flex-row justify-between gap-field p-field"
+                        accessibilityRole={single ? 'radio' : 'checkbox'}
+                        accessibilityLabel={workout.title}
+                        accessibilityState={{ checked }}
+                        onPress={() =>
+                          setPending(toggleWorkoutSelection(selection, workout.id, single))
+                        }
+                      >
+                        <View className="min-w-0 flex-1 gap-compact">
+                          <UiText textRole="bodyEmphasis" numberOfLines={1}>
+                            {workout.title}
+                          </UiText>
+                          <UiText textRole="caption">{workoutMetadata(workout)}</UiText>
+                          <UiText textRole="caption" numberOfLines={2}>
+                            {workout.workoutTemplate.exercises
+                              .map((exercise) => exercise.exerciseTitle)
+                              .join(' · ')}
+                          </UiText>
+                        </View>
+                        <View
+                          className={`h-6 w-6 items-center justify-center rounded-full border ${checked ? 'border-accent bg-accent' : 'border-divider'}`}
+                        >
+                          {checked ? (
+                            <Check size={15} color={colors.onAccent} strokeWidth={2} />
+                          ) : null}
+                        </View>
+                      </Button>
+                    )
+                  })}
+                  {!results.length && (
+                    <View className="gap-field border-t border-divider py-section">
+                      <UiText textRole="cardTitle">No matching workouts.</UiText>
+                      <UiText textRole="bodyMuted">
+                        Try a different workout name or create a workout in your library.
+                      </UiText>
+                      <Button variant="secondary" onPress={() => setQuery('')}>
+                        Clear search
+                      </Button>
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
+
+              <View className="gap-field border-t border-divider pt-field">
+                <UiText textRole="caption">{help}</UiText>
+                <Button
+                  variant="primary"
+                  disabled={!selection.length}
+                  onPress={() => {
+                    onApply(selection)
+                    changeOpen(false)
+                  }}
+                >
+                  {single ? 'Done' : `Done · ${selection.length} selected`}
+                </Button>
+              </View>
+            </View>
+          ) : (
+            <View className="flex-1 gap-section pt-section">
+              <View className="gap-compact">
+                <UiText textRole="screenTitle" accessibilityRole="header">
+                  {title}
+                </UiText>
+                <UiText textRole="bodyMuted">For {context}</UiText>
+              </View>
+              <View className="gap-field">
+                <UiText textRole="cardTitle">No saved workouts yet</UiText>
+                <UiText textRole="bodyMuted">
+                  Create a workout to add a session to this routine.
+                </UiText>
+                <Button className="h-action flex-row gap-compact" onPress={createWorkout}>
+                  <Plus size={18} color={colors.onAccent} aria-hidden />
+                  <UiText textRole="buttonOnAccent">Create workout</UiText>
+                </Button>
+              </View>
+            </View>
+          )}
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   )
 }

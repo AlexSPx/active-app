@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
+import { View } from 'react-native'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { Text, YStack } from 'tamagui'
+import { Button, UiText } from '../../components/ui/Controls'
+import { ErrorDisplay, LoadingSpinner } from '../../components/ui'
 import { useEditWorkoutStore, useWorkout, useWorkoutMutations } from '../../features/workouts'
 import { apiWorkoutToEditableExercises, buildUpdateWorkoutRequest } from '../../utils/workoutUtils'
 import { WorkoutDraftEditor } from '../../features/workouts/components/WorkoutDraftEditor'
-import { LoadingSpinner } from '../../components/ui'
 import { useWorkoutIdRemap } from '../../features/workouts/hooks/useWorkoutIdRemap'
 import { syncEngine } from '../../lib/sync'
 
@@ -19,6 +20,12 @@ export default function EditWorkoutScreen() {
   const [initial, setInitial] = useState({ name: '', notes: '', signature: '[]' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const hasHydratedWorkout = Boolean(
+    id &&
+    initializedId.current &&
+    syncEngine.resolveId('workouts', initializedId.current) === syncEngine.resolveId('workouts', id)
+  )
+
   useEffect(() => {
     if (!workout || loading || workoutError) return
     if (initializedId.current === workout.id) return
@@ -29,6 +36,7 @@ export default function EditWorkoutScreen() {
       initializedId.current = workout.id
       return
     }
+
     const exercises = apiWorkoutToEditableExercises(workout)
     store.setExercises(exercises)
     setInitial({
@@ -40,7 +48,12 @@ export default function EditWorkoutScreen() {
   }, [workout, loading, workoutError, store.setExercises])
 
   const save = async (name: string, notes: string) => {
-    if (!id || saving) return
+    if (saving) return
+    const initializedWorkoutId = initializedId.current
+    if (!initializedWorkoutId) {
+      setError('Workout details are still loading. Please wait before saving.')
+      return
+    }
     setSaving(true)
     setError(null)
     const payload = buildUpdateWorkoutRequest({
@@ -51,9 +64,10 @@ export default function EditWorkoutScreen() {
           ? store.selectedExercises
           : undefined,
     })
+    const workoutId = syncEngine.resolveId('workouts', initializedWorkoutId)
     if (
       Object.keys(payload).length &&
-      !(await updateWorkout(id, payload, store.selectedExercises))
+      !(await updateWorkout(workoutId, payload, store.selectedExercises))
     ) {
       setError('Failed to update workout. Please try again.')
       setSaving(false)
@@ -62,18 +76,26 @@ export default function EditWorkoutScreen() {
     store.clearExercises()
     router.replace('/(tabs)/(workouts)')
   }
-  if (loading || (workout && initializedId.current === null))
+
+  if (!hasHydratedWorkout && (loading || (workout && !workoutError))) {
     return (
-      <YStack flex={1} items="center" justify="center" bg="$background">
+      <View className="flex-1 items-center justify-center gap-field bg-background">
         <LoadingSpinner />
-      </YStack>
+        <UiText textRole="bodyMuted">Loading workout…</UiText>
+      </View>
     )
-  if (!id || workoutError || !workout)
+  }
+  if (!id || (!hasHydratedWorkout && (workoutError || !workout))) {
     return (
-      <YStack flex={1} bg="$background" p="$page">
-        <Text color="$destructive">{workoutError || 'Workout not found'}</Text>
-      </YStack>
+      <View className="flex-1 items-center justify-center gap-field bg-background p-page">
+        <ErrorDisplay message={workoutError || 'Workout not found'} />
+        <Button variant="secondary" onPress={() => router.back()}>
+          Go back
+        </Button>
+      </View>
     )
+  }
+
   return (
     <WorkoutDraftEditor
       {...store}
@@ -83,7 +105,14 @@ export default function EditWorkoutScreen() {
       initialSignature={initial.signature}
       exercises={store.selectedExercises}
       saving={saving}
-      error={error}
+      error={
+        error ??
+        (hasHydratedWorkout && workoutError
+          ? `Unable to refresh the workout: ${workoutError}. Your draft is still available to save.`
+          : hasHydratedWorkout && !loading && !workout
+            ? 'Workout details are unavailable. Your existing draft is still available to save.'
+            : null)
+      }
       onSave={save}
     />
   )

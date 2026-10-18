@@ -38,6 +38,32 @@ describe('running workout ID remapping', () => {
     })
   })
 
+  it('keeps at least one set in each active exercise', () => {
+    useRunningWorkoutStore.setState((state) => ({
+      runningWorkout: {
+        ...state.runningWorkout,
+        exercises: [
+          {
+            sessionId: 'exercise_1',
+            sessionSets: [
+              { id: 'set_1', reps: null, weight: null, completed: false },
+              { id: 'set_2', reps: null, weight: null, completed: false },
+            ],
+          },
+        ],
+      },
+    }))
+
+    useRunningWorkoutStore.getState().removeExerciseSet('exercise_1', 0)
+    expect(useRunningWorkoutStore.getState().runningWorkout.exercises[0].sessionSets).toHaveLength(
+      1
+    )
+    useRunningWorkoutStore.getState().removeExerciseSet('exercise_1', 0)
+    expect(useRunningWorkoutStore.getState().runningWorkout.exercises[0].sessionSets).toHaveLength(
+      1
+    )
+  })
+
   it('records against the current server ID after the workout is remapped', async () => {
     const result = { kind: 'local', workoutRecord: { id: 'record_1' } }
     const recordWorkout = jest.fn(async () => result)

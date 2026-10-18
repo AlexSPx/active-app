@@ -152,13 +152,13 @@ test('unit switches preserve canonical values and invalid measurements cannot sa
   const buttons = () => view.root.findAllByType(UiButton)
   await act(async () =>
     buttons()
-      .find((button) => button.props.children === 'lb')
+      .find((button) => button.props.accessibilityLabel === 'lb')
       .props.onPress()
   )
   expect(view.root.findByProps({ nativeID: 'body-weight' }).props.value).toBe('165.3')
   await act(async () =>
     buttons()
-      .find((button) => button.props.children === 'kg')
+      .find((button) => button.props.accessibilityLabel === 'kg')
       .props.onPress()
   )
   expect(view.root.findByProps({ nativeID: 'body-weight' }).props.value).toBe('75')

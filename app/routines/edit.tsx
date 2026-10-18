@@ -1,31 +1,48 @@
 import { useLocalSearchParams, router } from 'expo-router'
-import { YStack, Button } from 'tamagui'
+import { View } from 'react-native'
+import { Button } from '../../components/ui/Controls'
 import { syncEngine } from '../../lib/sync'
 import { RoutineForm } from '../../features/routines/components/RoutineForm'
-import { useRoutineMutations, useRoutines } from '../../features/routines'
+import { routineActiveUpdate } from '../../features/routines/routineDraft'
+import { useActiveRoutine, useRoutineMutations, useRoutines } from '../../features/routines'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 
 export default function EditRoutinePage() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const { routines, loading: loadingRoutines } = useRoutines()
-  const { updateRoutine, loading, error } = useRoutineMutations()
-  const routine = routines.find((item) => item.id === syncEngine.resolveId('routines', id))
-  if (loadingRoutines)
+  const { activeRoutine, loading: loadingActive, error: activeError, refetch } = useActiveRoutine()
+  const { updateRoutine, loading, error, clearError } = useRoutineMutations()
+  const resolvedId = syncEngine.resolveId('routines', id)
+  const routine = routines.find((item) => syncEngine.resolveId('routines', item.id) === resolvedId)
+  const initialActive =
+    !!activeRoutine && syncEngine.resolveId('routines', activeRoutine.id) === resolvedId
+
+  if (loadingRoutines || loadingActive)
     return (
-      <YStack flex={1} bg="$background" items="center" justify="center">
+      <View className="flex-1 items-center justify-center bg-background">
         <LoadingSpinner />
-      </YStack>
+      </View>
+    )
+  if (activeError)
+    return (
+      <View className="flex-1 items-center justify-center gap-field bg-background p-page">
+        <ErrorDisplay message="Could not check which routine is active." />
+        <Button variant="secondary" onPress={() => void refetch()}>
+          Try again
+        </Button>
+      </View>
     )
   if (!routine)
     return (
-      <YStack flex={1} bg="$background" items="center" justify="center" p="$page" gap="$field">
+      <View className="flex-1 items-center justify-center gap-field bg-background p-page">
         <ErrorDisplay message="Routine not found" />
-        <Button minH="$action" rounded="$button" onPress={() => router.back()}>
+        <Button variant="secondary" onPress={() => router.back()}>
           Go back
         </Button>
-      </YStack>
+      </View>
     )
+
   return (
     <RoutineForm
       key={id}
@@ -34,11 +51,12 @@ export default function EditRoutinePage() {
         description: routine.description ?? '',
         routineType: routine.routineType ?? 'SEQUENTIAL',
         pattern: routine.pattern.map((day) => ({ ...day, workoutId: day.workoutId ?? null })),
-        active: false,
+        active: initialActive,
         startDate: routine.startDate ? new Date(routine.startDate) : new Date(),
       }}
       loading={loading}
       error={error}
+      onClearError={clearError}
       onSave={async (data) =>
         !!(await updateRoutine(routine.id, {
           name: data.name.trim(),
@@ -49,8 +67,8 @@ export default function EditRoutinePage() {
             dayIndex: index + 1,
             workoutId: day.dayType === 'REST' ? null : day.workoutId,
           })),
-          active: data.active || undefined,
-          startDate: data.startDate.toISOString(),
+          ...routineActiveUpdate(initialActive, data.active),
+          ...(data.active ? { startDate: data.startDate.toISOString() } : {}),
         }))
       }
     />

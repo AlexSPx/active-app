@@ -2,6 +2,7 @@ const {
   switchPatternDraft,
   applyWorkoutSelection,
   toggleWorkoutSelection,
+  routineActiveUpdate,
   routineValidation,
   workoutMetadata,
 } = require('../../features/routines/routineDraft')
@@ -28,6 +29,23 @@ test('pattern drafts and pending search selections survive switching without acc
   expect(applyWorkoutSelection(weekly, ['lower'])).toEqual([
     { dayIndex: 1, dayType: 'WORKOUT', workoutId: 'lower' },
   ])
+  expect(
+    applyWorkoutSelection(
+      [
+        { dayIndex: 1, dayType: 'WORKOUT', workoutId: 'upper' },
+        { dayIndex: 2, dayType: 'WORKOUT', workoutId: 'lower' },
+      ],
+      ['upper', 'lower', 'core']
+    )
+  ).toEqual([
+    { dayIndex: 1, dayType: 'WORKOUT', workoutId: 'upper' },
+    { dayIndex: 2, dayType: 'WORKOUT', workoutId: 'lower' },
+    { dayIndex: 3, dayType: 'WORKOUT', workoutId: 'core' },
+  ])
+  expect(routineActiveUpdate(true, true)).toEqual({})
+  expect(routineActiveUpdate(false, false)).toEqual({})
+  expect(routineActiveUpdate(true, false)).toEqual({ active: false })
+  expect(routineActiveUpdate(false, true)).toEqual({ active: true })
 
   const data = {
     name: 'Strength',

@@ -1,10 +1,10 @@
-import { YStack, Text, XStack, View } from 'tamagui'
-import { Check, Plus } from '../../../components/ui/icons'
-import { FlashList } from '@shopify/flash-list'
 import { memo, useCallback } from 'react'
-import type { Exercise } from '../../../types/workout'
+import { FlashList } from '@shopify/flash-list'
+import { Pressable, View } from 'react-native'
+import { UiText } from '../../../components/ui/Controls'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
+import type { Exercise } from '../../../types/workout'
 
 interface ExerciseListProps {
   exercises: Exercise[]
@@ -16,6 +16,8 @@ interface ExerciseListProps {
   selectedExerciseIds?: Set<string>
 }
 
+const EMPTY_SELECTION: Set<string> = new Set()
+
 export const ExerciseList = memo(function ExerciseList({
   exercises,
   loading,
@@ -23,7 +25,7 @@ export const ExerciseList = memo(function ExerciseList({
   onExerciseSelect,
   onRetry,
   emptyMessage = 'No exercises found',
-  selectedExerciseIds = new Set<string>(),
+  selectedExerciseIds = EMPTY_SELECTION,
 }: ExerciseListProps) {
   const renderExercise = useCallback(
     ({ item: exercise }: { item: Exercise }) => (
@@ -35,30 +37,22 @@ export const ExerciseList = memo(function ExerciseList({
     ),
     [onExerciseSelect, selectedExerciseIds]
   )
-
   const keyExtractor = useCallback((item: Exercise) => item.id, [])
 
-  if (loading) {
-    return <LoadingSpinner text="Loading exercises..." />
-  }
-
-  if (error) {
-    return <ErrorDisplay message={error} onRetry={onRetry} />
-  }
-
+  if (loading) return <LoadingSpinner text="Loading exercises…" />
+  if (error) return <ErrorDisplay message={error} onRetry={onRetry} />
   if (exercises.length === 0) {
     return (
-      <YStack p="$field">
-        <Text fontSize="$exerciseTitle" color="$colorSubtle">
-          {emptyMessage}
-        </Text>
-      </YStack>
+      <View className="gap-compact p-field" accessibilityLiveRegion="polite">
+        <UiText textRole="bodyMuted">{emptyMessage}</UiText>
+      </View>
     )
   }
 
   return (
-    <View flex={1}>
+    <View className="flex-1">
       <FlashList
+        style={{ flex: 1 }}
         data={exercises}
         renderItem={renderExercise}
         keyExtractor={keyExtractor}
@@ -81,58 +75,31 @@ const ExerciseRow = memo(function ExerciseRow({
   onSelect,
   isSelected,
 }: ExerciseRowProps) {
-  const handlePress = useCallback(() => {
-    onSelect(exercise)
-  }, [onSelect, exercise])
-
   const muscle = exercise.primaryMuscles[0] || 'Other'
-
   return (
-    <XStack
-      p="$field"
-      bg={isSelected ? '$backgroundAccent' : '$background'}
-      borderBottomWidth="$0.5"
-      borderWidth={isSelected ? '$0.5' : '$0'}
-      rounded={isSelected ? '$control' : '$0'}
-      mb="$compact"
-      minH="$6"
-      borderColor={isSelected ? '$primary' : '$borderColor'}
-      pressStyle={{
-        background: isSelected ? '$backgroundAccentHover' : '$surfaceHover',
-      }}
-      cursor="pointer"
+    <Pressable
+      className={`mb-compact min-h-touch flex-row items-center justify-between gap-field rounded-control border p-field active:bg-raised ${isSelected ? 'border-accent bg-raised' : 'border-divider bg-background'}`}
+      onPress={() => onSelect(exercise)}
       accessibilityRole="checkbox"
-      accessibilityLabel={`${exercise.name}, ${muscle}${exercise.equipment ? `, Equipment: ${exercise.equipment}` : ''}`}
+      accessibilityLabel={`${exercise.name}, ${muscle}${exercise.equipment ? `, equipment: ${exercise.equipment}` : ''}`}
       accessibilityState={{ checked: isSelected }}
-      onPress={handlePress}
     >
-      <XStack flex={1} justify="space-between" items="center" gap="$field">
-        <YStack flex={1} gap="$compact">
-          <Text fontSize="$exerciseTitle" fontWeight="$exerciseTitle" color="$color">
-            {exercise.name}
-          </Text>
-          <Text fontSize="$caption" color={isSelected ? '$colorMuted' : '$colorSubtle'}>
-            {muscle}
-            {exercise.equipment ? ` · ${exercise.equipment}` : ''}
-          </Text>
-        </YStack>
-        <YStack
-          width="$2"
-          height="$2"
-          rounded="$button"
-          bg={isSelected ? '$primary' : '$surface'}
-          borderColor="$borderColor"
-          borderWidth="$0.5"
-          justify="center"
-          items="center"
-        >
-          {isSelected ? (
-            <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
-          ) : (
-            <Plus size="$iconSmall" color="$colorSubtle" strokeWidth={2} />
-          )}
-        </YStack>
-      </XStack>
-    </XStack>
+      <View className="min-w-0 flex-1 gap-compact">
+        <UiText textRole="bodyEmphasis">{exercise.name}</UiText>
+        <UiText textRole={isSelected ? 'captionEmphasis' : 'caption'}>
+          {muscle}
+          {exercise.equipment ? ` · ${exercise.equipment}` : ''}
+        </UiText>
+      </View>
+      <View
+        className={`h-8 w-8 items-center justify-center rounded-control border ${isSelected ? 'border-accent bg-accent' : 'border-divider bg-surface'}`}
+        accessible={false}
+        importantForAccessibility="no"
+      >
+        <UiText textRole={isSelected ? 'bodyOnAccent' : 'bodyMuted'}>
+          {isSelected ? '✓' : '+'}
+        </UiText>
+      </View>
+    </Pressable>
   )
 })

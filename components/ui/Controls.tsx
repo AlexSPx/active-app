@@ -270,7 +270,7 @@ export function SegmentedSelection<T extends string>({
             accessibilityState={{ checked: selected }}
             onPress={() => onValueChange(option.value)}
           >
-            {option.label}
+            <UiText textRole="bodyEmphasis">{option.label}</UiText>
           </Button>
         )
       })}

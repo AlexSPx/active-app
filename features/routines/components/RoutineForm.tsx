@@ -1,20 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Alert, KeyboardAvoidingView, Platform } from 'react-native'
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, View } from 'react-native'
 import { useNavigation, router } from 'expo-router'
 import { usePreventRemove } from '@react-navigation/native'
-import {
-  YStack,
-  XStack,
-  Text,
-  Input,
-  TextArea,
-  Button,
-  ScrollView,
-  Checkbox,
-  useTheme,
-} from 'tamagui'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { Check } from '../../../components/ui/icons'
+import { Button, SegmentedSelection, TextField, UiText } from '../../../components/ui/Controls'
 import type { RoutinePatternItem, RoutineType } from '../../../types/routine'
 import { useWorkouts } from '../../workouts'
 import { syncEngine } from '../../../lib/sync'
@@ -27,13 +16,19 @@ interface RoutineFormProps {
   initialValues?: RoutineDraft
   loading: boolean
   error: string | null
+  onClearError?: () => void
   onSave: (data: RoutineDraft) => Promise<boolean>
 }
 
-export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFormProps) {
+export function RoutineForm({
+  initialValues,
+  loading,
+  error,
+  onClearError,
+  onSave,
+}: RoutineFormProps) {
   const isEditing = !!initialValues
   const navigation = useNavigation()
-  const theme = useTheme()
   const colors = useCadenceColors()
   const { workouts, loading: loadingWorkouts } = useWorkouts()
   const [initial] = useState<RoutineDraft>(
@@ -52,7 +47,6 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
     SEQUENTIAL: initial.routineType === 'SEQUENTIAL' ? initial.pattern : null,
     WEEKLY_COMPLETION: initial.routineType === 'WEEKLY_COMPLETION' ? initial.pattern : null,
   })
-  const [notesOpen, setNotesOpen] = useState(false)
   const [dateOpen, setDateOpen] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -72,8 +66,12 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
     },
     workouts.map((workout) => workout.id)
   )
-  const update = <K extends keyof RoutineDraft>(key: K, value: RoutineDraft[K]) =>
+  const update = <K extends keyof RoutineDraft>(key: K, value: RoutineDraft[K]) => {
+    onClearError?.()
+    setSaved(false)
     setData((current) => ({ ...current, [key]: value }))
+  }
+
   usePreventRemove((dirty || busy) && !saved, ({ data: event }) => {
     if (busy) return
     Alert.alert(
@@ -89,6 +87,7 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
       ]
     )
   })
+
   useEffect(() => {
     navigation.setOptions({
       title: '',
@@ -98,29 +97,29 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
         <BackHeaderButton label="Routines" fallback="/(tabs)/(workouts)/routines" />
       ),
       headerRight: () => (
-        <Button
-          chromeless
-          minH="$touch"
-          color={colors.accent}
-          disabled={busy}
-          onPress={() => router.back()}
-        >
-          Cancel
+        <Button variant="ghost" density="compact" disabled={busy} onPress={() => router.back()}>
+          <UiText textRole="captionEmphasis">Cancel</UiText>
         </Button>
       ),
     })
-  }, [navigation, busy, isEditing, colors.accent])
+  }, [navigation, busy])
+
   useEffect(() => {
     if (saved) router.back()
   }, [saved])
+
   const changeType = (type: RoutineType) => {
     if (type === data.routineType) return
+    onClearError?.()
+    setSaved(false)
     const next = switchPatternDraft(drafts, data.routineType, data.pattern, type)
     setDrafts(next)
     setData((current) => ({ ...current, routineType: type, pattern: next[type] ?? [] }))
   }
+
   const save = async () => {
     if (issue || busy || loadingWorkouts) return
+    onClearError?.()
     setSaving(true)
     try {
       if (await onSave({ ...data, name: data.name.trim() })) setSaved(true)
@@ -128,213 +127,136 @@ export function RoutineForm({ initialValues, loading, error, onSave }: RoutineFo
       setSaving(false)
     }
   }
+
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      className="flex-1 bg-background"
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <YStack flex={1} bg="$background">
-        <ScrollView
-          flex={1}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          <YStack width="100%" maxW="$content" self="center" p="$page" gap="$section">
-            <Text
-              accessibilityRole="header"
-              fontSize="$screenTitle"
-              lineHeight="$screenTitle"
-              fontWeight="600"
-              color="$color"
-            >
-              {isEditing ? 'Edit routine' : 'Create routine'}
-            </Text>
-            {error && (
-              <Text
-                accessibilityRole="alert"
-                color="$destructive"
-                fontSize="$body"
-                lineHeight="$body"
-              >
-                {error}
-              </Text>
-            )}
-            <YStack gap="$field">
-              <XStack items="center" justify="space-between">
-                <Text fontSize="$caption" fontWeight="600">
-                  Routine name
-                </Text>
-                <Button
-                  chromeless
-                  color="$primary"
-                  minH="$touch"
-                  px="$0"
-                  accessibilityLabel={
-                    notesOpen ? 'Hide routine notes' : 'Edit optional routine notes'
-                  }
-                  accessibilityState={{ expanded: notesOpen }}
-                  onPress={() => setNotesOpen(!notesOpen)}
-                >
-                  {notesOpen ? 'Hide notes' : data.description ? 'Edit notes' : '+ Notes'}
-                </Button>
-              </XStack>
-              <Input
-                accessibilityLabel="Routine name"
-                value={data.name}
-                onChangeText={(value) => update('name', value)}
-                placeholder="e.g. Strength & recovery"
-                maxLength={100}
-                rounded="$control"
-                minH="$action"
-                bg="$surface"
-                fontSize="$body"
+      <ScrollView
+        className="flex-1"
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="w-full max-w-3xl self-center gap-section p-page">
+          <UiText textRole="screenTitle" accessibilityRole="header">
+            {isEditing ? 'Edit routine.' : 'Create routine.'}
+          </UiText>
+
+          {!!error && (
+            <UiText textRole="bodyDestructive" accessibilityRole="alert">
+              {error}
+            </UiText>
+          )}
+
+          <View className="gap-field">
+            <UiText textRole="captionEmphasis">Routine name</UiText>
+            <TextField
+              accessibilityLabel="Routine name"
+              value={data.name}
+              onChangeText={(value) => update('name', value)}
+              placeholder="e.g. Strength & recovery"
+              maxLength={100}
+              returnKeyType="done"
+            />
+            <View className="gap-compact">
+              <View className="flex-row items-center justify-between">
+                <UiText textRole="captionEmphasis">Notes</UiText>
+                <UiText textRole="caption">Optional</UiText>
+              </View>
+              <TextField
+                accessibilityLabel="Routine notes, optional"
+                multiline
+                textAlignVertical="top"
+                className="h-20 min-h-20 py-field"
+                value={data.description ?? ''}
+                onChangeText={(value) => update('description', value)}
+                placeholder="Your approach to this routine"
+                maxLength={500}
               />
-              {notesOpen && (
-                <TextArea
-                  accessibilityLabel="Routine notes"
-                  value={data.description ?? ''}
-                  onChangeText={(value) => update('description', value)}
-                  placeholder="Anything to remember for this routine"
-                  maxLength={500}
-                  rounded="$control"
-                  minH="$day"
-                  bg="$surface"
-                  fontSize="$body"
-                  lineHeight="$body"
+            </View>
+          </View>
+
+          <View className="gap-field">
+            <UiText textRole="cardTitle" accessibilityRole="header">
+              Training pattern
+            </UiText>
+            <SegmentedSelection
+              value={data.routineType}
+              options={[
+                { value: 'SEQUENTIAL', label: 'Repeating cycle' },
+                { value: 'WEEKLY_COMPLETION', label: 'Flexible week' },
+              ]}
+              onValueChange={changeType}
+              accessibilityLabel="Routine pattern type"
+            />
+            <UiText textRole="bodyMuted">
+              {data.routineType === 'SEQUENTIAL'
+                ? 'Repeat training and rest days in a set order.'
+                : 'Complete these workouts in any order each week.'}
+            </UiText>
+            <RoutinePatternEditor
+              key={data.routineType}
+              pattern={data.pattern}
+              onChange={(pattern) => update('pattern', pattern)}
+              hideRestOption={data.routineType === 'WEEKLY_COMPLETION'}
+              routineName={data.name}
+            />
+          </View>
+
+          <View className="gap-field border-t border-divider pt-section">
+            <View className="gap-field">
+              <UiText textRole="captionEmphasis">Start date</UiText>
+              <Button
+                variant="surface"
+                accessibilityLabel={`Start date, ${data.startDate.toLocaleDateString()}`}
+                onPress={() => setDateOpen((open) => !open)}
+              >
+                {data.startDate.toLocaleDateString()}
+              </Button>
+              {dateOpen && (
+                <DateTimePicker
+                  value={data.startDate}
+                  mode="date"
+                  accentColor={colors.accent}
+                  textColor={colors.foreground}
+                  onChange={(_, date) => {
+                    if (Platform.OS === 'android') setDateOpen(false)
+                    if (date) update('startDate', date)
+                  }}
                 />
               )}
-            </YStack>
-            <YStack gap="$field">
-              <Text fontSize="$sectionTitle" lineHeight="$sectionTitle" fontWeight="600">
-                Training pattern
-              </Text>
-              <XStack bg="$backgroundHover" p="$compact" rounded="$menu" gap="$compact">
-                {(['SEQUENTIAL', 'WEEKLY_COMPLETION'] as const).map((type) => (
-                  <Button
-                    key={type}
-                    flex={1}
-                    px="$compact"
-                    minH="$touch"
-                    rounded="$control"
-                    bg={data.routineType === type ? '$surface' : '$backgroundTransparent'}
-                    color={data.routineType === type ? '$primary' : '$colorSubtle'}
-                    fontSize="$caption"
-                    accessibilityState={{ selected: data.routineType === type }}
-                    onPress={() => changeType(type)}
-                  >
-                    {type === 'SEQUENTIAL' ? 'Repeating cycle' : 'Flexible week'}
-                  </Button>
-                ))}
-              </XStack>
-              <RoutinePatternEditor
-                key={data.routineType}
-                pattern={data.pattern}
-                onChange={(pattern) => update('pattern', pattern)}
-                hideRestOption={data.routineType === 'WEEKLY_COMPLETION'}
-                routineName={data.name}
+            </View>
+            <View className="flex-row items-center gap-field">
+              <Switch
+                value={data.active}
+                onValueChange={(active) => update('active', active)}
+                accessibilityLabel="Set as active routine"
+                trackColor={{ false: colors.divider, true: colors.accent }}
+                thumbColor={data.active ? colors.onAccent : colors.background}
               />
-            </YStack>
-            <YStack borderTopWidth={1} borderColor="$borderColor" pt="$section" gap="$field">
-              <XStack items="center" gap="$field">
-                <Checkbox
-                  checked={data.active}
-                  onCheckedChange={(checked) => update('active', checked === true)}
-                  size="$2"
-                  rounded="$block"
-                  borderColor={data.active ? '$primary' : '$borderColor'}
-                  bg={data.active ? '$primary' : '$surface'}
-                  accessibilityLabel="Set as active routine"
-                >
-                  <Checkbox.Indicator>
-                    <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
-                  </Checkbox.Indicator>
-                </Checkbox>
-                <Button
-                  chromeless
-                  px="$0"
-                  minH="$touch"
-                  onPress={() => update('active', !data.active)}
-                >
-                  <Text fontSize="$caption" fontWeight="600">
-                    Set as active routine
-                  </Text>
-                </Button>
-              </XStack>
-              <Text color="$colorSubtle" fontSize="$caption" lineHeight="$caption">
-                Use this routine for your training schedule.
-              </Text>
-              {data.active && (
-                <YStack gap="$field">
-                  <Text fontSize="$caption" fontWeight="600">
-                    Start date
-                  </Text>
-                  <Button
-                    bg="$surface"
-                    rounded="$control"
-                    borderWidth={1}
-                    borderColor="$borderColor"
-                    minH="$action"
-                    onPress={() => setDateOpen(!dateOpen)}
-                  >
-                    {data.startDate.toLocaleDateString()}
-                  </Button>
-                  {dateOpen && (
-                    <DateTimePicker
-                      value={data.startDate}
-                      mode="date"
-                      accentColor={theme.primary.val}
-                      textColor={theme.color.val}
-                      onChange={(_, date) => {
-                        if (Platform.OS === 'android') setDateOpen(false)
-                        if (date) update('startDate', date)
-                      }}
-                    />
-                  )}
-                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                    {data.routineType === 'SEQUENTIAL'
-                      ? 'Day 1 starts on this date.'
-                      : 'Complete the sessions each Monday–Sunday week.'}
-                  </Text>
-                </YStack>
-              )}
-            </YStack>
-          </YStack>
-        </ScrollView>
-        <YStack
-          borderTopWidth={1}
-          borderColor="$borderColor"
-          bg="$background"
-          px="$page"
-          pt="$field"
-          pb="$card"
-        >
-          <YStack width="100%" maxW="$content" self="center" gap="$field">
-            <Text
-              accessibilityLiveRegion="polite"
-              fontSize="$caption"
-              lineHeight="$caption"
-              color="$colorSubtle"
-            >
-              {loadingWorkouts
-                ? 'Loading saved workouts…'
-                : issue ||
-                  (data.active
-                    ? 'Ready to save and set as active.'
-                    : 'Ready to save. Activate it later from your routines.')}
-            </Text>
-            <Button
-              minH="$action"
-              rounded="$button"
-              bg={issue || busy || loadingWorkouts ? '$backgroundHover' : colors.accent}
-              color={issue || busy || loadingWorkouts ? colors.muted : colors.onAccent}
-              disabled={!!issue || busy || loadingWorkouts}
-              onPress={save}
-            >
-              {busy ? 'Saving…' : data.active ? 'Save & set active' : 'Save routine'}
-            </Button>
-          </YStack>
-        </YStack>
-      </YStack>
+              <UiText textRole="captionEmphasis">Set as active routine</UiText>
+            </View>
+            <UiText textRole="caption">Use this routine for your training schedule.</UiText>
+          </View>
+        </View>
+      </ScrollView>
+
+      <View className="border-t border-divider bg-background px-page pb-card pt-field">
+        <View className="w-full max-w-3xl self-center gap-field">
+          <UiText textRole="caption" accessibilityLiveRegion="polite">
+            {loadingWorkouts
+              ? 'Loading saved workouts…'
+              : issue ||
+                (data.active
+                  ? 'Ready to save and set as active.'
+                  : 'Ready to save. Activate it later from your routines.')}
+          </UiText>
+          <Button disabled={!!issue || busy || loadingWorkouts} onPress={save} className="h-action">
+            {busy ? 'Saving…' : data.active ? 'Save & set active' : 'Save routine'}
+          </Button>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   )
 }

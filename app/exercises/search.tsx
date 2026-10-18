@@ -1,6 +1,9 @@
 import { useState, useEffect, useMemo } from 'react'
-import { Button, Input, Text, XStack, YStack } from 'tamagui'
+import { View } from 'react-native'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
+import { Button, SegmentedSelection, TextField, UiText } from '../../components/ui/Controls'
+import { Search } from '../../components/ui/icons'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
 import { useWorkoutStore, useEditWorkoutStore } from '../../features/workouts'
 import { useExerciseSearch, ExerciseList } from '../../features/exercises'
 import { toggleExerciseSelection } from '../../utils/workoutUtils'
@@ -8,7 +11,14 @@ import type { Exercise } from '../../types/workout'
 import { useQueryClient } from '@tanstack/react-query'
 import { useProfileQueryKeys } from '../../lib/hooks/useProfileQueryKeys'
 import { BackHeaderButton } from '../../navigation/BackHeaderButton'
-import { useCadenceColors } from '../../components/ui/useCadenceColors'
+
+type CategoryFilter = 'All' | 'Strength' | 'Cardio'
+
+const categoryOptions: { value: CategoryFilter; label: string }[] = [
+  { value: 'All', label: 'All' },
+  { value: 'Strength', label: 'Strength' },
+  { value: 'Cardio', label: 'Cardio' },
+]
 
 export default function SearchExerciseScreen() {
   const router = useRouter()
@@ -20,11 +30,12 @@ export default function SearchExerciseScreen() {
   const [original] = useState(store.selectedExercises)
   const [pending, setPending] = useState(original)
   const [search, setSearch] = useState('')
-  const [category, setCategory] = useState('All')
+  const [category, setCategory] = useState<CategoryFilter>('All')
   const queryClient = useQueryClient()
   const ownerKeys = useProfileQueryKeys()
   const { exercises, loading, error, hasSearched, searchExercises, clearSearch } =
     useExerciseSearch()
+
   useEffect(() => {
     const timer = setTimeout(() => {
       if (search.trim()) searchExercises(search)
@@ -32,6 +43,7 @@ export default function SearchExerciseScreen() {
     }, 300)
     return () => clearTimeout(timer)
   }, [search, searchExercises, clearSearch])
+
   const selectedIds = useMemo(() => new Set(pending.map((exercise) => exercise.id)), [pending])
   const results = useMemo(
     () =>
@@ -45,8 +57,9 @@ export default function SearchExerciseScreen() {
   )
   const select = (exercise: Exercise) =>
     setPending((current) => toggleExerciseSelection(current, exercise, original))
+
   return (
-    <YStack flex={1} bg="$background">
+    <View className="flex-1 bg-background">
       <Stack.Screen
         options={{
           title: '',
@@ -54,93 +67,60 @@ export default function SearchExerciseScreen() {
           headerBackVisible: false,
           headerLeft: () => <BackHeaderButton label="Workout" fallback="/(tabs)/(workouts)" />,
           headerRight: () => (
-            <Button chromeless height="$touch" onPress={() => router.back()}>
-              <Text color={colors.accent} fontSize="$caption">
-                Cancel
-              </Text>
+            <Button variant="ghost" density="compact" onPress={() => router.back()}>
+              <UiText textRole="captionEmphasis">Cancel</UiText>
             </Button>
           ),
         }}
       />
-      <YStack
-        flex={1}
-        width="100%"
-        maxW="$content"
-        self="center"
-        px="$page"
-        pt="$section"
-        gap="$field"
-      >
-        <YStack gap="$compact">
-          <Text
-            fontSize="$screenTitle"
-            lineHeight="$screenTitle"
-            fontWeight="$screenTitle"
-            color="$color"
-          >
-            Add exercises
-          </Text>
-          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+
+      <View className="w-full max-w-3xl flex-1 self-center gap-field px-page pt-section">
+        <View className="gap-compact">
+          <UiText textRole="screenTitle" accessibilityRole="header">
+            Add exercises.
+          </UiText>
+          <UiText textRole="bodyMuted">
             {workoutName ? `For ${workoutName}` : 'Choose exercises for your workout.'}
-          </Text>
-        </YStack>
-        <YStack gap="$compact">
-          <Text fontSize="$caption" fontWeight="$screenTitle" color="$color">
-            Search exercises
-          </Text>
-          <Input
-            placeholder="Search by exercise name"
+          </UiText>
+        </View>
+
+        <View className="justify-center">
+          <TextField
+            placeholder="Search exercises"
             accessibilityLabel="Search exercises"
             value={search}
             onChangeText={setSearch}
-            height="$action"
-            rounded="$control"
-            bg="$surface"
-            fontSize="$body"
-            borderColor="$borderColor"
+            returnKeyType="search"
+            className="pl-12"
           />
-        </YStack>
-        <XStack bg="$backgroundStrong" p="$compact" rounded="$menu" gap="$compact">
-          {['All', 'Strength', 'Cardio'].map((label) => (
-            <Button
-              key={label}
-              flex={1}
-              height="$touch"
-              rounded="$control"
-              bg={category === label ? '$surface' : '$backgroundTransparent'}
-              borderWidth="$0"
-              px="$compact"
-              accessibilityRole="button"
-              accessibilityState={{ selected: category === label }}
-              onPress={() => setCategory(label)}
-            >
-              <Text
-                fontSize="$caption"
-                fontWeight="$screenTitle"
-                color={category === label ? '$primary' : '$colorSubtle'}
-              >
-                {label}
-              </Text>
-            </Button>
-          ))}
-        </XStack>
-        <XStack justify="space-between" items="center">
-          <Text fontSize="$caption" color="$colorSubtle" accessibilityLiveRegion="polite">
-            {hasSearched ? `${results.length} results` : 'Selected exercises'}
-          </Text>
+          <View className="absolute left-compact">
+            <Search size={18} color={colors.muted} aria-hidden />
+          </View>
+        </View>
+
+        <SegmentedSelection<CategoryFilter>
+          value={category}
+          options={categoryOptions}
+          accessibilityLabel="Filter exercises by category"
+          onValueChange={setCategory}
+        />
+
+        <View className="flex-row items-center justify-between gap-field">
+          <UiText textRole="caption" accessibilityLiveRegion="polite">
+            {hasSearched ? `${results.length} results` : `${pending.length} selected`}
+          </UiText>
           {pending.length > 0 && (
             <Button
-              chromeless
-              height="$touch"
-              onPress={() => setPending([])}
+              variant="ghost"
+              density="compact"
               accessibilityLabel="Clear pending exercise selection"
+              onPress={() => setPending([])}
             >
-              <Text color="$primary" fontSize="$caption">
-                Clear selection
-              </Text>
+              <UiText textRole="captionEmphasis">Clear selection</UiText>
             </Button>
           )}
-        </XStack>
+        </View>
+
         <ExerciseList
           exercises={results}
           loading={loading && hasSearched}
@@ -148,9 +128,7 @@ export default function SearchExerciseScreen() {
           selectedExerciseIds={selectedIds}
           onExerciseSelect={select}
           onRetry={() =>
-            queryClient.invalidateQueries({
-              queryKey: ownerKeys.exercises.search(search.trim()),
-            })
+            queryClient.invalidateQueries({ queryKey: ownerKeys.exercises.search(search.trim()) })
           }
           emptyMessage={
             hasSearched
@@ -158,32 +136,24 @@ export default function SearchExerciseScreen() {
               : 'Search by name to find exercises. Your selections stay selected across searches.'
           }
         />
-      </YStack>
-      <YStack borderTopWidth="$0.5" borderTopColor="$borderColor" p="$page" py="$field">
-        <YStack width="100%" maxW="$content" self="center" gap="$compact">
-          <Text
-            fontSize="$caption"
-            lineHeight="$caption"
-            color="$colorSubtle"
-            accessibilityLiveRegion="polite"
-          >
+      </View>
+
+      <View className="border-t border-divider px-page py-field">
+        <View className="w-full max-w-3xl self-center gap-compact">
+          <UiText textRole="caption" accessibilityLiveRegion="polite">
             {pending.length} selected across all categories and searches.
-          </Text>
+          </UiText>
           <Button
-            height="$action"
-            rounded="$button"
-            bg={colors.accent}
+            accessibilityLabel={`Done, ${pending.length} selected`}
             onPress={() => {
               store.setExercises(pending)
               router.back()
             }}
           >
-            <Text color={colors.onAccent} fontSize="$caption" fontWeight="$screenTitle">
-              Done · {pending.length} selected
-            </Text>
+            <UiText textRole="buttonOnAccent">Done · {pending.length} selected</UiText>
           </Button>
-        </YStack>
-      </YStack>
-    </YStack>
+        </View>
+      </View>
+    </View>
   )
 }

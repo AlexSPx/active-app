@@ -1,15 +1,8 @@
 import { useState } from 'react'
-import { Keyboard } from 'react-native'
-import {
-  MoreHorizontal,
-  ChevronRight,
-  ArrowUp,
-  ArrowDown,
-  Trash2,
-  Plus,
-} from '../../../components/ui/icons'
-import { YStack, XStack, Text, Button, ScrollView } from 'tamagui'
-import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
+import { View } from 'react-native'
+import { ArrowDown, ArrowUp, ChevronRight, Plus, Trash2 } from '../../../components/ui/icons'
+import { Button, UiText } from '../../../components/ui/Controls'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import type { RoutinePatternItem } from '../../../types/routine'
 import { useWorkouts } from '../../workouts'
 import { RoutineEditorSheet } from './RoutineEditorSheet'
@@ -30,333 +23,197 @@ export function RoutinePatternEditor({
   routineName,
 }: RoutinePatternEditorProps) {
   const { workouts, loading, error } = useWorkouts()
+  const colors = useCadenceColors()
   const pattern = rawPattern.map((day) => ({
     ...day,
     workoutId: day.workoutId ? syncEngine.resolveId('workouts', day.workoutId) : null,
   }))
-  const [selectedDay, setSelectedDay] = useState(0)
   const [pickerOpen, setPickerOpen] = useState(false)
-  const [menu, setMenu] = useState<number | null>(null)
-  const index = Math.min(selectedDay, Math.max(0, pattern.length - 1))
-  const day = pattern[index]
-  const workout = workouts.find((item) => item.id === day?.workoutId)
-  const training = pattern.filter((item) => item.dayType === 'WORKOUT').length
+  const [pickerDay, setPickerDay] = useState<number | null>(null)
+
   const update = (next: RoutinePatternItem[]) => onChange(reindexPattern(next))
   const move = (from: number, to: number) => {
     if (to < 0 || to >= pattern.length) return
     const next = [...pattern]
     ;[next[from], next[to]] = [next[to], next[from]]
     update(next)
-    setSelectedDay(to)
-    setMenu(null)
   }
-  const remove = (from: number) => {
-    update(pattern.filter((_, itemIndex) => itemIndex !== from))
-    setSelectedDay(Math.max(0, Math.min(from, pattern.length - 2)))
-    setMenu(null)
-  }
-  const more = (itemIndex: number, label: string) => (
-    <Button
-      chromeless
-      width="$touch"
-      height="$touch"
-      color="$colorSubtle"
-      accessibilityLabel={`More actions for ${label}`}
-      accessibilityState={{ expanded: menu === itemIndex }}
-      onPress={() => {
-        Keyboard.dismiss()
-        setMenu(itemIndex)
-      }}
-    >
-      <MoreHorizontal size="$icon" color="$colorSubtle" aria-hidden />
-    </Button>
-  )
-
-  const menuContent =
-    menu !== null && pattern[menu] ? (
-      <YStack gap="$field">
-        <Text fontSize="$header" lineHeight="$header" fontWeight="600">
-          {hideRestOption ? `Workout ${menu + 1}` : `Day ${menu + 1}`} actions
-        </Text>
-        <Text fontSize="$body" lineHeight="$body" color="$colorSubtle" numberOfLines={2}>
-          {pattern[menu].dayType === 'REST'
-            ? 'Rest'
-            : (workouts.find((item) => item.id === pattern[menu].workoutId)?.title ??
-              'Choose a saved workout')}
-        </Text>
-        <Button
-          chromeless
-          minH="$touch"
-          justify="flex-start"
-          disabled={menu === 0}
-          opacity={menu === 0 ? 0.4 : 1}
-          onPress={() => move(menu, menu - 1)}
-        >
-          <ArrowUp size="$icon" aria-hidden />
-          {`Move ${hideRestOption ? 'up' : 'earlier'}`}
-        </Button>
-        <Button
-          chromeless
-          minH="$touch"
-          justify="flex-start"
-          disabled={menu === pattern.length - 1}
-          opacity={menu === pattern.length - 1 ? 0.4 : 1}
-          onPress={() => move(menu, menu + 1)}
-        >
-          <ArrowDown size="$icon" aria-hidden />
-          {`Move ${hideRestOption ? 'down' : 'later'}`}
-        </Button>
-        <Button
-          chromeless
-          minH="$touch"
-          justify="flex-start"
-          color="$destructive"
-          onPress={() => remove(menu)}
-        >
-          <Trash2 size="$icon" color="$destructive" aria-hidden />
-          {`Remove ${hideRestOption ? 'workout' : 'day'}`}
-        </Button>
-        <Button
-          minH="$action"
-          rounded="$button"
-          bg="$backgroundHover"
-          onPress={() => setMenu(null)}
-        >
-          Cancel
-        </Button>
-      </YStack>
-    ) : null
+  const remove = (from: number) => update(pattern.filter((_, index) => index !== from))
 
   return (
-    <YStack gap="$field">
-      {error && (
-        <Text color="$destructive" fontSize="$caption">
-          {error}
-        </Text>
-      )}
+    <View className="gap-field">
+      {!!error && <UiText textRole="captionDestructive">{error}</UiText>}
       {hideRestOption ? (
         <>
-          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-            {pattern.length} {pattern.length === 1 ? 'session' : 'sessions'} · Any order ·
-            Monday–Sunday
-          </Text>
           {!pattern.length && (
-            <YStack gap="$compact">
-              <Text fontSize="$header" fontWeight="600">
-                No workouts yet
-              </Text>
-              <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+            <View className="gap-compact">
+              <UiText textRole="cardTitle">No workouts yet</UiText>
+              <UiText textRole="bodyMuted">
                 Choose the sessions you want to complete each week.
-              </Text>
-            </YStack>
+              </UiText>
+            </View>
           )}
           {pattern.map((item, itemIndex) => {
             const assigned = workouts.find((candidate) => candidate.id === item.workoutId)
             return (
-              <YStack key={itemIndex} borderBottomWidth={1} borderColor="$borderColor" pb="$field">
-                <XStack items="center" gap="$field">
-                  <Text color="$colorSubtle" fontSize="$caption">
-                    {itemIndex + 1}
-                  </Text>
-                  <YStack flex={1} gap="$compact">
-                    <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
-                      {assigned?.title ?? 'Choose a saved workout'}
-                    </Text>
-                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                      {assigned ? workoutMetadata(assigned) : 'Workout unavailable'}
-                    </Text>
-                  </YStack>
-                  {more(itemIndex, assigned?.title ?? `session ${itemIndex + 1}`)}
-                </XStack>
-              </YStack>
+              <View
+                key={itemIndex}
+                className="flex-row items-center gap-field border-b border-divider pb-field"
+              >
+                <View className="min-w-0 flex-1 gap-compact">
+                  <UiText textRole="bodyEmphasis" numberOfLines={1}>
+                    {assigned?.title ?? 'Choose a saved workout'}
+                  </UiText>
+                  <UiText textRole="caption">Any order</UiText>
+                </View>
+                <Button
+                  variant="ghost"
+                  density="compact"
+                  className="h-touch w-touch p-0"
+                  accessibilityLabel={`Remove ${assigned?.title ?? `session ${itemIndex + 1}`} from routine`}
+                  onPress={() => remove(itemIndex)}
+                >
+                  <Trash2 size={18} color={colors.muted} aria-hidden />
+                </Button>
+              </View>
             )
           })}
           <Button
-            minH="$action"
-            rounded="$button"
-            bg="$backgroundHover"
-            color="$primary"
-            onPress={() => setPickerOpen(true)}
+            variant="ghost"
+            className="h-action flex-row gap-compact border border-dashed border-divider"
+            onPress={() => {
+              setPickerDay(null)
+              setPickerOpen(true)
+            }}
           >
-            + Add workouts
+            <Plus size={18} color={colors.accent} aria-hidden />
+            <UiText textRole="captionEmphasis">Choose workouts</UiText>
           </Button>
         </>
       ) : pattern.length ? (
         <>
-          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-            {pattern.length === 1 ? 'Repeats every day' : `Repeats every ${pattern.length} days`} ·{' '}
-            {training} training · {pattern.length - training} rest
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexShrink: 0 }}>
-            <XStack gap="$compact">
-              {pattern.map((item, itemIndex) => (
-                <Button
-                  key={itemIndex}
-                  width="$touch"
-                  height="$day"
-                  rounded="$day"
-                  p="$compact"
-                  bg={index === itemIndex ? '$backgroundAccent' : '$backgroundHover'}
-                  borderWidth={1}
-                  borderColor={index === itemIndex ? '$primary' : '$backgroundTransparent'}
-                  accessibilityLabel={`Day ${itemIndex + 1}: ${item.dayType === 'REST' ? 'Rest' : (workouts.find((candidate) => candidate.id === item.workoutId)?.title ?? 'Choose workout')}`}
-                  accessibilityState={{ selected: index === itemIndex }}
-                  onPress={() => {
-                    setSelectedDay(itemIndex)
-                    setMenu(null)
-                  }}
+          {pattern.map((item, itemIndex) => {
+            const assigned = workouts.find((candidate) => candidate.id === item.workoutId)
+            const selected = item.dayType === 'WORKOUT'
+            return (
+              <View key={itemIndex} className="gap-field rounded-card bg-surface p-card">
+                <View className="flex-row items-center justify-between gap-compact">
+                  <UiText textRole="bodyEmphasis">Day {itemIndex + 1}</UiText>
+                  <View className="flex-row items-center">
+                    <Button
+                      variant="ghost"
+                      density="compact"
+                      className="h-touch w-touch p-0"
+                      accessibilityLabel={`Move day ${itemIndex + 1} earlier`}
+                      accessibilityHint="Moves this day before the previous day in the repeating cycle."
+                      disabled={itemIndex === 0}
+                      onPress={() => move(itemIndex, itemIndex - 1)}
+                    >
+                      <ArrowUp size={18} color={colors.muted} aria-hidden />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      density="compact"
+                      className="h-touch w-touch p-0"
+                      accessibilityLabel={`Move day ${itemIndex + 1} later`}
+                      accessibilityHint="Moves this day after the next day in the repeating cycle."
+                      disabled={itemIndex === pattern.length - 1}
+                      onPress={() => move(itemIndex, itemIndex + 1)}
+                    >
+                      <ArrowDown size={18} color={colors.muted} aria-hidden />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      density="compact"
+                      className="h-touch w-touch p-0"
+                      accessibilityLabel={`Remove day ${itemIndex + 1}`}
+                      onPress={() => remove(itemIndex)}
+                    >
+                      <Trash2 size={18} color={colors.accent} aria-hidden />
+                    </Button>
+                  </View>
+                </View>
+                <View
+                  className="flex-row gap-compact rounded-control bg-raised p-compact"
+                  accessibilityRole="radiogroup"
+                  accessibilityLabel={`Day ${itemIndex + 1} type`}
                 >
-                  <YStack height="100%" width="100%" gap="$compact">
-                    <Text fontSize="$caption" color="$colorSubtle" text="center">
-                      {itemIndex + 1}
-                    </Text>
-                    <YStack
-                      flex={1}
-                      rounded="$block"
-                      justify="center"
-                      items="center"
-                      bg={
-                        item.dayType === 'REST'
-                          ? '$backgroundTransparent'
-                          : item.workoutId
-                            ? '$primary'
-                            : '$surface'
+                  {(['WORKOUT', 'REST'] as const).map((type) => (
+                    <Button
+                      key={type}
+                      variant={item.dayType === type ? 'selected' : 'ghost'}
+                      className="flex-1"
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: item.dayType === type }}
+                      onPress={() =>
+                        update(
+                          pattern.map((day, index) =>
+                            index === itemIndex ? { ...day, dayType: type } : day
+                          )
+                        )
                       }
                     >
-                      <Text
-                        color={
-                          item.dayType === 'REST'
-                            ? '$colorMuted'
-                            : item.workoutId
-                              ? '$onPrimary'
-                              : '$primary'
-                        }
-                        fontSize="$body"
-                        fontWeight="600"
-                      >
-                        {item.dayType === 'REST' ? '—' : item.workoutId ? 'T' : '+'}
-                      </Text>
-                    </YStack>
-                  </YStack>
-                </Button>
-              ))}
-            </XStack>
-          </ScrollView>
-          <Text fontSize="$caption" color="$colorSubtle">
-            T · Training — · Rest
-          </Text>
-          <YStack
-            bg="$surface"
-            rounded="$menu"
-            p="$field"
-            gap="$field"
-            borderWidth={1}
-            borderColor="$borderColor"
-          >
-            <XStack items="center" justify="space-between">
-              <Text fontSize="$header" fontWeight="600">
-                Day {index + 1}
-              </Text>
-              {more(index, `day ${index + 1}`)}
-            </XStack>
-            <XStack bg="$backgroundHover" rounded="$menu" p="$compact" gap="$compact">
-              {(['WORKOUT', 'REST'] as const).map((type) => (
-                <Button
-                  key={type}
-                  flex={1}
-                  minH="$touch"
-                  rounded="$control"
-                  bg={day.dayType === type ? '$surface' : '$backgroundTransparent'}
-                  color={day.dayType === type ? '$primary' : '$colorSubtle'}
-                  accessibilityState={{ selected: day.dayType === type }}
-                  onPress={() =>
-                    update(
-                      pattern.map((item, itemIndex) =>
-                        itemIndex === index ? { ...item, dayType: type } : item
-                      )
-                    )
-                  }
-                >
-                  {type === 'WORKOUT' ? 'Training' : 'Rest'}
-                </Button>
-              ))}
-            </XStack>
-            {day.dayType === 'REST' ? (
-              <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
-                Rest day. No workout scheduled.
-              </Text>
-            ) : (
-              <Button
-                height="auto"
-                minH="$action"
-                chromeless
-                px="$0"
-                accessibilityLabel={`${workout ? `Change ${workout.title}` : 'Choose a saved workout'} for day ${index + 1}`}
-                onPress={() => setPickerOpen(true)}
-              >
-                <XStack width="100%" items="center" gap="$field">
-                  <YStack flex={1} gap="$compact">
-                    <Text fontSize="$exerciseTitle" lineHeight="$exerciseTitle" fontWeight="600">
-                      {workout?.title ?? 'Choose a workout'}
-                    </Text>
-                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                      {workout ? workoutMetadata(workout) : 'From your saved workouts'}
-                    </Text>
-                  </YStack>
-                  <ChevronRight size="$icon" color="$primary" aria-hidden />
-                </XStack>
-              </Button>
-            )}
-          </YStack>
+                      {type === 'WORKOUT' ? 'Training' : 'Rest'}
+                    </Button>
+                  ))}
+                </View>
+                {selected ? (
+                  <Button
+                    variant="ghost"
+                    density="compact"
+                    className="h-auto min-h-action flex-row justify-between border-t border-divider px-0 pt-field"
+                    accessibilityLabel={`${assigned ? `Change ${assigned.title}` : 'Choose a saved workout'} for day ${itemIndex + 1}`}
+                    onPress={() => {
+                      setPickerDay(itemIndex)
+                      setPickerOpen(true)
+                    }}
+                  >
+                    <View className="min-w-0 flex-1 gap-compact">
+                      <UiText textRole="bodyEmphasis" numberOfLines={1}>
+                        {assigned?.title ?? 'Choose a workout'}
+                      </UiText>
+                      <UiText textRole="caption">
+                        {assigned ? workoutMetadata(assigned) : 'From your saved workouts'}
+                      </UiText>
+                    </View>
+                    <ChevronRight size={20} color={colors.accent} aria-hidden />
+                  </Button>
+                ) : (
+                  <UiText textRole="caption">No workout scheduled.</UiText>
+                )}
+              </View>
+            )
+          })}
           <Button
-            minH="$action"
-            rounded="$button"
-            bg="$backgroundHover"
-            color="$primary"
-            onPress={() => {
+            variant="ghost"
+            className="h-action flex-row gap-compact border border-dashed border-divider"
+            onPress={() =>
               update([
                 ...pattern,
                 { dayIndex: pattern.length + 1, dayType: 'WORKOUT', workoutId: null },
               ])
-              setSelectedDay(pattern.length)
-              setMenu(null)
-            }}
+            }
           >
-            <Plus size="$icon" color="$primary" aria-hidden />
-            Add day
+            <Plus size={18} color={colors.accent} aria-hidden />
+            <UiText textRole="captionEmphasis">Add day</UiText>
           </Button>
         </>
       ) : (
-        <YStack gap="$field">
-          <Text fontSize="$header" fontWeight="600">
-            No days yet
-          </Text>
-          <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+        <View className="gap-field border-t border-divider pt-section">
+          <UiText textRole="cardTitle">No days yet</UiText>
+          <UiText textRole="bodyMuted">
             Add training and rest days in the order you want them to repeat.
-          </Text>
+          </UiText>
           <Button
-            minH="$action"
-            rounded="$button"
-            bg="$backgroundHover"
-            color="$primary"
-            onPress={() => {
-              update([{ dayIndex: 1, dayType: 'WORKOUT', workoutId: null }])
-              setSelectedDay(0)
-            }}
+            variant="ghost"
+            className="h-action flex-row gap-compact border border-dashed border-divider"
+            onPress={() => update([{ dayIndex: 1, dayType: 'WORKOUT', workoutId: null }])}
           >
-            + Add first day
+            <Plus size={18} color={colors.accent} aria-hidden />
+            <UiText textRole="captionEmphasis">Add first day</UiText>
           </Button>
-        </YStack>
+        </View>
       )}
-      <CadenceOverlay
-        open={menu !== null}
-        onOpenChange={(open) => {
-          if (!open) setMenu(null)
-        }}
-        title="Training day actions"
-      >
-        {menuContent}
-      </CadenceOverlay>
       <RoutineEditorSheet
         open={pickerOpen && !loading}
         onOpenChange={setPickerOpen}
@@ -365,23 +222,23 @@ export function RoutinePatternEditor({
         selected={
           hideRestOption
             ? pattern.flatMap((item) => (item.workoutId ? [item.workoutId] : []))
-            : day?.workoutId
-              ? [day.workoutId]
+            : pickerDay !== null && pattern[pickerDay]?.workoutId
+              ? [pattern[pickerDay].workoutId!]
               : []
         }
-        context={`${routineName?.trim() || 'your new routine'} · ${hideRestOption ? 'Any order' : `Day ${index + 1}`}`}
+        context={`${routineName?.trim() || 'your new routine'} · ${hideRestOption ? 'Any order' : `Day ${(pickerDay ?? 0) + 1}`}`}
         onApply={(selection) => {
           if (hideRestOption) update(applyWorkoutSelection(pattern, selection))
-          else
+          else if (pickerDay !== null)
             update(
               pattern.map((item, itemIndex) =>
-                itemIndex === index
+                itemIndex === pickerDay
                   ? { ...item, dayType: 'WORKOUT', workoutId: selection[0] ?? null }
                   : item
               )
             )
         }}
       />
-    </YStack>
+    </View>
   )
 }
