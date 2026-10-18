@@ -1,17 +1,17 @@
 import { Stack } from 'expo-router'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useTheme } from 'tamagui'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
 
 export default function WelcomeLayout() {
-  const theme = useTheme()
+  const colors = useCadenceColors()
 
   return (
-    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: theme.background.val }}>
+    <SafeAreaView edges={['top']} style={{ flex: 1, backgroundColor: colors.background }}>
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: {
-            backgroundColor: theme.background.val,
+            backgroundColor: colors.background,
           },
           animation: 'slide_from_right',
         }}

@@ -1,138 +1,193 @@
 import React from 'react'
-import { YStack, Text, Paragraph, Separator, XStack } from 'tamagui'
+import { View } from 'react-native'
+import * as Linking from 'expo-linking'
+import { UiText } from './Controls'
 
 interface MarkdownDisplayProps {
   content: string
 }
 
+type MarkdownBlock =
+  | { type: 'heading'; level: 1 | 2 | 3; content: string }
+  | { type: 'paragraph'; content: string }
+  | { type: 'listItem'; content: string }
+  | { type: 'separator' }
+
+/**
+ * Render the small Markdown subset used by the bundled legal documents.
+ * Blank lines delimit blocks; ordinary source line breaks are joined as
+ * Markdown soft breaks, while the two trailing spaces used by the contact
+ * details remain explicit line breaks.
+ */
 export function MarkdownDisplay({ content }: MarkdownDisplayProps) {
   if (!content) return null
 
-  const lines = content.split('\n')
+  const blocks = parseBlocks(content)
 
   return (
-    <YStack gap="$card">
-      {lines.map((line, index) => {
-        const trimmedLine = line.trim()
-        if (!trimmedLine) return null
+    <View className="gap-section">
+      {blocks.map((block, index) => {
+        if (block.type === 'separator') {
+          return <View key={index} className="my-field h-px bg-divider" />
+        }
 
-        // Headers
-        if (trimmedLine.startsWith('# ')) {
+        if (block.type === 'heading') {
+          const textRole =
+            block.level === 1 ? 'screenTitle' : block.level === 2 ? 'cardTitle' : 'bodyEmphasis'
+
           return (
-            <Text
+            <UiText
               key={index}
               accessibilityRole="header"
-              fontSize="$sectionTitle"
-              lineHeight="$sectionTitle"
-              fontWeight="600"
+              textRole={textRole}
+              className={block.level === 1 ? '' : 'mt-field'}
             >
-              {parseInline(trimmedLine.substring(2))}
-            </Text>
-          )
-        }
-        if (trimmedLine.startsWith('## ')) {
-          return (
-            <Text
-              key={index}
-              accessibilityRole="header"
-              mt="$field"
-              fontSize="$cardTitle"
-              lineHeight="$cardTitle"
-              fontWeight="600"
-            >
-              {parseInline(trimmedLine.substring(3))}
-            </Text>
-          )
-        }
-        if (trimmedLine.startsWith('### ')) {
-          return (
-            <Text
-              key={index}
-              accessibilityRole="header"
-              mt="$field"
-              fontSize="$body"
-              lineHeight="$body"
-              fontWeight="600"
-            >
-              {parseInline(trimmedLine.substring(4))}
-            </Text>
+              {parseInline(block.content)}
+            </UiText>
           )
         }
 
-        if (trimmedLine === '---') return <Separator key={index} borderColor="$borderColor" />
-
-        // List items
-        if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+        if (block.type === 'listItem') {
           return (
-            <XStack key={index} gap="$2" ml="$2">
-              <Text fontSize="$body" lineHeight="$body">
-                •
-              </Text>
-              <Paragraph flex={1} fontSize="$body" lineHeight="$body">
-                {parseInline(trimmedLine.substring(2))}
-              </Paragraph>
-            </XStack>
+            <View key={index} className="ml-compact flex-row items-start gap-compact">
+              <UiText textRole="body">•</UiText>
+              <UiText textRole="body" className="flex-1">
+                {parseInline(block.content)}
+              </UiText>
+            </View>
           )
         }
 
-        // Paragraphs
         return (
-          <Paragraph key={index} fontSize="$body" lineHeight="$body">
-            {parseInline(trimmedLine)}
-          </Paragraph>
+          <UiText key={index} textRole="body">
+            {parseInline(block.content)}
+          </UiText>
         )
       })}
-    </YStack>
+    </View>
   )
 }
 
-import * as Linking from 'expo-linking'
+function parseBlocks(content: string): MarkdownBlock[] {
+  const blocks: MarkdownBlock[] = []
+  const paragraphLines: Array<{ text: string; hardBreak: boolean }> = []
+
+  const flushParagraph = () => {
+    if (!paragraphLines.length) return
+
+    const text = paragraphLines
+      .map((line, index) => {
+        if (index === 0) return line.text
+        return `${paragraphLines[index - 1].hardBreak ? '\n' : ' '}${line.text}`
+      })
+      .join('')
+      .trim()
+
+    if (text) blocks.push({ type: 'paragraph', content: text })
+    paragraphLines.length = 0
+  }
+
+  for (const sourceLine of content.replace(/\r\n?/g, '\n').split('\n')) {
+    const line = sourceLine.trim()
+    if (!line) {
+      flushParagraph()
+      continue
+    }
+
+    const heading = line.match(/^(#{1,3})\s+(.+)$/)
+    if (heading) {
+      flushParagraph()
+      blocks.push({
+        type: 'heading',
+        level: heading[1].length as 1 | 2 | 3,
+        content: heading[2],
+      })
+      continue
+    }
+
+    if (/^(?:---+|\*\*\*+|___+)$/.test(line)) {
+      flushParagraph()
+      blocks.push({ type: 'separator' })
+      continue
+    }
+
+    const listItem = line.match(/^[-*+]\s+(.+)$/)
+    if (listItem) {
+      flushParagraph()
+      blocks.push({ type: 'listItem', content: listItem[1] })
+      continue
+    }
+
+    // Markdown treats an ordinary newline as a space and two trailing spaces
+    // as a hard line break. Keep that distinction for the publisher details.
+    const hardBreak = / {2,}$/.test(sourceLine)
+    paragraphLines.push({ text: line, hardBreak })
+  }
+
+  flushParagraph()
+  return blocks
+}
 
 function parseInline(text: string): React.ReactNode {
-  // 1. Handle Bold: **text**
-  const parts = text.split(/(\*\*.*?\*\*)/g)
+  const tokenPattern = /(\[[^\]]+\]\([^\s)]+\)|\*\*[^*]+\*\*|__[^_]+__|\*[^*]+\*|_[^_]+_|`[^`]+`)/g
+  const parts = text.split(tokenPattern)
 
   return (
     <>
-      {parts.map((part, i) => {
-        if (part.startsWith('**') && part.endsWith('**')) {
-          // Remove ** and parse links inside
-          const content = part.slice(2, -2)
-          return (
-            <Text key={i} fontWeight="bold">
-              {parseLinks(content)}
-            </Text>
-          )
-        }
-        // Parse links in non-bold text
-        return <React.Fragment key={i}>{parseLinks(part)}</React.Fragment>
-      })}
-    </>
-  )
-}
+      {parts.map((part, index) => {
+        if (!part) return null
 
-function parseLinks(text: string): React.ReactNode {
-  // 2. Handle Links: [text](url)
-  const parts = text.split(/(\[.*?\]\(.*?\))/g)
-
-  return (
-    <>
-      {parts.map((part, i) => {
-        const match = part.match(/^\[(.*?)\]\((.*?)\)$/)
-        if (match) {
-          const [, linkText, url] = match
+        const linkMatch = part.match(/^\[([^\]]+)\]\(([^\s)]+)\)$/)
+        if (linkMatch) {
+          const [, label, url] = linkMatch
           return (
-            <Text
-              key={i}
-              color="$primary"
-              textDecorationLine="underline"
+            <UiText
+              key={index}
+              textRole="body"
+              className="text-accent underline"
               accessibilityRole="link"
-              onPress={() => Linking.openURL(url)}
+              onPress={() => void Linking.openURL(url)}
             >
-              {linkText}
-            </Text>
+              {parseInline(label)}
+            </UiText>
           )
         }
+
+        if (part.startsWith('**') && part.endsWith('**')) {
+          return (
+            <UiText key={index} textRole="bodyEmphasis">
+              {parseInline(part.slice(2, -2))}
+            </UiText>
+          )
+        }
+
+        if (part.startsWith('__') && part.endsWith('__')) {
+          return (
+            <UiText key={index} textRole="bodyEmphasis">
+              {parseInline(part.slice(2, -2))}
+            </UiText>
+          )
+        }
+
+        if (part.startsWith('`') && part.endsWith('`')) {
+          return (
+            <UiText key={index} textRole="bodyEmphasis" className="bg-raised">
+              {part.slice(1, -1)}
+            </UiText>
+          )
+        }
+
+        if (
+          (part.startsWith('*') && part.endsWith('*')) ||
+          (part.startsWith('_') && part.endsWith('_'))
+        ) {
+          return (
+            <UiText key={index} textRole="body" className="italic">
+              {parseInline(part.slice(1, -1))}
+            </UiText>
+          )
+        }
+
         return part
       })}
     </>

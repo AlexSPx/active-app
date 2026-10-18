@@ -50,6 +50,16 @@ jest.mock('../../components/NotificationPermissions', () => ({
   default: () => null,
 }))
 jest.mock('../../components/ui/icons', () => ({ Check: () => null, ChevronDown: () => null }))
+jest.mock('../../components/ui/useCadenceColors', () => ({
+  useCadenceColors: () => ({
+    background: '#fff',
+    foreground: '#111',
+    muted: '#777',
+    divider: '#ddd',
+    accent: '#765080',
+    onAccent: '#fff',
+  }),
+}))
 jest.mock('@vvo/tzdb', () => ({ timeZonesNames: ['Europe/Sofia', 'America/New_York'] }))
 jest.mock('expo-linking', () => ({ openURL: jest.fn() }))
 jest.mock('../../features/settings', () => ({
@@ -207,28 +217,63 @@ test('rest timer presets persist and turning it off keeps duration and disables 
   await act(async () => view.unmount())
 })
 
-test('legal reading uses quiet headings, dividers, and preserves working links', async () => {
+test('legal Markdown renders headings, soft and hard breaks, emphasis, lists, dividers, and links', async () => {
   const { MarkdownDisplay } = require('../../components/ui/MarkdownDisplay')
   const Linking = require('expo-linking')
+  const getText = (node) => {
+    if (!node) return ''
+    if (typeof node === 'string' || typeof node === 'number') return String(node)
+    const children = node.props.children
+    return Array.isArray(children)
+      ? children.map(getText).join('')
+      : typeof children === 'string'
+        ? children
+        : children?.props
+          ? getText(children)
+          : ''
+  }
   let view
   await act(async () => {
     view = create(
       React.createElement(MarkdownDisplay, {
-        content: '### Contact us\nRead the policy at [our site](https://example.com/policy).\n---',
+        content: `# Privacy Policy
+
+The policy
+joins softly with **bold** and _care_.
+
+Publisher: Example\x20\x20
+Contact: [support](https://example.com/contact)
+
+- First requirement
+- Second requirement
+
+---`,
       })
     )
   })
   const heading = view.root
     .findAllByType('Text')
     .find((text) => text.props.accessibilityRole === 'header')
-  expect(heading.props.fontSize).toBe('$body')
-  expect(heading.props.lineHeight).toBe('$body')
-  expect(view.root.findAllByType('Separator')).toHaveLength(1)
+  expect(heading.props.className).toContain('text-screen-title')
+
+  const textNodes = view.root.findAllByType('Text')
+  const summary = textNodes.find((text) => getText(text).includes('The policy'))
+  expect(getText(summary)).toContain('The policy joins softly with bold and care.')
+  const contact = textNodes.find((text) => getText(text).includes('Publisher: Example'))
+  expect(getText(contact)).toContain('Publisher: Example\nContact: support')
+  expect(textNodes.filter((text) => text.props.children === '•')).toHaveLength(2)
+  expect(textNodes.some((text) => text.props.className?.includes('font-dm-semibold'))).toBe(true)
+  expect(
+    view.root
+      .findAllByType('View')
+      .some((element) => element.props.className?.includes('h-px bg-divider'))
+  ).toBe(true)
+
   const link = view.root
     .findAllByType('Text')
     .find((text) => text.props.accessibilityRole === 'link')
   link.props.onPress()
-  expect(Linking.openURL).toHaveBeenCalledWith('https://example.com/policy')
+  expect(Linking.openURL).toHaveBeenCalledWith('https://example.com/contact')
   await act(async () => view.unmount())
 })
 
@@ -238,14 +283,17 @@ test('time-zone search accepts city names and failed updates keep the selected z
   await act(async () => {
     view = create(React.createElement(Selector, { inline: true }))
   })
-  await act(async () => view.root.findByType('Input').props.onChangeText('New York'))
+  const search = () => view.root.findByProps({ nativeID: 'time-zone-search' })
+  await act(async () => search().props.onChangeText('New York'))
   const choices = () =>
-    view.root.findAllByType('Button').filter((button) => button.props.accessibilityRole === 'radio')
+    view.root
+      .findAllByType('Pressable')
+      .filter((button) => button.props.accessibilityRole === 'radio')
   expect(choices()).toHaveLength(1)
   update.mockResolvedValueOnce(null)
   await act(async () => choices()[0].props.onPress())
   expect(settings.setTimeZone).not.toHaveBeenCalled()
-  expect(view.root.findByType('Input').props.value).toBe('New York')
+  expect(search().props.value).toBe('New York')
   await act(async () => choices()[0].props.onPress())
   expect(update).toHaveBeenLastCalledWith({ timezone: 'America/New_York' })
   expect(settings.timeZone).toBe('America/New_York')
@@ -262,7 +310,7 @@ test('controlled time-zone selector stages registration without updating profile
     )
   })
   const choices = view.root
-    .findAllByType('Button')
+    .findAllByType('Pressable')
     .filter((button) => button.props.accessibilityRole === 'radio')
   await act(async () => choices[1].props.onPress())
   expect(select).toHaveBeenCalledWith('America/New_York')

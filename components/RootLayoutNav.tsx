@@ -47,6 +47,15 @@ export function RootLayoutNav() {
           />
 
           <Stack.Screen
+            name="+not-found"
+            options={{
+              title: 'Page Not Found',
+              headerBackTitle: 'Back',
+              ...pageHeader,
+            }}
+          />
+
+          <Stack.Screen
             name="exercises/search"
             options={{
               title: 'Search Exercises',
@@ -117,20 +126,6 @@ export function RootLayoutNav() {
               headerShown: false,
               animation: 'slide_from_right',
               animationDuration: 300,
-            }}
-          />
-
-          <Stack.Screen
-            name="modal"
-            options={{
-              title: 'Tamagui + Expo',
-              presentation: 'modal',
-              animation: 'slide_from_right',
-              gestureEnabled: true,
-              gestureDirection: 'horizontal',
-              contentStyle: {
-                backgroundColor: colors.background,
-              },
             }}
           />
         </Stack>

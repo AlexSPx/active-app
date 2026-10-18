@@ -1,37 +1,24 @@
-let mockNativeOfflineLaunch = true
-let mockUser = { id: 'local:device', registrationCompleted: false }
+const mockUser = { id: 'local:device', registrationCompleted: false }
 const mockReplace = jest.fn()
 const mockBack = jest.fn()
+const mockCanGoBack = jest.fn(() => true)
 const mockUpdateUserProfile = jest.fn()
-const mockToastShow = jest.fn()
 
 jest.mock('../../config/launchPolicy', () => ({
   ...jest.requireActual('../../config/launchPolicy'),
-  isNativeOfflineLaunch: () => mockNativeOfflineLaunch,
+  isNativeOfflineLaunch: () => true,
 }))
 
-jest.mock('expo-router', () => ({
-  useRouter: () => ({ replace: mockReplace, back: mockBack }),
-  Link: ({ children }) => children,
-}))
-
-jest.mock('../../components/feedback/FeedbackProvider', () => ({
-  useFeedback: () => ({ show: mockToastShow }),
-}))
-
-jest.mock('expo-haptics', () => ({
-  selectionAsync: jest.fn(),
-  impactAsync: jest.fn(),
-  notificationAsync: jest.fn(),
-  ImpactFeedbackStyle: { Light: 'light' },
-  NotificationFeedbackType: { Success: 'success', Error: 'error' },
-}))
+jest.mock('expo-router', () => {
+  const React = require('react')
+  return {
+    useRouter: () => ({ replace: mockReplace, back: mockBack, canGoBack: mockCanGoBack }),
+    Link: ({ children }) => React.createElement(React.Fragment, null, children),
+  }
+})
 
 jest.mock('../../stores/authStore', () => ({
-  useAuthStore: () => ({
-    user: mockUser,
-    logout: jest.fn(),
-  }),
+  useAuthStore: () => ({ user: mockUser }),
 }))
 
 jest.mock('../../features/settings', () => ({
@@ -42,34 +29,56 @@ jest.mock('../../features/settings', () => ({
   }),
 }))
 
-jest.mock('../../components/ui/WheelSelector', () => ({
-  __esModule: true,
-  default: () => null,
-}))
-
-jest.mock('../../components/TimeZoneSelector', () => ({
-  __esModule: true,
-  default: () => null,
-}))
-
 jest.mock('../../components/NotificationPermissions', () => ({
   __esModule: true,
   default: () => null,
 }))
 
-jest.mock('../../components/WorkOSSignInButton', () => {
+jest.mock('../../components/ui/Controls', () => {
   const React = require('react')
   return {
-    WorkOSSignInButton: () => React.createElement('mock-workos-button'),
+    Button: ({ children, ...props }) => React.createElement('Button', props, children),
+    UiText: ({ children, ...props }) => React.createElement('UiText', props, children),
+    Surface: ({ children, ...props }) => React.createElement('Surface', props, children),
+    TextField: ({ id, ...props }) => React.createElement('TextField', { nativeID: id, ...props }),
+    SegmentedSelection: (props) => React.createElement('SegmentedSelection', props),
   }
 })
 
-jest.mock('../../components/ui/InputField', () => {
+jest.mock('../../components/ui/icons', () => {
   const React = require('react')
+  const icon = (name) => (props) => React.createElement(name, props)
   return {
-    InputField: (props) => React.createElement('mock-input', props),
+    BarChart2: icon('BarChart2'),
+    Calendar: icon('Calendar'),
+    ChevronLeft: icon('ChevronLeft'),
+    Clock: icon('Clock'),
+    Clock3: icon('Clock3'),
+    Dumbbell: icon('Dumbbell'),
+    Ruler: icon('Ruler'),
+    Weight: icon('Weight'),
   }
 })
+
+jest.mock('../../components/ui/useCadenceColors', () => ({
+  useCadenceColors: () => ({ accent: '#6b4f7b', foreground: '#241e27', muted: '#77717b' }),
+}))
+
+jest.mock('../../components/WorkOSSignInButton', () => ({
+  WorkOSSignInButton: () => null,
+}))
+
+jest.mock('../../components/feedback/FeedbackProvider', () => ({
+  useFeedback: () => ({ show: jest.fn() }),
+}))
+
+jest.mock('expo-haptics', () => ({
+  selectionAsync: jest.fn(),
+  impactAsync: jest.fn(),
+  notificationAsync: jest.fn(),
+  ImpactFeedbackStyle: { Light: 'light' },
+  NotificationFeedbackType: { Success: 'success', Error: 'error' },
+}))
 
 jest.mock('tamagui', () => {
   const React = require('react')
@@ -86,195 +95,146 @@ jest.mock('tamagui', () => {
   }
 })
 
-jest.mock('../../components/ui/icons', () => ({
-  Clock: () => null,
-  Ruler: () => null,
-  Weight: () => null,
-}))
-
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 const RegisterPage = require('../../app/welcome/register').default
 
-describe('RegisterPage with native offline launch', () => {
-  beforeEach(() => {
-    mockNativeOfflineLaunch = true
-    mockReplace.mockReset()
-    mockBack.mockReset()
-    mockUpdateUserProfile.mockReset()
-    mockToastShow.mockReset()
-    mockUser = { id: 'local:device', registrationCompleted: false }
+beforeAll(() => {
+  global.IS_REACT_ACT_ENVIRONMENT = true
+})
+
+beforeEach(() => {
+  mockReplace.mockReset()
+  mockBack.mockReset()
+  mockCanGoBack.mockReset().mockReturnValue(true)
+  mockUpdateUserProfile.mockReset()
+})
+
+async function renderRegistration() {
+  let root
+  await act(async () => {
+    root = create(React.createElement(RegisterPage))
   })
+  return root
+}
 
-  it('renders Step 0 with local profile setup and I Agree button replacing WorkOS', async () => {
-    let root
-    await act(async () => {
-      root = create(React.createElement(RegisterPage))
-    })
+function findButton(root, label) {
+  return root.root.findAllByType('Button').find((button) => button.props.children === label)
+}
 
-    const title = root.root.findByType('H2')
-    expect(title.props.children).toBe('Set Up Profile')
+function findField(root, label) {
+  return root.root
+    .findAllByType('TextField')
+    .find((field) => field.props.accessibilityLabel === label)
+}
 
-    // WorkOS button should not be rendered
-    expect(root.root.findAllByType('mock-workos-button')).toHaveLength(0)
+function findText(root, text) {
+  return root.root.findAllByType('UiText').find((node) => node.props.children === text)
+}
 
-    // Should find the "I Agree" button in Step 0
-    const buttons = root.root.findAllByType('Button')
-    const getStartedBtn = buttons.find((b) => {
-      const text = b.findAllByType('Text')
-      return text.some((t) => t.props.children === 'I Agree')
-    })
-    expect(getStartedBtn).toBeDefined()
+test('the local profile agreement is required before personal details', async () => {
+  const root = await renderRegistration()
 
-    // Next button in footer should be enabled for step 0 in offline launch
-    const nextBtn = buttons.find((b) => {
-      const text = b.findAllByType('Text')
-      return text.some((t) => t.props.children === 'Next')
-    })
-    expect(nextBtn.props.disabled).toBe(false)
+  expect(findText(root, 'Your local profile')).toBeTruthy()
+  const continueButton = findButton(root, 'Continue')
+  expect(continueButton.props.disabled).toBe(true)
 
-    await act(async () => root.unmount())
+  await act(async () => continueButton.props.onPress())
+  expect(findText(root, 'Your local profile')).toBeTruthy()
+  expect(mockUpdateUserProfile).not.toHaveBeenCalled()
+
+  const agreement = root.root.findByProps({
+    accessibilityLabel: 'Agree to the Terms of Service and acknowledge the Privacy Policy',
   })
+  await act(async () => agreement.props.onValueChange(true))
+  expect(findButton(root, 'Continue').props.disabled).toBe(false)
 
-  it('advances from Step 0 to Step 1 upon tapping I Agree', async () => {
-    let root
-    await act(async () => {
-      root = create(React.createElement(RegisterPage))
-    })
+  await act(async () => findButton(root, 'Continue').props.onPress())
+  expect(findText(root, 'Personal details')).toBeTruthy()
+  await act(async () => root.unmount())
+})
 
-    const buttons = root.root.findAllByType('Button')
-    const getStartedBtn = buttons.find((b) => {
-      const text = b.findAllByType('Text')
-      return text.some((t) => t.props.children === 'I Agree')
-    })
+test('values and unit conversion survive back and forward, including a failed save', async () => {
+  mockUpdateUserProfile
+    .mockResolvedValueOnce(null)
+    .mockResolvedValueOnce({ id: 'local:device', registrationCompleted: true })
+  const root = await renderRegistration()
 
-    await act(async () => {
-      getStartedBtn.props.onPress()
-    })
-
-    // Now on Step 1: Personal
-    const stepLabel = root.root.findAllByType('Text').find((t) => t.props.children === 'Personal')
-    expect(stepLabel).toBeDefined()
-
-    // Should have 3 input fields for Personal: Username, First Name, Last Name
-    const inputs = root.root.findAllByType('mock-input')
-    expect(inputs.length).toBe(3)
-
-    await act(async () => root.unmount())
+  const agreement = root.root.findByProps({
+    accessibilityLabel: 'Agree to the Terms of Service and acknowledge the Privacy Policy',
   })
+  await act(async () => agreement.props.onValueChange(true))
+  await act(async () => findButton(root, 'Continue').props.onPress())
 
-  it('keeps the current local step when the profile finishes hydrating', async () => {
-    mockUser = null
-    let root
-    await act(async () => {
-      root = create(React.createElement(RegisterPage))
-    })
+  await act(async () => findField(root, 'Username').props.onChangeText('cadence'))
+  await act(async () => findField(root, 'First name').props.onChangeText('Ava'))
+  await act(async () => findField(root, 'Last name').props.onChangeText('Stone'))
+  await act(async () => findButton(root, 'Continue').props.onPress())
 
-    const nextButton = root.root.findAllByType('Button').find((button) => {
-      const labels = button.findAllByType('Text')
-      return labels.some((label) => label.props.children === 'Next')
-    })
-    await act(async () => nextButton.props.onPress())
+  expect(findText(root, 'Body measurements')).toBeTruthy()
+  expect(findField(root, 'Weight').props.value).toBe('70')
+  expect(findField(root, 'Height').props.value).toBe('170')
 
-    mockUser = { id: 'local:device', registrationCompleted: false }
-    await act(async () => {
-      root.update(React.createElement(RegisterPage))
-    })
+  const weightUnits = root.root.findAllByType('SegmentedSelection')[0]
+  await act(async () => weightUnits.props.onValueChange('lb'))
+  expect(findField(root, 'Weight').props.value).toBe('154.3')
+  await act(async () => findField(root, 'Weight').props.onChangeText(''))
+  await act(async () => findField(root, 'Height').props.onChangeText(''))
+  await act(async () => findButton(root, 'Continue').props.onPress())
+  expect(findText(root, 'Notifications')).toBeTruthy()
+  await act(async () => findButton(root, 'Back').props.onPress())
+  expect(findField(root, 'Weight').props.value).toBe('')
+  expect(findField(root, 'Height').props.value).toBe('')
+  await act(async () => findField(root, 'Weight').props.onChangeText('176'))
+  await act(async () => findField(root, 'Height').props.onChangeText('180'))
 
-    const stepLabel = root.root
-      .findAllByType('Text')
-      .find((label) => label.props.children === 'Personal')
-    expect(stepLabel).toBeDefined()
+  await act(async () => findButton(root, 'Continue').props.onPress())
+  expect(findText(root, 'Notifications')).toBeTruthy()
 
-    await act(async () => root.unmount())
+  await act(async () => findButton(root, 'Back').props.onPress())
+  expect(findField(root, 'Weight').props.value).toBe('176')
+  expect(findField(root, 'Height').props.value).toBe('180')
+  await act(async () => findButton(root, 'Back').props.onPress())
+  expect(findField(root, 'Username').props.value).toBe('cadence')
+  expect(findField(root, 'First name').props.value).toBe('Ava')
+  await act(async () => findButton(root, 'Continue').props.onPress())
+  await act(async () => findButton(root, 'Continue').props.onPress())
+
+  await act(async () => findButton(root, 'Finish setup').props.onPress())
+  expect(mockUpdateUserProfile).toHaveBeenCalledTimes(1)
+  const [update, preferences] = mockUpdateUserProfile.mock.calls[0]
+  expect(update).toMatchObject({
+    username: 'cadence',
+    firstName: 'Ava',
+    lastName: 'Stone',
+    measurements: { weightKg: 176 / 2.2046226218, heightCm: 180 },
+    registrationCompleted: true,
   })
+  expect(preferences).toEqual({ bodyWeightUnit: 'lb', heightUnit: 'cm' })
+  expect(mockReplace).not.toHaveBeenCalled()
+  expect(
+    root.root
+      .findAllByType('UiText')
+      .some((node) => String(node.props.children).includes('Your profile could not be saved'))
+  ).toBe(true)
 
-  it('completes the full flow and calls updateUserProfile with localPreferences', async () => {
-    mockUpdateUserProfile.mockResolvedValue({ id: 'local:device', registrationCompleted: true })
+  await act(async () => findButton(root, 'Back').props.onPress())
+  expect(findField(root, 'Weight').props.value).toBe('176')
+  expect(findField(root, 'Height').props.value).toBe('180')
 
-    let root
-    await act(async () => {
-      root = create(React.createElement(RegisterPage))
-    })
+  await act(async () => findField(root, 'Weight').props.onChangeText(''))
+  await act(async () => findField(root, 'Height').props.onChangeText(''))
+  await act(async () => findButton(root, 'Continue').props.onPress())
+  expect(findText(root, 'Notifications')).toBeTruthy()
+  await act(async () => findButton(root, 'Finish setup').props.onPress())
 
-    // Step 0 -> Step 1
-    const getNextBtn = () => {
-      const buttons = root.root.findAllByType('Button')
-      return buttons.find((b) => {
-        const text = b.findAllByType('Text')
-        return text.some((t) => t.props.children === 'Next' || t.props.children === 'Finish')
-      })
-    }
-
-    // Step 0: click Next
-    await act(async () => {
-      getNextBtn().props.onPress()
-    })
-
-    // Step 1 (Personal): click Next
-    await act(async () => {
-      getNextBtn().props.onPress()
-    })
-
-    // Step 2 (Body): click Next
-    await act(async () => {
-      getNextBtn().props.onPress()
-    })
-
-    expect(root.root.findAllByType('Text').some((t) => t.props.children === 'Notifications')).toBe(
-      true
-    )
-    expect(root.root.findAllByType('Text').some((t) => t.props.children === 'Time Zone')).toBe(
-      false
-    )
-    expect(
-      root.root
-        .findAllByType('Text')
-        .some((t) => JSON.stringify(t.props.children) === JSON.stringify(['Step ', 4, ' of ', 4]))
-    ).toBe(true)
-
-    const backButton = root.root
-      .findAllByType('Button')
-      .find((button) => button.findAllByType('Text').some((text) => text.props.children === 'Back'))
-    await act(async () => backButton.props.onPress())
-    expect(root.root.findAllByType('Text').some((t) => t.props.children === 'Body')).toBe(true)
-    await act(async () => {
-      getNextBtn().props.onPress()
-    })
-
-    // Step 3 (Notifications): click Finish
-    await act(async () => {
-      getNextBtn().props.onPress()
-    })
-
-    expect(mockUpdateUserProfile).toHaveBeenCalledTimes(1)
-    const [updatePayload, localPrefs] = mockUpdateUserProfile.mock.calls[0]
-    expect(updatePayload.registrationCompleted).toBe(true)
-    expect(localPrefs).toEqual({
-      bodyWeightUnit: 'kg',
-      heightUnit: 'cm',
-    })
-    expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
-
-    await act(async () => root.unmount())
+  expect(mockUpdateUserProfile).toHaveBeenCalledTimes(2)
+  const [optionalUpdate, optionalPreferences] = mockUpdateUserProfile.mock.calls[1]
+  expect(optionalUpdate).toMatchObject({
+    measurements: { weightKg: null, heightCm: null },
+    registrationCompleted: true,
   })
-
-  it('keeps the time-zone step for connected onboarding', async () => {
-    mockNativeOfflineLaunch = false
-    mockUser = { id: 'account:alex', registrationCompleted: false }
-    let root
-    await act(async () => {
-      root = create(React.createElement(RegisterPage))
-    })
-    const nextButton = () =>
-      root.root
-        .findAllByType('Button')
-        .find((button) =>
-          button.findAllByType('Text').some((text) => text.props.children === 'Next')
-        )
-    await act(async () => nextButton().props.onPress())
-    await act(async () => nextButton().props.onPress())
-    expect(root.root.findAllByType('Text').some((t) => t.props.children === 'Time Zone')).toBe(true)
-    await act(async () => root.unmount())
-  })
+  expect(optionalPreferences).toEqual({ bodyWeightUnit: 'lb', heightUnit: 'cm' })
+  expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
+  await act(async () => root.unmount())
 })
