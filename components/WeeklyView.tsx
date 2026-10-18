@@ -1,178 +1,149 @@
-import React from 'react'
-import { YStack, XStack, Text, Button } from 'tamagui'
-import { Check, ArrowRight } from './ui/icons'
-import { useWorkouts } from '../features/workouts'
-import { useActiveRoutine } from '../features/routines'
-import { router } from 'expo-router'
-import { routinePatternIndex, sameDay, startOfWeek, formatWeekRange } from '../utils/date'
-import { useAuth } from '../contexts/AuthContext'
-import { launchFacade } from '../features/launch/launchFacade'
+import { Pressable, View } from 'react-native'
+import { Button, UiText } from './ui/Controls'
+import { AlertTriangle, ArrowRight, Check, Dumbbell } from './ui/icons'
+import { useCadenceColors } from './ui/useCadenceColors'
+import type {
+  TrainingHomeWeekDay,
+  TrainingHomeWeekPlan,
+} from '../features/training/hooks/useTrainingHomeController'
 
-interface WeeklyViewProps {
-  selectedDate: Date
+type WeeklyViewProps = {
+  plan: TrainingHomeWeekPlan
   onSelectDate: (date: Date) => void
-  inactive?: boolean
+  onOpenWorkout: (workoutId: string) => void
 }
 
-export const WeeklyView: React.FC<WeeklyViewProps> = ({
-  selectedDate,
-  onSelectDate,
-  inactive = false,
-}) => {
-  const { workouts } = useWorkouts()
-  const { activeRoutine, loading, error } = useActiveRoutine()
-  const { user } = useAuth()
-  const today = new Date()
-  const monday = startOfWeek(today)
-  const routine = inactive ? null : activeRoutine
-  const flexible = routine?.routineType === 'WEEKLY_COMPLETION'
-  const completed = launchFacade.training.getWeeklyCompletion(user)
-  const workoutIds = [
-    ...new Set(
-      routine?.pattern
-        .filter((day) => day.dayType === 'WORKOUT' && day.workoutId)
-        .map((day) => day.workoutId!) ?? []
-    ),
-  ]
+function describeDay(day: TrainingHomeWeekDay): string {
+  switch (day.kind) {
+    case 'scheduled':
+      return `scheduled workout: ${day.workout.title}`
+    case 'unavailable':
+      return 'scheduled workout unavailable'
+    case 'rest':
+      return 'rest day'
+    case 'before-routine':
+      return 'routine has not started'
+    case 'unplanned':
+      return 'no workout scheduled'
+    case 'setup':
+      return 'no routine set up'
+    default: {
+      const exhaustive: never = day
+      return exhaustive
+    }
+  }
+}
+
+export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProps) {
+  const colors = useCadenceColors()
+  const flexible = plan.kind === 'flexible'
 
   return (
-    <YStack gap="$field">
-      <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
-        Your training week
-      </Text>
-      <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-        {routine?.name ?? 'No routine'} · {formatWeekRange(today)}
-      </Text>
-      {loading && !activeRoutine ? (
-        <Text color="$colorSubtle">Loading schedule...</Text>
-      ) : flexible ? (
-        <YStack gap="$field">
-          <XStack justify="space-between" items="center">
-            <Text fontSize="$caption" color="$colorSubtle">
-              Any order · Monday–Sunday
-            </Text>
-            {completed !== null && (
-              <Text fontSize="$caption" color="$primary">
-                {workoutIds.filter((id) => completed.includes(id)).length}/{workoutIds.length} done
-              </Text>
-            )}
-          </XStack>
-          {workoutIds.map((id) => {
-            const workout = workouts.find((item) => item.id === id)
-            const done = completed?.includes(id) ?? false
-            return (
-              <Button
-                key={id}
-                unstyled
-                minH="$action"
-                py="$field"
-                flexDirection="row"
-                items="center"
-                gap="$field"
-                borderBottomWidth={1}
-                borderColor="$borderColor"
-                accessibilityRole="button"
-                accessibilityLabel={`View workout ${workout?.title ?? 'Unavailable workout'}${done ? ', completed' : ''}`}
-                disabled={!workout}
-                onPress={() =>
-                  router.push({ pathname: '/(tabs)/(workouts)', params: { focusId: id } })
-                }
-              >
-                {completed !== null && done && (
-                  <Check size="$iconSmall" color="$primary" aria-hidden />
-                )}
-                <Text flex={1} fontSize="$exerciseTitle" fontWeight="600">
-                  {workout?.title ?? 'Unavailable workout'}
-                </Text>
-                {completed !== null && (
-                  <Text color="$colorSubtle" fontSize="$caption">
-                    {done ? 'Completed' : 'Remaining'}
-                  </Text>
-                )}
-                <ArrowRight size="$iconSmall" color="$primary" aria-hidden />
-              </Button>
-            )
-          })}
-          {completed !== null &&
-            workoutIds.length > 0 &&
-            workoutIds.every((id) => completed.includes(id)) && (
-              <Text color="$colorSubtle" fontSize="$caption">
-                All scheduled workouts are complete.
-              </Text>
-            )}
-        </YStack>
-      ) : (
-        <XStack width="100%" gap="$compact" items="stretch">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day, index) => {
-            const date = new Date(monday)
-            date.setDate(monday.getDate() + index)
-            const pattern =
-              routine?.pattern[routinePatternIndex(routine.startDate, routine.pattern.length, date)]
-            const training = pattern?.dayType === 'WORKOUT'
-            const workout = workouts.find((item) => item.id === pattern?.workoutId)
-            const selected = !!routine && sameDay(date, selectedDate)
-            return (
-              <YStack
-                key={day}
-                flex={1}
-                minW={0}
-                bg={selected ? '$backgroundAccent' : '$backgroundHover'}
-                rounded="$day"
-                overflow="hidden"
-                borderWidth={1}
-                borderColor={selected ? '$primary' : '$backgroundTransparent'}
-                accessibilityRole={routine ? 'button' : undefined}
-                accessibilityLabel={`${date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}${routine ? `, ${training ? `scheduled workout: ${workout?.title ?? 'Unavailable workout'}` : 'rest day'}` : ''}`}
-                accessibilityState={{ selected, disabled: !routine }}
-                onPress={routine ? () => onSelectDate(date) : undefined}
-              >
-                <YStack items="center" py="$compact" borderBottomWidth={1} borderColor="$surface">
-                  <Text fontSize="$1" color={sameDay(date, today) ? '$primary' : '$colorSubtle'}>
-                    {day}
-                  </Text>
-                  <Text fontSize="$caption" lineHeight="$caption">
-                    {date.getDate()}
-                  </Text>
-                </YStack>
-                <YStack height="$day" py="$field" px="$compact" items="stretch" justify="center">
-                  {training ? (
-                    <YStack
-                      flex={1}
-                      bg={selected ? '$primary' : '$trainingMuted'}
-                      rounded="$block"
-                      justify="center"
-                      items="center"
-                      overflow="hidden"
-                    >
-                      <Text
-                        position="absolute"
-                        width="$6"
-                        rotate="-90deg"
-                        fontSize="$boardLabel"
-                        lineHeight="$boardLabel"
-                        color={selected ? '$onPrimary' : '$onTrainingMuted'}
-                        text="center"
-                        numberOfLines={2}
-                      >
-                        {workout?.title ?? 'Workout'}
-                      </Text>
-                    </YStack>
-                  ) : (
-                    <Text color="$colorMuted" text="center">
-                      —
-                    </Text>
+    <View className="gap-field">
+      <View className="flex-row items-end justify-between gap-field">
+        <View className="min-w-0 flex-1 gap-compact">
+          <UiText textRole="bodyEmphasis" accessibilityRole="header">
+            Your training week
+          </UiText>
+          <UiText textRole="meta" numberOfLines={1}>
+            {plan.kind === 'setup' ? 'No routine' : plan.routineName} · {plan.weekRange}
+          </UiText>
+        </View>
+        {flexible && plan.completedCount !== null && (
+          <UiText textRole="captionEmphasis">
+            {plan.completedCount} of {plan.workouts.length} complete
+          </UiText>
+        )}
+      </View>
+
+      {flexible ? (
+        <View className="gap-field">
+          <UiText textRole="caption">Any order · Monday–Sunday</UiText>
+          <View>
+            {plan.workouts.map(({ id, workout, completed }) => {
+              const title = workout?.title ?? 'Unavailable workout'
+              return (
+                <Pressable
+                  key={id}
+                  className="min-h-touch flex-row items-center gap-field border-b border-divider py-compact active:opacity-75"
+                  accessibilityRole="button"
+                  accessibilityLabel={`View workout ${title}${completed ? ', completed' : ''}`}
+                  accessibilityState={{ disabled: !workout }}
+                  disabled={!workout}
+                  onPress={() => onOpenWorkout(id)}
+                >
+                  {completed && <Check size={18} color={colors.accent} aria-hidden />}
+                  <UiText textRole="bodyEmphasis" className="min-w-0 flex-1" numberOfLines={2}>
+                    {title}
+                  </UiText>
+                  {plan.completedCount !== null && (
+                    <UiText textRole="caption">{completed ? 'Completed' : 'Remaining'}</UiText>
                   )}
-                </YStack>
-              </YStack>
+                  <ArrowRight size={18} color={colors.accent} aria-hidden />
+                </Pressable>
+              )
+            })}
+          </View>
+          {plan.completedCount !== null &&
+            plan.workouts.length > 0 &&
+            plan.completedCount === plan.workouts.length && (
+              <UiText textRole="caption">All scheduled workouts are complete.</UiText>
+            )}
+        </View>
+      ) : (
+        <View
+          className={`w-full flex-row gap-compact ${plan.kind === 'setup' ? 'opacity-60' : ''}`}
+        >
+          {plan.days.map((day) => {
+            const selected = plan.kind === 'cycle' && day.isSelected
+            const canSelect = plan.kind === 'cycle'
+            const dayLabel = day.date.toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+            })
+            const background = selected
+              ? 'border-accent bg-accent'
+              : day.isToday
+                ? 'border-divider bg-raised'
+                : 'border-transparent bg-surface'
+
+            return (
+              <Pressable
+                key={day.date.toISOString()}
+                className={`min-h-20 min-w-0 flex-1 items-center justify-center gap-compact rounded-control border px-1 py-compact ${background}`}
+                accessibilityRole={canSelect ? 'button' : undefined}
+                accessibilityLabel={`${dayLabel}, ${describeDay(day)}`}
+                accessibilityState={{ selected, disabled: !canSelect }}
+                disabled={!canSelect}
+                onPress={canSelect ? () => onSelectDate(day.date) : undefined}
+              >
+                <UiText textRole={selected ? 'captionOnAccent' : 'caption'}>{day.weekday}</UiText>
+                <UiText textRole={selected ? 'bodyOnAccent' : 'bodyEmphasis'}>
+                  {day.date.getDate()}
+                </UiText>
+                {day.kind === 'scheduled' ? (
+                  <Dumbbell
+                    size={13}
+                    color={selected ? colors.onAccent : colors.accent}
+                    aria-hidden
+                  />
+                ) : day.kind === 'unavailable' ? (
+                  <AlertTriangle
+                    size={13}
+                    color={selected ? colors.onAccent : colors.muted}
+                    aria-hidden
+                  />
+                ) : day.kind === 'rest' ? (
+                  <UiText textRole={selected ? 'captionOnAccent' : 'caption'}>–</UiText>
+                ) : (
+                  <View className="h-3 w-3" />
+                )}
+              </Pressable>
             )
           })}
-        </XStack>
+        </View>
       )}
-      {error && (
-        <Text color="$destructive" fontSize="$caption">
-          {error}
-        </Text>
-      )}
-    </YStack>
+    </View>
   )
 }

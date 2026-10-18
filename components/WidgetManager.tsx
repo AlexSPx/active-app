@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
-import { Keyboard } from 'react-native'
-import { YStack, XStack, Text, Button, Input, ScrollView } from 'tamagui'
+import React, { useCallback, useEffect, useState } from 'react'
+import { Keyboard, ScrollView, View } from 'react-native'
+import { ArrowDown, ArrowUp, Check, Plus, Search, X } from 'lucide-react-native'
 import { CadenceOverlay } from './ui/CadenceOverlay'
-import { Search, X, Plus, Check, ArrowUp, ArrowDown } from './ui/icons'
+import { Button, IconButton, TextField, UiText } from './ui/Controls'
+import { useCadenceColors } from './ui/useCadenceColors'
 import { useWidgetStore, getMetricLabel, type ProgressionMetric } from '../stores/widgetStore'
 import { useExerciseSearch } from '../features/exercises'
 import { useWorkouts } from '../features/workouts'
@@ -36,6 +37,13 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
   } = useExerciseSearch()
   const { workouts } = useWorkouts()
   const { widgets, addWidget, removeWidget, reorderWidgets } = useWidgetStore()
+  const colors = useCadenceColors()
+  const resetDraft = useCallback(() => {
+    setSelectedExercise(null)
+    setSearchQuery('')
+    setSelectedMetric('maxWeight')
+    clearSearch()
+  }, [clearSearch])
   const sortedWidgets = [...widgets].sort((a, b) => a.position - b.position)
   const savedExercises = [
     ...new Map(
@@ -56,12 +64,14 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
     )
 
   useEffect(() => {
-    if (!isVisible || mode !== 'add') return
-    setSelectedExercise(null)
-    setSearchQuery('')
-    setSelectedMetric('maxWeight')
-    clearSearch()
-  }, [isVisible, mode, clearSearch])
+    resetDraft()
+  }, [isVisible, mode, resetDraft])
+
+  const closeManager = () => {
+    Keyboard.dismiss()
+    resetDraft()
+    onClose()
+  }
 
   const moveWidget = (index: number, direction: number) => {
     const target = index + direction
@@ -76,319 +86,268 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
       title={mode === 'add' ? 'Add widget' : 'Your widgets'}
       open={isVisible}
       onOpenChange={(open) => {
-        if (!open) {
-          Keyboard.dismiss()
-          onClose()
-        }
+        if (!open) closeManager()
       }}
       snapPoints={[90]}
     >
-      <YStack flex={1} gap="$field">
-        <XStack items="center" justify="flex-end" gap="$field">
+      <View className="flex-1 gap-field">
+        <View className="flex-row items-center justify-end gap-field">
           {mode === 'manage' && (
-            <Button chromeless minH="$touch" onPress={() => onModeChange('add')}>
-              <Plus size="$iconSmall" color="$primary" />
-              <Text color="$primary" fontSize="$caption">
-                Add
-              </Text>
+            <Button
+              variant="ghost"
+              className="flex-row gap-compact"
+              onPress={() => onModeChange('add')}
+            >
+              <Plus size={18} color={colors.accent} aria-hidden />
+              <UiText textRole="captionEmphasis">Add</UiText>
             </Button>
           )}
-          <Button
-            chromeless
-            width="$touch"
-            height="$touch"
-            p="$0"
-            rounded="$control"
+          <IconButton
+            variant="ghost"
+            shape="control"
+            className="w-touch px-0"
             accessibilityLabel="Close widget manager"
-            onPress={() => {
-              Keyboard.dismiss()
-              onClose()
-            }}
+            onPress={closeManager}
           >
-            <X size="$icon" color="$colorSubtle" />
-          </Button>
-        </XStack>
+            <X size={20} color={colors.muted} aria-hidden />
+          </IconButton>
+        </View>
+
         <ScrollView
-          flex={1}
+          className="flex-1"
+          contentContainerClassName="gap-field pb-card"
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
         >
-          <YStack gap="$field" pb="$card">
-            {mode === 'manage' ? (
-              <>
-                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                  Choose the order your widgets appear on Home. Removing a widget keeps your workout
-                  history.
-                </Text>
-                {sortedWidgets.length === 0 && (
-                  <Text color="$colorSubtle">
-                    No widgets yet. Add an exercise to start tracking.
-                  </Text>
-                )}
-                {sortedWidgets.map((widget, index) => (
-                  <YStack
-                    key={widget.id}
-                    p="$card"
-                    gap="$field"
-                    bg="$surface"
-                    borderWidth={1}
-                    borderColor="$borderColor"
-                    rounded="$menu"
-                  >
-                    <XStack justify="space-between" gap="$field">
-                      <YStack flex={1}>
-                        <Text fontSize="$exerciseTitle" fontWeight="600">
-                          {widget.exerciseName}
-                        </Text>
-                        <Text fontSize="$caption" color="$colorSubtle">
-                          {getMetricLabel(widget.metric)}
-                        </Text>
-                      </YStack>
-                      <Text fontSize="$caption" color="$colorSubtle">
-                        {index + 1}
-                      </Text>
-                    </XStack>
-                    <XStack gap="$compact" items="center">
-                      <Button
-                        width="$touch"
-                        height="$touch"
-                        p="$0"
-                        rounded="$day"
-                        disabled={index === 0}
-                        opacity={index === 0 ? 0.4 : 1}
-                        bg="$backgroundHover"
-                        accessibilityLabel={`Move ${widget.exerciseName} ${getMetricLabel(widget.metric)} up`}
-                        onPress={() => moveWidget(index, -1)}
-                      >
-                        <ArrowUp size="$iconSmall" />
-                      </Button>
-                      <Button
-                        width="$touch"
-                        height="$touch"
-                        p="$0"
-                        rounded="$day"
-                        disabled={index === sortedWidgets.length - 1}
-                        opacity={index === sortedWidgets.length - 1 ? 0.4 : 1}
-                        bg="$backgroundHover"
-                        accessibilityLabel={`Move ${widget.exerciseName} ${getMetricLabel(widget.metric)} down`}
-                        onPress={() => moveWidget(index, 1)}
-                      >
-                        <ArrowDown size="$iconSmall" />
-                      </Button>
-                      <Button
-                        chromeless
-                        flex={1}
-                        minH="$touch"
-                        accessibilityLabel={`Remove ${widget.exerciseName} ${getMetricLabel(widget.metric)} widget`}
-                        onPress={() => removeWidget(widget.id)}
-                      >
-                        <Text fontSize="$caption" color="$destructive">
-                          Remove
-                        </Text>
-                      </Button>
-                    </XStack>
-                  </YStack>
-                ))}
-                {sortedWidgets.length > 0 && (
-                  <YStack pt="$field" borderTopWidth={1} borderColor="$borderColor" gap="$compact">
-                    <Text fontSize="$caption" color="$colorSubtle">
-                      Preview order
-                    </Text>
-                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                      {sortedWidgets
-                        .map(
-                          (widget) => `${widget.exerciseName} / ${getMetricLabel(widget.metric)}`
-                        )
-                        .join(' → ')}
-                    </Text>
-                  </YStack>
-                )}
-              </>
-            ) : (
-              <>
-                <Text fontSize="$caption" fontWeight="600">
-                  Exercise
-                </Text>
-                <XStack
-                  items="center"
-                  bg="$surface"
-                  borderWidth={1}
-                  borderColor="$borderColor"
-                  rounded="$control"
-                  px="$field"
-                  gap="$compact"
+          {mode === 'manage' ? (
+            <View className="gap-field">
+              <UiText textRole="caption">
+                Choose the order your widgets appear on Home. Removing a widget keeps your workout
+                history.
+              </UiText>
+              {sortedWidgets.length === 0 && (
+                <UiText textRole="bodyMuted">
+                  No widgets yet. Add an exercise to start tracking.
+                </UiText>
+              )}
+              {sortedWidgets.map((widget, index) => (
+                <View
+                  key={widget.id}
+                  className="gap-field rounded-card border border-divider bg-surface p-card"
                 >
-                  <Search size="$iconSmall" color="$colorSubtle" aria-hidden />
-                  <Input
-                    flex={1}
-                    minH="$touch"
-                    borderWidth={0}
-                    bg="$backgroundTransparent"
-                    fontSize="$body"
-                    value={searchQuery}
-                    accessibilityLabel="Search exercises"
-                    placeholder="Search exercises"
-                    returnKeyType="done"
-                    onSubmitEditing={Keyboard.dismiss}
-                    onChangeText={(value) => {
-                      setSearchQuery(value)
-                      if (value.trim()) void searchExercises(value)
-                      else clearSearch()
-                    }}
-                  />
-                </XStack>
-                <ScrollView maxH="$13" keyboardShouldPersistTaps="handled">
-                  <YStack gap="$compact">
-                    {isSearching ? (
-                      <Text color="$colorSubtle">Searching...</Text>
-                    ) : error && searchQuery.trim() ? (
-                      <YStack gap="$compact">
-                        <Text color="$destructive" fontSize="$caption">
-                          {error}
-                        </Text>
-                        <Text color="$colorSubtle" fontSize="$caption">
-                          Clear the search to choose an exercise from your saved workouts.
-                        </Text>
-                      </YStack>
-                    ) : results.length > 0 ? (
-                      results.slice(0, 10).map((exercise) => (
-                        <Button
-                          key={exercise.id}
-                          unstyled
-                          minH="$touch"
-                          p="$field"
-                          rounded="$control"
-                          flexDirection="row"
-                          items="center"
-                          gap="$compact"
-                          bg={
-                            selectedExercise?.id === exercise.id
-                              ? '$backgroundAccent'
-                              : '$backgroundTransparent'
-                          }
-                          accessibilityRole="button"
-                          accessibilityState={{ selected: selectedExercise?.id === exercise.id }}
-                          onPress={() => {
-                            Keyboard.dismiss()
-                            setSelectedExercise({ id: exercise.id, name: exercise.name })
-                          }}
-                        >
-                          <Text
-                            flex={1}
-                            fontSize="$body"
-                            color={selectedExercise?.id === exercise.id ? '$primary' : '$color'}
-                          >
-                            {exercise.name}
-                          </Text>
-                          {selectedExercise?.id === exercise.id && (
-                            <Check size="$iconSmall" color="$primary" aria-hidden />
-                          )}
-                        </Button>
-                      ))
-                    ) : (
-                      <Text color="$colorSubtle" fontSize="$caption">
-                        {searchQuery.trim()
-                          ? 'No exercises found.'
-                          : 'Search for an exercise to add your first widget.'}
-                      </Text>
-                    )}
-                  </YStack>
-                </ScrollView>
-                {selectedExercise && (
-                  <XStack items="center" gap="$compact">
-                    <Text flex={1} fontSize="$caption" color="$primary">
-                      Selected: {selectedExercise.name}
-                    </Text>
-                    <Button
-                      chromeless
-                      width="$touch"
-                      height="$touch"
-                      p="$0"
-                      accessibilityLabel="Clear selected exercise"
-                      onPress={() => setSelectedExercise(null)}
+                  <View className="flex-row justify-between gap-field">
+                    <View className="min-w-0 flex-1">
+                      <UiText textRole="cardTitle">{widget.exerciseName}</UiText>
+                      <UiText textRole="caption">{getMetricLabel(widget.metric)}</UiText>
+                    </View>
+                    <UiText textRole="caption">{index + 1}</UiText>
+                  </View>
+                  <View className="flex-row flex-wrap items-center gap-compact">
+                    <IconButton
+                      variant="secondary"
+                      shape="control"
+                      className="w-touch px-0"
+                      disabled={index === 0}
+                      accessibilityLabel={`Move ${widget.exerciseName} ${getMetricLabel(widget.metric)} up`}
+                      onPress={() => moveWidget(index, -1)}
                     >
-                      <X size="$iconSmall" />
+                      <ArrowUp size={18} color={colors.foreground} aria-hidden />
+                    </IconButton>
+                    <IconButton
+                      variant="secondary"
+                      shape="control"
+                      className="w-touch px-0"
+                      disabled={index === sortedWidgets.length - 1}
+                      accessibilityLabel={`Move ${widget.exerciseName} ${getMetricLabel(widget.metric)} down`}
+                      onPress={() => moveWidget(index, 1)}
+                    >
+                      <ArrowDown size={18} color={colors.foreground} aria-hidden />
+                    </IconButton>
+                    <Button
+                      variant="ghost"
+                      className="min-w-24 flex-1"
+                      accessibilityLabel={`Remove ${widget.exerciseName} ${getMetricLabel(widget.metric)} widget`}
+                      onPress={() => removeWidget(widget.id)}
+                    >
+                      <UiText textRole="captionDestructive">Remove</UiText>
                     </Button>
-                  </XStack>
+                  </View>
+                </View>
+              ))}
+              {sortedWidgets.length > 0 && (
+                <View className="gap-compact border-t border-divider pt-field">
+                  <UiText textRole="caption">Preview order</UiText>
+                  <UiText textRole="caption">
+                    {sortedWidgets
+                      .map((widget) => `${widget.exerciseName} / ${getMetricLabel(widget.metric)}`)
+                      .join(' → ')}
+                  </UiText>
+                </View>
+              )}
+            </View>
+          ) : (
+            <View className="gap-field">
+              <UiText textRole="captionEmphasis">Exercise</UiText>
+              <View className="flex-row items-center gap-compact rounded-control border border-divider bg-surface px-field">
+                <Search size={18} color={colors.muted} aria-hidden />
+                <TextField
+                  className="h-auto min-h-touch flex-1 border-0 bg-transparent px-0 py-compact"
+                  value={searchQuery}
+                  accessibilityLabel="Search exercises"
+                  placeholder="Search exercises"
+                  returnKeyType="done"
+                  onSubmitEditing={Keyboard.dismiss}
+                  onChangeText={(value) => {
+                    setSearchQuery(value)
+                    if (value.trim()) void searchExercises(value)
+                    else clearSearch()
+                  }}
+                />
+              </View>
+
+              <ScrollView
+                className="max-h-52"
+                contentContainerClassName="gap-compact"
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {isSearching ? (
+                  <UiText textRole="bodyMuted">Searching...</UiText>
+                ) : error && searchQuery.trim() ? (
+                  <View className="gap-compact">
+                    <UiText textRole="captionDestructive" accessibilityRole="alert" selectable>
+                      {error}
+                    </UiText>
+                    <UiText textRole="caption">
+                      Clear the search to choose an exercise from your saved workouts.
+                    </UiText>
+                  </View>
+                ) : results.length > 0 ? (
+                  results.slice(0, 10).map((exercise) => {
+                    const selected = selectedExercise?.id === exercise.id
+                    return (
+                      <Button
+                        key={exercise.id}
+                        variant={selected ? 'selected' : 'ghost'}
+                        shape="control"
+                        className="min-h-touch flex-row justify-between gap-compact px-field py-compact"
+                        accessibilityLabel={exercise.name}
+                        accessibilityState={{ selected }}
+                        onPress={() => {
+                          Keyboard.dismiss()
+                          setSelectedExercise({ id: exercise.id, name: exercise.name })
+                        }}
+                      >
+                        <UiText
+                          textRole={selected ? 'bodyEmphasis' : 'body'}
+                          className="min-w-0 flex-1"
+                        >
+                          {exercise.name}
+                        </UiText>
+                        {selected && <Check size={18} color={colors.accent} aria-hidden />}
+                      </Button>
+                    )
+                  })
+                ) : (
+                  <UiText textRole="caption">
+                    {searchQuery.trim()
+                      ? 'No exercises found.'
+                      : 'Search for an exercise to add your first widget.'}
+                  </UiText>
                 )}
-                <Text fontSize="$caption" fontWeight="600">
-                  Metric
-                </Text>
-                <XStack gap="$compact" flexWrap="wrap">
-                  {METRICS.map((metric) => (
+              </ScrollView>
+
+              {selectedExercise && (
+                <View className="flex-row items-center gap-compact">
+                  <UiText textRole="captionEmphasis" className="min-w-0 flex-1">
+                    Selected: {selectedExercise.name}
+                  </UiText>
+                  <IconButton
+                    variant="ghost"
+                    shape="control"
+                    className="w-touch px-0"
+                    accessibilityLabel="Clear selected exercise"
+                    onPress={() => setSelectedExercise(null)}
+                  >
+                    <X size={18} color={colors.muted} aria-hidden />
+                  </IconButton>
+                </View>
+              )}
+
+              <UiText textRole="captionEmphasis">Metric</UiText>
+              <View
+                className="flex-row flex-wrap gap-compact"
+                accessibilityRole="radiogroup"
+                accessibilityLabel="Metric"
+              >
+                {METRICS.map((metric) => {
+                  const selected = selectedMetric === metric.key
+                  return (
                     <Button
                       key={metric.key}
-                      flex={1}
-                      minH="$touch"
-                      rounded="$control"
-                      px="$compact"
-                      bg={selectedMetric === metric.key ? '$backgroundAccent' : '$surface'}
-                      borderWidth={1}
-                      borderColor={selectedMetric === metric.key ? '$primary' : '$borderColor'}
-                      accessibilityState={{ selected: selectedMetric === metric.key }}
+                      variant={selected ? 'selected' : 'surface'}
+                      shape="control"
+                      className="min-w-24 flex-1 px-compact py-compact"
+                      accessibilityRole="radio"
+                      accessibilityLabel={getMetricLabel(metric.key)}
+                      accessibilityState={{ checked: selected, selected }}
                       onPress={() => setSelectedMetric(metric.key)}
                     >
-                      <Text
-                        text="center"
-                        fontSize="$caption"
-                        color={selectedMetric === metric.key ? '$primary' : '$color'}
-                      >
+                      <UiText textRole="caption" className="text-center">
                         {getMetricLabel(metric.key)}
-                      </Text>
+                      </UiText>
                     </Button>
-                  ))}
-                </XStack>
-                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                  {METRICS.find((metric) => metric.key === selectedMetric)?.help}
-                </Text>
-                <Text fontSize="$caption" color="$colorSubtle">
-                  Widget preview
-                </Text>
-                {selectedExercise ? (
-                  <ProgressionWidget
-                    key={selectedExercise.id}
-                    config={{
-                      exerciseId: selectedExercise.id,
-                      exerciseName: selectedExercise.name,
-                      metric: selectedMetric,
-                    }}
-                    preview
-                  />
-                ) : (
-                  <Text fontSize="$caption" color="$colorSubtle">
-                    Select an exercise to preview its progress.
-                  </Text>
-                )}
-              </>
-            )}
-          </YStack>
+                  )
+                })}
+              </View>
+              <UiText textRole="caption">
+                {METRICS.find((metric) => metric.key === selectedMetric)?.help}
+              </UiText>
+              <UiText textRole="caption">Widget preview</UiText>
+              {selectedExercise ? (
+                <ProgressionWidget
+                  key={selectedExercise.id}
+                  config={{
+                    exerciseId: selectedExercise.id,
+                    exerciseName: selectedExercise.name,
+                    metric: selectedMetric,
+                  }}
+                  preview
+                />
+              ) : (
+                <UiText textRole="caption">Select an exercise to preview its progress.</UiText>
+              )}
+            </View>
+          )}
         </ScrollView>
+
         <Button
-          height="$action"
-          rounded="$button"
-          bg="$primary"
+          variant="primary"
+          className="w-full flex-row gap-compact py-field"
           disabled={mode === 'add' && (!selectedExercise || !!duplicate)}
-          opacity={mode === 'add' && (!selectedExercise || duplicate) ? 0.5 : 1}
+          accessibilityLabel={
+            mode === 'manage' ? 'Done' : duplicate ? 'Widget already added' : 'Add widget'
+          }
           onPress={() => {
             if (mode === 'add') {
               if (!selectedExercise || duplicate) return
               addWidget(selectedExercise.id, selectedExercise.name, selectedMetric)
             }
-            onClose()
+            closeManager()
           }}
         >
-          {mode === 'add' && <Plus size="$iconSmall" color="$onPrimary" aria-hidden />}
-          <Text color="$onPrimary" fontSize="$caption" fontWeight="700">
+          {mode === 'add' && <Plus size={18} color={colors.onAccent} aria-hidden />}
+          <UiText textRole="buttonOnAccent">
             {mode === 'manage' ? 'Done' : duplicate ? 'Widget already added' : 'Add widget'}
-          </Text>
+          </UiText>
         </Button>
         {mode === 'add' && (
-          <Text text="center" fontSize="$caption" color="$colorSubtle">
+          <UiText textRole="caption" className="text-center">
             Appears below your weekly board.
-          </Text>
+          </UiText>
         )}
-      </YStack>
+      </View>
     </CadenceOverlay>
   )
 }
