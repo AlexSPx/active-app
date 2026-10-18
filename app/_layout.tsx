@@ -2,7 +2,8 @@ import '../global.css'
 import { useEffect } from 'react'
 import { useFonts } from 'expo-font'
 import { SplashScreen } from 'expo-router'
-import Provider from './Provider'
+import { AppLifecycleProvider } from '../providers/AppLifecycleProvider'
+import { AppThemeProvider } from '../providers/AppThemeProvider'
 import { AuthProvider } from '../contexts/AuthContext'
 import { AuthGuard } from '../components/AuthGuard'
 
@@ -38,14 +39,12 @@ export default function RootLayout() {
   }
 
   return (
-    <Providers>
-      <AuthProvider>
-        <AuthGuard />
-      </AuthProvider>
-    </Providers>
+    <AppThemeProvider>
+      <AppLifecycleProvider>
+        <AuthProvider>
+          <AuthGuard />
+        </AuthProvider>
+      </AppLifecycleProvider>
+    </AppThemeProvider>
   )
-}
-
-const Providers = ({ children }: { children: React.ReactNode }) => {
-  return <Provider>{children}</Provider>
 }

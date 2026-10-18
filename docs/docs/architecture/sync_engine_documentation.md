@@ -220,7 +220,7 @@ sequenceDiagram
 | Feature | Detail |
 |---------|--------|
 | **Single DB handle** | Uses the shared `getDatabase()` singleton — PRAGMAs guaranteed |
-| **Explicit init** | Called once from `Provider.tsx` on mount; registers AppState listener immediately |
+| **Explicit init** | Called once from `providers/AppLifecycleProvider.tsx` on mount; registers AppState listener immediately |
 | **Table allowlist** | Only `workouts`, `workout_records`, `routines` accepted in `local_table` — prevents SQL injection |
 | **Error categorization** | 4xx (except 408/429) → dead letter immediately; network/5xx → retry with ordering preserved |
 | **Max retries** | 5 attempts before dead-lettering |
@@ -260,7 +260,7 @@ function MyComponent() {
 }
 ```
 
-#### Provider Bootstrap (`app/Provider.tsx`)
+#### Provider Bootstrap (`providers/AppLifecycleProvider.tsx`)
 
 On mount, the `SyncEngineBootstrap` component:
 1. Initializes the SyncEngine with the shared DB handle
@@ -280,6 +280,13 @@ function SyncEngineBootstrap({ children }) {
   return <>{children}</>
 }
 ```
+
+Expo Router files under `app/` own route declarations and compose the app tree; keep
+screen behavior in its feature. Add a feature controller only when a screen migration
+needs multi-step orchestration, and leave straightforward screens on their existing
+feature hooks and facades. Keep long-lived providers outside `app/`: lifecycle and
+data startup belong in `providers/AppLifecycleProvider.tsx`, while appearance and
+feedback belong in `providers/AppThemeProvider.tsx`.
 
 #### Server Hydration
 

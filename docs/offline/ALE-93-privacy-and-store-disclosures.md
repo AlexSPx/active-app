@@ -63,7 +63,7 @@ Google Play Data safety answers describe all relevant versions currently distrib
 - `features/launch/launchFacade.ts:364-383` and `services/apiService.ts:265-269, 994-1008` — central API gate, including policy/terms reads.
 - `lib/sync/SyncEngine.ts:341-368, 549-584, 623-669` — local-only queue mode returns before processing/enqueueing remote sync work.
 - `lib/db/migrations.ts:122-164, 277-310` — local SQLite workout, record, routine and profile tables.
-- `app/Provider.tsx:624-680`, `lib/profileStorage.ts:8-45`, `features/settings/stores/settingsStore.ts` — local profile initialization and profile-scoped storage.
+- `providers/AppLifecycleProvider.tsx`, `lib/profileStorage.ts:8-45`, `features/settings/stores/settingsStore.ts` — local profile initialization and profile-scoped storage.
 - `features/launch/launchFacade.ts:188-228` — native account screen hides account actions and shows device-profile editing.
 - `services/notificationService.ts` and `components/NotificationPermissions.tsx` — local rest timer notification setup; permission handling; no remote push registration in current file.
 - `app.config.js:91-103`, `eas.json`, and `docs/offline/ALE-92-validation.md` — EAS project/update URL/runtime policy and update checks; ALE-92 records module resolution and unverified release network checks.
