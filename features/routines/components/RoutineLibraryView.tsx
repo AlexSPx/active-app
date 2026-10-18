@@ -29,7 +29,6 @@ export function RoutineLibraryView(props: Props) {
     <View className="flex-1 bg-background">
       <RoutineList
         routines={props.routines}
-        workoutTitleById={props.workoutTitleById}
         activeRoutineId={props.activeRoutineId}
         onActivate={props.activate}
         onEditRoutine={props.edit}
@@ -40,21 +39,18 @@ export function RoutineLibraryView(props: Props) {
         refreshing={props.refreshing}
         onRefresh={() => void props.refresh()}
         listHeader={
-          <View className="mb-card gap-field">
-            <View className="flex-row items-center justify-between gap-field">
+          <View className="mb-field gap-field">
+            <View className="flex-row items-center justify-between gap-field py-field">
               <View className="gap-compact">
                 <UiText textRole="bodyEmphasis" accessibilityRole="header">
                   Your routines
                 </UiText>
-                <UiText textRole="caption">
-                  {props.routines.length} saved{' '}
-                  {props.routines.length === 1 ? 'routine' : 'routines'}
-                </UiText>
+                <UiText textRole="meta">{props.routines.length} saved</UiText>
               </View>
               <Button variant="ghost" accessibilityLabel="Create routine" onPress={props.create}>
                 <View className="flex-row items-center gap-compact">
-                  <Plus size={16} color={colors.muted} aria-hidden />
-                  <UiText textRole="caption">Create</UiText>
+                  <Plus size={16} color={colors.accent} aria-hidden />
+                  <UiText textRole="captionEmphasis">Create</UiText>
                 </View>
               </Button>
             </View>

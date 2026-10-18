@@ -1,4 +1,4 @@
-import { Tabs, useFocusEffect, usePathname } from 'expo-router'
+import { Tabs, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { Keyboard, Platform, View, useWindowDimensions } from 'react-native'
 import { useResolveClassNames } from 'uniwind'
@@ -13,13 +13,13 @@ const CONTENT_GAP = 16
 const RUNNING_CARD_ESTIMATED_HEIGHT = 84
 
 export default function TabLayout() {
-  const pathname = usePathname()
   const colors = useCadenceColors()
   const { fontScale } = useWindowDimensions()
   const workoutRunning = useRunningWorkoutStore((state) => !!state.runningWorkout)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
   const [runningCardHeight, setRunningCardHeight] = useState(RUNNING_CARD_ESTIMATED_HEIGHT)
   const titleStyles = useResolveClassNames('text-header font-dm-semibold')
+  const workoutTitleStyles = useResolveClassNames('text-workout-header font-dm-semibold')
   const tabBarHeight = Math.max(48, 48 + (fontScale - 1) * 14)
   const runningCardBottomOffset = tabBarHeight + TAB_BAR_MARGIN + TAB_BAR_GAP
   const contentBottomClearance = keyboardVisible
@@ -110,7 +110,12 @@ export default function TabLayout() {
         <Tabs.Screen
           name="(workouts)"
           options={{
-            title: pathname.endsWith('/routines') ? 'Routines' : 'Workouts',
+            title: 'Workouts',
+            headerStyle: { backgroundColor: colors.background, height: 64 },
+            headerTitleStyle: {
+              ...workoutTitleStyles,
+              color: colors.foreground,
+            },
             tabBarLabel: 'Workouts',
             tabBarAccessibilityLabel: 'Workouts',
             tabBarIcon: ({ color }) => <Dumbbell color={color as any} />,

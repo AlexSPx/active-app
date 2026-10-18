@@ -65,13 +65,15 @@ interface MuscleHeatMapProps {
   scale?: number
 }
 
+const MAX_DIAGRAM_HEIGHT = 165
+const MAX_DIAGRAM_WIDTH = 200
+
 export const MuscleHeatMap = memo(function MuscleHeatMap({
   primaryMuscles,
   secondaryMuscles,
   scale = 1,
 }: MuscleHeatMapProps) {
   const colors = useCadenceColors()
-  const diagramWidth = 144
   const [width, setWidth] = useState(0)
   const primary = [...new Set(primaryMuscles.map(normalize).filter(Boolean))]
   const supporting = [...new Set(secondaryMuscles.map(normalize).filter(Boolean))].filter(
@@ -96,7 +98,11 @@ export const MuscleHeatMap = memo(function MuscleHeatMap({
     return <UiText textRole="bodyMuted">No muscle groups listed for these exercises.</UiText>
   const diagramScale = Math.max(
     0,
-    Math.min(scale, diagramWidth / 200, width ? (width - 12) / 400 : diagramWidth / 200)
+    Math.min(
+      scale,
+      MAX_DIAGRAM_HEIGHT / (MAX_DIAGRAM_WIDTH * 2),
+      width ? (width - 12) / (MAX_DIAGRAM_WIDTH * 2) : MAX_DIAGRAM_HEIGHT / (MAX_DIAGRAM_WIDTH * 2)
+    )
   )
   return (
     <View className="gap-field">
@@ -105,16 +111,16 @@ export const MuscleHeatMap = memo(function MuscleHeatMap({
           <View key={title} className="flex-row items-start gap-field">
             <View className="min-w-20 shrink-0 flex-row items-center gap-compact">
               <View className={`h-2 w-2 rounded-full ${color}`} aria-hidden />
-              <UiText textRole="caption">{title}</UiText>
+              <UiText textRole="meta">{title}</UiText>
             </View>
-            <UiText textRole="caption" className="flex-1">
-              {muscles.map(label).join(' · ') || 'None listed'}
+            <UiText textRole="meta" className="flex-1">
+              {muscles.map(label).join(' / ') || 'None listed'}
             </UiText>
           </View>
         ))}
       </View>
       <View
-        className="flex-row justify-center gap-field"
+        className="w-full max-w-[270px] flex-row justify-center gap-field self-center"
         onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       >
         {(['front', 'back'] as const).map((side) => (

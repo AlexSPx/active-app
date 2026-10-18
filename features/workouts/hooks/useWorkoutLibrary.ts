@@ -1,10 +1,9 @@
 import { usePreventRemove } from '@react-navigation/native'
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useWorkoutManagement } from './useWorkoutManagement'
 import { useWorkouts } from './useWorkouts'
 import { useWorkoutMutations } from './useWorkoutMutations'
-import { useRoutines } from '../../routines'
 import { useAppNavigation } from '../../../navigation/useAppNavigation'
 import type { ApiWorkout } from '../../../types/api'
 
@@ -13,26 +12,22 @@ export function useWorkoutLibrary() {
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
   const { navigateToNewWorkout, navigateToEditWorkout } = useAppNavigation()
   const { workouts, loading, error, refetch } = useWorkouts()
-  const { routines } = useRoutines()
   const { deleteWorkout, loading: deleting, error: deleteError, clearError } = useWorkoutMutations()
+  const [refreshing, setRefreshing] = useState(false)
   const [reconciling, setReconciling] = useState(false)
   const busy = deleting || reconciling
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null)
   const params = useLocalSearchParams<{ focusId?: string }>()
 
-  const routineNameByWorkoutId = useMemo(() => {
-    const mapping: Record<string, string> = {}
-    for (const routine of routines) {
-      for (const day of routine.pattern) {
-        if (day.dayType !== 'WORKOUT' || !day.workoutId) continue
-        if (!mapping[day.workoutId]) {
-          mapping[day.workoutId] = routine.name
-        }
-      }
+  const refresh = useCallback(async () => {
+    setRefreshing(true)
+    try {
+      await refetch()
+    } finally {
+      setRefreshing(false)
     }
-    return mapping
-  }, [routines])
+  }, [refetch])
 
   const handleEditWorkout = (workout: ApiWorkout) => navigateToEditWorkout(workout.id)
 
@@ -74,7 +69,8 @@ export function useWorkoutLibrary() {
     loading,
     error,
     refetch,
-    routineNameByWorkoutId,
+    refreshing,
+    refresh,
     startWorkout,
     running: isWorkoutRunning(),
     deleting: busy,

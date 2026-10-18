@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react'
 import { useNavigation, router } from 'expo-router'
 import { useRoutines, useActiveRoutine, useRoutineMutations } from '../index'
 import { usePreventRemove } from '@react-navigation/native'
-import { useWorkouts } from '../../workouts'
 import { syncEngine } from '../../../lib/sync'
 import type { Routine } from '../../../types/routine'
 
 export function useRoutineLibrary() {
   const navigation = useNavigation()
-  const { workouts } = useWorkouts()
   const library = useRoutines()
   const active = useActiveRoutine()
   const mutations = useRoutineMutations()
@@ -16,9 +14,6 @@ export function useRoutineLibrary() {
   const [refreshing, setRefreshing] = useState(false)
   const [reconciling, setReconciling] = useState(false)
   const busy = mutations.loading || reconciling
-  const workoutTitleById = Object.fromEntries(
-    workouts.map((workout) => [syncEngine.resolveId('workouts', workout.id), workout.title])
-  )
   const routines = library.routines.map((routine) => ({
     ...routine,
     id: syncEngine.resolveId('routines', routine.id),
@@ -58,7 +53,6 @@ export function useRoutineLibrary() {
   }
   return {
     routines,
-    workoutTitleById,
     loading: library.loading,
     error: library.error,
     mutationError: mutations.error,

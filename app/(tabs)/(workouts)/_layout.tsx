@@ -15,18 +15,18 @@ export default function WorkoutsLayout() {
   return (
     <View className="flex-1 bg-background">
       <View className="w-full max-w-3xl self-center px-page">
-        <View className="mb-field mt-card flex-row gap-compact rounded-control bg-surface p-compact">
+        <View className="mb-field mt-card flex-row gap-compact rounded-button bg-surface p-compact">
           {tabs.map((tab) => {
             const selected = current === tab.label
             return (
               <Pressable
                 key={tab.label}
-                className={`min-h-touch flex-1 items-center justify-center rounded-control px-compact py-compact active:opacity-80 ${selected ? 'bg-accent' : ''}`}
+                className={`min-h-touch flex-1 items-center justify-center rounded-button px-compact py-compact active:opacity-80 ${selected ? 'bg-accent' : ''}`}
                 accessibilityRole="tab"
                 accessibilityState={{ selected }}
                 onPress={() => router.replace({ pathname: tab.pathname })}
               >
-                <UiText textRole={selected ? 'bodyOnAccent' : 'caption'}>{tab.label}</UiText>
+                <UiText textRole={selected ? 'captionOnAccent' : 'caption'}>{tab.label}</UiText>
               </Pressable>
             )
           })}

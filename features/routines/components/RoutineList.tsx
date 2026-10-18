@@ -8,7 +8,6 @@ import { RoutineCard } from './RoutineCard'
 export interface RoutineListProps {
   routines: Routine[]
   activeRoutineId?: string | null
-  workoutTitleById?: Record<string, string>
   onActivate: (routineId: string) => void
   onEditRoutine?: (routine: Routine) => void
   onDeleteRoutine?: (routineId: string) => void
@@ -23,7 +22,6 @@ export interface RoutineListProps {
 export const RoutineList = memo(function RoutineList({
   routines,
   activeRoutineId,
-  workoutTitleById,
   onActivate,
   onEditRoutine,
   onDeleteRoutine,
@@ -39,7 +37,6 @@ export const RoutineList = memo(function RoutineList({
     return (
       <RoutineCard
         routine={routine}
-        workoutTitleById={workoutTitleById}
         isActive={routine.id === activeRoutineId}
         onActivate={onActivate}
         onEdit={onEditRoutine}
@@ -67,11 +64,9 @@ export const RoutineList = memo(function RoutineList({
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListEmptyComponent={
-          <View className="gap-field py-section">
-            <UiText textRole="cardTitle">No routines yet</UiText>
-            <UiText textRole="bodyMuted">
-              Create a routine to arrange workouts and rest days.
-            </UiText>
+          <View className="mt-field gap-field border-t border-divider py-section">
+            <UiText textRole="cardTitle">Find your rhythm.</UiText>
+            <UiText textRole="caption">Bring your workouts together into a routine.</UiText>
           </View>
         }
         ItemSeparatorComponent={() => <View className="h-field" />}

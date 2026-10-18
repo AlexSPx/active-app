@@ -13,7 +13,8 @@ export function WorkoutLibraryView({
   loading,
   error,
   refetch,
-  routineNameByWorkoutId,
+  refreshing,
+  refresh,
   startWorkout,
   running,
   deleting,
@@ -50,7 +51,6 @@ export function WorkoutLibraryView({
         workouts={workouts}
         onStartWorkout={startWorkout}
         isWorkoutRunning={running}
-        routineNameByWorkoutId={routineNameByWorkoutId}
         onEditWorkout={handleEditWorkout}
         focusId={focusId}
         listHeader={
@@ -59,9 +59,7 @@ export function WorkoutLibraryView({
               <UiText textRole="bodyEmphasis" accessibilityRole="header">
                 Your workouts
               </UiText>
-              <UiText textRole="caption">
-                {workouts.length} saved {workouts.length === 1 ? 'workout' : 'workouts'}
-              </UiText>
+              <UiText textRole="meta">{workouts.length} saved</UiText>
             </View>
             <Button
               variant="ghost"
@@ -69,14 +67,14 @@ export function WorkoutLibraryView({
               onPress={navigateToNewWorkout}
               className="flex-row gap-compact"
             >
-              <Plus size={16} color={colors.muted} aria-hidden />
+              <Plus size={16} color={colors.accent} aria-hidden />
               <UiText textRole="captionEmphasis">Create</UiText>
             </Button>
           </View>
         }
         onDeleteWorkout={handleDeleteWorkout}
-        refreshing={loading}
-        onRefresh={refetch}
+        refreshing={refreshing}
+        onRefresh={() => void refresh()}
         onWorkoutPress={openWorkout}
       />
       <CadenceOverlay

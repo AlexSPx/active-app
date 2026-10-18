@@ -1,15 +1,22 @@
 jest.mock('react-native', () => {
   const React = require('react')
-  return Object.fromEntries(
-    ['View', 'Text', 'Pressable', 'ScrollView', 'TextInput', 'ActivityIndicator'].map((name) => [
-      name,
-      React.forwardRef((props, ref) =>
-        React.createElement(name, { ...props, ref }, props.children)
-      ),
-    ])
-  )
+  return {
+    ...Object.fromEntries(
+      ['View', 'Text', 'Pressable', 'ScrollView', 'TextInput', 'ActivityIndicator'].map((name) => [
+        name,
+        React.forwardRef((props, ref) =>
+          React.createElement(name, { ...props, ref }, props.children)
+        ),
+      ])
+    ),
+    useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
+  }
 })
-jest.mock('../../components/ui/icons', () => ({ ChevronLeft: () => null }))
+jest.mock('../../components/ui/icons', () => ({
+  ChevronLeft: () => null,
+  ChevronDown: () => null,
+  ChevronRight: () => null,
+}))
 jest.mock('uniwind', () => ({
   useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
 }))
@@ -29,7 +36,6 @@ jest.mock('../../features/workouts/hooks/useWorkouts', () => ({ useWorkouts: jes
 jest.mock('../../features/workouts/hooks/useWorkoutManagement', () => ({
   useWorkoutManagement: jest.fn(),
 }))
-jest.mock('../../features/settings', () => ({ useSettingsStore: jest.fn() }))
 jest.mock('../../features/workouts/hooks/useWorkoutIdRemap', () => ({
   useWorkoutIdRemap: jest.fn(),
 }))
@@ -45,7 +51,6 @@ const { MuscleHeatMap } = require('../../features/workouts/components/MuscleHeat
 const Detail = require('../../app/workouts/[id]').default
 const { useWorkouts } = require('../../features/workouts/hooks/useWorkouts')
 const { useWorkoutManagement } = require('../../features/workouts/hooks/useWorkoutManagement')
-const { useSettingsStore } = require('../../features/settings')
 const text = (view) =>
   view.root
     .findAllByType('Text')
@@ -62,8 +67,8 @@ test('muscle diagrams preserve named groups, primary precedence, themed neutral 
       })
     )
   })
-  expect(text(view)).toContain('Chest · Middle back')
-  expect(text(view)).toContain('Lats · Biceps · Abductors')
+  expect(text(view)).toContain('Chest / Middle back')
+  expect(text(view)).toContain('Lats / Biceps / Abductors')
   const bodies = () => view.root.findAllByType('Body')
   expect(bodies().map((body) => body.props.side)).toEqual(['front', 'back'])
   const data = bodies()[0].props.data
@@ -72,8 +77,9 @@ test('muscle diagrams preserve named groups, primary precedence, themed neutral 
   expect(data.find((part) => part.slug === 'biceps').color).toBe('#76627e')
   expect(data.find((part) => part.slug === 'adductors').color).toBe('#dcd0e4')
   const row = view.root.findAllByType('View').find((node) => node.props.onLayout)
-  act(() => row.props.onLayout({ nativeEvent: { layout: { width: 220 } } }))
-  expect(bodies()[0].props.scale * 400 + 12).toBeLessThanOrEqual(220)
+  expect(bodies()[0].props.scale * 400).toBe(165)
+  act(() => row.props.onLayout({ nativeEvent: { layout: { width: 150 } } }))
+  expect(bodies()[0].props.scale * 400 + 12).toBeLessThanOrEqual(150)
   act(() =>
     view.update(React.createElement(MuscleHeatMap, { primaryMuscles: [], secondaryMuscles: [] }))
   )
@@ -82,7 +88,7 @@ test('muscle diagrams preserve named groups, primary precedence, themed neutral 
   act(() => view.unmount())
 })
 
-test('mixed targets use cardio duration, rest preferences update estimates, and Start respects an active workout', () => {
+test('mixed targets expand to saved set details and Start respects an active workout', () => {
   const workout = {
     id: 'workout',
     title: 'Mixed session',
@@ -110,19 +116,38 @@ test('mixed targets use cardio duration, rest preferences update estimates, and 
   const startWorkout = jest.fn()
   let running = false
   useWorkoutManagement.mockImplementation(() => ({ startWorkout, isWorkoutRunning: () => running }))
-  useSettingsStore.mockReturnValue({ restTimerEnabled: true, restTimerDefaultSeconds: 90 })
   let view
   act(() => {
     view = create(React.createElement(Detail))
   })
-  expect(text(view)).toContain('2 exercises · 2 sets · 2 intervals · ~17 min')
-  expect(text(view)).toContain('2 intervals · 10:00 / 1:00')
+  expect(text(view)).toContain('2 exercises')
+  expect(text(view)).toContain('4 sets')
+  expect(text(view)).not.toContain('~17 min')
+  const exercise = () =>
+    view.root
+      .findAllByType('Pressable')
+      .find((node) => node.props.accessibilityLabel?.startsWith('Bench press,'))
+  expect(exercise().props.accessibilityState.expanded).toBe(false)
+  act(() => exercise().props.onPress())
+  expect(exercise().props.accessibilityState.expanded).toBe(true)
+  expect(text(view)).toContain('Weight (kg)')
+  expect(text(view)).toContain('Reps')
+  expect(text(view)).toContain('20')
+  expect(text(view)).toContain('8')
+  act(() =>
+    view.root
+      .findAllByType('Pressable')
+      .find((node) => node.props.accessibilityLabel?.startsWith('Run,'))
+      .props.onPress()
+  )
+  expect(text(view)).toContain('Duration')
+  expect(text(view)).toContain('10:00')
+  expect(text(view)).toContain('1:00')
   act(() => view.root.findByType('Start').props.onPress())
   expect(startWorkout).toHaveBeenCalledWith(workout)
-  useSettingsStore.mockReturnValue({ restTimerEnabled: false, restTimerDefaultSeconds: 90 })
   running = true
   act(() => view.update(React.createElement(Detail)))
-  expect(text(view)).toContain('~14 min')
+  expect(text(view)).not.toContain('~14 min')
   expect(view.root.findByType('Start').props.isWorkoutRunning).toBe(true)
   act(() => view.root.findByType('Start').props.onPress())
   expect(startWorkout).toHaveBeenCalledTimes(1)
@@ -148,7 +173,6 @@ test('detail preserves long names and notes, opens the saved workout editor, and
   const startWorkout = jest.fn()
   useWorkouts.mockReturnValue({ workouts: [workout], loading: false, error: null })
   useWorkoutManagement.mockReturnValue({ startWorkout, isWorkoutRunning: () => false })
-  useSettingsStore.mockReturnValue({ restTimerEnabled: false, restTimerDefaultSeconds: 90 })
   let view, edit
   act(() => {
     view = create(React.createElement(Detail))
@@ -173,7 +197,6 @@ test('detail preserves long names and notes, opens the saved workout editor, and
 test('detail shows loading and missing-workout errors without a start action', () => {
   useWorkouts.mockReturnValue({ workouts: [], loading: true, error: null })
   useWorkoutManagement.mockReturnValue({ startWorkout: jest.fn(), isWorkoutRunning: () => false })
-  useSettingsStore.mockReturnValue({ restTimerEnabled: false, restTimerDefaultSeconds: 90 })
   let view
   act(() => {
     view = create(React.createElement(Detail))

@@ -102,7 +102,6 @@ test('one activation reconciles the library and active routine before actions ar
 test('saved IDs drive card titles, active selection, detail and edit navigation', () => {
   expect(model.activeRoutineId).toBe('saved-routine')
   expect(model.routines[0].pattern[0].workoutId).toBe('saved-workout')
-  expect(model.workoutTitleById['saved-workout']).toBe('Upper body')
   model.detail(model.routines[0])
   model.edit(model.routines[0])
   expect(mockPush.mock.calls).toEqual([

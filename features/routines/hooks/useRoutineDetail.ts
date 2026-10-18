@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
-import { useRoutines, useActiveRoutine } from '../index'
+import { useRoutines, useActiveRoutine, useRoutineMutations } from '../index'
 import { useWorkouts } from '../../workouts'
 import { useSettingsStore } from '../../settings'
 import { syncEngine } from '../../../lib/sync'
@@ -10,9 +10,11 @@ export function useRoutineDetail() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const { routines, loading, error } = useRoutines()
-  const { activeRoutine } = useActiveRoutine()
+  const { activeRoutine, refetch: refetchActive } = useActiveRoutine()
+  const mutations = useRoutineMutations()
   const { workouts, loading: workoutsLoading, error: workoutsError, refetch } = useWorkouts()
   const { restTimerEnabled, restTimerDefaultSeconds } = useSettingsStore()
+  const [activating, setActivating] = useState(false)
   const resolvedId = syncEngine.resolveId('routines', id)
   const routine = routines.find((item) => syncEngine.resolveId('routines', item.id) === resolvedId)
   const active =
@@ -50,6 +52,18 @@ export function useRoutineDetail() {
       pathname: '/workouts/[id]',
       params: { id: syncEngine.resolveId('workouts', workoutId) },
     })
+  const activate = async () => {
+    if (!routine || active || activating) return
+    mutations.clearError()
+    setActivating(true)
+    try {
+      if (await mutations.activateRoutine(syncEngine.resolveId('routines', routine.id))) {
+        await refetchActive()
+      }
+    } finally {
+      setActivating(false)
+    }
+  }
 
   return {
     routine,
@@ -64,6 +78,9 @@ export function useRoutineDetail() {
     error,
     workoutsLoading,
     workoutsError,
+    activate,
+    activating,
+    activateError: mutations.error,
     retryWorkouts: refetch,
     edit,
     openWorkout,

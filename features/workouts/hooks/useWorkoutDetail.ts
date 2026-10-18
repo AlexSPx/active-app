@@ -2,7 +2,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useWorkouts } from './useWorkouts'
 import { useWorkoutManagement } from './useWorkoutManagement'
 import { useWorkoutIdRemap } from './useWorkoutIdRemap'
-import { useSettingsStore } from '../../settings'
 import { summarizeWorkoutExercises } from '../../../utils/workoutUtils'
 
 export function useWorkoutDetail() {
@@ -12,19 +11,11 @@ export function useWorkoutDetail() {
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
   const running = isWorkoutRunning()
   useWorkoutIdRemap(id)
-  const { restTimerEnabled, restTimerDefaultSeconds } = useSettingsStore()
   const workout = workouts.find((item) => item.id === id)
   const exercises = workout?.workoutTemplate.exercises ?? []
-  const { strengthSets, intervals, estimatedMinutes } = summarizeWorkoutExercises(
-    exercises,
-    restTimerEnabled ? restTimerDefaultSeconds : 0
-  )
-  const setsLabel = [
-    strengthSets && `${strengthSets} ${strengthSets === 1 ? 'set' : 'sets'}`,
-    intervals && `${intervals} ${intervals === 1 ? 'interval' : 'intervals'}`,
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  const { strengthSets, intervals } = summarizeWorkoutExercises(exercises, 0)
+  const totalSets = strengthSets + intervals
+  const setsLabel = `${totalSets} ${totalSets === 1 ? 'set' : 'sets'}`
 
   return {
     workout,
@@ -33,7 +24,6 @@ export function useWorkoutDetail() {
     error,
     running,
     setsLabel,
-    estimatedMinutes,
     goBack: () => router.back(),
     editWorkout: () => {
       if (workout) router.push({ pathname: '/workouts/edit', params: { id: workout.id } })

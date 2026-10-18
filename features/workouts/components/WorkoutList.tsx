@@ -10,7 +10,6 @@ export interface WorkoutListProps {
   workouts: ApiWorkout[]
   onStartWorkout: (workout: ApiWorkout) => void
   isWorkoutRunning: boolean
-  routineNameByWorkoutId?: Record<string, string>
   onEditWorkout?: (workout: ApiWorkout) => void
   onDeleteWorkout?: (workoutId: string) => void
   onWorkoutPress?: (workout: ApiWorkout) => void
@@ -24,7 +23,6 @@ export const WorkoutList = memo(function WorkoutList({
   workouts,
   onStartWorkout,
   isWorkoutRunning,
-  routineNameByWorkoutId,
   onEditWorkout,
   onDeleteWorkout,
   onWorkoutPress,
@@ -54,7 +52,6 @@ export const WorkoutList = memo(function WorkoutList({
         workout={workout}
         onStartWorkout={() => onStartWorkout(workout)}
         isWorkoutRunning={isWorkoutRunning}
-        routineName={routineNameByWorkoutId?.[workout.id]}
         onEdit={onEditWorkout ? () => onEditWorkout(workout) : undefined}
         onDelete={onDeleteWorkout ? () => onDeleteWorkout(workout.id) : undefined}
         onPress={onWorkoutPress}
@@ -79,11 +76,9 @@ export const WorkoutList = memo(function WorkoutList({
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListEmptyComponent={
-          <View className="gap-field py-section">
-            <UiText textRole="cardTitle">No workouts yet</UiText>
-            <UiText textRole="bodyMuted">
-              Create a workout with your exercises, sets and reps.
-            </UiText>
+          <View className="mt-field gap-field border-t border-divider py-section">
+            <UiText textRole="cardTitle">Make your first workout.</UiText>
+            <UiText textRole="caption">Choose exercises and set your sets and reps.</UiText>
           </View>
         }
         ItemSeparatorComponent={() => <View className="h-field" />}

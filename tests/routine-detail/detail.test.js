@@ -5,14 +5,17 @@ const React = require('react')
 const { act, create } = require('react-test-renderer')
 jest.mock('react-native', () => {
   const React = require('react')
-  return Object.fromEntries(
-    ['View', 'Text', 'Pressable', 'ScrollView', 'ActivityIndicator'].map((name) => [
-      name,
-      React.forwardRef((props, ref) =>
-        React.createElement(name, { ...props, ref }, props.children)
-      ),
-    ])
-  )
+  return {
+    ...Object.fromEntries(
+      ['View', 'Text', 'Pressable', 'ScrollView', 'ActivityIndicator'].map((name) => [
+        name,
+        React.forwardRef((props, ref) =>
+          React.createElement(name, { ...props, ref }, props.children)
+        ),
+      ])
+    ),
+    useWindowDimensions: () => ({ width: 390, height: 844, scale: 1, fontScale: 1 }),
+  }
 })
 jest.mock('../../navigation/BackHeaderButton', () => ({ BackHeaderButton: () => null }))
 jest.mock('expo-router', () => ({
@@ -20,11 +23,21 @@ jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
   Stack: { Screen: (props) => require('react').createElement('Screen', props) },
 }))
-jest.mock('../../components/ui/icons', () => ({ ChevronRight: () => null, Clock3: () => null }))
+jest.mock('../../components/ui/icons', () => ({
+  Check: () => null,
+  ChevronRight: () => null,
+  Clock3: () => null,
+}))
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 24 }) }))
 jest.mock('../../features/routines', () => ({
   useRoutines: jest.fn(),
   useActiveRoutine: jest.fn(() => ({ activeRoutine: null })),
+  useRoutineMutations: jest.fn(() => ({
+    activateRoutine: jest.fn(async () => ({ id: 'server-routine' })),
+    loading: false,
+    error: null,
+    clearError: jest.fn(),
+  })),
 }))
 jest.mock('../../features/workouts', () => ({
   useWorkouts: jest.fn(),
@@ -45,7 +58,7 @@ jest.mock('../../lib/sync', () => ({
   },
 }))
 const Detail = require('../../app/routines/[id]').default
-const { useRoutines } = require('../../features/routines')
+const { useRoutines, useActiveRoutine, useRoutineMutations } = require('../../features/routines')
 const { useWorkouts } = require('../../features/workouts')
 const { useRouter } = require('expo-router')
 const { syncEngine } = require('../../lib/sync')
@@ -104,10 +117,13 @@ test('cycles preserve real day order and rest rows; flexible weeks use any-order
   act(() => {
     view = create(React.createElement(Detail))
   })
-  expect(text(view)).toContain('3-day cycle · 2 training · 1 rest')
-  expect(text(view)).toContain('4 sets · 2 intervals · ~32 min per cycle')
+  expect(text(view)).toContain('3-day cycle')
+  expect(text(view)).toContain('2 training days')
+  expect(text(view)).toContain('1 rest day')
+  expect(text(view)).toContain('6 sets per cycle')
   expect(text(view).match(/Day \d/g)).toEqual(['Day 1', 'Day 2', 'Day 3'])
   expect(text(view)).toContain('Rest day')
+  expect(text(view)).toContain('2 exercises / 3 sets')
   const row = view.root
     .findAllByType('Pressable')
     .find((node) => node.props.accessibilityLabel === 'View Long workout title, day 1')
@@ -137,8 +153,10 @@ test('cycles preserve real day order and rest rows; flexible weeks use any-order
     loading: false,
   })
   act(() => view.update(React.createElement(Detail)))
-  expect(text(view)).toContain('Flexible week · 2 workouts · Any order')
-  expect(text(view)).toContain('~32 min per week')
+  expect(text(view)).toContain('Flexible week')
+  expect(text(view)).toContain('2 workouts')
+  expect(text(view)).toContain('Any order')
+  expect(text(view)).toContain('6 sets per week')
   expect(text(view)).toContain('Monday–Sunday')
   expect(text(view)).not.toMatch(/Day \d|Rest day|per cycle|Repeating cycle/)
   const footer = view.root
@@ -146,6 +164,36 @@ test('cycles preserve real day order and rest rows; flexible weeks use any-order
     .find((node) => node.props.testID === 'routine-detail-actions')
   expect(footer.props.style.paddingBottom).toBe(24)
   expect(footer.findAllByType('ScrollView')).toHaveLength(0)
+  act(() => view.unmount())
+})
+
+test('activates an inactive routine from the detail screen and hides the action once active', async () => {
+  const activateRoutine = jest.fn(async () => ({ id: 'server-routine' }))
+  const refetch = jest.fn(async () => {})
+  useActiveRoutine.mockReturnValue({ activeRoutine: null, refetch })
+  useRoutineMutations.mockReturnValue({
+    activateRoutine,
+    loading: false,
+    error: null,
+    clearError: jest.fn(),
+  })
+  let view
+  act(() => {
+    view = create(React.createElement(Detail))
+  })
+  const activate = () =>
+    view.root
+      .findAllByType('Pressable')
+      .find((node) =>
+        node.findAllByType('Text').some((text) => text.props.children === 'Set as active routine')
+      )
+  await act(async () => activate().props.onPress())
+  expect(activateRoutine).toHaveBeenCalledWith('server-routine')
+  expect(refetch).toHaveBeenCalledTimes(1)
+  useActiveRoutine.mockReturnValue({ activeRoutine: { id: 'server-routine' }, refetch })
+  act(() => view.update(React.createElement(Detail)))
+  expect(text(view)).toContain('Active')
+  expect(activate()).toBeUndefined()
   act(() => view.unmount())
 })
 
@@ -188,5 +236,24 @@ test('unknown workouts retain distinct loading, failure, unassigned and unavaila
   useRoutines.mockReturnValue({ routines: [], loading: false })
   act(() => view.update(React.createElement(Detail)))
   expect(view.root.findByType('Error').props.message).toBe('Routine not found')
+  act(() => view.unmount())
+})
+
+test('a resolved workout with a blank title gets a useful title and matching accessibility label', () => {
+  useWorkouts.mockReturnValue({
+    workouts: [{ ...workout, title: '  ' }],
+    loading: false,
+    error: null,
+  })
+  let view
+  act(() => {
+    view = create(React.createElement(Detail))
+  })
+  expect(text(view)).toContain('Untitled workout')
+  expect(
+    view.root
+      .findAllByType('Pressable')
+      .some((node) => node.props.accessibilityLabel === 'View Untitled workout, day 1')
+  ).toBe(true)
   act(() => view.unmount())
 })

@@ -20,9 +20,9 @@ export function StartWorkoutButton({
       disabled={disabled || isWorkoutRunning}
       onPress={onPress}
     >
-      <Play size={20} color={colors.onAccent} aria-hidden />
-      <UiText textRole="bodyOnAccent" className="shrink">
-        {isWorkoutRunning ? 'Workout in Progress' : 'Start Workout'}
+      <Play size={18} color={colors.onAccent} aria-hidden />
+      <UiText textRole="buttonOnAccent" className="shrink">
+        {isWorkoutRunning ? 'Workout in progress' : 'Start workout'}
       </UiText>
     </Button>
   )

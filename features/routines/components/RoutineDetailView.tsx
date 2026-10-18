@@ -1,8 +1,8 @@
-import { Pressable, ScrollView, View } from 'react-native'
+import { Pressable, ScrollView, View, useWindowDimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button, UiText } from '../../../components/ui/Controls'
 import { Badge } from '../../../components/ui/Badge'
-import { ChevronRight, Clock3 } from '../../../components/ui/icons'
+import { Check, ChevronRight, Clock3 } from '../../../components/ui/icons'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { MuscleHeatMap } from '../../workouts'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
@@ -24,6 +24,9 @@ export function RoutineDetailView({
   error,
   workoutsLoading,
   workoutsError,
+  activate,
+  activating,
+  activateError,
   retryWorkouts,
   edit,
   openWorkout,
@@ -31,6 +34,7 @@ export function RoutineDetailView({
 }: Props) {
   const colors = useCadenceColors()
   const insets = useSafeAreaInsets()
+  const { width } = useWindowDimensions()
   if (loading && !routine)
     return (
       <View className="flex-1 items-center justify-center gap-field bg-background">
@@ -48,19 +52,19 @@ export function RoutineDetailView({
       </View>
     )
   const training = days.filter((day) => day.dayType === 'WORKOUT')
-  const totals = [
-    summary.strengthSets
-      ? `${summary.strengthSets} ${summary.strengthSets === 1 ? 'set' : 'sets'}`
-      : '',
-    summary.intervals
-      ? `${summary.intervals} ${summary.intervals === 1 ? 'interval' : 'intervals'}`
-      : '',
-    summary.estimatedMinutes
-      ? `~${summary.estimatedMinutes} min per ${weekly ? 'week' : 'cycle'}`
-      : '',
-  ]
-    .filter(Boolean)
-    .join(' · ')
+  const rest = days.length - training.length
+  const summaryFacts = weekly
+    ? [
+        'Flexible week',
+        `${training.length} ${training.length === 1 ? 'workout' : 'workouts'}`,
+        'Any order',
+      ]
+    : [
+        `${days.length}-day cycle`,
+        `${training.length} training ${training.length === 1 ? 'day' : 'days'}`,
+        `${rest} rest ${rest === 1 ? 'day' : 'days'}`,
+      ]
+  const totalSets = summary.strengthSets + summary.intervals
   return (
     <View className="flex-1 bg-background">
       <ScrollView
@@ -71,21 +75,33 @@ export function RoutineDetailView({
         <View className="w-full max-w-3xl self-center gap-section p-page">
           <View className="gap-field">
             <View className="flex-row items-start gap-field">
-              <UiText accessibilityRole="header" textRole="screenTitle" className="flex-1">
+              <UiText
+                accessibilityRole="header"
+                textRole={width <= 350 ? 'compactScreenTitle' : 'screenTitle'}
+                className="flex-1"
+              >
                 {routine.name}
               </UiText>
-              {active && <Badge variant="secondary">Active</Badge>}
+              {active && (
+                <Badge variant="pill" icon={<Check size={11} color={colors.accent} aria-hidden />}>
+                  Active
+                </Badge>
+              )}
             </View>
-            <UiText textRole="caption">
-              {weekly
-                ? `Flexible week · ${training.length} ${training.length === 1 ? 'workout' : 'workouts'} · Any order`
-                : `${days.length}-day cycle · ${training.length} training · ${days.length - training.length} rest`}
-            </UiText>
+            <View className="flex-row flex-wrap gap-field">
+              {summaryFacts.map((fact) => (
+                <UiText key={fact} textRole="meta">
+                  {fact}
+                </UiText>
+              ))}
+            </View>
             {!!routine.description?.trim() && (
               <UiText textRole="bodyMuted">{routine.description.trim()}</UiText>
             )}
-            {!incomplete && summary.strengthSets + summary.intervals > 0 && (
-              <UiText textRole="caption">{totals}</UiText>
+            {!incomplete && totalSets > 0 && (
+              <UiText textRole="meta">
+                {totalSets} {totalSets === 1 ? 'set' : 'sets'} per {weekly ? 'week' : 'cycle'}
+              </UiText>
             )}
           </View>
           <View className="gap-field">
@@ -93,7 +109,7 @@ export function RoutineDetailView({
               Muscle groups
             </UiText>
             {incomplete && (
-              <UiText textRole="caption">
+              <UiText textRole="meta">
                 {workoutsLoading
                   ? 'Waiting for the remaining workouts. Coverage includes available workouts.'
                   : 'Coverage includes available workouts only. Check the unassigned or unavailable sessions below.'}
@@ -112,7 +128,7 @@ export function RoutineDetailView({
             <UiText accessibilityRole="header" textRole="bodyEmphasis">
               {weekly ? 'Workouts this week' : 'Repeating cycle'}
             </UiText>
-            <UiText textRole="caption">
+            <UiText textRole="meta">
               {weekly
                 ? 'Complete these workouts Monday–Sunday in any order.'
                 : 'Follow these days in order, then repeat the sequence.'}
@@ -134,12 +150,13 @@ export function RoutineDetailView({
               )
               const details = workout
                 ? [
-                    weekly ? 'Any order' : 'Training',
-                    `${workout.workoutTemplate.exercises.length} ${workout.workoutTemplate.exercises.length === 1 ? 'exercise' : 'exercises'}`,
-                    targets.estimatedMinutes ? `~${targets.estimatedMinutes} min` : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')
+                    `${workout.workoutTemplate.exercises.length} ${
+                      workout.workoutTemplate.exercises.length === 1 ? 'exercise' : 'exercises'
+                    }`,
+                    `${targets.strengthSets + targets.intervals} ${
+                      targets.strengthSets + targets.intervals === 1 ? 'set' : 'sets'
+                    }`,
+                  ].join(' / ')
                 : rest
                   ? 'No workout scheduled.'
                   : !day.workoutId
@@ -149,36 +166,38 @@ export function RoutineDetailView({
                       : workoutsError
                         ? 'Retry loading your workouts.'
                         : 'This saved workout is unavailable. Edit the routine to replace it.'
+              const workoutTitle = workout?.title?.trim() || 'Untitled workout'
               const title = rest
                 ? 'Rest day'
-                : workout?.title ||
-                  (!day.workoutId
+                : workout
+                  ? workoutTitle
+                  : !day.workoutId
                     ? 'No workout assigned'
                     : workoutsLoading
                       ? 'Loading workout…'
-                      : 'Workout unavailable')
+                      : 'Workout unavailable'
               return (
                 <Pressable
                   key={`${day.dayIndex}-${index}`}
-                  className="min-h-touch gap-compact border-b border-divider py-field active:bg-raised"
+                  className="min-h-touch justify-center gap-compact border-b border-divider py-field active:bg-raised"
                   disabled={!workout}
                   onPress={workout ? () => openWorkout(workout.id) : undefined}
                   accessibilityRole={workout ? 'button' : undefined}
                   accessibilityLabel={
                     workout
-                      ? `View ${workout.title}${weekly ? '' : `, day ${day.dayIndex}`}`
+                      ? `View ${workoutTitle}${weekly ? '' : `, day ${day.dayIndex}`}`
                       : undefined
                   }
                 >
-                  {!weekly && <UiText textRole="caption">Day {day.dayIndex}</UiText>}
+                  <UiText textRole="meta">{weekly ? 'Any order' : `Day ${day.dayIndex}`}</UiText>
                   <View className="flex-row items-center gap-field">
                     <UiText textRole={rest ? 'bodyMuted' : 'bodyEmphasis'} className="flex-1">
                       {title}
                     </UiText>
-                    {workout && <ChevronRight size={18} color={colors.muted} aria-hidden />}
-                    {rest && <Clock3 size={18} color={colors.muted} aria-hidden />}
+                    {workout && <ChevronRight size={17} color={colors.muted} aria-hidden />}
+                    {rest && <Clock3 size={17} color={colors.muted} aria-hidden />}
                   </View>
-                  <UiText textRole="caption">{details}</UiText>
+                  <UiText textRole="meta">{details}</UiText>
                 </Pressable>
               )
             })}
@@ -189,6 +208,20 @@ export function RoutineDetailView({
               </UiText>
             )}
           </View>
+          {!active && (
+            <View className="gap-field">
+              {!!activateError && <UiText textRole="captionDestructive">{activateError}</UiText>}
+              <Button
+                variant="ghost"
+                className="border border-divider"
+                disabled={activating}
+                loading={activating}
+                onPress={() => void activate()}
+              >
+                <UiText textRole="captionEmphasis">Set as active routine</UiText>
+              </Button>
+            </View>
+          )}
         </View>
       </ScrollView>
       <View

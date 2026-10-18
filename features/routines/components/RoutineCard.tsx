@@ -1,8 +1,8 @@
-import { Pressable, ScrollView, View } from 'react-native'
+import { Pressable, View } from 'react-native'
 import { ActionMenu } from '../../../components/ui/ActionMenu'
 import { Badge } from '../../../components/ui/Badge'
-import { Button, UiText } from '../../../components/ui/Controls'
-import { Dumbbell } from '../../../components/ui/icons'
+import { UiText } from '../../../components/ui/Controls'
+import { Check, Dumbbell } from '../../../components/ui/icons'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import type { Routine } from '../../../types/routine'
 import { haptics } from '../../../utils/haptics'
@@ -10,7 +10,6 @@ import { haptics } from '../../../utils/haptics'
 export interface RoutineCardProps {
   routine: Routine
   isActive?: boolean
-  workoutTitleById?: Record<string, string>
   onActivate?: (routineId: string) => void
   onEdit?: (routine: Routine) => void
   onDelete?: (routineId: string) => void
@@ -22,7 +21,6 @@ export interface RoutineCardProps {
 export function RoutineCard({
   routine,
   isActive = false,
-  workoutTitleById,
   onActivate,
   onEdit,
   onDelete,
@@ -83,78 +81,45 @@ export function RoutineCard({
         )}
       </View>
       <View className="flex-row items-center justify-between gap-field">
-        <UiText textRole="caption">{weekly ? 'Flexible week' : 'Repeating cycle'}</UiText>
-        {isActive && <Badge variant="secondary">Active</Badge>}
+        <UiText textRole="meta" className="flex-1">
+          {weekly ? 'Flexible week' : 'Repeating cycle'}
+        </UiText>
+        {isActive && (
+          <Badge variant="pill" icon={<Check size={11} color={colors.accent} aria-hidden />}>
+            Active
+          </Badge>
+        )}
       </View>
       {!!routine.description?.trim() && (
-        <UiText textRole="caption" numberOfLines={2}>
+        <UiText textRole="meta" numberOfLines={2}>
           {routine.description.trim()}
         </UiText>
       )}
       {weekly ? (
-        <View className="gap-compact">
-          <UiText textRole="caption">
-            {training.length} {training.length === 1 ? 'workout' : 'workouts'} / Any order
-          </UiText>
-          {training.map((day, index) => (
-            <View
-              key={`${day.dayIndex}-${index}`}
-              className="min-h-touch flex-row items-center gap-field border-t border-divider py-compact"
-              accessible
-              accessibilityLabel={`Workout ${index + 1} · ${day.workoutId ? workoutTitleById?.[day.workoutId] || 'Training' : 'Training'}`}
-            >
-              <UiText textRole="caption">{index + 1}</UiText>
-              <UiText className="flex-1" textRole="caption">
-                {day.workoutId
-                  ? workoutTitleById?.[day.workoutId] || 'Saved workout'
-                  : 'Saved workout'}
-              </UiText>
-              <Dumbbell size={16} color={colors.muted} aria-hidden />
-            </View>
-          ))}
-        </View>
+        <UiText textRole="meta">
+          {training.length} {training.length === 1 ? 'workout' : 'workouts'} / Any order
+        </UiText>
       ) : (
-        <View className="gap-field">
-          <View className="flex-row flex-wrap gap-field">
-            <UiText textRole="caption">
-              {training.length} {training.length === 1 ? 'training day' : 'training days'}
-            </UiText>
-            <UiText textRole="caption">
-              {days.length - training.length}{' '}
-              {days.length - training.length === 1 ? 'rest day' : 'rest days'}
-            </UiText>
-          </View>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ flexGrow: 1 }}
-          >
-            <View className="flex-1 flex-row gap-compact">
-              {days.map((day) => (
-                <View
-                  key={day.dayIndex}
-                  className={`min-h-touch min-w-8 flex-1 items-center justify-center rounded-control px-compact py-compact ${day.dayType === 'WORKOUT' ? 'bg-accent' : 'bg-raised'}`}
-                  accessible
-                  accessibilityLabel={`Day ${day.dayIndex} · ${day.dayType === 'WORKOUT' ? 'Training' : 'Rest'}`}
-                >
-                  <UiText textRole={day.dayType === 'WORKOUT' ? 'bodyOnAccent' : 'caption'}>
-                    {day.dayIndex}
-                  </UiText>
-                  {day.dayType === 'WORKOUT' ? (
-                    <Dumbbell size={12} color={colors.onAccent} aria-hidden />
-                  ) : (
-                    <UiText textRole="caption">—</UiText>
-                  )}
-                </View>
-              ))}
-            </View>
-          </ScrollView>
+        <View className="flex-row flex-wrap gap-compact">
+          {days.map((day) => {
+            const trainingDay = day.dayType === 'WORKOUT'
+            return (
+              <View
+                key={day.dayIndex}
+                className={`h-10 min-w-8 flex-1 items-center justify-center gap-1 rounded-button ${trainingDay ? 'bg-accent' : 'bg-raised'}`}
+                accessible
+                accessibilityLabel={`Day ${day.dayIndex} · ${trainingDay ? 'Training' : 'Rest'}`}
+              >
+                <UiText textRole={trainingDay ? 'bodyOnAccent' : 'caption'}>{day.dayIndex}</UiText>
+                {trainingDay ? (
+                  <Dumbbell size={14} color={colors.onAccent} aria-hidden />
+                ) : (
+                  <UiText textRole="caption">–</UiText>
+                )}
+              </View>
+            )
+          })}
         </View>
-      )}
-      {onActivate && !isActive && (
-        <Button variant="secondary" disabled={disabled} onPress={activate}>
-          Set active routine
-        </Button>
       )}
     </View>
   )

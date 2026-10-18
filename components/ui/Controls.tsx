@@ -13,26 +13,36 @@ import {
 
 export type TextRole =
   | 'screenTitle'
+  | 'compactScreenTitle'
   | 'cardTitle'
   | 'cardTitleMuted'
   | 'body'
   | 'bodyEmphasis'
   | 'bodyMuted'
   | 'caption'
+  | 'meta'
+  | 'metaPill'
   | 'captionEmphasis'
+  | 'captionOnAccent'
+  | 'buttonOnAccent'
   | 'captionDestructive'
   | 'bodyDestructive'
   | 'bodyOnAccent'
 
 const textClasses: Record<TextRole, string> = {
   screenTitle: 'text-screen-title font-dm-semibold text-foreground',
+  compactScreenTitle: 'text-screen-title-compact font-dm-semibold text-foreground',
   cardTitle: 'text-card-title font-dm-semibold text-foreground',
   cardTitleMuted: 'text-card-title font-dm-semibold text-muted',
   body: 'text-body font-dm-regular text-foreground',
   bodyEmphasis: 'text-body font-dm-medium text-foreground',
   bodyMuted: 'text-body font-dm-regular text-muted',
   caption: 'text-caption font-dm-regular text-muted',
+  meta: 'text-meta font-dm-regular text-muted',
+  metaPill: 'text-meta-pill font-dm-medium text-accent',
   captionEmphasis: 'text-caption font-dm-semibold text-accent',
+  captionOnAccent: 'text-caption font-dm-medium text-on-accent',
+  buttonOnAccent: 'text-button-label font-dm-semibold text-on-accent',
   captionDestructive: 'text-caption font-dm-regular text-destructive',
   bodyDestructive: 'text-body font-dm-semibold text-destructive',
   bodyOnAccent: 'text-body font-dm-semibold text-on-accent',
@@ -296,19 +306,28 @@ export function TextField({
 export function UiBadge({
   children,
   variant = 'primary',
+  icon,
   className = '',
 }: {
   children: ReactNode
-  variant?: 'primary' | 'secondary' | 'success' | 'warning'
+  variant?: 'primary' | 'secondary' | 'pill' | 'success' | 'warning'
+  icon?: ReactNode
   className?: string
 }) {
   const secondary = variant === 'secondary'
-  const backgroundClass = secondary ? 'bg-raised' : 'bg-accent'
+  const pill = variant === 'pill'
+  const backgroundClass = secondary || pill ? 'bg-raised' : 'bg-accent'
+  const shapeClass = pill
+    ? 'gap-1 rounded-full px-2 py-1'
+    : 'gap-compact rounded-control px-compact py-compact'
   return (
     <View
-      className={`self-start rounded-control px-compact py-compact ${backgroundClass} ${className}`}
+      className={`flex-row items-center self-start ${shapeClass} ${backgroundClass} ${className}`}
     >
-      <UiText textRole={secondary ? 'bodyEmphasis' : 'bodyOnAccent'}>{children}</UiText>
+      {icon}
+      <UiText textRole={pill ? 'metaPill' : secondary ? 'bodyEmphasis' : 'bodyOnAccent'}>
+        {children}
+      </UiText>
     </View>
   )
 }
