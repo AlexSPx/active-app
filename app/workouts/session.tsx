@@ -134,7 +134,7 @@ export default function WorkoutSessionScreen() {
         />
         {sessionList}
         <View
-          className="border-t border-divider bg-background"
+          className="bg-transparent"
           onLayout={(event: LayoutChangeEvent) => setFooterHeight(event.nativeEvent.layout.height)}
         >
           <WorkoutActions
