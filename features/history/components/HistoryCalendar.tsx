@@ -38,11 +38,11 @@ export function HistoryCalendar({
 
   return (
     <View className="gap-field border-b border-divider pb-section">
-      <View className="gap-compact px-page">
-        <UiText textRole="cardTitle" accessibilityRole="header">
+      <View className="flex-row items-center justify-between gap-compact px-page">
+        <UiText textRole="cardTitle" accessibilityRole="header" className="min-w-0 flex-1">
           {period}
         </UiText>
-        <View className="flex-row flex-wrap items-center justify-between gap-compact">
+        <View className="shrink-0 flex-row items-center gap-compact">
           <View className="flex-row items-center gap-compact">
             <IconButton
               variant="ghost"
@@ -66,19 +66,21 @@ export function HistoryCalendar({
           <View
             accessibilityRole="radiogroup"
             accessibilityLabel="Calendar view"
-            className="ml-auto flex-row gap-compact rounded-control bg-raised p-compact"
+            className="flex-row gap-compact rounded-control bg-raised p-compact"
           >
             {(['month', 'week'] as const).map((option) => (
               <Button
                 key={option}
                 variant={view === option ? 'selected' : 'ghost'}
                 shape="control"
+                density="compact"
+                className="min-w-touch"
                 accessibilityRole="radio"
                 accessibilityLabel={option === 'month' ? 'Month' : 'Week'}
                 accessibilityState={{ checked: view === option }}
                 onPress={() => onViewChange(option)}
               >
-                {option === 'month' ? 'Month' : 'Week'}
+                <UiText textRole="captionEmphasis">{option === 'month' ? 'Month' : 'Week'}</UiText>
               </Button>
             ))}
           </View>
