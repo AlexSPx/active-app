@@ -75,6 +75,7 @@ export default function TabLayout() {
             shadowRadius: 12,
           },
           sceneStyle: {
+            backgroundColor: colors.background,
             paddingBottom: contentBottomClearance,
           },
           headerStyle: {

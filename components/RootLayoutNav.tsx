@@ -23,7 +23,7 @@ export function RootLayoutNav() {
     >
       <View className="flex-1 bg-background">
         <StatusBar style={theme === 'dark' ? 'light' : 'dark'} />
-        <Stack>
+        <Stack screenOptions={{ contentStyle: { backgroundColor: colors.background } }}>
           <Stack.Screen
             name="welcome"
             options={{
