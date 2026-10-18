@@ -21,6 +21,7 @@ export type TextRole =
   | 'caption'
   | 'captionEmphasis'
   | 'captionDestructive'
+  | 'bodyDestructive'
   | 'bodyOnAccent'
 
 const textClasses: Record<TextRole, string> = {
@@ -33,6 +34,7 @@ const textClasses: Record<TextRole, string> = {
   caption: 'text-caption font-dm-regular text-muted',
   captionEmphasis: 'text-caption font-dm-semibold text-accent',
   captionDestructive: 'text-caption font-dm-regular text-destructive',
+  bodyDestructive: 'text-body font-dm-semibold text-destructive',
   bodyOnAccent: 'text-body font-dm-semibold text-on-accent',
 }
 

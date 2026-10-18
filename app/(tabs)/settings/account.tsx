@@ -1,9 +1,9 @@
-import { Alert } from 'react-native'
+import { Alert, View } from 'react-native'
 import { useEffect, useState } from 'react'
-import { Button, Input, Label, Paragraph, Text, YStack } from 'tamagui'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useAuthMutations } from '../../../features/auth'
 import { SettingsCard, SettingsPage } from '../../../components/settings/SettingsPage'
+import { Button, TextField, UiText } from '../../../components/ui/Controls'
 import { launchFacade } from '../../../features/launch/launchFacade'
 
 export default function AccountSettingsScreen() {
@@ -74,38 +74,26 @@ export default function AccountSettingsScreen() {
     >
       <SettingsCard>
         {!presentation.profileEditor && (
-          <YStack gap="$compact">
-            <Text fontSize="$caption" color="$colorSubtle">
-              Name
-            </Text>
-            <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
+          <View className="gap-compact">
+            <UiText textRole="caption">Name</UiText>
+            <UiText textRole="cardTitle" selectable>
               {fullName}
-            </Text>
-          </YStack>
+            </UiText>
+          </View>
         )}
         {presentation.email && (
-          <YStack gap="$compact">
-            <Text fontSize="$caption" color="$colorSubtle">
-              {presentation.email.label}
-            </Text>
-            <Text fontSize="$body" lineHeight="$body">
-              {presentation.email.value}
-            </Text>
-          </YStack>
+          <View className="gap-compact">
+            <UiText textRole="caption">{presentation.email.label}</UiText>
+            <UiText selectable>{presentation.email.value}</UiText>
+          </View>
         )}
         {presentation.profileEditor && (
-          <YStack gap="$field">
-            <YStack gap="$compact">
-              <Label htmlFor="account-training-first-name" fontSize="$caption" color="$colorSubtle">
-                {presentation.profileEditor.firstNameLabel}
-              </Label>
-              <Input
+          <View className="gap-field">
+            <View className="gap-compact">
+              <UiText textRole="caption">{presentation.profileEditor.firstNameLabel}</UiText>
+              <TextField
                 id="account-training-first-name"
                 accessibilityLabel="Training profile first name"
-                height="$action"
-                rounded="$control"
-                bg="$surface"
-                borderColor="$borderColor"
                 placeholder="First name"
                 autoCapitalize="words"
                 value={firstName}
@@ -114,18 +102,12 @@ export default function AccountSettingsScreen() {
                   setSaved(false)
                 }}
               />
-            </YStack>
-            <YStack gap="$compact">
-              <Label htmlFor="account-training-last-name" fontSize="$caption" color="$colorSubtle">
-                {presentation.profileEditor.lastNameLabel}
-              </Label>
-              <Input
+            </View>
+            <View className="gap-compact">
+              <UiText textRole="caption">{presentation.profileEditor.lastNameLabel}</UiText>
+              <TextField
                 id="account-training-last-name"
                 accessibilityLabel="Training profile last name"
-                height="$action"
-                rounded="$control"
-                bg="$surface"
-                borderColor="$borderColor"
                 placeholder="Last name"
                 autoCapitalize="words"
                 value={lastName}
@@ -134,70 +116,60 @@ export default function AccountSettingsScreen() {
                   setSaved(false)
                 }}
               />
-            </YStack>
+            </View>
             {(saveError || saved) && (
-              <Paragraph
-                fontSize="$caption"
-                color={saveError ? '$destructive' : '$colorSubtle'}
+              <UiText
+                textRole={saveError ? 'captionDestructive' : 'caption'}
                 accessibilityLiveRegion="polite"
               >
                 {saveError || 'Training name saved.'}
-              </Paragraph>
+              </UiText>
             )}
-            <Button
-              height="$action"
-              rounded="$button"
-              bg="$primary"
-              color="$onPrimary"
-              disabled={!dirty || saving}
-              opacity={!dirty || saving ? 0.5 : 1}
-              onPress={saveTrainingName}
-            >
+            <Button disabled={!dirty || saving} loading={saving} onPress={saveTrainingName}>
               {saving ? 'Saving…' : presentation.profileEditor.saveLabel}
             </Button>
-          </YStack>
+          </View>
         )}
       </SettingsCard>
       {presentation.accountActions.map((action) =>
         action.kind === 'sign-out' ? (
           <Button
             key={action.kind}
-            height="$action"
-            rounded="$button"
-            bg="$backgroundStrong"
+            variant="secondary"
             disabled={deleting}
             onPress={confirmSignOut}
           >
             Sign out
           </Button>
         ) : (
-          <YStack key={action.kind} gap="$field" mt="$section">
-            <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600">
+          <View key={action.kind} className="gap-field">
+            <UiText accessibilityRole="header" textRole="cardTitle">
               Delete account
-            </Text>
-            <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle">
+            </UiText>
+            <UiText textRole="bodyMuted">
               Permanently delete your account and training data, including your workouts, routines,
               and recorded sessions.
-            </Paragraph>
+            </UiText>
             <Button
-              height="$action"
-              rounded="$button"
-              bg="$backgroundStrong"
-              color="$destructive"
+              variant="surface"
+              accessibilityLabel={deleting ? 'Deleting account' : 'Delete account'}
               disabled={deleting}
+              loading={deleting}
               onPress={confirmDelete}
             >
-              {deleting ? 'Deleting…' : 'Delete account'}
+              <UiText textRole="bodyDestructive">
+                {deleting ? 'Deleting…' : 'Delete account'}
+              </UiText>
             </Button>
             {!!deleteError && (
-              <Paragraph fontSize="$caption" color="$destructive" accessibilityLiveRegion="polite">
+              <UiText textRole="captionDestructive" accessibilityLiveRegion="polite">
                 {deleteError}
-              </Paragraph>
+              </UiText>
             )}
-            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+            <UiText textRole="caption">
               You’ll be asked to confirm before anything is deleted.
-            </Text>
-          </YStack>
+            </UiText>
+          </View>
         )
       )}
     </SettingsPage>

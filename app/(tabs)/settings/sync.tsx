@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Alert } from 'react-native'
+import { Alert, Switch, View } from 'react-native'
 import { Stack, useFocusEffect } from 'expo-router'
-import { Button, Label, Paragraph, Switch, Text, XStack, YStack } from 'tamagui'
+import { Button, Surface, UiText } from '../../../components/ui/Controls'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
 import { launchFacade } from '../../../features/launch/launchFacade'
 import { WorkOSSignInButton } from '../../../components/WorkOSSignInButton'
@@ -63,9 +63,9 @@ function LocalStorageScreen({ title, description }: { title: string; description
     <>
       <Stack.Screen options={{ title }} />
       <SettingsPage title={title}>
-        <Paragraph fontSize="$body" lineHeight="$body" color="$colorSubtle" selectable>
+        <UiText textRole="bodyMuted" selectable>
           {description}
-        </Paragraph>
+        </UiText>
       </SettingsPage>
     </>
   )
@@ -204,93 +204,97 @@ function SyncSettingsContent({ title, description }: { title: string; descriptio
     <>
       <Stack.Screen options={{ title }} />
       <SettingsPage title={title} description={description}>
-        <XStack items="center" justify="space-between" gap="$field">
-          <YStack flex={1} gap="$compact">
-            <Label htmlFor="sync-offline" fontSize="$body" fontWeight="600">
-              Work offline
-            </Label>
-            <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+        <View className="flex-row items-center justify-between gap-field">
+          <View className="flex-1 gap-compact">
+            <UiText textRole="bodyEmphasis">Work offline</UiText>
+            <UiText textRole="caption">
               Queued changes stay on this device. Turn this off to resume syncing when the service
               is available.
-            </Paragraph>
-          </YStack>
+            </UiText>
+          </View>
           <Switch
-            id="sync-offline"
+            nativeID="sync-offline"
             accessibilityLabel="Work offline"
-            checked={manualOffline}
+            value={manualOffline}
             disabled={!networkReady || networkBusy}
-            onCheckedChange={(value) => void updateManualOffline(value)}
-            bg={manualOffline ? '$primary' : '$backgroundStrong'}
-          >
-            <Switch.Thumb bg="$surface" />
-          </Switch>
-        </XStack>
+            onValueChange={(value) => void updateManualOffline(value)}
+            accessibilityState={{ checked: manualOffline, disabled: !networkReady || networkBusy }}
+            thumbColorClassName="accent-surface"
+            trackColorOnClassName="accent-accent"
+            trackColorOffClassName="accent-raised"
+            ios_backgroundColorClassName="accent-raised"
+          />
+        </View>
 
         {!!restoreError && (
-          <YStack gap="$field">
-            <Paragraph color="$destructive" accessibilityLiveRegion="polite" selectable>
+          <View className="gap-field">
+            <UiText textRole="bodyDestructive" accessibilityLiveRegion="polite" selectable>
               Could not restore saved offline preference. Server actions are paused.
-            </Paragraph>
+            </UiText>
             <Button
-              minH="$action"
+              className="min-h-action"
               disabled={networkBusy}
               onPress={() => void restoreNetworkSettings()}
             >
               {networkBusy ? 'Retrying…' : 'Retry restore'}
             </Button>
-          </YStack>
+          </View>
         )}
         {!!networkActionError && (
-          <Paragraph color="$destructive" accessibilityLiveRegion="polite" selectable>
+          <UiText textRole="bodyDestructive" accessibilityLiveRegion="polite" selectable>
             {networkActionError}
-          </Paragraph>
+          </UiText>
         )}
 
         {authRequired && (
-          <YStack gap="$field" p="$card" rounded="$card" bg="$backgroundHover">
-            <Text fontSize="$cardTitle" fontWeight="600" selectable>
+          <View className="gap-field rounded-card bg-raised p-card">
+            <UiText textRole="cardTitle" selectable>
               Sign in again to resume syncing
-            </Text>
-            <Paragraph fontSize="$body" color="$colorSubtle" selectable>
+            </UiText>
+            <UiText textRole="bodyMuted" selectable>
               Your queued changes are saved on this device.
-            </Paragraph>
+            </UiText>
             {networkReady && !manualOffline ? (
               <WorkOSSignInButton label="Sign in again" />
             ) : (
-              <Paragraph fontSize="$body" color="$colorSubtle" selectable>
+              <UiText textRole="bodyMuted" selectable>
                 Turn off offline mode when the service is available to sign in and resume syncing.
-              </Paragraph>
+              </UiText>
             )}
-          </YStack>
+          </View>
         )}
 
         {!!visibleActionError && (
-          <Paragraph color="$destructive" accessibilityLiveRegion="polite" selectable>
+          <UiText textRole="bodyDestructive" accessibilityLiveRegion="polite" selectable>
             {visibleActionError}
-          </Paragraph>
+          </UiText>
         )}
 
-        <YStack gap="$field">
-          <Text fontSize="$sectionTitle" fontWeight="600" selectable>
+        <View className="gap-field">
+          <UiText textRole="cardTitle" selectable>
             Queued changes
-          </Text>
+          </UiText>
           {visibleLoading ? (
-            <Paragraph color="$colorSubtle" accessibilityLiveRegion="polite" selectable>
+            <UiText textRole="bodyMuted" accessibilityLiveRegion="polite" selectable>
               Loading sync status…
-            </Paragraph>
+            </UiText>
           ) : visibleLoadError ? (
-            <YStack gap="$field">
-              <Paragraph color="$destructive" selectable>
+            <View className="gap-field">
+              <UiText textRole="bodyDestructive" selectable>
                 Could not load sync status.
-              </Paragraph>
-              <Button minH="$action" onPress={() => void refreshJobs(true)} disabled={!scopeReady}>
+              </UiText>
+              <Button
+                className="min-h-action"
+                onPress={() => void refreshJobs(true)}
+                disabled={!scopeReady}
+              >
                 Try again
               </Button>
-            </YStack>
+            </View>
           ) : visibleJobs.length === 0 ? (
-            <Paragraph color="$colorSubtle" selectable>
+            <UiText textRole="bodyMuted" selectable>
               You’re all caught up.
-            </Paragraph>
+            </UiText>
           ) : (
             visibleJobs.map((job) => {
               const canRetry =
@@ -303,30 +307,22 @@ function SyncSettingsContent({ title, description }: { title: string; descriptio
               const busy = busyId === job.id
 
               return (
-                <YStack
-                  key={job.id}
-                  gap="$field"
-                  p="$card"
-                  rounded="$card"
-                  borderWidth={1}
-                  borderColor="$borderColor"
-                >
-                  <XStack justify="space-between" gap="$field" items="center">
-                    <Text fontSize="$exerciseTitle" fontWeight="600" selectable>
+                <Surface key={job.id}>
+                  <View className="flex-row items-center justify-between gap-field">
+                    <UiText textRole="bodyEmphasis" selectable>
                       {JOB_LABELS[job.endpoint] ?? 'Training change'}
-                    </Text>
-                    <Text fontSize="$caption" color="$colorSubtle" selectable>
+                    </UiText>
+                    <UiText textRole="caption" selectable>
                       {jobStatus(job)}
-                    </Text>
-                  </XStack>
-                  <Paragraph fontSize="$body" color="$colorSubtle" selectable>
+                    </UiText>
+                  </View>
+                  <UiText textRole="bodyMuted" selectable>
                     {jobMessage(job)}
-                  </Paragraph>
-                  <XStack gap="$field">
+                  </UiText>
+                  <View className="flex-row gap-field">
                     {canRetry && (
                       <Button
-                        flex={1}
-                        minH="$action"
+                        className="min-h-action flex-1"
                         disabled={!!busyId || !scopeReady}
                         onPress={() => void runJobAction(job.id, () => syncEngine.retryJob(job.id))}
                       >
@@ -335,21 +331,20 @@ function SyncSettingsContent({ title, description }: { title: string; descriptio
                     )}
                     {canDiscard && (
                       <Button
-                        flex={1}
-                        minH="$action"
-                        chromeless
+                        className="min-h-action flex-1"
+                        variant="ghost"
                         disabled={!!busyId || !scopeReady}
                         onPress={() => confirmDiscard(job)}
                       >
                         Discard
                       </Button>
                     )}
-                  </XStack>
-                </YStack>
+                  </View>
+                </Surface>
               )
             })
           )}
-        </YStack>
+        </View>
       </SettingsPage>
     </>
   )

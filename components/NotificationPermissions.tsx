@@ -1,11 +1,10 @@
 import { useCallback, useState } from 'react'
-import { Button, Paragraph, Text, XStack, YStack } from 'tamagui'
 import * as Notifications from 'expo-notifications'
-import { AppState, NativeModules, Platform } from 'react-native'
+import { AppState, NativeModules, Platform, View } from 'react-native'
 import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
 import { useFocusEffect } from 'expo-router'
-import { UiText } from './ui/Controls'
+import { Button, UiText } from './ui/Controls'
 
 interface NotificationPermissionsProps {
   onStatusChange?: (status: { notifications: boolean; alarms: boolean }) => void
@@ -95,7 +94,7 @@ export default function NotificationPermissions({
     )
 
   return (
-    <YStack gap="$section">
+    <View className="gap-section">
       {[
         {
           title: 'Notifications',
@@ -115,61 +114,48 @@ export default function NotificationPermissions({
             ]
           : []),
       ].map((permission) => (
-        <YStack key={permission.title} gap="$field">
-          <XStack items="center" justify="space-between" gap="$field">
-            <Text fontSize="$body" fontWeight="600" flex={1}>
+        <View key={permission.title} className="gap-field">
+          <View className="flex-row items-center justify-between gap-field">
+            <UiText textRole="bodyEmphasis" className="flex-1">
               {permission.title}
-            </Text>
-            <Text
-              fontSize="$caption"
-              color={permission.allowed === false ? '$destructive' : '$colorSubtle'}
-              bg="$backgroundStrong"
-              px="$2"
-              py="$compact"
-              rounded="$badge"
-            >
-              {permission.allowed === null
-                ? permission.title === 'Alarms & reminders' && alarmUnavailable
-                  ? 'Unavailable'
-                  : 'Checking…'
-                : permission.allowed
-                  ? 'Allowed'
-                  : 'Not allowed'}
-            </Text>
-          </XStack>
-          <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-            {permission.description}
-          </Paragraph>
+            </UiText>
+            <View className="rounded-control bg-raised px-compact py-compact">
+              <UiText textRole={permission.allowed === false ? 'captionDestructive' : 'caption'}>
+                {permission.allowed === null
+                  ? permission.title === 'Alarms & reminders' && alarmUnavailable
+                    ? 'Unavailable'
+                    : 'Checking…'
+                  : permission.allowed
+                    ? 'Allowed'
+                    : 'Not allowed'}
+              </UiText>
+            </View>
+          </View>
+          <UiText textRole="caption">{permission.description}</UiText>
           {permission.title === 'Alarms & reminders' && (
-            <Text fontSize="$caption" color="$colorMuted">
-              Android only
-            </Text>
+            <UiText textRole="caption">Android only</UiText>
           )}
-          <Button
-            chromeless
-            self="flex-start"
-            color="$primary"
-            minH="$touch"
-            onPress={permission.onPress}
-          >
-            {permission.allowed
-              ? 'Manage in device settings ↗'
-              : permission.allowed === false
-                ? 'Allow access ↗'
-                : 'Review device settings ↗'}
+          <Button variant="ghost" className="self-start" onPress={permission.onPress}>
+            <UiText textRole="captionEmphasis">
+              {permission.allowed
+                ? 'Manage in device settings ↗'
+                : permission.allowed === false
+                  ? 'Allow access ↗'
+                  : 'Review device settings ↗'}
+            </UiText>
           </Button>
-        </YStack>
+        </View>
       ))}
       {!!error && (
-        <Paragraph fontSize="$caption" color="$destructive" accessibilityLiveRegion="polite">
+        <UiText textRole="captionDestructive" accessibilityLiveRegion="polite">
           {error}
-        </Paragraph>
+        </UiText>
       )}
       {notifications === false && (
-        <Paragraph fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+        <UiText textRole="caption">
           Rest timer alerts won’t arrive until notifications are allowed.
-        </Paragraph>
+        </UiText>
       )}
-    </YStack>
+    </View>
   )
 }
