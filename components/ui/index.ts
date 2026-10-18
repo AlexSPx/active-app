@@ -4,7 +4,6 @@ export { ExpandableCard } from './ExpandableCard'
 export { Badge } from './Badge'
 export { ErrorDisplay } from './ErrorDisplay'
 export { LoadingSpinner } from './LoadingSpinner'
-export { CreateTopButton } from './CreateTopButton'
 export { useCadenceColors } from './useCadenceColors'
 export {
   Button,

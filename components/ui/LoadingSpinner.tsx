@@ -1,5 +1,6 @@
-import { Text, YStack } from 'tamagui'
-import { ActivityIndicator } from 'react-native'
+import { ActivityIndicator, View } from 'react-native'
+import { UiText } from './Controls'
+import { useCadenceColors } from './useCadenceColors'
 
 interface LoadingSpinnerProps {
   size?: 'small' | 'large'
@@ -8,14 +9,11 @@ interface LoadingSpinnerProps {
 }
 
 export function LoadingSpinner({ size = 'large', color, text }: LoadingSpinnerProps) {
+  const colors = useCadenceColors()
   return (
-    <YStack gap="$2">
-      <ActivityIndicator size={size} color={color} />
-      {text && (
-        <Text fontSize="$4" color="$colorSubtle">
-          {text}
-        </Text>
-      )}
-    </YStack>
+    <View className="gap-compact">
+      <ActivityIndicator size={size} color={color ?? colors.accent} />
+      {text && <UiText textRole="bodyMuted">{text}</UiText>}
+    </View>
   )
 }

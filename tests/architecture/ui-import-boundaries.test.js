@@ -10,6 +10,9 @@ const migratedUiFiles = new Set([
   'components/ui/ActionMenu.tsx',
   'components/ui/Badge.tsx',
   'components/ui/useCadenceColors.ts',
+  'components/ui/StartWorkoutButton.tsx',
+  'components/ui/ErrorDisplay.tsx',
+  'components/ui/LoadingSpinner.tsx',
   'components/ui/index.ts',
 ])
 const projectAliases = new Set([

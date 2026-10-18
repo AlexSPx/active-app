@@ -1,13 +1,37 @@
+jest.mock('../../features/routines/components/RoutineList', () => ({
+  RoutineList: (props) => require('react').createElement('RoutineList', props),
+}))
+jest.mock('react-native', () => {
+  const React = require('react')
+  return Object.fromEntries(
+    ['View', 'Text', 'Pressable', 'ScrollView', 'TextInput', 'ActivityIndicator'].map((name) => [
+      name,
+      React.forwardRef((props, ref) =>
+        React.createElement(name, { ...props, ref }, props.children)
+      ),
+    ])
+  )
+})
+jest.mock('uniwind', () => ({
+  useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
+}))
+jest.mock('@react-navigation/native', () => ({ usePreventRemove: jest.fn() }))
+jest.mock('../../lib/sync', () => ({ syncEngine: { resolveId: (_entity, id) => id } }))
+jest.mock('../../features/workouts/hooks/useWorkouts', () => ({
+  useWorkouts: () => jest.requireMock('../../features/workouts').useWorkouts(),
+}))
+jest.mock('../../features/workouts/hooks/useWorkoutManagement', () => ({
+  useWorkoutManagement: () => jest.requireMock('../../features/workouts').useWorkoutManagement(),
+}))
+jest.mock('../../features/workouts/hooks/useWorkoutMutations', () => ({
+  useWorkoutMutations: () => jest.requireMock('../../features/workouts').useWorkoutMutations(),
+}))
+jest.mock('../../features/workouts/components/WorkoutList', () => ({
+  WorkoutList: (props) => require('react').createElement('WorkoutList', props),
+}))
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 
-jest.mock('tamagui', () => ({
-  getTokenValue: () => 20,
-  YStack: (props) => require('react').createElement('YStack', props, props.children),
-  XStack: (props) => require('react').createElement('XStack', props, props.children),
-  Button: (props) => require('react').createElement('Button', props, props.children),
-  Text: (props) => require('react').createElement('Text', props, props.children),
-}))
 jest.mock(
   '../../components/ui/CadenceOverlay',
   () => ({
@@ -16,7 +40,11 @@ jest.mock(
   }),
   { virtual: true }
 )
-jest.mock('../../components/ui/icons', () => ({ AlertTriangle: () => null, Trash2: () => null }))
+jest.mock('../../components/ui/icons', () => ({
+  AlertTriangle: () => null,
+  Trash2: () => null,
+  Plus: () => null,
+}))
 jest.mock('expo-router', () => ({
   useNavigation: () => ({ addListener: () => jest.fn(), setOptions: jest.fn() }),
   useLocalSearchParams: () => ({}),
@@ -82,7 +110,6 @@ jest.mock('../../components/ui/LoadingSpinner', () => ({ LoadingSpinner: () => n
 jest.mock('../../components/ui/ErrorDisplay', () => ({
   ErrorDisplay: (props) => require('react').createElement('Error', props),
 }))
-jest.mock('../../components/ui/CreateTopButton', () => ({ CreateTopButton: () => null }))
 
 const mockDeleteWorkout = jest.fn()
 const mockRefetch = jest.fn(async () => undefined)
@@ -100,8 +127,10 @@ test('failed deletion keeps confirmation open and shows the running workout erro
   await act(async () => view.root.findByType('WorkoutList').props.onDeleteWorkout('workout'))
   await act(async () =>
     view.root
-      .findAllByType('Button')
-      .find((button) => button.props.children === 'Delete workout')
+      .findAllByType('Pressable')
+      .find((button) =>
+        button.findAllByType('Text').some((node) => node.children.join('') === 'Delete workout')
+      )
       .props.onPress()
   )
 
@@ -122,8 +151,10 @@ test('successful deletion closes confirmation and refreshes the list', async () 
   await act(async () => view.root.findByType('WorkoutList').props.onDeleteWorkout('workout'))
   await act(async () =>
     view.root
-      .findAllByType('Button')
-      .find((button) => button.props.children === 'Delete workout')
+      .findAllByType('Pressable')
+      .find((button) =>
+        button.findAllByType('Text').some((node) => node.children.join('') === 'Delete workout')
+      )
       .props.onPress()
   )
 
@@ -146,8 +177,10 @@ test('routine deletion failure stays available for retry, then refreshes after s
   act(() => view.root.findByType('RoutineList').props.onDeleteRoutine('routine'))
   const deleteButton = () =>
     view.root
-      .findAllByType('Button')
-      .find((button) => button.props.children?.props?.children === 'Delete routine')
+      .findAllByType('Pressable')
+      .find((button) =>
+        button.findAllByType('Text').some((node) => node.children.join('') === 'Delete routine')
+      )
   await act(async () => deleteButton().props.onPress())
   expect(view.root.findByType('Overlay').props.open).toBe(true)
   expect(view.root.findByType('Error').props.message).toBe('Could not delete routine. Try again.')
@@ -179,18 +212,21 @@ test.each([
     act(() => view.root.findByType(list).props[open](entity))
     act(() => {
       request = view.root
-        .findAllByType('Button')
+        .findAllByType('Pressable')
         .find((button) => {
-          const label = button.props.children?.props?.children ?? button.props.children
-          return label === `Delete ${entity}`
+          return button
+            .findAllByType('Text')
+            .some((node) => node.children.join('') === `Delete ${entity}`)
         })
         .props.onPress()
     })
     expect(view.root.findByType('Overlay').props.dismissible).toBe(false)
     expect(
       view.root
-        .findAllByType('Button')
-        .find((button) => button.props.children?.props?.children === 'Cancel').props.disabled
+        .findAllByType('Pressable')
+        .find((button) =>
+          button.findAllByType('Text').some((node) => node.children.join('') === 'Cancel')
+        ).props.disabled
     ).toBe(true)
     await act(async () => {
       finish(true)
@@ -214,8 +250,10 @@ test.each([
     act(() => view.root.findByType(list).props[open](entity))
     act(() =>
       view.root
-        .findAllByType('Button')
-        .find((button) => button.props.children?.props?.children === 'Cancel')
+        .findAllByType('Pressable')
+        .find((button) =>
+          button.findAllByType('Text').some((node) => node.children.join('') === 'Cancel')
+        )
         .props.onPress()
     )
     expect(deleteItem).not.toHaveBeenCalled()

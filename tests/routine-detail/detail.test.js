@@ -3,28 +3,24 @@ jest.mock('uniwind', () => ({
 }))
 const React = require('react')
 const { act, create } = require('react-test-renderer')
-jest.mock('tamagui', () => ({
-  ...Object.fromEntries(
-    ['YStack', 'XStack', 'Text', 'ScrollView', 'Button'].map((name) => [
+jest.mock('react-native', () => {
+  const React = require('react')
+  return Object.fromEntries(
+    ['View', 'Text', 'Pressable', 'ScrollView', 'ActivityIndicator'].map((name) => [
       name,
-      (props) => require('react').createElement(name, props, props.children),
+      React.forwardRef((props, ref) =>
+        React.createElement(name, { ...props, ref }, props.children)
+      ),
     ])
-  ),
-  useTheme: () => ({
-    background: { val: 'page' },
-    primary: { val: 'accent' },
-    color: { val: 'text' },
-  }),
-  getTokenValue: () => 20,
-  getVariableValue: (value) => value,
-  getConfig: () => ({ fonts: { body: { size: { header: 18 } } } }),
-}))
+  )
+})
+jest.mock('../../navigation/BackHeaderButton', () => ({ BackHeaderButton: () => null }))
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'local-routine' }),
   useRouter: jest.fn(),
   Stack: { Screen: (props) => require('react').createElement('Screen', props) },
 }))
-jest.mock('../../components/ui/icons', () => ({ ChevronRight: () => null }))
+jest.mock('../../components/ui/icons', () => ({ ChevronRight: () => null, Clock3: () => null }))
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 24 }) }))
 jest.mock('../../features/routines', () => ({
   useRoutines: jest.fn(),
@@ -113,7 +109,7 @@ test('cycles preserve real day order and rest rows; flexible weeks use any-order
   expect(text(view).match(/Day \d/g)).toEqual(['Day 1', 'Day 2', 'Day 3'])
   expect(text(view)).toContain('Rest day')
   const row = view.root
-    .findAllByType('YStack')
+    .findAllByType('Pressable')
     .find((node) => node.props.accessibilityLabel === 'View Long workout title, day 1')
   act(() => row.props.onPress())
   expect(navigation.push).toHaveBeenCalledWith({
@@ -122,8 +118,10 @@ test('cycles preserve real day order and rest rows; flexible weeks use any-order
   })
   act(() =>
     view.root
-      .findAllByType('Button')
-      .find((node) => node.props.children === 'Edit routine')
+      .findAllByType('Pressable')
+      .find((node) =>
+        node.findAllByType('Text').some((text) => text.props.children === 'Edit routine')
+      )
       .props.onPress()
   )
   expect(navigation.push).toHaveBeenCalledWith({
@@ -143,8 +141,10 @@ test('cycles preserve real day order and rest rows; flexible weeks use any-order
   expect(text(view)).toContain('~32 min per week')
   expect(text(view)).toContain('Monday–Sunday')
   expect(text(view)).not.toMatch(/Day \d|Rest day|per cycle|Repeating cycle/)
-  const footer = view.root.findAllByType('YStack').find((node) => node.props.borderTopWidth === 1)
-  expect(footer.props.pb).toBe('$page')
+  const footer = view.root
+    .findAllByType('View')
+    .find((node) => node.props.testID === 'routine-detail-actions')
+  expect(footer.props.style.paddingBottom).toBe(24)
   expect(footer.findAllByType('ScrollView')).toHaveLength(0)
   act(() => view.unmount())
 })
@@ -173,8 +173,10 @@ test('unknown workouts retain distinct loading, failure, unassigned and unavaila
   expect(text(view)).toContain('Retry loading your workouts.')
   act(() =>
     view.root
-      .findAllByType('Button')
-      .find((node) => node.props.children === 'Retry workouts')
+      .findAllByType('Pressable')
+      .find((node) =>
+        node.findAllByType('Text').some((text) => text.props.children === 'Retry workouts')
+      )
       .props.onPress()
   )
   expect(retry).toHaveBeenCalledTimes(1)

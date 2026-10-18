@@ -1,8 +1,9 @@
-import { FlashList } from '@shopify/flash-list'
+import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { memo, useEffect, useRef } from 'react'
 import type { ApiWorkout } from '../../../types/api'
 import { WorkoutCard } from './WorkoutCard'
-import { View, YStack, Text, getTokenValue } from 'tamagui'
+import { View } from 'react-native'
+import { UiText } from '../../../components/ui/Controls'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export interface WorkoutListProps {
@@ -32,7 +33,7 @@ export const WorkoutList = memo(function WorkoutList({
   onRefresh,
   focusId,
 }: WorkoutListProps) {
-  const listRef = useRef<any>(null)
+  const listRef = useRef<FlashListRef<ApiWorkout>>(null)
   const insets = useSafeAreaInsets()
 
   useEffect(() => {
@@ -62,31 +63,30 @@ export const WorkoutList = memo(function WorkoutList({
   }
 
   return (
-    <View flex={1} width="100%" maxW="$content" self="center">
+    <View className="w-full max-w-3xl flex-1 self-center">
       <FlashList
         ref={listRef}
         data={workouts}
         renderItem={renderWorkout}
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
-          paddingBottom: getTokenValue('$section', 'space') + insets.bottom,
-          paddingHorizontal: getTokenValue('$page', 'space'),
+          paddingBottom: 24 + insets.bottom,
+          paddingHorizontal: 20,
         }}
         ListHeaderComponent={listHeader}
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListEmptyComponent={
-          <YStack py="$section" gap="$2">
-            <Text fontSize="$cardTitle" fontWeight="600">
-              No workouts yet
-            </Text>
-            <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
+          <View className="gap-field py-section">
+            <UiText textRole="cardTitle">No workouts yet</UiText>
+            <UiText textRole="bodyMuted">
               Create a workout with your exercises, sets and reps.
-            </Text>
-          </YStack>
+            </UiText>
+          </View>
         }
-        ItemSeparatorComponent={() => <View height={getTokenValue('$field', 'space')} />}
+        ItemSeparatorComponent={() => <View className="h-field" />}
         showsVerticalScrollIndicator={false}
       />
     </View>

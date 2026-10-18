@@ -1,9 +1,10 @@
 import { memo, useState } from 'react'
-import { XStack, YStack, Text, Circle, getTokenValue, useTheme } from 'tamagui'
+import { View } from 'react-native'
+import { UiText } from '../../../components/ui/Controls'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import Body, { type ExtendedBodyPart, type Slug } from 'react-native-body-highlighter'
-import type { MuscleGroup } from '../../../types/api'
 
-const muscleToSlug: Partial<Record<MuscleGroup, Slug[]>> = {
+const muscleToSlug: Record<string, Slug[] | undefined> = {
   CHEST: ['chest'],
   BICEPS: ['biceps'],
   ABDOMINALS: ['abs'],
@@ -69,84 +70,74 @@ export const MuscleHeatMap = memo(function MuscleHeatMap({
   secondaryMuscles,
   scale = 1,
 }: MuscleHeatMapProps) {
-  const theme = useTheme()
-  const diagramWidth = getTokenValue('$muscleDiagram', 'size')
+  const colors = useCadenceColors()
+  const diagramWidth = 144
   const [width, setWidth] = useState(0)
   const primary = [...new Set(primaryMuscles.map(normalize).filter(Boolean))]
   const supporting = [...new Set(secondaryMuscles.map(normalize).filter(Boolean))].filter(
     (muscle) => !primary.includes(muscle)
   )
   const groups = [
-    { muscles: primary, title: 'Primary', color: '$primary' },
-    { muscles: supporting, title: 'Supporting', color: '$trainingMuted' },
+    { muscles: primary, title: 'Primary', color: 'bg-accent' },
+    { muscles: supporting, title: 'Supporting', color: 'bg-muted' },
   ] as const
   const parts = new Map<Slug, ExtendedBodyPart>(
-    bodySlugs.map((slug) => [slug, { slug, color: theme.borderColor.val }])
+    bodySlugs.map((slug) => [slug, { slug, color: colors.divider }])
   )
   for (const [muscles, color] of [
-    [supporting, theme.trainingMuted.val],
-    [primary, theme.primary.val],
+    [supporting, colors.muted],
+    [primary, colors.accent],
   ] as const) {
     for (const muscle of muscles) {
-      for (const slug of muscleToSlug[muscle as MuscleGroup] ?? []) parts.set(slug, { slug, color })
+      for (const slug of muscleToSlug[muscle] ?? []) parts.set(slug, { slug, color })
     }
   }
   if (!primary.length && !supporting.length)
-    return (
-      <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
-        No muscle groups listed for these exercises.
-      </Text>
-    )
-  const diagramScale = Math.min(
-    scale,
-    diagramWidth / 200,
-    width ? (width - getTokenValue('$field', 'space')) / 400 : diagramWidth / 200
+    return <UiText textRole="bodyMuted">No muscle groups listed for these exercises.</UiText>
+  const diagramScale = Math.max(
+    0,
+    Math.min(scale, diagramWidth / 200, width ? (width - 12) / 400 : diagramWidth / 200)
   )
   return (
-    <YStack gap="$field">
-      <YStack gap="$compact">
+    <View className="gap-field">
+      <View className="gap-field">
         {groups.map(({ muscles, title, color }) => (
-          <XStack key={title} gap="$field" items="flex-start">
-            <XStack width="$day" gap="$compact" items="center">
-              <Circle size="$iconSmall" bg={color} aria-hidden />
-              <Text fontSize="$caption" lineHeight="$caption" color="$color" fontWeight="600">
-                {title}
-              </Text>
-            </XStack>
-            <Text flex={1} fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+          <View key={title} className="flex-row items-start gap-field">
+            <View className="min-w-20 shrink-0 flex-row items-center gap-compact">
+              <View className={`h-2 w-2 rounded-full ${color}`} aria-hidden />
+              <UiText textRole="caption">{title}</UiText>
+            </View>
+            <UiText textRole="caption" className="flex-1">
               {muscles.map(label).join(' · ') || 'None listed'}
-            </Text>
-          </XStack>
+            </UiText>
+          </View>
         ))}
-      </YStack>
-      <XStack
-        gap="$field"
-        justify="center"
+      </View>
+      <View
+        className="flex-row justify-center gap-field"
         onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
       >
         {(['front', 'back'] as const).map((side) => (
-          <YStack key={side} flex={1} minW={0} items="center" gap="$compact">
-            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-              {side === 'front' ? 'Front' : 'Back'}
-            </Text>
-            <YStack
+          <View key={side} className="min-w-0 flex-1 items-center gap-field">
+            <UiText textRole="caption">{side === 'front' ? 'Front' : 'Back'}</UiText>
+            <View
               accessible
               accessibilityRole="image"
               accessibilityLabel={`${side === 'front' ? 'Front' : 'Back'} muscle diagram. Primary: ${primary.map(label).join(', ') || 'none listed'}. Supporting: ${supporting.map(label).join(', ') || 'none listed'}.`}
             >
-              <YStack importantForAccessibility="no-hide-descendants" aria-hidden>
+              <View importantForAccessibility="no-hide-descendants" aria-hidden>
                 <Body
                   data={[...parts.values()]}
                   side={side}
                   scale={diagramScale}
-                  border={theme.background.val}
-                  defaultFill={theme.borderColor.val}
+                  border={colors.background}
+                  defaultFill={colors.divider}
                 />
-              </YStack>
-            </YStack>
-          </YStack>
+              </View>
+            </View>
+          </View>
         ))}
-      </XStack>
-    </YStack>
+      </View>
+    </View>
   )
 })

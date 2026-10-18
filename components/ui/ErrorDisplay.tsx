@@ -1,4 +1,5 @@
-import { Text, Button, YStack } from 'tamagui'
+import { View } from 'react-native'
+import { Button, UiText } from './Controls'
 
 interface ErrorDisplayProps {
   title?: string
@@ -14,18 +15,14 @@ export function ErrorDisplay({
   retryText = 'Try Again',
 }: ErrorDisplayProps) {
   return (
-    <YStack gap="$3" p="$4">
-      <Text fontSize="$5" fontWeight="600" color="$primary">
+    <View className="gap-field p-card" accessibilityLiveRegion="polite">
+      <UiText textRole="cardTitle" accessibilityRole="header">
         {title}
-      </Text>
-      <Text fontSize="$4" color="$colorSubtle">
+      </UiText>
+      <UiText textRole="bodyMuted" selectable>
         {message}
-      </Text>
-      {onRetry && (
-        <Button bg="$primary" onPress={onRetry}>
-          <Text color="$onPrimary">{retryText}</Text>
-        </Button>
-      )}
-    </YStack>
+      </UiText>
+      {onRetry && <Button onPress={onRetry}>{retryText}</Button>}
+    </View>
   )
 }

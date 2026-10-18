@@ -1,41 +1,33 @@
+jest.mock('react-native', () => {
+  const React = require('react')
+  return Object.fromEntries(
+    ['View', 'Text', 'Pressable', 'ScrollView', 'TextInput', 'ActivityIndicator'].map((name) => [
+      name,
+      React.forwardRef((props, ref) =>
+        React.createElement(name, { ...props, ref }, props.children)
+      ),
+    ])
+  )
+})
 jest.mock('../../components/ui/icons', () => ({ ChevronLeft: () => null }))
 jest.mock('uniwind', () => ({
   useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
 }))
 const React = require('react')
 const { act, create } = require('react-test-renderer')
-jest.mock('tamagui', () => ({
-  ...Object.fromEntries(
-    ['YStack', 'XStack', 'Text', 'Button', 'ScrollView', 'Circle'].map((name) => [
-      name,
-      (props) => require('react').createElement(name, props, props.children),
-    ])
-  ),
-  getTokenValue: (name) => ({ $muscleDiagram: 144, $field: 12, $page: 20 })[name],
-  getConfig: () => ({ fonts: { body: { size: { header: 18 } } } }),
-  getVariableValue: (value) => value,
-  useTheme: jest.fn(() => ({
-    background: { val: 'page' },
-    color: { val: 'text' },
-    primary: { val: 'primary' },
-    trainingMuted: { val: 'supporting' },
-    borderColor: { val: 'neutral' },
-  })),
-}))
 jest.mock('react-native-body-highlighter', () => ({
   __esModule: true,
   default: (props) => require('react').createElement('Body', props),
 }))
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({ id: 'workout' }),
-  useRouter: () => ({ push: jest.fn(), back: jest.fn() }),
+  useRouter: () => ({ push: mockPush, back: jest.fn() }),
   Stack: { Screen: (props) => require('react').createElement('Screen', props) },
 }))
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 24 }) }))
-jest.mock('../../features/workouts', () => ({
-  useWorkouts: jest.fn(),
+jest.mock('../../features/workouts/hooks/useWorkouts', () => ({ useWorkouts: jest.fn() }))
+jest.mock('../../features/workouts/hooks/useWorkoutManagement', () => ({
   useWorkoutManagement: jest.fn(),
-  MuscleHeatMap: () => null,
 }))
 jest.mock('../../features/settings', () => ({ useSettingsStore: jest.fn() }))
 jest.mock('../../features/workouts/hooks/useWorkoutIdRemap', () => ({
@@ -48,9 +40,11 @@ jest.mock('../../components/ui/LoadingSpinner', () => ({ LoadingSpinner: () => n
 jest.mock('../../components/ui/ErrorDisplay', () => ({
   ErrorDisplay: (props) => require('react').createElement('Error', props),
 }))
+const mockPush = jest.fn()
 const { MuscleHeatMap } = require('../../features/workouts/components/MuscleHeatMap')
 const Detail = require('../../app/workouts/[id]').default
-const { useWorkouts, useWorkoutManagement } = require('../../features/workouts')
+const { useWorkouts } = require('../../features/workouts/hooks/useWorkouts')
+const { useWorkoutManagement } = require('../../features/workouts/hooks/useWorkoutManagement')
 const { useSettingsStore } = require('../../features/settings')
 const text = (view) =>
   view.root
@@ -73,11 +67,11 @@ test('muscle diagrams preserve named groups, primary precedence, themed neutral 
   const bodies = () => view.root.findAllByType('Body')
   expect(bodies().map((body) => body.props.side)).toEqual(['front', 'back'])
   const data = bodies()[0].props.data
-  expect(data.find((part) => part.slug === 'chest').color).toBe('primary')
-  expect(data.find((part) => part.slug === 'upper-back').color).toBe('primary')
-  expect(data.find((part) => part.slug === 'biceps').color).toBe('supporting')
-  expect(data.find((part) => part.slug === 'adductors').color).toBe('neutral')
-  const row = view.root.findAllByType('XStack').find((node) => node.props.onLayout)
+  expect(data.find((part) => part.slug === 'chest').color).toBe('#624572')
+  expect(data.find((part) => part.slug === 'upper-back').color).toBe('#624572')
+  expect(data.find((part) => part.slug === 'biceps').color).toBe('#76627e')
+  expect(data.find((part) => part.slug === 'adductors').color).toBe('#dcd0e4')
+  const row = view.root.findAllByType('View').find((node) => node.props.onLayout)
   act(() => row.props.onLayout({ nativeEvent: { layout: { width: 220 } } }))
   expect(bodies()[0].props.scale * 400 + 12).toBeLessThanOrEqual(220)
   act(() =>
@@ -132,12 +126,63 @@ test('mixed targets use cardio duration, rest preferences update estimates, and 
   expect(view.root.findByType('Start').props.isWorkoutRunning).toBe(true)
   act(() => view.root.findByType('Start').props.onPress())
   expect(startWorkout).toHaveBeenCalledTimes(1)
-  const footer = view.root.findAllByType('YStack').find((node) => node.props.borderTopWidth === 1)
-  expect(footer.props.pb).toBe('$page')
+  const footer = view.root
+    .findAllByType('View')
+    .find((node) => node.props.className?.includes('border-t border-divider'))
+  expect(footer.props.style.paddingBottom).toBe(24)
   expect(footer.findAllByType('ScrollView')).toHaveLength(0)
   useWorkouts.mockReturnValue({ workouts: [], loading: false, error: null })
   act(() => view.update(React.createElement(Detail)))
   expect(view.root.findByType('Error').props.message).toBe('Workout not found')
+  expect(view.root.findAllByType('Start')).toHaveLength(0)
+  act(() => view.unmount())
+})
+
+test('detail preserves long names and notes, opens the saved workout editor, and disables empty templates', () => {
+  const workout = {
+    id: 'workout',
+    title: 'A long workout name that wraps across several lines without hiding any words',
+    notes: 'Keep the planned targets and train at a comfortable pace.',
+    workoutTemplate: { exercises: [] },
+  }
+  const startWorkout = jest.fn()
+  useWorkouts.mockReturnValue({ workouts: [workout], loading: false, error: null })
+  useWorkoutManagement.mockReturnValue({ startWorkout, isWorkoutRunning: () => false })
+  useSettingsStore.mockReturnValue({ restTimerEnabled: false, restTimerDefaultSeconds: 90 })
+  let view, edit
+  act(() => {
+    view = create(React.createElement(Detail))
+  })
+  expect(text(view)).toContain(workout.title)
+  expect(text(view)).toContain(workout.notes)
+  expect(text(view)).toContain('No exercises in this workout yet')
+  expect(view.root.findByType('Start').props.disabled).toBe(true)
+  act(() => view.root.findByType('Start').props.onPress())
+  expect(startWorkout).not.toHaveBeenCalled()
+  act(() => {
+    edit = create(view.root.findByType('Screen').props.options.headerRight())
+  })
+  act(() => edit.root.findByType('Pressable').props.onPress())
+  expect(mockPush).toHaveBeenCalledWith({ pathname: '/workouts/edit', params: { id: workout.id } })
+  act(() => {
+    edit.unmount()
+    view.unmount()
+  })
+})
+
+test('detail shows loading and missing-workout errors without a start action', () => {
+  useWorkouts.mockReturnValue({ workouts: [], loading: true, error: null })
+  useWorkoutManagement.mockReturnValue({ startWorkout: jest.fn(), isWorkoutRunning: () => false })
+  useSettingsStore.mockReturnValue({ restTimerEnabled: false, restTimerDefaultSeconds: 90 })
+  let view
+  act(() => {
+    view = create(React.createElement(Detail))
+  })
+  expect(text(view)).toContain('Loading workout…')
+  expect(view.root.findAllByType('Start')).toHaveLength(0)
+  useWorkouts.mockReturnValue({ workouts: [], loading: false, error: 'Could not load workout' })
+  act(() => view.update(React.createElement(Detail)))
+  expect(view.root.findByType('Error').props.message).toBe('Could not load workout')
   expect(view.root.findAllByType('Start')).toHaveLength(0)
   act(() => view.unmount())
 })

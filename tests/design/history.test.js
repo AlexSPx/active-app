@@ -1,6 +1,10 @@
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 
+jest.mock('uniwind', () => ({
+  useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
+}))
+
 jest.mock('tamagui', () => {
   const React = require('react')
   const component = (name) => (props) => React.createElement(name, props, props.children)
@@ -143,6 +147,9 @@ function pressLabel(tree, label) {
       .props.onPress()
   })
 }
+// Mirror HistoryCalendar's label formatting so the assertion does not depend on the host locale.
+const longDate = (date) =>
+  date.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
 
 test('month arrows anchor to day one and the compact calendar contains the selected week', () => {
   const onMonthChange = jest.fn(),
@@ -245,14 +252,11 @@ test('selecting a calendar date jumps to its session week and Today selects the 
       .find((button) => button.props.accessibilityLabel === 'Expand month calendar')
       .props.onPress()
   )
+  const completedDayLabel = `${longDate(new Date(2026, 8, 30))}, completed session`
   act(() =>
     tree.root
       .findAllByType('Button')
-      .find(
-        (button) =>
-          button.props.accessibilityLabel?.includes('September 30') &&
-          button.props.accessibilityLabel.includes('completed session')
-      )
+      .find((button) => button.props.accessibilityLabel === completedDayLabel)
       .props.onPress()
   )
   expect(mockScroll).toHaveBeenLastCalledWith({ index: 0, animated: true, viewPosition: 0 })
@@ -260,7 +264,9 @@ test('selecting a calendar date jumps to its session week and Today selects the 
   const selected = tree.root
     .findAllByType('Button')
     .find((button) => button.props.accessibilityState?.selected)
-  expect(selected.props.accessibilityLabel).toContain('October 1')
+  expect(selected.props.accessibilityLabel).toContain(
+    new Date(2026, 9, 1).toLocaleDateString([], { month: 'long', day: 'numeric' })
+  )
   expect(
     tree.root
       .findAllByType('Text')
