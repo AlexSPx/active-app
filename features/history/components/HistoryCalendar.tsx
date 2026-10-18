@@ -1,5 +1,5 @@
 import { Button, Text, View, XStack, YStack } from 'tamagui'
-import { ChevronLeft, ChevronRight } from '@tamagui/lucide-icons'
+import { ChevronLeft, ChevronRight } from '../../../components/ui/icons'
 import { formatMonthYear, generateCalendar, sameDay, startOfWeek, toISODate } from './date'
 
 export type HistoryCalendarProps = {

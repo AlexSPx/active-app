@@ -1,9 +1,7 @@
-import { YStack, XStack, Button, Text, Dialog, getTokenValue } from 'tamagui'
-import { Sheet } from '@tamagui/sheet'
+import { YStack, Button, Text } from 'tamagui'
+import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { useNavigation, useLocalSearchParams, useRouter } from 'expo-router'
-import { BackHandler, Platform } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
 import {
@@ -14,13 +12,11 @@ import {
 } from '../../../features/workouts'
 import { useRoutines } from '../../../features/routines'
 import { useAppNavigation } from '../../../navigation/useAppNavigation'
-import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
+import { Trash2 } from '../../../components/ui/icons'
 import { ApiWorkout } from '../../../types/api'
 import { CreateTopButton } from '../../../components/ui/CreateTopButton'
 
 export default function WorkoutsInnerTab() {
-  const insets = useSafeAreaInsets()
-  const pagePadding = getTokenValue('$page', 'space')
   const navigation = useNavigation()
   const router = useRouter()
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
@@ -62,31 +58,20 @@ export default function WorkoutsInnerTab() {
     const unsubNav = navigation.addListener('beforeRemove', (e: any) => {
       if (!confirmOpen) return
       e.preventDefault()
-      setConfirmOpen(false)
+      if (!deleting) setConfirmOpen(false)
     })
 
-    const backSub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (confirmOpen) {
-        setConfirmOpen(false)
-        return true
-      }
-      return false
-    })
-
-    return () => {
-      unsubNav?.()
-      backSub.remove()
-    }
-  }, [confirmOpen, navigation])
+    return () => unsubNav?.()
+  }, [confirmOpen, navigation, deleting])
 
   const confirmDelete = useCallback(async () => {
-    if (!pendingDeleteId) return
+    if (!pendingDeleteId || deleting) return
     const ok = await deleteWorkout(pendingDeleteId)
     if (!ok) return
     await refetch()
     setConfirmOpen(false)
     setPendingDeleteId(null)
-  }, [pendingDeleteId, deleteWorkout, refetch])
+  }, [pendingDeleteId, deleteWorkout, refetch, deleting])
 
   if (loading && workouts.length === 0) {
     return (
@@ -110,15 +95,8 @@ export default function WorkoutsInnerTab() {
     )
   }
 
-  // Delete confirmation dialog content - shared between Sheet (native) and Dialog (web)
   const DeleteConfirmContent = (
     <YStack gap="$3" items="center">
-      <XStack items="center" gap="$2">
-        <AlertTriangle size="$1" color="$destructive" />
-        <Text fontSize="$sectionTitle" fontWeight="700">
-          Delete workout
-        </Text>
-      </XStack>
       <Text color="$colorSubtle">Are you sure? This will permanently delete this workout.</Text>
       {!!deleteError && <ErrorDisplay title="Cannot delete workout" message={deleteError} />}
       <YStack mt="$2" gap="$3" width="100%">
@@ -138,6 +116,7 @@ export default function WorkoutsInnerTab() {
           color="$color"
           minH="$action"
           rounded="$button"
+          disabled={deleting}
           onPress={() => setConfirmOpen(false)}
         >
           <Text>Cancel</Text>
@@ -176,52 +155,14 @@ export default function WorkoutsInnerTab() {
         />
       </YStack>
 
-      {/* Use Dialog on web (Sheet has rendering issues), Sheet on native */}
-      {Platform.OS === 'web' ? (
-        <Dialog modal open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <Dialog.Portal>
-            <Dialog.Overlay
-              key="overlay"
-              animation="slow"
-              opacity={0.5}
-              enterStyle={{ opacity: 0 }}
-              exitStyle={{ opacity: 0 }}
-            />
-            <Dialog.Content
-              bordered
-              rounded="$menu"
-              key="content"
-              animation={['quick', { opacity: { overshootClamping: true } }]}
-              enterStyle={{ opacity: 0 }}
-              exitStyle={{ opacity: 0 }}
-              bg="$surface"
-              p="$page"
-            >
-              {DeleteConfirmContent}
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog>
-      ) : (
-        <Sheet
-          open={confirmOpen}
-          onOpenChange={setConfirmOpen}
-          modal
-          dismissOnOverlayPress={!deleting}
-          snapPointsMode="fit"
-        >
-          <Sheet.Overlay animation="slow" bg="$backgroundTransparent" />
-          <Sheet.Handle bg="$surface" />
-          <Sheet.Frame
-            bg="$surface"
-            borderTopLeftRadius="$sheet"
-            borderTopRightRadius="$sheet"
-            p="$page"
-            pb={insets.bottom + pagePadding}
-          >
-            {DeleteConfirmContent}
-          </Sheet.Frame>
-        </Sheet>
-      )}
+      <CadenceOverlay
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete workout"
+        dismissible={!deleting}
+      >
+        {DeleteConfirmContent}
+      </CadenceOverlay>
     </YStack>
   )
 }

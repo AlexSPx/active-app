@@ -1,9 +1,13 @@
+jest.mock('../../components/ui/CadenceOverlay', () => ({
+  CadenceOverlay: ({ children, ...props }) =>
+    require('react').createElement('CadenceOverlay', props, props.open ? children : null),
+}))
 jest.mock('react-native', () => ({
   Platform: { OS: 'android' },
   Vibration: { vibrate: jest.fn() },
   Image: () => null,
 }))
-jest.mock('@tamagui/lucide-icons', () => {
+jest.mock('../../components/ui/icons', () => {
   const Icon = () => null
   return { Trophy: Icon, Timer: Icon, Dumbbell: Icon, BarChart2: Icon }
 })
@@ -13,10 +17,6 @@ jest.mock('tamagui', () => {
     function Primitive({ children, ...props }) {
       return React.createElement(name, props, children)
     }
-  const Sheet = primitive('Sheet')
-  Sheet.Overlay = primitive('SheetOverlay')
-  Sheet.Handle = primitive('SheetHandle')
-  Sheet.Frame = primitive('SheetFrame')
   return {
     Button: primitive('Button'),
     H3: primitive('H3'),
@@ -24,7 +24,6 @@ jest.mock('tamagui', () => {
     Paragraph: primitive('Paragraph'),
     ScrollView: primitive('ScrollView'),
     Separator: primitive('Separator'),
-    Sheet,
     Text: primitive('Text'),
     XStack: primitive('XStack'),
     YStack: primitive('YStack'),

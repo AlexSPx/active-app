@@ -1,3 +1,7 @@
+jest.mock('../../components/ui/CadenceOverlay', () => ({
+  CadenceOverlay: ({ children, ...props }) =>
+    require('react').createElement('CadenceOverlay', props, props.open ? children : null),
+}))
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 
@@ -8,21 +12,8 @@ jest.mock('tamagui', () => ({
   Text: (props) => require('react').createElement('Text', props, props.children),
   ScrollView: (props) => require('react').createElement('ScrollView', props, props.children),
   getTokenValue: () => 20,
-  Dialog: Object.assign(
-    (props) => require('react').createElement('Dialog', props, props.children),
-    {
-      Portal: (props) => require('react').createElement('Portal', props, props.children),
-      Overlay: (props) => require('react').createElement('Overlay', props, props.children),
-      Content: (props) => require('react').createElement('Content', props, props.children),
-    }
-  ),
-  Sheet: Object.assign((props) => require('react').createElement('Sheet', props, props.children), {
-    Overlay: (props) => require('react').createElement('SheetOverlay', props, props.children),
-    Handle: (props) => require('react').createElement('SheetHandle', props, props.children),
-    Frame: (props) => require('react').createElement('SheetFrame', props, props.children),
-  }),
 }))
-jest.mock('@tamagui/lucide-icons', () => ({
+jest.mock('../../components/ui/icons', () => ({
   MoreHorizontal: () => null,
   ChevronRight: () => null,
   ArrowUp: () => null,
@@ -67,24 +58,15 @@ function openMenu(view) {
   })
 }
 
-test('day actions use a Dialog on web', () => {
-  Platform.OS = 'web'
+test('day actions close without changing the routine', () => {
   const view = renderEditor()
   openMenu(view)
-  expect(view.root.findAllByType('Dialog')).toHaveLength(1)
-  expect(view.root.findAllByType('Sheet')).toHaveLength(0)
-  const texts = view.root
-    .findAllByType('Text')
-    .map((node) => [].concat(node.props.children).join(''))
-  expect(texts).toContain('Day 1 actions')
-  act(() => view.unmount())
-})
-
-test('day actions use a Sheet on native', () => {
-  Platform.OS = 'ios'
-  const view = renderEditor()
-  openMenu(view)
-  expect(view.root.findAllByType('Sheet')).toHaveLength(1)
-  expect(view.root.findAllByType('Dialog')).toHaveLength(0)
+  const overlay = view.root.findByType('CadenceOverlay')
+  expect(overlay.props.open).toBe(true)
+  expect(
+    view.root.findAllByType('Text').map((node) => [].concat(node.props.children).join(''))
+  ).toContain('Day 1 actions')
+  act(() => overlay.props.onOpenChange(false))
+  expect(view.root.findByType('CadenceOverlay').props.open).toBe(false)
   act(() => view.unmount())
 })

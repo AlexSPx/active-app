@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { AppState } from 'react-native'
 import type { SQLiteDatabase } from 'expo-sqlite'
 import { ProfileSQLiteProvider, useProfileDatabase } from '../lib/db/ProfileSQLiteProvider'
-import { PortalProvider } from 'tamagui'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useUiStore } from '../stores/uiStore'
 import FinishedWorkoutCongrats from '../components/FinishedWorkoutCongrats'
@@ -562,7 +561,7 @@ function OwnerDatabaseContent({ children }: { children: React.ReactNode }) {
   const congratsVisible = !isProfileTransitioning && finishedCongrats.visible && !!payload
 
   return (
-    <PortalProvider>
+    <>
       {children}
       {congratsVisible && payload && (
         <FinishedWorkoutCongrats
@@ -571,7 +570,7 @@ function OwnerDatabaseContent({ children }: { children: React.ReactNode }) {
           onClose={hideFinishedCongrats}
         />
       )}
-    </PortalProvider>
+    </>
   )
 }
 

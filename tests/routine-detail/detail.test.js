@@ -21,7 +21,7 @@ jest.mock('expo-router', () => ({
   useRouter: jest.fn(),
   Stack: { Screen: (props) => require('react').createElement('Screen', props) },
 }))
-jest.mock('@tamagui/lucide-icons', () => ({ ChevronRight: () => null }))
+jest.mock('../../components/ui/icons', () => ({ ChevronRight: () => null }))
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 24 }) }))
 jest.mock('../../features/routines', () => ({
   useRoutines: jest.fn(),

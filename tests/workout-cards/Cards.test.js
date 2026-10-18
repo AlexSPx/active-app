@@ -22,7 +22,7 @@ jest.mock('tamagui', () => {
   }
 })
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }))
-jest.mock('@tamagui/lucide-icons', () => {
+jest.mock('../../components/ui/icons', () => {
   const Icon = () => null
   return Object.fromEntries(
     [
@@ -38,12 +38,20 @@ jest.mock('@tamagui/lucide-icons', () => {
     ].map((name) => [name, Icon])
   )
 })
-jest.mock('@tamagui/popover', () => {
-  const React = require('react')
-  const Popover = ({ children, ...props }) => React.createElement('Popover', props, children)
-  Popover.Trigger = Popover.Content = Popover.Close = ({ children }) => children
-  return { Popover }
-})
+jest.mock('../../components/ui/ActionMenu', () => ({
+  ActionMenu: ({ actions, label, ...props }) =>
+    require('react').createElement(
+      'ActionMenu',
+      { ...props, accessibilityLabel: label },
+      actions.map((action) =>
+        require('react').createElement(
+          'Button',
+          { key: action.label, ...action },
+          require('react').createElement('Text', null, action.label)
+        )
+      )
+    ),
+}))
 jest.mock('@shopify/flash-list', () => {
   const React = require('react')
   return {

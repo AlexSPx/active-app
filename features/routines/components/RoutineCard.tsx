@@ -1,14 +1,7 @@
-import { memo, useCallback, useMemo, useState } from 'react'
-import { Card, YStack, XStack, Text, Button, Separator, ScrollView } from 'tamagui'
-import { Popover } from '@tamagui/popover'
-import {
-  MoreHorizontal,
-  Edit3,
-  Trash2,
-  CheckCircle2,
-  Calendar,
-  Dumbbell,
-} from '@tamagui/lucide-icons'
+import { memo, useCallback, useMemo } from 'react'
+import { Card, YStack, XStack, Text, Button, ScrollView } from 'tamagui'
+import { ActionMenu } from '../../../components/ui/ActionMenu'
+import { CheckCircle2, Dumbbell } from '../../../components/ui/icons'
 import type { Routine } from '../../../types/routine'
 import { haptics } from '../../../utils/haptics'
 
@@ -35,7 +28,6 @@ export const RoutineCard = memo(function RoutineCard({
   onPress,
   disabled = false,
 }: RoutineCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
   const isFlexible = routine.routineType === 'WEEKLY_COMPLETION'
   const days = useMemo(
     () => [...routine.pattern].sort((a, b) => a.dayIndex - b.dayIndex),
@@ -99,114 +91,36 @@ export const RoutineCard = memo(function RoutineCard({
         </YStack>
         {(onEdit || onDelete || onStartFromToday || (onActivate && !isActive)) && (
           <>
-            <Popover
-              open={menuOpen}
-              onOpenChange={(open) => {
-                if (open) haptics.light()
-                setMenuOpen(open)
-              }}
-              size="$2"
-              placement="bottom-end"
-            >
-              <Popover.Trigger asChild>
-                <Button
-                  unstyled
-                  width="$touch"
-                  height="$touch"
-                  disabled={disabled}
-                  accessibilityLabel={`More actions for ${routine.name}`}
-                  bg="$backgroundTransparent"
-                  justify="center"
-                  items="center"
-                  rounded="$control"
-                  pressStyle={{ opacity: 0.85 }}
-                >
-                  <MoreHorizontal size="$iconSmall" color="$colorSubtle" />
-                </Button>
-              </Popover.Trigger>
-              <Popover.Content
-                p="$2"
-                bg="$surface"
-                borderColor="$borderColor"
-                borderWidth={1}
-                rounded="$menu"
-              >
-                <YStack minW="$12" gap="$1">
-                  {onEdit && (
-                    <Popover.Close asChild>
-                      <Button
-                        minH="$touch"
-                        chromeless
-                        onPress={() => {
-                          if (!disabled) onEdit(routine)
-                        }}
-                        disabled={disabled}
-                      >
-                        <XStack items="center" gap="$2" width="100%">
-                          <Edit3 size="$iconSmall" color="$color" />
-                          <Text color="$color" fontSize="$caption">
-                            Edit
-                          </Text>
-                        </XStack>
-                      </Button>
-                    </Popover.Close>
-                  )}
-                  {onStartFromToday && (
-                    <Popover.Close asChild>
-                      <Button
-                        minH="$touch"
-                        chromeless
-                        onPress={() => {
-                          if (!disabled) onStartFromToday(routine.id)
-                        }}
-                        disabled={disabled}
-                      >
-                        <XStack items="center" gap="$2" width="100%">
-                          <Calendar size="$iconSmall" color="$color" />
-                          <Text color="$color" fontSize="$caption">
-                            Start today
-                          </Text>
-                        </XStack>
-                      </Button>
-                    </Popover.Close>
-                  )}
-                  {onActivate && !isActive && (
-                    <Popover.Close asChild>
-                      <Button minH="$touch" chromeless onPress={handleActivate} disabled={disabled}>
-                        <XStack items="center" gap="$2" width="100%">
-                          <CheckCircle2 size="$iconSmall" color="$primary" />
-                          <Text color="$color" fontSize="$caption">
-                            Set active
-                          </Text>
-                        </XStack>
-                      </Button>
-                    </Popover.Close>
-                  )}
-                  {onDelete && (
-                    <>
-                      <Separator my="$1" borderColor="$borderColor" />
-                      <Popover.Close asChild>
-                        <Button
-                          minH="$touch"
-                          chromeless
-                          onPress={() => {
-                            if (!disabled) onDelete(routine.id)
-                          }}
-                          disabled={disabled}
-                        >
-                          <XStack items="center" gap="$2" width="100%">
-                            <Trash2 size="$iconSmall" color="$destructive" />
-                            <Text color="$destructive" fontSize="$caption">
-                              Delete
-                            </Text>
-                          </XStack>
-                        </Button>
-                      </Popover.Close>
-                    </>
-                  )}
-                </YStack>
-              </Popover.Content>
-            </Popover>
+            <ActionMenu
+              label={`More actions for ${routine.name}`}
+              disabled={disabled}
+              onOpen={() => haptics.light()}
+              actions={[
+                ...(onEdit ? [{ label: 'Edit', onPress: () => onEdit(routine), disabled }] : []),
+                ...(onStartFromToday
+                  ? [
+                      {
+                        label: 'Start today',
+                        onPress: () => onStartFromToday(routine.id),
+                        disabled,
+                      },
+                    ]
+                  : []),
+                ...(onActivate && !isActive
+                  ? [{ label: 'Set active', onPress: handleActivate, disabled }]
+                  : []),
+                ...(onDelete
+                  ? [
+                      {
+                        label: 'Delete',
+                        destructive: true,
+                        onPress: () => onDelete(routine.id),
+                        disabled,
+                      },
+                    ]
+                  : []),
+              ]}
+            />
           </>
         )}
       </XStack>

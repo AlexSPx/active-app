@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import { Card, Text, View, XStack, YStack } from 'tamagui'
-import { ArrowRight } from '@tamagui/lucide-icons'
+import { ArrowRight } from '../../../components/ui/icons'
 import { FlashList } from '@shopify/flash-list'
 import type { FlashListRef } from '@shopify/flash-list'
 import { formatWeekRange, startOfWeek } from './date'

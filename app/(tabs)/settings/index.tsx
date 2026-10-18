@@ -12,7 +12,7 @@ import {
   ScrollText,
   ShieldCheck,
   UserRound,
-} from '@tamagui/lucide-icons'
+} from '../../../components/ui/icons'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
 import { useAuth } from '../../../contexts/AuthContext'

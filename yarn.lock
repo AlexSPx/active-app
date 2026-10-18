@@ -2882,13 +2882,6 @@
     "@tamagui/stacks" "1.144.4"
     "@tamagui/use-controllable-state" "1.144.4"
 
-"@tamagui/helpers-icon@1.144.4":
-  version "1.144.4"
-  resolved "https://registry.yarnpkg.com/@tamagui/helpers-icon/-/helpers-icon-1.144.4.tgz#a1a58959a1ecbf1d435e68c03fd40c4e4046e938"
-  integrity sha512-zUuFHtX3fbV/oayyumvxMT5aHQqOa0N9HFYA5VTjNHVD5gCsIwEQxz1InFj+CRjB3bxdODNmPIXqhp/Yiqg/9g==
-  dependencies:
-    "@tamagui/core" "1.144.4"
-
 "@tamagui/helpers-node@1.144.4":
   version "1.144.4"
   resolved "https://registry.yarnpkg.com/@tamagui/helpers-node/-/helpers-node-1.144.4.tgz#d22ca8ca91cfcf4e8d75218baca2b2256b3410b5"
@@ -2961,14 +2954,6 @@
     "@tamagui/text" "1.144.4"
     "@tamagui/web" "1.144.4"
 
-"@tamagui/lucide-icons@^1.132.20":
-  version "1.144.4"
-  resolved "https://registry.yarnpkg.com/@tamagui/lucide-icons/-/lucide-icons-1.144.4.tgz#68a8b62c2b26b67538fcb6d48f97051efc5e678c"
-  integrity sha512-BmBj1yITA8YYW4lJpChYZiC5cbPc5sOtO1ZoBGC+Wqj4hN/Ff4b7Hv/jk4Zr7O4EHcBsZ01656tGdWKggDTCdA==
-  dependencies:
-    "@tamagui/core" "1.144.4"
-    "@tamagui/helpers-icon" "1.144.4"
-
 "@tamagui/metro-plugin@^1.143.0":
   version "1.144.4"
   resolved "https://registry.yarnpkg.com/@tamagui/metro-plugin/-/metro-plugin-1.144.4.tgz#147b1a5ad42d3491ddcfec0f9d0a73cbf02606df"
@@ -3029,7 +3014,7 @@
     "@tamagui/start-transition" "1.144.4"
     "@tamagui/use-controllable-state" "1.144.4"
 
-"@tamagui/portal@1.144.4", "@tamagui/portal@^1.132.20":
+"@tamagui/portal@1.144.4":
   version "1.144.4"
   resolved "https://registry.yarnpkg.com/@tamagui/portal/-/portal-1.144.4.tgz#aef4898229a4ebd1b788dbeb677f205a4725053a"
   integrity sha512-PfBsgWQ7uVTyWo9qYySsw/pddcK4wYU8e6A9PRMJXYd88X6N65mzmRXURsvnE2XVFvbEO8W5ZYmpuJs1U8HQOA==
@@ -3425,27 +3410,6 @@
   version "1.144.4"
   resolved "https://registry.yarnpkg.com/@tamagui/timer/-/timer-1.144.4.tgz#69b5060448c8a75ee334fa50aae323a94746c727"
   integrity sha512-023miTGlare9nZ8e5sKoFTCA9R+Ek1Wf1yiS1/uDxZWVY2Qz1Ix3yPU5d/CpUsjqs5ghiJ3fcvzsvwaEdjIXDg==
-
-"@tamagui/toast@^1.132.20":
-  version "1.144.4"
-  resolved "https://registry.yarnpkg.com/@tamagui/toast/-/toast-1.144.4.tgz#9796cd296c18211421e964a410abfc6ac4af4ef6"
-  integrity sha512-cfvigjSA8KJ3zXhm305pOcAvi0zByLkTx6p09I3jwQ2qpaWXubnkqgGlYJj0W+MdkZnsn//HBL1xto/GI0lM6w==
-  dependencies:
-    "@tamagui/animate-presence" "1.144.4"
-    "@tamagui/collection" "1.144.4"
-    "@tamagui/compose-refs" "1.144.4"
-    "@tamagui/constants" "1.144.4"
-    "@tamagui/core" "1.144.4"
-    "@tamagui/create-context" "1.144.4"
-    "@tamagui/dismissable" "1.144.4"
-    "@tamagui/helpers" "1.144.4"
-    "@tamagui/polyfill-dev" "1.144.4"
-    "@tamagui/portal" "1.144.4"
-    "@tamagui/stacks" "1.144.4"
-    "@tamagui/start-transition" "1.144.4"
-    "@tamagui/text" "1.144.4"
-    "@tamagui/use-controllable-state" "1.144.4"
-    "@tamagui/visually-hidden" "1.144.4"
 
 "@tamagui/toggle-group@1.144.4":
   version "1.144.4"
@@ -7079,6 +7043,11 @@ lru-cache@^5.1.1:
   integrity sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==
   dependencies:
     yallist "^3.0.2"
+
+lucide-react-native@1.59.0:
+  version "1.59.0"
+  resolved "https://registry.yarnpkg.com/lucide-react-native/-/lucide-react-native-1.59.0.tgz#d0ab652d5c050de46a48cf9cbc64859a21a96548"
+  integrity sha512-gH31vo01WDzeQLRTuMDmNVUYePYHwSK3fEnNoLZ12PoMyVcc+KeHoX9FHcJKUudO1vsu9Eon5ZxQhlRAj+ruIA==
 
 magic-string@^0.30.21:
   version "0.30.21"

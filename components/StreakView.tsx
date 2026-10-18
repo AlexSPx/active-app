@@ -1,4 +1,4 @@
-import { Check, Dumbbell } from '@tamagui/lucide-icons'
+import { Check, Dumbbell } from './ui/icons'
 import { XStack, YStack, Text, Progress } from 'tamagui'
 import { StreakUpdateResponse } from '../types/api'
 import { useActiveRoutine } from '../features/routines'
@@ -71,13 +71,7 @@ function WeeklyStreakView({
 }
 
 // Progress view for WEEKLY_COMPLETION routines
-function WeeklyCompletionProgress({
-  completed,
-  total,
-}: {
-  completed: number
-  total: number
-}) {
+function WeeklyCompletionProgress({ completed, total }: { completed: number; total: number }) {
   const progress = total > 0 ? (completed / total) * 100 : 0
   const isComplete = completed >= total
 
@@ -87,19 +81,12 @@ function WeeklyCompletionProgress({
         <Text fontSize="$3" color="$colorSubtle" fontWeight="500">
           This week's progress
         </Text>
-        <Text
-          fontSize="$4"
-          fontWeight="700"
-          color={isComplete ? '$green10' : '$primary'}
-        >
+        <Text fontSize="$4" fontWeight="700" color={isComplete ? '$green10' : '$primary'}>
           {completed}/{total} workouts
         </Text>
       </XStack>
       <Progress value={progress} size="$2">
-        <Progress.Indicator
-          animation="bouncy"
-          bg={isComplete ? '$green9' : '$primary'}
-        />
+        <Progress.Indicator animation="bouncy" bg={isComplete ? '$green9' : '$primary'} />
       </Progress>
       {isComplete && (
         <XStack items="center" gap="$2" justify="center">
@@ -150,13 +137,13 @@ export function StreakView({ streak }: StreakViewProps) {
     for (let i = 0; i < 7; i++) {
       const d = new Date(mondayDate)
       d.setDate(mondayDate.getDate() + i)
-      
+
       // Use the shared helper to find the pattern item for this date
       // This handles both 7-day patterns and repeating patterns correctly
       // based on the routine's start date.
       const idx = routinePatternIndex(activeRoutine.startDate, len, d)
       const item = activeRoutine.pattern[idx]
-      
+
       if (item && item.dayType === 'WORKOUT') {
         routineDays[i] = true
       }
@@ -190,7 +177,7 @@ export function StreakView({ streak }: StreakViewProps) {
           <Text color="$color10">{getStatusMessage()}</Text>
         </YStack>
       </XStack>
-      
+
       {isWeeklyCompletion && weeklyRequired > 0 ? (
         <WeeklyCompletionProgress completed={weeklyCompleted} total={weeklyRequired} />
       ) : (
@@ -199,4 +186,3 @@ export function StreakView({ streak }: StreakViewProps) {
     </YStack>
   )
 }
-

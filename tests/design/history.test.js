@@ -4,35 +4,43 @@ const { act, create } = require('react-test-renderer')
 jest.mock('tamagui', () => {
   const React = require('react')
   const component = (name) => (props) => React.createElement(name, props, props.children)
-  const dialog = component('Dialog')
-  for (const name of ['Portal', 'Overlay', 'Content', 'Title'])
-    dialog[name] = component(`Dialog.${name}`)
   return Object.fromEntries(
-    ['Button', 'Text', 'YStack', 'XStack', 'View', 'ScrollView', 'Card']
-      .map((name) => [name, component(name)])
-      .concat([['Dialog', dialog]])
+    ['Button', 'Text', 'YStack', 'XStack', 'View', 'ScrollView', 'Card'].map((name) => [
+      name,
+      component(name),
+    ])
   )
 })
-jest.mock('@tamagui/lucide-icons', () => ({
+jest.mock('../../components/ui/icons', () => ({
   ChevronLeft: 'ChevronLeft',
   ChevronRight: 'ChevronRight',
   MoreHorizontal: 'MoreHorizontal',
   ArrowRight: 'ArrowRight',
 }))
-jest.mock('@tamagui/popover', () => {
-  const React = require('react')
-  const Popover = (props) => React.createElement('Popover', props, props.children)
-  for (const name of ['Trigger', 'Content'])
-    Popover[name] = (props) => React.createElement(`Popover.${name}`, props, props.children)
-  return { Popover }
-})
-jest.mock('@tamagui/sheet', () => {
-  const React = require('react')
-  const Sheet = (props) => React.createElement('Sheet', props, props.open ? props.children : null)
-  for (const name of ['Overlay', 'Handle', 'Frame'])
-    Sheet[name] = (props) => React.createElement(`Sheet.${name}`, props, props.children)
-  return { Sheet }
-})
+jest.mock(
+  '../../components/ui/CadenceOverlay',
+  () => ({
+    CadenceOverlay: (props) =>
+      require('react').createElement('Overlay', props, props.open ? props.children : null),
+  }),
+  { virtual: true }
+)
+jest.mock('../../components/ui/ActionMenu', () => ({
+  ActionMenu: ({ actions, label }) => {
+    const React = require('react')
+    return React.createElement(
+      'ActionMenu',
+      { label },
+      actions.map((action) =>
+        React.createElement(
+          'Button',
+          { key: action.label, onPress: action.onPress },
+          React.createElement('Text', null, action.label)
+        )
+      )
+    )
+  },
+}))
 jest.mock('@shopify/flash-list', () => {
   const React = require('react')
   return {
@@ -216,7 +224,7 @@ test('failed deletion keeps the confirmation and recorded sets available', async
     await deleteButtons[deleteButtons.length - 1].props.onPress()
   })
   expect(mockReplace).not.toHaveBeenCalled()
-  expect(tree.root.findByType('Sheet').props.open).toBe(true)
+  expect(tree.root.findByType('Overlay').props.open).toBe(true)
   expect(tree.root.findAllByType('Text').some((text) => text.props.children === '12:00')).toBe(true)
   expect(tree.root.findAllByType('Text').some((text) => text.props.children === '8:00')).toBe(true)
   act(() => tree.unmount())

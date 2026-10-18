@@ -1,6 +1,6 @@
 import { YStack, XStack, Text, Button, ScrollView } from 'tamagui'
 import { useState } from 'react'
-import { ChevronRight } from '@tamagui/lucide-icons'
+import { ChevronRight } from '../../components/ui/icons'
 import { useRouter } from 'expo-router'
 import { WeeklyView } from '../../components/WeeklyView'
 import { TodayView } from '../../components/TodayView'

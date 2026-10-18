@@ -1,7 +1,7 @@
 import { YStack, XStack, Text, Card, Button } from 'tamagui'
-import { MoreHorizontal, Edit3, Trash2, Play } from '@tamagui/lucide-icons'
-import { Popover } from '@tamagui/popover'
-import { useCallback, memo, useState, useMemo } from 'react'
+import { Play } from '../../../components/ui/icons'
+import { ActionMenu } from '../../../components/ui/ActionMenu'
+import { useCallback, memo, useMemo } from 'react'
 import { ApiWorkout } from '../../../types/api'
 import { haptics } from '../../../utils/haptics'
 
@@ -24,8 +24,6 @@ export const WorkoutCard = memo(function WorkoutCard({
   onDelete,
   onPress,
 }: WorkoutCardProps) {
-  const [menuOpen, setMenuOpen] = useState(false)
-
   const handleStartWorkout = useCallback(() => {
     if (isWorkoutRunning) return
     haptics.medium()
@@ -107,65 +105,22 @@ export const WorkoutCard = memo(function WorkoutCard({
 
             {(onEdit || onDelete) && (
               <>
-                <Popover
-                  open={menuOpen}
-                  onOpenChange={(open) => {
-                    if (open) haptics.light()
-                    setMenuOpen(open)
-                  }}
-                  size="$2"
-                  placement="bottom-end"
-                >
-                  <Popover.Trigger asChild>
-                    <Button
-                      unstyled
-                      width="$touch"
-                      height="$touch"
-                      accessibilityLabel={`More actions for ${workout.title}`}
-                      bg="$backgroundTransparent"
-                      justify="center"
-                      items="center"
-                      pressStyle={{ opacity: 0.85 }}
-                      rounded="$control"
-                    >
-                      <MoreHorizontal size="$iconSmall" color="$colorSubtle" />
-                    </Button>
-                  </Popover.Trigger>
-                  <Popover.Content
-                    p="$2"
-                    bg="$surface"
-                    borderColor="$borderColor"
-                    borderWidth={1}
-                    rounded="$menu"
-                  >
-                    <YStack minW="$12" gap="$1">
-                      {onEdit && (
-                        <Popover.Close asChild>
-                          <Button minH="$touch" chromeless onPress={() => onEdit?.(workout)}>
-                            <XStack items="center" gap="$2" justify="flex-start" width="100%">
-                              <Edit3 size="$iconSmall" color="$color" />
-                              <Text color="$color" fontSize="$caption">
-                                Edit
-                              </Text>
-                            </XStack>
-                          </Button>
-                        </Popover.Close>
-                      )}
-                      {onDelete && (
-                        <Popover.Close asChild>
-                          <Button minH="$touch" chromeless onPress={() => onDelete?.(workout.id)}>
-                            <XStack items="center" gap="$2" justify="flex-start" width="100%">
-                              <Trash2 size="$iconSmall" color="$destructive" />
-                              <Text color="$destructive" fontSize="$caption">
-                                Delete
-                              </Text>
-                            </XStack>
-                          </Button>
-                        </Popover.Close>
-                      )}
-                    </YStack>
-                  </Popover.Content>
-                </Popover>
+                <ActionMenu
+                  label={`More actions for ${workout.title}`}
+                  onOpen={() => haptics.light()}
+                  actions={[
+                    ...(onEdit ? [{ label: 'Edit', onPress: () => onEdit(workout) }] : []),
+                    ...(onDelete
+                      ? [
+                          {
+                            label: 'Delete',
+                            destructive: true,
+                            onPress: () => onDelete(workout.id),
+                          },
+                        ]
+                      : []),
+                  ]}
+                />
               </>
             )}
           </XStack>

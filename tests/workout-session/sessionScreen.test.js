@@ -6,8 +6,8 @@ jest.mock('tamagui', () => {
     YStack: ({ children }) => React.createElement('YStack', null, children),
   }
 })
-jest.mock('@tamagui/toast', () => ({
-  useToastController: () => ({ show: (...args) => mockToastShow(...args) }),
+jest.mock('../../components/feedback/FeedbackProvider', () => ({
+  useFeedback: () => ({ show: (...args) => mockToastShow(...args) }),
 }))
 jest.mock('@shopify/flash-list', () => {
   const React = require('react')

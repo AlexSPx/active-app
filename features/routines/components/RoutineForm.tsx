@@ -16,7 +16,7 @@ import {
   useTheme,
 } from 'tamagui'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { Check } from '@tamagui/lucide-icons'
+import { Check } from '../../../components/ui/icons'
 import type { RoutinePatternItem, RoutineType } from '../../../types/routine'
 import { useWorkouts } from '../../workouts'
 import { syncEngine } from '../../../lib/sync'

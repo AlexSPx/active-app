@@ -1,6 +1,5 @@
 import { Text, YStack, XStack, Button } from 'tamagui'
-import { MoreHorizontal } from '@tamagui/lucide-icons'
-import { Popover } from '@tamagui/popover'
+import { ActionMenu } from '../../../components/ui/ActionMenu'
 import { useState } from 'react'
 import { ExerciseSetRow } from './ExerciseSetRow'
 import CardioEditorSetRow from './CardioEditorSetRow'
@@ -30,7 +29,6 @@ export default function ExerciseEditor({
   onRemove,
 }: ExerciseEditorProps) {
   const [expanded, setExpanded] = useState(true)
-  const [menuOpen, setMenuOpen] = useState(false)
   const cardio = exercise.category === 'CARDIO'
   return (
     <YStack
@@ -60,53 +58,14 @@ export default function ExerciseEditor({
           </Text>
         </YStack>
         {onRemove && (
-          <Popover open={menuOpen} onOpenChange={setMenuOpen} placement="bottom-end">
-            <Popover.Trigger asChild>
-              <Button
-                unstyled
-                width="$touch"
-                height="$touch"
-                justify="center"
-                items="center"
-                rounded="$control"
-                accessibilityLabel={`More actions for ${exercise.name}`}
-              >
-                <MoreHorizontal size="$iconSmall" color="$colorSubtle" />
-              </Button>
-            </Popover.Trigger>
-            <Popover.Content
-              bg="$surface"
-              p="$compact"
-              rounded="$menu"
-              borderColor="$borderColor"
-              borderWidth="$0.5"
-            >
-              <YStack>
-                {([-1, 1] as const).map((direction) => (
-                  <Popover.Close asChild key={direction}>
-                    <Button
-                      chromeless
-                      height="$touch"
-                      justify="flex-start"
-                      disabled={direction === -1 ? !canMoveUp : !canMoveDown}
-                      onPress={() => onMove?.(direction)}
-                    >
-                      <Text fontSize="$caption" color="$color">
-                        Move {direction === -1 ? 'up' : 'down'}
-                      </Text>
-                    </Button>
-                  </Popover.Close>
-                ))}
-                <Popover.Close asChild>
-                  <Button chromeless height="$touch" justify="flex-start" onPress={onRemove}>
-                    <Text fontSize="$caption" color="$destructive">
-                      Remove exercise
-                    </Text>
-                  </Button>
-                </Popover.Close>
-              </YStack>
-            </Popover.Content>
-          </Popover>
+          <ActionMenu
+            label={`More actions for ${exercise.name}`}
+            actions={[
+              { label: 'Move up', disabled: !canMoveUp, onPress: () => onMove?.(-1) },
+              { label: 'Move down', disabled: !canMoveDown, onPress: () => onMove?.(1) },
+              { label: 'Remove exercise', destructive: true, onPress: onRemove },
+            ]}
+          />
         )}
       </XStack>
       {expanded && (

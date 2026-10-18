@@ -1,7 +1,7 @@
 import { YStack, XStack, Text, Checkbox } from 'tamagui'
 import { StyleSheet } from 'react-native'
 import { useEffect, memo, useState, useRef } from 'react'
-import { Check } from '@tamagui/lucide-icons'
+import { Check } from '../../../components/ui/icons'
 import Animated, {
   useSharedValue,
   useAnimatedStyle,

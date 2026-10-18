@@ -1,7 +1,7 @@
 import { Tabs } from 'expo-router'
 import { View } from 'react-native'
 import { useResolveClassNames } from 'uniwind'
-import { Dumbbell, History, Home, Settings as SettingsIcon } from '@tamagui/lucide-icons'
+import { Dumbbell, History, Home, Settings as SettingsIcon } from '../../components/ui/icons'
 import { RunningWorkoutFloat } from '../../features/workout-session'
 import { useCadenceColors } from '../../components/ui/useCadenceColors'
 

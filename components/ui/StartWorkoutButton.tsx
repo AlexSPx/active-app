@@ -1,5 +1,5 @@
 import { Button, Text } from 'tamagui'
-import { Play } from '@tamagui/lucide-icons'
+import { Play } from './icons'
 
 export interface StartWorkoutButtonProps {
   onPress: () => void

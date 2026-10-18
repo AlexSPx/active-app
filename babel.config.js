@@ -15,7 +15,7 @@ module.exports = (api) => {
             [
               '@tamagui/babel-plugin',
               {
-                components: ['tamagui', '@tamagui/lucide-icons'],
+                components: ['tamagui'],
                 config: './tamagui.config.ts',
                 logTimings: false,
                 disableExtraction: true,

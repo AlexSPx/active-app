@@ -6,6 +6,8 @@ const repoRoot = path.resolve(__dirname, '../..')
 const uiRoot = path.join(repoRoot, 'components/ui')
 const migratedUiFiles = new Set([
   'components/ui/Controls.tsx',
+  'components/ui/CadenceOverlay.tsx',
+  'components/ui/ActionMenu.tsx',
   'components/ui/Badge.tsx',
   'components/ui/useCadenceColors.ts',
   'components/ui/index.ts',

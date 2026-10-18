@@ -1,5 +1,5 @@
 import { YStack, Text, XStack, View } from 'tamagui'
-import { Check, Plus } from '@tamagui/lucide-icons'
+import { Check, Plus } from '../../../components/ui/icons'
 import { FlashList } from '@shopify/flash-list'
 import { memo, useCallback } from 'react'
 import type { Exercise } from '../../../types/workout'

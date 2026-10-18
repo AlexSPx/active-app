@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState } from 'react'
-import { BackHandler, Platform } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, router } from 'expo-router'
-import { YStack, Button, Text, XStack, Dialog, getTokenValue } from 'tamagui'
-import { Sheet } from '@tamagui/sheet'
-import { AlertTriangle, Trash2 } from '@tamagui/lucide-icons'
+import { YStack, Button, Text } from 'tamagui'
+import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
+import { Trash2 } from '../../../components/ui/icons'
 
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
@@ -19,8 +17,6 @@ import type { Routine } from '../../../types/routine'
 import { CreateTopButton } from '../../../components/ui/CreateTopButton'
 
 export default function RoutinesTab() {
-  const insets = useSafeAreaInsets()
-  const pagePadding = getTokenValue('$page', 'space')
   const navigation = useNavigation()
   const { workouts } = useWorkouts()
   const workoutTitleById = useMemo(
@@ -29,7 +25,14 @@ export default function RoutinesTab() {
   )
 
   const { routines, loading, error, refetch, isStale: routinesStale } = useRoutines()
-  const { deleteRoutine, activateRoutine, updateRoutine, loading: mutating } = useRoutineMutations()
+  const {
+    deleteRoutine,
+    activateRoutine,
+    updateRoutine,
+    loading: mutating,
+    error: deleteError,
+    clearError,
+  } = useRoutineMutations()
   const {
     activeRoutine,
     refetch: refetchActive,
@@ -79,10 +82,14 @@ export default function RoutinesTab() {
     [activateRoutine, refetchActive]
   )
 
-  const handleDeleteRoutine = useCallback((routineId: string) => {
-    setPendingDeleteId(routineId)
-    setConfirmOpen(true)
-  }, [])
+  const handleDeleteRoutine = useCallback(
+    (routineId: string) => {
+      clearError()
+      setPendingDeleteId(routineId)
+      setConfirmOpen(true)
+    },
+    [clearError]
+  )
 
   const handleStartFromToday = useCallback(
     async (routineId: string) => {
@@ -102,32 +109,20 @@ export default function RoutinesTab() {
     const unsubNav = (navigation as any).addListener?.('beforeRemove', (e: any) => {
       if (!confirmOpen) return
       e.preventDefault()
-      setConfirmOpen(false)
+      if (!mutating) setConfirmOpen(false)
     })
 
-    const backSub = BackHandler.addEventListener('hardwareBackPress', () => {
-      if (confirmOpen) {
-        setConfirmOpen(false)
-        return true
-      }
-      return false
-    })
-
-    return () => {
-      unsubNav?.()
-      backSub.remove()
-    }
-  }, [confirmOpen, navigation])
+    return () => unsubNav?.()
+  }, [confirmOpen, navigation, mutating])
 
   const confirmDelete = useCallback(async () => {
-    if (!pendingDeleteId) return
+    if (!pendingDeleteId || mutating) return
     const ok = await deleteRoutine(pendingDeleteId)
-    if (ok) {
-      await refetch()
-    }
+    if (!ok) return
+    await refetch()
     setConfirmOpen(false)
     setPendingDeleteId(null)
-  }, [deleteRoutine, pendingDeleteId, refetch])
+  }, [deleteRoutine, pendingDeleteId, refetch, mutating])
 
   if (loading && routines.length === 0) {
     return (
@@ -151,16 +146,10 @@ export default function RoutinesTab() {
     )
   }
 
-  // Delete confirmation content - shared between Sheet (native) and Dialog (web)
   const DeleteConfirmContent = (
     <YStack gap="$3" items="center">
-      <XStack items="center" gap="$2">
-        <AlertTriangle size="$1" color="$destructive" />
-        <Text fontSize="$sectionTitle" fontWeight="700">
-          Delete routine
-        </Text>
-      </XStack>
       <Text color="$colorSubtle">Are you sure? This will permanently delete this routine.</Text>
+      {!!deleteError && <ErrorDisplay title="Cannot delete routine" message={deleteError} />}
       <YStack mt="$2" gap="$3" width="100%">
         <Button
           bg="$destructive"
@@ -178,6 +167,7 @@ export default function RoutinesTab() {
           color="$color"
           minH="$action"
           rounded="$button"
+          disabled={mutating}
           onPress={() => setConfirmOpen(false)}
         >
           <Text>Cancel</Text>
@@ -224,52 +214,14 @@ export default function RoutinesTab() {
         />
       </YStack>
 
-      {/* Use Dialog on web (Sheet has rendering issues), Sheet on native */}
-      {Platform.OS === 'web' ? (
-        <Dialog modal open={confirmOpen} onOpenChange={setConfirmOpen}>
-          <Dialog.Portal>
-            <Dialog.Overlay
-              key="overlay"
-              animation="slow"
-              opacity={0.5}
-              enterStyle={{ opacity: 0 }}
-              exitStyle={{ opacity: 0 }}
-            />
-            <Dialog.Content
-              bordered
-              rounded="$menu"
-              key="content"
-              animation={['quick', { opacity: { overshootClamping: true } }]}
-              enterStyle={{ opacity: 0 }}
-              exitStyle={{ opacity: 0 }}
-              bg="$surface"
-              p="$page"
-            >
-              {DeleteConfirmContent}
-            </Dialog.Content>
-          </Dialog.Portal>
-        </Dialog>
-      ) : confirmOpen ? (
-        <Sheet
-          open={confirmOpen}
-          onOpenChange={setConfirmOpen}
-          modal
-          dismissOnOverlayPress={!mutating}
-          snapPointsMode="fit"
-        >
-          <Sheet.Overlay animation="slow" bg="$backgroundTransparent" />
-          <Sheet.Handle bg="$surface" />
-          <Sheet.Frame
-            bg="$surface"
-            borderTopLeftRadius="$sheet"
-            borderTopRightRadius="$sheet"
-            p="$page"
-            pb={insets.bottom + pagePadding}
-          >
-            {DeleteConfirmContent}
-          </Sheet.Frame>
-        </Sheet>
-      ) : null}
+      <CadenceOverlay
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title="Delete routine"
+        dismissible={!mutating}
+      >
+        {DeleteConfirmContent}
+      </CadenceOverlay>
     </YStack>
   )
 }

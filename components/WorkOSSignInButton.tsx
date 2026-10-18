@@ -1,6 +1,6 @@
 import React, { useEffect, useCallback } from 'react'
 import { Button, Text } from 'tamagui'
-import { Lock } from '@tamagui/lucide-icons'
+import { Lock } from './ui/icons'
 import { useAuthStore } from '../stores/authStore'
 import { useRouter } from 'expo-router'
 import { Alert, Platform } from 'react-native'
