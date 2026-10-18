@@ -63,6 +63,7 @@ export function CadenceOverlay({
   const titleRef = useRef<Text>(null)
   const handleRef = useRef<View>(null)
   const dragStart = useRef(0)
+  const closeCompletion = useRef<(() => void) | null>(null)
   const current = useRef({
     open,
     dismissible,
@@ -198,17 +199,22 @@ export function CadenceOverlay({
         Animated.timing(opacity, { toValue: 0, duration: 160, useNativeDriver: true }),
       ]).start(({ finished }) => {
         if (!finished || !effectIsActive || current.current.open) return
-        setMounted(false)
-        requestAnimationFrame(() => {
-          if (!effectIsActive || current.current.open) return
+        const completeClose = () => {
+          if (!effectIsActive || current.current.open || closeCompletion.current !== completeClose)
+            return
+          closeCompletion.current = null
           if (current.current.returnFocusRef) focus(current.current.returnFocusRef)
           current.current.onClosed?.()
-        })
+        }
+        closeCompletion.current = completeClose
+        setMounted(false)
+        if (Platform.OS !== 'ios') requestAnimationFrame(completeClose)
       })
     }
 
     return () => {
       effectIsActive = false
+      closeCompletion.current = null
       translateY.stopAnimation()
       opacity.stopAnimation()
     }
@@ -222,6 +228,7 @@ export function CadenceOverlay({
       statusBarTranslucent
       navigationBarTranslucent
       onRequestClose={requestClose}
+      onDismiss={() => closeCompletion.current?.()}
     >
       <KeyboardAvoidingView
         className="flex-1 justify-end"

@@ -4,7 +4,7 @@ jest.mock('react-native-safe-area-context', () => ({
 
 const React = require('react')
 const { act, create } = require('react-test-renderer')
-const { AccessibilityInfo, Animated, Modal, PanResponder, View } = require('react-native')
+const { AccessibilityInfo, Animated, Modal, PanResponder, Platform, View } = require('react-native')
 const { CadenceOverlay } = require('../../components/ui/CadenceOverlay')
 
 let tree
@@ -196,8 +196,8 @@ test('a non-dismissible sheet ignores hardware back, backdrop press, and downwar
   expect(modal().props.visible).toBe(true)
 })
 
-test('onClosed waits for a completed exit animation and runs once', () => {
-  const onOpenChange = jest.fn()
+function closingOverlay(platform) {
+  jest.replaceProperty(Platform, 'OS', platform)
   const onClosed = jest.fn()
   const animationCompletions = []
   const scheduledFrames = []
@@ -213,33 +213,87 @@ test('onClosed waits for a completed exit animation and runs once', () => {
       delete global.requestAnimationFrame
     }
   }
-  jest.spyOn(AccessibilityInfo, 'setAccessibilityFocus').mockImplementation(() => {})
+  const restoreFocus = jest
+    .spyOn(AccessibilityInfo, 'setAccessibilityFocus')
+    .mockImplementation(() => {})
+  jest.spyOn(require('react-native'), 'findNodeHandle').mockReturnValue(42)
   jest.spyOn(Animated, 'parallel').mockImplementation(() => ({
     start: (callback) => animationCompletions.push(callback),
   }))
-
+  const returnFocusRef = { current: null }
+  const renderOverlay = (open) => (
+    <CadenceOverlay
+      open={open}
+      onOpenChange={() => {}}
+      onClosed={onClosed}
+      returnFocusRef={returnFocusRef}
+      title="Actions"
+    >
+      <View />
+    </CadenceOverlay>
+  )
   act(() => {
-    tree = create(
-      <CadenceOverlay open onOpenChange={onOpenChange} onClosed={onClosed} title="Actions">
-        <View />
-      </CadenceOverlay>
-    )
+    tree = create(renderOverlay(true))
   })
   act(() => animationCompletions[0]({ finished: true }))
+  restoreFocus.mockClear()
+  act(() => tree.update(renderOverlay(false)))
+  return { onClosed, restoreFocus, animationCompletions, scheduledFrames, renderOverlay }
+}
 
-  act(() => {
-    tree.update(
-      <CadenceOverlay open={false} onOpenChange={onOpenChange} onClosed={onClosed} title="Actions">
-        <View />
-      </CadenceOverlay>
-    )
-  })
-  expect(onClosed).not.toHaveBeenCalled()
+test.each(['ios', 'android'])(
+  '%s completes closing once after its dismissal signal',
+  (platform) => {
+    const { onClosed, restoreFocus, animationCompletions, scheduledFrames } =
+      closingOverlay(platform)
+    expect(onClosed).not.toHaveBeenCalled()
 
+    act(() => animationCompletions[1]({ finished: false }))
+    expect(modal().props.visible).toBe(true)
+    expect(onClosed).not.toHaveBeenCalled()
+    act(() => animationCompletions[1]({ finished: true }))
+    expect(modal().props.visible).toBe(false)
+    if (platform === 'ios') act(() => scheduledFrames.forEach((callback) => callback()))
+    expect(onClosed).not.toHaveBeenCalled()
+    expect(restoreFocus).not.toHaveBeenCalled()
+
+    const dismiss = platform === 'ios' ? modal().props.onDismiss : scheduledFrames[0]
+    expect(scheduledFrames).toHaveLength(platform === 'ios' ? 0 : 1)
+    act(() => dismiss())
+    act(() => dismiss())
+    expect(onClosed).toHaveBeenCalledTimes(1)
+    expect(restoreFocus).toHaveBeenCalledTimes(1)
+    expect(restoreFocus).toHaveBeenCalledWith(42)
+  }
+)
+
+test.each(['ios', 'android'])('%s cancels an exit animation when reopened', (platform) => {
+  const { onClosed, restoreFocus, animationCompletions, scheduledFrames, renderOverlay } =
+    closingOverlay(platform)
+  act(() => tree.update(renderOverlay(true)))
   act(() => animationCompletions[1]({ finished: true }))
+  act(() => modal().props.onDismiss())
+  expect(scheduledFrames).toHaveLength(0)
+  expect(modal().props.visible).toBe(true)
   expect(onClosed).not.toHaveBeenCalled()
-  expect(scheduledFrames).toHaveLength(1)
+  expect(restoreFocus).not.toHaveBeenCalled()
+})
 
-  act(() => scheduledFrames[0](0))
-  expect(onClosed).toHaveBeenCalledTimes(1)
+test.each([
+  ['ios', 'reopen'],
+  ['ios', 'unmount'],
+  ['android', 'reopen'],
+  ['android', 'unmount'],
+])('%s ignores a pending dismissal after %s', (platform, cancellation) => {
+  const { onClosed, restoreFocus, animationCompletions, scheduledFrames, renderOverlay } =
+    closingOverlay(platform)
+  act(() => animationCompletions[1]({ finished: true }))
+  const dismiss = platform === 'ios' ? modal().props.onDismiss : scheduledFrames[0]
+  act(() => {
+    if (cancellation === 'reopen') tree.update(renderOverlay(true))
+    else tree.unmount()
+  })
+  act(() => dismiss())
+  expect(onClosed).not.toHaveBeenCalled()
+  expect(restoreFocus).not.toHaveBeenCalled()
 })
