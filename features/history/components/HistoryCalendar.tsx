@@ -2,13 +2,7 @@ import { Pressable, useWindowDimensions, View } from 'react-native'
 import { IconButton, SegmentedSelection, UiText } from '../../../components/ui/Controls'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { ChevronLeft, ChevronRight } from '../../../components/ui/icons'
-import {
-  formatMonthYear,
-  generateCalendar,
-  sameDay,
-  startOfWeek,
-  toISODate,
-} from './date'
+import { formatMonthYear, generateCalendar, sameDay, startOfWeek, toISODate } from './date'
 
 export type HistoryCalendarView = 'month' | 'week'
 
@@ -46,7 +40,7 @@ export function HistoryCalendar({
 
   return (
     <View className="gap-field border-b border-divider pb-section">
-      <View className="flex-row flex-wrap items-center justify-between gap-compact">
+      <View className="flex-row flex-wrap items-center justify-between gap-compact px-page">
         <UiText
           textRole="cardTitle"
           className={headingOnOwnRow ? 'w-full' : 'min-w-0 flex-1'}
@@ -86,7 +80,7 @@ export function HistoryCalendar({
         </View>
       </View>
 
-      <View className="px-1">
+      <View className={width < 348 ? 'px-1' : 'px-page'}>
         <View className="flex-row">
           {weekDays.map((day) => (
             <UiText key={day} textRole="meta" className="flex-1 py-compact text-center">
@@ -112,33 +106,41 @@ export function HistoryCalendar({
                   return (
                     <Pressable
                       key={toISODate(day.date)}
-                      className={`min-h-touch min-w-touch flex-1 items-center justify-center active:opacity-75 ${
-                        selected
-                          ? 'rounded-full bg-accent'
-                          : today
-                            ? 'rounded-full border border-accent bg-transparent'
-                            : ''
-                      }`}
+                      className="min-h-touch min-w-touch flex-1 p-0.5 active:opacity-75"
                       accessibilityRole="button"
                       accessibilityLabel={`${label}${today ? ', today' : ''}${hasWorkouts ? ', completed session' : ''}`}
                       accessibilityState={{ selected }}
                       onPress={() => onSelectDate(day.date)}
                     >
-                      <UiText
-                        textRole={
-                          selected ? 'captionOnAccent' : today ? 'captionEmphasis' : 'caption'
-                        }
-                        className={!day.inCurrentMonth && view === 'month' ? 'opacity-60' : ''}
-                      >
-                        {day.date.getDate()}
-                      </UiText>
                       <View
-                        className={`mt-0.5 h-1.5 w-1.5 rounded-full ${
-                          hasWorkouts ? (selected ? 'bg-on-accent' : 'bg-accent') : 'bg-transparent'
+                        className={`min-h-10 flex-1 items-center justify-center rounded-xl ${
+                          selected
+                            ? 'bg-accent'
+                            : today
+                              ? 'border border-accent bg-surface'
+                              : 'bg-surface'
                         }`}
-                        accessibilityElementsHidden
-                        importantForAccessibility="no-hide-descendants"
-                      />
+                      >
+                        <UiText
+                          textRole={
+                            selected ? 'captionOnAccent' : today ? 'captionEmphasis' : 'caption'
+                          }
+                          className={!day.inCurrentMonth && view === 'month' ? 'opacity-60' : ''}
+                        >
+                          {day.date.getDate()}
+                        </UiText>
+                        <View
+                          className={`mt-0.5 h-1.5 w-1.5 rounded-full ${
+                            hasWorkouts
+                              ? selected
+                                ? 'bg-on-accent'
+                                : 'bg-accent'
+                              : 'bg-transparent'
+                          }`}
+                          accessibilityElementsHidden
+                          importantForAccessibility="no-hide-descendants"
+                        />
+                      </View>
                     </Pressable>
                   )
                 })}
@@ -147,7 +149,7 @@ export function HistoryCalendar({
           })}
         </View>
       </View>
-      <View accessibilityRole="text" className="flex-row items-center gap-compact">
+      <View accessibilityRole="text" className="flex-row items-center gap-compact px-page">
         <View className="h-1.5 w-1.5 rounded-full bg-accent" />
         <UiText textRole="meta">Completed session · outlined date is today</UiText>
       </View>
