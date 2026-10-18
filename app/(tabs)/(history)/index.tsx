@@ -16,9 +16,11 @@ import {
 } from '../../../features/history'
 import { parseServerUtcDate } from '../../../utils/date'
 import { launchFacade } from '../../../features/launch/launchFacade'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
 export default function HistoryPage() {
   const router = useRouter()
+  const colors = useCadenceColors()
   const { workoutRecords: records, loading, error, refetch } = useWorkoutRecords()
   const [refreshing, setRefreshing] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
@@ -90,9 +92,15 @@ export default function HistoryPage() {
               rounded="$day"
               items="center"
               justify="center"
+              accessibilityLabel="Go to today"
               onPress={() => selectDate(new Date())}
             >
-              <Text fontSize="$caption" lineHeight="$caption" color="$primary" fontWeight="600">
+              <Text
+                fontSize="$caption"
+                lineHeight="$caption"
+                color={colors.accent}
+                fontWeight="600"
+              >
                 Today
               </Text>
             </Button>

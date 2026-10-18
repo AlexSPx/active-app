@@ -7,6 +7,7 @@ interface RestTimerOverlayProps {
   total: number
   onExtend: () => void
   onSkip: () => void
+  bottomOffset?: number
 }
 
 // A floating overlay shown when a rest timer is active.
@@ -17,6 +18,7 @@ export function RestTimerOverlay({
   total,
   onExtend,
   onSkip,
+  bottomOffset = 0,
 }: RestTimerOverlayProps) {
   useEffect(() => {
     // Potential animation hook / focus effects
@@ -32,7 +34,7 @@ export function RestTimerOverlay({
   return (
     <YStack
       position="absolute"
-      style={{ left: 0, right: 0, bottom: 0 }}
+      style={{ left: 0, right: 0, bottom: bottomOffset }}
       px="$4"
       pb="$6"
       pointerEvents="box-none"

@@ -1,3 +1,7 @@
+jest.mock('../../components/ui/icons', () => ({ ChevronLeft: () => null }))
+jest.mock('uniwind', () => ({
+  useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
+}))
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 jest.mock('tamagui', () => ({
@@ -129,7 +133,7 @@ test('mixed targets use cardio duration, rest preferences update estimates, and 
   act(() => view.root.findByType('Start').props.onPress())
   expect(startWorkout).toHaveBeenCalledTimes(1)
   const footer = view.root.findAllByType('YStack').find((node) => node.props.borderTopWidth === 1)
-  expect(footer.props.pb).toBe(24)
+  expect(footer.props.pb).toBe('$page')
   expect(footer.findAllByType('ScrollView')).toHaveLength(0)
   useWorkouts.mockReturnValue({ workouts: [], loading: false, error: null })
   act(() => view.update(React.createElement(Detail)))

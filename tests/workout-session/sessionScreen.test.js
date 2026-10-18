@@ -1,3 +1,10 @@
+jest.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 80 }))
+jest.mock('expo-router', () => ({
+  Stack: { Screen: (props) => require('react').createElement('Screen', props) },
+}))
+jest.mock('uniwind', () => ({
+  useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
+}))
 jest.mock('tamagui', () => {
   const React = require('react')
   return {
@@ -17,7 +24,7 @@ jest.mock('@shopify/flash-list', () => {
         'FlashList',
         null,
         React.createElement(ListHeaderComponent),
-        React.createElement(ListFooterComponent)
+        ListFooterComponent ? React.createElement(ListFooterComponent) : null
       ),
   }
 })

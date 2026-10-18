@@ -2,15 +2,18 @@ import { useEffect, useState } from 'react'
 import { Alert, KeyboardAvoidingView, Platform } from 'react-native'
 import { useNavigation, usePreventRemove } from '@react-navigation/native'
 import { useHeaderHeight } from '@react-navigation/elements'
-import { Stack, useRouter } from 'expo-router'
-import { Button, Input, ScrollView, Text, TextArea, XStack, YStack, getTokenValue } from 'tamagui'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Stack, useRouter, type Href } from 'expo-router'
+import { Button, Input, ScrollView, Text, TextArea, XStack, YStack } from 'tamagui'
 import { ExerciseEditor } from '../../exercises'
 import { validateWorkoutData } from '../../../utils/workoutUtils'
 import type { WorkoutExercise, WorkoutSet } from '../../../types/workout'
+import { BackHeaderButton } from '../../../navigation/BackHeaderButton'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
 interface Props {
   editing?: boolean
+  backLabel?: string
+  backFallback?: Href
   initialName?: string
   initialNotes?: string
   initialSignature?: string
@@ -27,6 +30,8 @@ interface Props {
 
 export function WorkoutDraftEditor({
   editing,
+  backLabel = 'Workouts',
+  backFallback = '/(tabs)/(workouts)',
   initialName = '',
   initialNotes = '',
   initialSignature = '[]',
@@ -43,7 +48,7 @@ export function WorkoutDraftEditor({
   const router = useRouter()
   const navigation = useNavigation()
   const headerHeight = useHeaderHeight()
-  const insets = useSafeAreaInsets()
+  const colors = useCadenceColors()
   const [name, setName] = useState(initialName)
   const [notes, setNotes] = useState(initialNotes)
   useEffect(() => {
@@ -83,10 +88,13 @@ export function WorkoutDraftEditor({
     <YStack flex={1} bg="$background">
       <Stack.Screen
         options={{
-          title: 'Workouts',
+          title: '',
+          headerBackTitle: backLabel,
+          headerBackVisible: false,
+          headerLeft: () => <BackHeaderButton label={backLabel} fallback={backFallback} />,
           headerRight: () => (
             <Button chromeless height="$touch" onPress={() => router.back()} disabled={saving}>
-              <Text color="$primary" fontSize="$caption">
+              <Text color={colors.accent} fontSize="$caption">
                 Cancel
               </Text>
             </Button>
@@ -229,7 +237,7 @@ export function WorkoutDraftEditor({
           bg="$background"
           px="$page"
           pt="$field"
-          pb={Math.max(insets.bottom, getTokenValue('$field', 'space'))}
+          pb="$field"
         >
           <YStack width="100%" maxW="$content" self="center" gap="$compact">
             <Text
@@ -243,7 +251,7 @@ export function WorkoutDraftEditor({
             <Button
               height="$action"
               rounded="$button"
-              bg={canSave ? '$primary' : '$backgroundAccent'}
+              bg={canSave ? colors.accent : '$backgroundAccent'}
               disabled={!canSave}
               accessibilityHint={validation ?? undefined}
               onPress={() => onSave(name.trim(), notes)}
@@ -251,7 +259,7 @@ export function WorkoutDraftEditor({
               <Text
                 fontSize="$caption"
                 fontWeight="$screenTitle"
-                color={canSave ? '$onPrimary' : '$colorSubtle'}
+                color={canSave ? colors.onAccent : colors.muted}
               >
                 {saving ? 'Saving…' : editing ? 'Save changes' : 'Save workout'}
               </Text>

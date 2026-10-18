@@ -115,7 +115,13 @@ export const CardioSessionSetRow = memo(
           </Animated.View>
           <GestureDetector gesture={gesture}>
             <Animated.View style={[styles.row, animatedStyle]}>
-              <XStack items="center" gap="$compact" bg={set.completed ? '$primary' : '$surface'}>
+              <XStack
+                width="100%"
+                minW={0}
+                items="center"
+                gap="$compact"
+                bg={set.completed ? '$primary' : '$surface'}
+              >
                 {/* Set Number */}
                 <YStack width="$setRow" items="center">
                   <Text fontSize="$caption" color={set.completed ? '$onPrimary' : '$colorSubtle'}>
@@ -123,7 +129,7 @@ export const CardioSessionSetRow = memo(
                   </Text>
                 </YStack>
                 {/* Duration Input */}
-                <YStack flex={1} items="center">
+                <YStack flex={1} minW={0} shrink={1} items="center">
                   <SmartTimeInput
                     height="$touch"
                     rounded="$day"

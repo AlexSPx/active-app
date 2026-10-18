@@ -7,9 +7,12 @@ import { toggleExerciseSelection } from '../../utils/workoutUtils'
 import type { Exercise } from '../../types/workout'
 import { useQueryClient } from '@tanstack/react-query'
 import { useProfileQueryKeys } from '../../lib/hooks/useProfileQueryKeys'
+import { BackHeaderButton } from '../../navigation/BackHeaderButton'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
 
 export default function SearchExerciseScreen() {
   const router = useRouter()
+  const colors = useCadenceColors()
   const { ctx, workoutName } = useLocalSearchParams<{ ctx?: string; workoutName?: string }>()
   const createStore = useWorkoutStore()
   const editStore = useEditWorkoutStore()
@@ -46,10 +49,13 @@ export default function SearchExerciseScreen() {
     <YStack flex={1} bg="$background">
       <Stack.Screen
         options={{
-          title: 'Exercises',
+          title: '',
+          headerBackTitle: 'Workout',
+          headerBackVisible: false,
+          headerLeft: () => <BackHeaderButton label="Workout" fallback="/(tabs)/(workouts)" />,
           headerRight: () => (
             <Button chromeless height="$touch" onPress={() => router.back()}>
-              <Text color="$primary" fontSize="$caption">
+              <Text color={colors.accent} fontSize="$caption">
                 Cancel
               </Text>
             </Button>
@@ -166,13 +172,13 @@ export default function SearchExerciseScreen() {
           <Button
             height="$action"
             rounded="$button"
-            bg="$primary"
+            bg={colors.accent}
             onPress={() => {
               store.setExercises(pending)
               router.back()
             }}
           >
-            <Text color="$onPrimary" fontSize="$caption" fontWeight="$screenTitle">
+            <Text color={colors.onAccent} fontSize="$caption" fontWeight="$screenTitle">
               Done · {pending.length} selected
             </Text>
           </Button>

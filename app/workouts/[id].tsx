@@ -1,16 +1,5 @@
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router'
-import {
-  YStack,
-  Text,
-  ScrollView,
-  XStack,
-  Button,
-  getTokenValue,
-  useTheme,
-  getConfig,
-  getVariableValue,
-} from 'tamagui'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { YStack, Text, ScrollView, XStack, Button } from 'tamagui'
 import { useWorkouts, useWorkoutManagement, MuscleHeatMap } from '../../features/workouts'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
@@ -18,12 +7,13 @@ import { StartWorkoutButton } from '../../components/ui/StartWorkoutButton'
 import { useSettingsStore } from '../../features/settings'
 import { useWorkoutIdRemap } from '../../features/workouts/hooks/useWorkoutIdRemap'
 import { formatSeconds, summarizeWorkoutExercises } from '../../utils/workoutUtils'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
+import { BackHeaderButton } from '../../navigation/BackHeaderButton'
 
 export default function WorkoutDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
-  const theme = useTheme()
-  const insets = useSafeAreaInsets()
+  const colors = useCadenceColors()
   const { workouts, loading, error } = useWorkouts()
   const { startWorkout, isWorkoutRunning } = useWorkoutManagement()
   const running = isWorkoutRunning()
@@ -46,22 +36,19 @@ export default function WorkoutDetailScreen() {
     <YStack flex={1} bg="$background">
       <Stack.Screen
         options={{
-          title: 'Workout',
+          title: '',
           headerBackTitle: 'Workouts',
+          headerBackVisible: false,
+          headerLeft: () => <BackHeaderButton label="Workouts" fallback="/(tabs)/(workouts)" />,
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: theme.background.val },
-          headerTintColor: theme.primary.val,
-          headerTitleStyle: {
-            color: theme.color.val,
-            fontSize: getVariableValue(getConfig().fonts.body.size.header),
-            fontWeight: '700',
-          },
+          headerStyle: { backgroundColor: colors.background },
+          headerTintColor: colors.accent,
           headerRight: workout
             ? () => (
                 <Button
                   chromeless
                   minH="$touch"
-                  color="$primary"
+                  color={colors.accent}
                   fontSize="$caption"
                   onPress={() =>
                     router.push({ pathname: '/workouts/edit', params: { id: workout.id } })
@@ -97,7 +84,7 @@ export default function WorkoutDetailScreen() {
           <ScrollView
             flex={1}
             showsVerticalScrollIndicator={false}
-            contentInsetAdjustmentBehavior="automatic"
+            contentInsetAdjustmentBehavior="never"
           >
             <YStack p="$page" gap="$section" width="100%" maxW="$content" self="center">
               <YStack gap="$field">
@@ -195,13 +182,7 @@ export default function WorkoutDetailScreen() {
               </YStack>
             </YStack>
           </ScrollView>
-          <YStack
-            px="$page"
-            pt="$field"
-            pb={Math.max(insets.bottom, getTokenValue('$page', 'space'))}
-            borderTopWidth={1}
-            borderColor="$borderColor"
-          >
+          <YStack px="$page" pt="$field" pb="$page" borderTopWidth={1} borderColor="$borderColor">
             <YStack width="100%" maxW="$content" self="center" gap="$compact">
               {running && (
                 <Text fontSize="$caption" color="$colorSubtle">

@@ -1,5 +1,6 @@
+import { useCallback, useRef } from 'react'
 import { Alert, ScrollView, View } from 'react-native'
-import { Link } from 'expo-router'
+import { Link, useFocusEffect } from 'expo-router'
 import {
   Bell,
   ChevronRight,
@@ -30,6 +31,7 @@ import {
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
 export default function SettingsMenuScreen() {
+  const scrollViewRef = useRef<ScrollView>(null)
   const localProfile = launchFacade.auth.getStartupPlan().kind === 'local-profile'
   const { logout, user } = useAuth()
   const settings = useSettingsStore()
@@ -47,9 +49,15 @@ export default function SettingsMenuScreen() {
       },
     ])
 
+  useFocusEffect(
+    useCallback(() => {
+      scrollViewRef.current?.scrollTo({ y: 0, animated: false })
+    }, [])
+  )
+
   return (
     <View className="flex-1 bg-background">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollViewRef} className="flex-1" showsVerticalScrollIndicator={false}>
         <View className="w-full max-w-[720px] self-center gap-field p-page">
           <Link href={launchFacade.settings.profileRoute() as any} asChild>
             <Button

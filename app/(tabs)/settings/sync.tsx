@@ -61,7 +61,7 @@ export default function SyncSettingsScreen() {
 function LocalStorageScreen({ title, description }: { title: string; description: string }) {
   return (
     <>
-      <Stack.Screen options={{ title }} />
+      <Stack.Screen options={{ title: '' }} />
       <SettingsPage title={title}>
         <UiText textRole="bodyMuted" selectable>
           {description}
@@ -202,7 +202,7 @@ function SyncSettingsContent({ title, description }: { title: string; descriptio
 
   return (
     <>
-      <Stack.Screen options={{ title }} />
+      <Stack.Screen options={{ title: '' }} />
       <SettingsPage title={title} description={description}>
         <View className="flex-row items-center justify-between gap-field">
           <View className="flex-1 gap-compact">

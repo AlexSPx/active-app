@@ -32,6 +32,8 @@ export default function NewWorkoutScreen() {
   return (
     <WorkoutDraftEditor
       {...store}
+      backLabel={returnTo === 'routine' ? 'Routines' : 'Workouts'}
+      backFallback={returnTo === 'routine' ? '/(tabs)/(workouts)/routines' : '/(tabs)/(workouts)'}
       exercises={store.selectedExercises}
       saving={saving}
       error={error}
