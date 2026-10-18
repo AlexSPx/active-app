@@ -295,3 +295,39 @@ it('counts only training days in flexible weekly summaries', () => {
       .filter((node) => node.props.accessibilityLabel?.startsWith('Day '))
   ).toHaveLength(0)
 })
+
+it('shows session exercise rows with saved targets and starts the selected workout', () => {
+  const onStartWorkout = jest.fn()
+  const sessionWorkout = {
+    ...workout,
+    workoutTemplate: {
+      exercises: [
+        strength('Bench press'),
+        strength('Row', [10, 8, 6]),
+        { exerciseId: 'bike', exerciseTitle: 'Bike', category: 'CARDIO', durationSeconds: [600] },
+      ],
+    },
+  }
+  const renderer = render(WorkoutCard, {
+    workout: sessionWorkout,
+    sessionLabel: "Today's session",
+    onStartWorkout,
+    isWorkoutRunning: false,
+  })
+  expect(texts(renderer)).toEqual(
+    expect.arrayContaining([
+      "Today's session",
+      'Upper body',
+      '3 exercises',
+      '7 sets',
+      'Bench press',
+      '3 × 8',
+      'Row',
+      '3 sets',
+      'Bike',
+      '1 interval',
+    ])
+  )
+  act(() => button(renderer, 'Start workout').props.onPress())
+  expect(onStartWorkout).toHaveBeenCalledWith(sessionWorkout)
+})

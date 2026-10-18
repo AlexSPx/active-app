@@ -12,6 +12,10 @@ import {
 } from 'react-native'
 
 export type TextRole =
+  | 'featuredTitle'
+  | 'featuredBody'
+  | 'featuredMeta'
+  | 'featuredButton'
   | 'screenTitle'
   | 'compactScreenTitle'
   | 'cardTitle'
@@ -30,6 +34,10 @@ export type TextRole =
   | 'bodyOnAccent'
 
 const textClasses: Record<TextRole, string> = {
+  featuredTitle: 'text-workout-header font-dm-semibold text-on-featured',
+  featuredBody: 'text-body font-dm-regular text-on-featured',
+  featuredMeta: 'text-caption font-dm-regular text-featured-muted',
+  featuredButton: 'text-body font-dm-semibold text-on-featured-action',
   screenTitle: 'text-screen-title font-dm-semibold text-foreground',
   compactScreenTitle: 'text-screen-title-compact font-dm-semibold text-foreground',
   cardTitle: 'text-card-title font-dm-semibold text-foreground',
@@ -58,11 +66,13 @@ export function UiText({
   return <Text className={`${textClasses[textRole]} ${className}`} {...props} />
 }
 
-type ButtonVariant = 'primary' | 'surface' | 'secondary' | 'selected' | 'ghost'
+type ButtonVariant = 'primary' | 'featured' | 'surface' | 'secondary' | 'selected' | 'ghost'
 type ButtonShape = 'button' | 'control' | 'card'
 type ButtonDensity = 'regular' | 'compact' | 'card'
 
 const buttonClasses: Record<ButtonVariant, string> = {
+  featured:
+    'min-h-action bg-featured-action items-center justify-center active:opacity-80 focus:border-2 focus:border-on-featured-action',
   primary:
     'min-h-touch bg-accent items-center justify-center active:opacity-80 focus:border-2 focus:border-foreground',
   surface:
@@ -97,6 +107,7 @@ export type ButtonProps = Omit<PressableProps, 'children' | 'style'> & {
 }
 
 const buttonTextClasses: Record<ButtonVariant, string> = {
+  featured: 'text-body font-dm-medium text-on-featured-action',
   primary: 'text-body font-dm-medium text-on-accent',
   surface: 'text-body font-dm-medium text-foreground',
   secondary: 'text-body font-dm-medium text-foreground',
