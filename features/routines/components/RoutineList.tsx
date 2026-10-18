@@ -1,13 +1,13 @@
 import { FlashList } from '@shopify/flash-list'
 import { memo } from 'react'
-import { View, YStack, Text, getTokenValue } from 'tamagui'
+import { View } from 'react-native'
+import { UiText } from '../../../components/ui/Controls'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { Routine } from '../../../types/routine'
 import { RoutineCard } from './RoutineCard'
 export interface RoutineListProps {
   routines: Routine[]
   activeRoutineId?: string | null
-  workoutTitleById?: Record<string, string>
   onActivate: (routineId: string) => void
   onEditRoutine?: (routine: Routine) => void
   onDeleteRoutine?: (routineId: string) => void
@@ -22,7 +22,6 @@ export interface RoutineListProps {
 export const RoutineList = memo(function RoutineList({
   routines,
   activeRoutineId,
-  workoutTitleById,
   onActivate,
   onEditRoutine,
   onDeleteRoutine,
@@ -38,7 +37,6 @@ export const RoutineList = memo(function RoutineList({
     return (
       <RoutineCard
         routine={routine}
-        workoutTitleById={workoutTitleById}
         isActive={routine.id === activeRoutineId}
         onActivate={onActivate}
         onEdit={onEditRoutine}
@@ -51,30 +49,27 @@ export const RoutineList = memo(function RoutineList({
   }
 
   return (
-    <View flex={1} width="100%" maxW="$content" self="center">
+    <View className="w-full max-w-3xl flex-1 self-center">
       <FlashList
+        contentInsetAdjustmentBehavior="automatic"
         data={routines}
         renderItem={renderRoutine}
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingBottom: getTokenValue('$section', 'space') + insets.bottom,
-          paddingHorizontal: getTokenValue('$page', 'space'),
+          paddingBottom: 24 + insets.bottom,
+          paddingHorizontal: 20,
         }}
         ListHeaderComponent={listHeader}
         refreshing={refreshing}
         onRefresh={onRefresh}
         ListEmptyComponent={
-          <YStack py="$section" gap="$2">
-            <Text fontSize="$cardTitle" fontWeight="600">
-              No routines yet
-            </Text>
-            <Text fontSize="$body" lineHeight="$body" color="$colorSubtle">
-              Create a routine to arrange workouts and rest days.
-            </Text>
-          </YStack>
+          <View className="mt-field gap-field border-t border-divider py-section">
+            <UiText textRole="cardTitle">Find your rhythm.</UiText>
+            <UiText textRole="caption">Bring your workouts together into a routine.</UiText>
+          </View>
         }
-        ItemSeparatorComponent={() => <View height={getTokenValue('$field', 'space')} />}
+        ItemSeparatorComponent={() => <View className="h-field" />}
         showsVerticalScrollIndicator={false}
       />
     </View>

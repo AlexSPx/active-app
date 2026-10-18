@@ -15,21 +15,31 @@
   --spacing-touch: 44px;
   --spacing-action: 48px;
 
-  --radius-card: 1.25rem;
+  --radius-card: 1.0625rem;
   --radius-settings: 1.4375rem;
   --radius-control: 0.875rem;
   --radius-button: 0.75rem;
 
   --text-screen-title: 26px;
   --text-screen-title--line-height: 32px;
+  --text-screen-title-compact: 24px;
+  --text-screen-title-compact--line-height: 30px;
   --text-card-title: 18px;
   --text-card-title--line-height: 24px;
   --text-header: 18px;
   --text-header--line-height: 24px;
+  --text-workout-header: 22px;
+  --text-workout-header--line-height: 28px;
   --text-body: 14px;
   --text-body--line-height: 21px;
   --text-caption: 12px;
   --text-caption--line-height: 18px;
+  --text-meta: 11px;
+  --text-meta--line-height: 18px;
+  --text-meta-pill: 10px;
+  --text-meta-pill--line-height: 14px;
+  --text-button-label: 13px;
+  --text-button-label--line-height: 18px;
 
   --font-dm-sans: 'DM Sans';
   --font-dm-regular: 'DM Sans';

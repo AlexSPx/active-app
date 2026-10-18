@@ -1,5 +1,5 @@
 import { View } from 'react-native'
-import { Check } from '../../../components/ui/icons'
+import { Check, Play } from '../../../components/ui/icons'
 import { SettingsPage } from '../../../components/settings/SettingsPage'
 import { Button, Surface, UiText } from '../../../components/ui/Controls'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
@@ -50,12 +50,13 @@ export default function ThemeSettingsScreen() {
         <UiText textRole="bodyEmphasis">Preview</UiText>
         <Surface>
           <UiText textRole="cardTitle">Lower body foundations</UiText>
-          <UiText textRole="caption">Barbell squat · Barbell lunge{'\n'}6 sets · ~15 min</UiText>
+          <UiText textRole="caption">Barbell full squat / Barbell lunge{'\n'}6 sets</UiText>
           <View
-            className="h-action items-center justify-center rounded-button bg-accent"
+            className="h-action flex-row items-center justify-center gap-field rounded-button bg-accent"
             accessible
             accessibilityLabel="Example workout button"
           >
+            <Play size={20} color={colors.onAccent} aria-hidden />
             <UiText textRole="bodyOnAccent">Start workout</UiText>
           </View>
         </Surface>

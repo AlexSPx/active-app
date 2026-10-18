@@ -1,26 +1,17 @@
-jest.mock('tamagui', () => {
+jest.mock('react-native', () => {
   const React = require('react')
-  const primitive =
-    (name) =>
-    ({ children, ...props }) =>
-      React.createElement(name, props, children)
-  return {
-    getTokenValue: () => 20,
-    ...Object.fromEntries(
-      [
-        'ScrollView',
-        'YStack',
-        'XStack',
-        'Text',
-        'Card',
-        'Button',
-        'Portal',
-        'Separator',
-        'View',
-      ].map((name) => [name, primitive(name)])
-    ),
-  }
+  return Object.fromEntries(
+    ['View', 'Text', 'Pressable', 'ScrollView', 'TextInput', 'ActivityIndicator'].map((name) => [
+      name,
+      React.forwardRef((props, ref) =>
+        React.createElement(name, { ...props, ref }, props.children)
+      ),
+    ])
+  )
 })
+jest.mock('uniwind', () => ({
+  useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
+}))
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }))
 jest.mock('../../components/ui/icons', () => {
   const Icon = () => null
@@ -32,6 +23,7 @@ jest.mock('../../components/ui/icons', () => {
       'Clock',
       'Dumbbell',
       'Play',
+      'Check',
       'CheckCircle2',
       'Calendar',
       'Moon',
@@ -110,11 +102,11 @@ function texts(renderer) {
 }
 function button(renderer, label) {
   return renderer.root
-    .findAllByType('Button')
+    .findAll((node) => node.type === 'Button' || node.type === 'Pressable')
     .find((node) => node.findAllByType('Text').some((text) => text.children.join('') === label))
 }
 
-it('summarizes strength and cardio sets and estimated time', () => {
+it('summarizes strength and cardio sets', () => {
   const mixed = {
     ...workout,
     workoutTemplate: {
@@ -135,7 +127,7 @@ it('summarizes strength and cardio sets and estimated time', () => {
     isWorkoutRunning: false,
   })
   expect(texts(renderer)).toEqual(
-    expect.arrayContaining(['2 exercises', '5 sets', '~28 min', 'Bench press · Stationary bike'])
+    expect.arrayContaining(['2 exercises / 5 sets', 'Bench press\nStationary bike'])
   )
 })
 
@@ -147,7 +139,6 @@ it('keeps workout detail navigation separate from start, edit, and delete', () =
     onDelete: jest.fn(),
   }
   const renderer = render(WorkoutCard, { workout, isWorkoutRunning: false, ...handlers })
-  expect(renderer.root.findByType('Card').props.onPress).toBeUndefined()
   act(() =>
     renderer.root.findByProps({ accessibilityLabel: 'View workout Upper body' }).props.onPress()
   )
@@ -190,7 +181,7 @@ it('updates edited sets and callbacks even when exercise IDs and names are uncha
       })
     )
   )
-  expect(texts(renderer)).toContain('5 sets')
+  expect(texts(renderer)).toContain('1 exercise / 5 sets')
   act(() => button(renderer, 'Start workout').props.onPress())
   expect(latest).toHaveBeenCalledWith(edited)
   expect(first).not.toHaveBeenCalled()
@@ -210,27 +201,26 @@ it('updates workout titles through the list when IDs and list length stay the sa
   expect(texts(renderer)).toContain('Upper body revised')
 })
 
-it('shows an active routine with a complete training/rest cycle and no activation action', () => {
+it('shows an active routine as a repeating cycle with every day pinned', () => {
   const renderer = render(RoutineCard, { routine, isActive: true, onActivate: jest.fn() })
-  expect(texts(renderer)).toEqual(
-    expect.arrayContaining(['Repeating cycle', 'Active', '1 training day', '1 rest day'])
-  )
+  expect(texts(renderer)).toEqual(expect.arrayContaining(['Repeating cycle', 'Active']))
   expect(renderer.root.findByProps({ accessibilityLabel: 'Day 1 · Training' })).toBeDefined()
   expect(renderer.root.findByProps({ accessibilityLabel: 'Day 2 · Rest' })).toBeDefined()
   expect(button(renderer, 'Set active routine')).toBeUndefined()
 })
 
-it('describes flexible weekly routines and allows activation', () => {
+it('describes flexible weekly routines without an activation control on the card', () => {
   const onActivate = jest.fn()
   const renderer = render(RoutineCard, {
     routine: { ...routine, routineType: 'WEEKLY_COMPLETION', pattern: [routine.pattern[0]] },
     onActivate,
   })
   expect(texts(renderer)).toEqual(
-    expect.arrayContaining(['Flexible week', '1 workout', 'Any order'])
+    expect.arrayContaining(['Flexible week', '1 workout / Any order'])
   )
-  expect(renderer.root.findByProps({ accessibilityLabel: 'Workout 1 · Training' })).toBeDefined()
-  act(() => button(renderer, 'Set active routine').props.onPress())
+  expect(texts(renderer)).not.toContain('Active')
+  expect(button(renderer, 'Set active routine')).toBeUndefined()
+  act(() => button(renderer, 'Set active').props.onPress())
   expect(onActivate).toHaveBeenCalledWith(routine.id)
 })
 
@@ -243,7 +233,6 @@ it('keeps routine actions separate and respects the disabled state', () => {
     onStartFromToday: jest.fn(),
   }
   const renderer = render(RoutineCard, { routine, ...handlers })
-  expect(renderer.root.findByType('Card').props.onPress).toBeUndefined()
   act(() => button(renderer, 'Start today').props.onPress())
   expect(handlers.onStartFromToday).toHaveBeenCalledWith(routine.id)
   act(() => button(renderer, 'Edit').props.onPress())
@@ -254,12 +243,12 @@ it('keeps routine actions separate and respects the disabled state', () => {
   act(() =>
     renderer.update(React.createElement(RoutineCard, { routine, ...handlers, disabled: true }))
   )
-  expect(button(renderer, 'Set active routine').props.disabled).toBe(true)
+  expect(button(renderer, 'Set active').props.disabled).toBe(true)
   expect(
     renderer.root.findByProps({ accessibilityLabel: `More actions for ${routine.name}` }).props
       .disabled
   ).toBe(true)
-  act(() => button(renderer, 'Set active routine').props.onPress())
+  act(() => button(renderer, 'Set active').props.onPress())
   expect(handlers.onActivate).not.toHaveBeenCalled()
 })
 
@@ -275,31 +264,34 @@ it('bounds exercise summaries and preserves every day in long cycles', () => {
     onStartWorkout: jest.fn(),
     isWorkoutRunning: false,
   })
-  expect(texts(workoutRenderer)).toContain('18 sets')
+  expect(texts(workoutRenderer)).toContain('6 exercises / 18 sets')
   expect(texts(workoutRenderer)).toContain(
-    'Exercise 1 · Exercise 2 · Exercise 3 · Exercise 4 · +2 more'
+    'Exercise 1\nExercise 2\nExercise 3\nExercise 4\n+2 more'
   )
   const longCycle = {
     ...routine,
     pattern: Array.from({ length: 9 }, (_, i) => ({ ...routine.pattern[0], dayIndex: i + 1 })),
   }
   const routineRenderer = render(RoutineCard, { routine: longCycle })
-  expect(texts(routineRenderer)).toEqual(expect.arrayContaining(['9 training days']))
   expect(
     routineRenderer.root
-      .findAllByType('YStack')
+      .findAllByType('View')
       .filter((node) => node.props.accessibilityLabel?.startsWith('Day '))
   ).toHaveLength(9)
 })
 
-it('shows flexible workout names and excludes rest days from session rows', () => {
+it('counts only training days in flexible weekly summaries', () => {
   const renderer = render(RoutineCard, {
-    routine: { ...routine, routineType: 'WEEKLY_COMPLETION' },
-    workoutTitleById: { [workout.id]: workout.title },
+    routine: {
+      ...routine,
+      routineType: 'WEEKLY_COMPLETION',
+      pattern: [routine.pattern[0], routine.pattern[1], { ...routine.pattern[0], dayIndex: 3 }],
+    },
   })
-  expect(texts(renderer)).toContain(workout.title)
-  expect(renderer.root.findByProps({ accessibilityLabel: 'Workout 1 · Upper body' })).toBeDefined()
-  expect(renderer.root.findAllByProps({ accessibilityLabel: 'Workout 2 · Training' })).toHaveLength(
-    0
-  )
+  expect(texts(renderer)).toContain('2 workouts / Any order')
+  expect(
+    renderer.root
+      .findAllByType('View')
+      .filter((node) => node.props.accessibilityLabel?.startsWith('Day '))
+  ).toHaveLength(0)
 })

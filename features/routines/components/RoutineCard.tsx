@@ -1,14 +1,15 @@
-import { memo, useCallback, useMemo } from 'react'
-import { Card, YStack, XStack, Text, Button, ScrollView } from 'tamagui'
+import { Pressable, View } from 'react-native'
 import { ActionMenu } from '../../../components/ui/ActionMenu'
-import { CheckCircle2, Dumbbell } from '../../../components/ui/icons'
+import { Badge } from '../../../components/ui/Badge'
+import { UiText } from '../../../components/ui/Controls'
+import { Check, Dumbbell } from '../../../components/ui/icons'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import type { Routine } from '../../../types/routine'
 import { haptics } from '../../../utils/haptics'
 
 export interface RoutineCardProps {
   routine: Routine
   isActive?: boolean
-  workoutTitleById?: Record<string, string>
   onActivate?: (routineId: string) => void
   onEdit?: (routine: Routine) => void
   onDelete?: (routineId: string) => void
@@ -17,10 +18,9 @@ export interface RoutineCardProps {
   disabled?: boolean
 }
 
-export const RoutineCard = memo(function RoutineCard({
+export function RoutineCard({
   routine,
   isActive = false,
-  workoutTitleById,
   onActivate,
   onEdit,
   onDelete,
@@ -28,225 +28,99 @@ export const RoutineCard = memo(function RoutineCard({
   onPress,
   disabled = false,
 }: RoutineCardProps) {
-  const isFlexible = routine.routineType === 'WEEKLY_COMPLETION'
-  const days = useMemo(
-    () => [...routine.pattern].sort((a, b) => a.dayIndex - b.dayIndex),
-    [routine.pattern]
-  )
-  const trainingDays = days.filter((day) => day.dayType === 'WORKOUT')
-  const restDays = days.length - trainingDays.length
-
-  const handleActivate = useCallback(() => {
-    if (disabled || isActive) return
-    haptics.medium()
-    onActivate?.(routine.id)
-  }, [disabled, isActive, onActivate, routine.id])
-
+  const colors = useCadenceColors()
+  const weekly = routine.routineType === 'WEEKLY_COMPLETION'
+  const days = [...routine.pattern].sort((a, b) => a.dayIndex - b.dayIndex)
+  const training = days.filter((day) => day.dayType === 'WORKOUT')
+  const activate = () => {
+    if (!disabled && !isActive) {
+      haptics.medium()
+      onActivate?.(routine.id)
+    }
+  }
   return (
-    <Card
-      bg="$surface"
-      borderColor={isActive ? '$borderAccent' : '$borderColor'}
-      borderWidth={1}
-      rounded="$card"
-      p="$card"
-      gap="$card"
-      opacity={disabled ? 0.7 : 1}
+    <View
+      className={`gap-field rounded-card border p-card bg-surface ${isActive ? 'border-accent' : 'border-transparent'} ${disabled ? 'opacity-70' : ''}`}
     >
-      <XStack justify="space-between" items="flex-start" gap="$3">
-        <YStack
-          flex={1}
-          minH="$touch"
-          gap="$1"
-          onPress={onPress && !disabled ? () => onPress(routine) : undefined}
+      <View className="flex-row items-start gap-field">
+        <Pressable
+          className="min-h-touch flex-1 justify-center active:opacity-75"
+          disabled={disabled || !onPress}
+          onPress={() => onPress?.(routine)}
           accessibilityRole={onPress ? 'button' : undefined}
           accessibilityLabel={onPress ? `View routine ${routine.name}` : undefined}
           accessibilityState={{ disabled }}
-          pressStyle={onPress && !disabled ? { opacity: 0.75 } : undefined}
         >
-          <Text fontSize="$cardTitle" lineHeight="$cardTitle" fontWeight="600" color="$color">
-            {routine.name}
-          </Text>
-          <XStack items="center" gap="$2" flexWrap="wrap">
-            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-              {isFlexible ? 'Flexible week' : 'Repeating cycle'}
-            </Text>
-            {isActive && (
-              <XStack
-                items="center"
-                gap="$1"
-                bg="$backgroundAccent"
-                px="$2"
-                py="$1"
-                rounded="$badge"
-                accessible
-                accessibilityLabel="Active routine"
-              >
-                <CheckCircle2 size="$iconSmall" color="$primary" aria-hidden />
-                <Text fontSize="$caption" fontWeight="600" color="$primary">
-                  Active
-                </Text>
-              </XStack>
-            )}
-          </XStack>
-        </YStack>
+          <UiText textRole="cardTitle">{routine.name}</UiText>
+        </Pressable>
         {(onEdit || onDelete || onStartFromToday || (onActivate && !isActive)) && (
-          <>
-            <ActionMenu
-              label={`More actions for ${routine.name}`}
-              disabled={disabled}
-              onOpen={() => haptics.light()}
-              actions={[
-                ...(onEdit ? [{ label: 'Edit', onPress: () => onEdit(routine), disabled }] : []),
-                ...(onStartFromToday
-                  ? [
-                      {
-                        label: 'Start today',
-                        onPress: () => onStartFromToday(routine.id),
-                        disabled,
-                      },
-                    ]
-                  : []),
-                ...(onActivate && !isActive
-                  ? [{ label: 'Set active', onPress: handleActivate, disabled }]
-                  : []),
-                ...(onDelete
-                  ? [
-                      {
-                        label: 'Delete',
-                        destructive: true,
-                        onPress: () => onDelete(routine.id),
-                        disabled,
-                      },
-                    ]
-                  : []),
-              ]}
-            />
-          </>
+          <ActionMenu
+            label={`More actions for ${routine.name}`}
+            disabled={disabled}
+            onOpen={() => haptics.light()}
+            actions={[
+              ...(onEdit ? [{ label: 'Edit', onPress: () => onEdit(routine), disabled }] : []),
+              ...(onStartFromToday
+                ? [{ label: 'Start today', onPress: () => onStartFromToday(routine.id), disabled }]
+                : []),
+              ...(onActivate && !isActive
+                ? [{ label: 'Set active', onPress: activate, disabled }]
+                : []),
+              ...(onDelete
+                ? [
+                    {
+                      label: 'Delete',
+                      onPress: () => onDelete(routine.id),
+                      destructive: true,
+                      disabled,
+                    },
+                  ]
+                : []),
+            ]}
+          />
         )}
-      </XStack>
-      {routine.description ? (
-        <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle" numberOfLines={2}>
-          {routine.description}
-        </Text>
-      ) : null}
-      <XStack gap="$3" flexWrap="wrap">
-        <Text fontSize="$caption" color="$colorSubtle">
-          {trainingDays.length}{' '}
-          {isFlexible
-            ? trainingDays.length === 1
-              ? 'workout'
-              : 'workouts'
-            : trainingDays.length === 1
-              ? 'training day'
-              : 'training days'}
-        </Text>
-        <Text fontSize="$caption" color="$colorSubtle">
-          {isFlexible ? 'Any order' : `${restDays} ${restDays === 1 ? 'rest day' : 'rest days'}`}
-        </Text>
-      </XStack>
-      {isFlexible ? (
-        <YStack borderTopWidth={1} borderColor="$borderColor">
-          {trainingDays.map((day, index) => (
-            <XStack
-              key={`${day.dayIndex}-${index}`}
-              minH="$touch"
-              py="$2"
-              gap="$2"
-              items="center"
-              borderBottomWidth={1}
-              borderColor="$borderColor"
-              accessible
-              accessibilityLabel={`Workout ${index + 1} · ${day.workoutId ? workoutTitleById?.[day.workoutId] || 'Training' : 'Training'}`}
-            >
-              <Text fontSize="$caption" color="$colorSubtle">
-                {index + 1}
-              </Text>
-              <Text flex={1} fontSize="$caption" lineHeight="$caption" color="$color">
-                {day.workoutId
-                  ? workoutTitleById?.[day.workoutId] || 'Saved workout'
-                  : 'Saved workout'}
-              </Text>
-              <Dumbbell size="$iconSmall" color="$colorSubtle" aria-hidden />
-            </XStack>
-          ))}
-        </YStack>
+      </View>
+      <View className="flex-row items-center justify-between gap-field">
+        <UiText textRole="meta" className="flex-1">
+          {weekly ? 'Flexible week' : 'Repeating cycle'}
+        </UiText>
+        {isActive && (
+          <Badge variant="pill" icon={<Check size={11} color={colors.accent} aria-hidden />}>
+            Active
+          </Badge>
+        )}
+      </View>
+      {!!routine.description?.trim() && (
+        <UiText textRole="meta" numberOfLines={2}>
+          {routine.description.trim()}
+        </UiText>
+      )}
+      {weekly ? (
+        <UiText textRole="meta">
+          {training.length} {training.length === 1 ? 'workout' : 'workouts'} / Any order
+        </UiText>
       ) : (
-        <YStack gap="$2">
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ grow: 1 }}
-          >
-            <XStack flex={1} gap="$compact">
-              {days.map((day, index) => (
-                <YStack
-                  key={`${day.dayIndex}-${index}`}
-                  flex={1}
-                  minW="$2"
-                  height="$day"
-                  p="$compact"
-                  gap="$2"
-                  bg="$backgroundStrong"
-                  rounded="$day"
-                  items="center"
-                  accessible
-                  accessibilityLabel={`Day ${day.dayIndex} · ${day.dayType === 'WORKOUT' ? 'Training' : 'Rest'}`}
-                >
-                  <Text fontSize="$caption" color="$colorSubtle">
-                    {day.dayIndex}
-                  </Text>
-                  <YStack
-                    flex={1}
-                    width="100%"
-                    bg={day.dayType === 'WORKOUT' ? '$primary' : '$backgroundTransparent'}
-                    rounded="$block"
-                    items="center"
-                    justify="center"
-                  >
-                    {day.dayType === 'WORKOUT' ? (
-                      <Dumbbell size="$iconSmall" color="$onPrimary" aria-hidden />
-                    ) : (
-                      <Text fontSize="$body" color="$colorMuted">
-                        —
-                      </Text>
-                    )}
-                  </YStack>
-                </YStack>
-              ))}
-            </XStack>
-          </ScrollView>
-          <XStack gap="$3" items="center">
-            <XStack gap="$1" items="center">
-              <YStack width="$0.5" height="$0.5" bg="$primary" rounded="$1" />
-              <Text fontSize="$caption" color="$colorSubtle">
-                Training
-              </Text>
-            </XStack>
-            <Text fontSize="$caption" color="$colorSubtle">
-              — Rest
-            </Text>
-          </XStack>
-        </YStack>
+        <View className="flex-row flex-wrap gap-compact">
+          {days.map((day) => {
+            const trainingDay = day.dayType === 'WORKOUT'
+            return (
+              <View
+                key={day.dayIndex}
+                className={`h-10 min-w-8 flex-1 items-center justify-center gap-1 rounded-button ${trainingDay ? 'bg-accent' : 'bg-raised'}`}
+                accessible
+                accessibilityLabel={`Day ${day.dayIndex} · ${trainingDay ? 'Training' : 'Rest'}`}
+              >
+                <UiText textRole={trainingDay ? 'bodyOnAccent' : 'caption'}>{day.dayIndex}</UiText>
+                {trainingDay ? (
+                  <Dumbbell size={14} color={colors.onAccent} aria-hidden />
+                ) : (
+                  <UiText textRole="caption">–</UiText>
+                )}
+              </View>
+            )
+          })}
+        </View>
       )}
-      {onActivate && !isActive && (
-        <Button
-          width="100%"
-          minH="$action"
-          height="auto"
-          py="$3"
-          rounded="$button"
-          bg="$primary"
-          disabled={disabled}
-          opacity={disabled ? 0.6 : 1}
-          onPress={handleActivate}
-          pressStyle={{ opacity: 0.85 }}
-        >
-          <CheckCircle2 size="$icon" color="$onPrimary" aria-hidden />
-          <Text fontSize="$caption" fontWeight="600" color="$onPrimary" shrink={1}>
-            Set active routine
-          </Text>
-        </Button>
-      )}
-    </Card>
+    </View>
   )
-})
+}
