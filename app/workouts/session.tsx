@@ -1,10 +1,15 @@
-import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, type LayoutChangeEvent } from 'react-native'
-import { Button, Text, YStack } from 'tamagui'
+import { useCallback, useMemo, useState } from 'react'
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  View,
+  type LayoutChangeEvent,
+} from 'react-native'
 import { Stack } from 'expo-router'
 import { useHeaderHeight } from '@react-navigation/elements'
-import { useFeedback } from '../../components/feedback/FeedbackProvider'
 import { FlashList } from '@shopify/flash-list'
+import { UiText } from '../../components/ui/Controls'
 
 import {
   WorkoutSessionExercise,
@@ -12,26 +17,27 @@ import {
   WorkoutActions,
   useWorkoutSession,
   RestTimerOverlay,
+  useRunningWorkoutStore,
 } from '../../features/workout-session'
 import { getCurrentDate } from '../../utils/date'
 import { useAppNavigation } from '../../navigation/useAppNavigation'
 import type { Exercise } from '../../types/workout-session'
-import { useUiStore } from '../../stores/uiStore'
-import { useAuthStore } from '../../stores/authStore'
-import { getProfileScope, isCurrentProfile } from '../../lib/profileScope'
-import { useCadenceColors } from '../../components/ui/useCadenceColors'
+import { useWorkoutCompletion } from '../../features/workout-session/hooks/useWorkoutCompletion'
+import { getRestTimerNextStepText } from '../../features/workout-session/utils'
+
+function SessionExerciseSeparator() {
+  return <View style={{ height: 16 }} />
+}
 
 export default function WorkoutSessionScreen() {
   const { goBack } = useAppNavigation()
-  const colors = useCadenceColors()
   const headerHeight = useHeaderHeight()
   const [footerHeight, setFooterHeight] = useState(0)
+  const startTime = useRunningWorkoutStore((state) => state.runningWorkout?.startTime ?? null)
   const {
     // State
     exercises,
     workoutName,
-    workoutTag,
-    workoutDuration,
     // Actions
     updateSet,
     toggleSetComplete,
@@ -48,60 +54,67 @@ export default function WorkoutSessionScreen() {
     remainingRest,
   } = useWorkoutSession()
 
-  const showFinishedCongrats = useUiStore((s) => s.showFinishedCongrats)
-  const toast = useFeedback()
+  const finishWorkoutWithFeedback = useWorkoutCompletion(finishWorkout)
 
-  const finishWorkoutWithFeedback = async () => {
-    const profileScope = getProfileScope()
-    const startingAuthState = useAuthStore.getState()
-    const isCurrentFinishSession = () => {
-      const authState = useAuthStore.getState()
-      return (
-        isCurrentProfile(profileScope) &&
-        authState.user?.id === startingAuthState.user?.id &&
-        authState.isAuthenticated === startingAuthState.isAuthenticated &&
-        !authState.isProfileTransitioning
-      )
-    }
-
-    let resp: Awaited<ReturnType<typeof finishWorkout>>
-    try {
-      resp = await finishWorkout()
-    } catch (error) {
-      if (!isCurrentFinishSession()) return false
-      throw error
-    }
-
-    if (!isCurrentFinishSession()) return false
-    if (!resp) {
-      toast.show('Workout not saved', {
-        message: 'Your session is still in progress. Tap Finish workout to retry.',
-      })
-      return false
-    }
-
-    showFinishedCongrats(resp)
-    return true
-  }
-
-  const renderExercise = ({ item: exercise, index }: { item: Exercise; index: number }) => (
-    <WorkoutSessionExercise
-      exercise={exercise}
-      index={index}
-      onUpdateSet={updateSet}
-      onToggleSetComplete={toggleSetComplete}
-      onAddSet={addSet}
-      onRemoveSet={removeSet}
-      onStartRestTimer={startRestTimer}
-    />
+  const renderExercise = useCallback(
+    ({ item: exercise, index }: { item: Exercise; index: number }) => (
+      <WorkoutSessionExercise
+        exercise={exercise}
+        index={index}
+        onUpdateSet={updateSet}
+        onToggleSetComplete={toggleSetComplete}
+        onAddSet={addSet}
+        onRemoveSet={removeSet}
+        onStartRestTimer={startRestTimer}
+      />
+    ),
+    [addSet, removeSet, startRestTimer, toggleSetComplete, updateSet]
   )
 
-  const ListHeaderComponent = () => (
-    <WorkoutSessionHeader
-      workoutName={workoutName}
-      duration={workoutDuration}
-      date={getCurrentDate()}
-    />
+  const sessionDate = useMemo(() => getCurrentDate(), [])
+  const ListHeaderComponent = useCallback(
+    () => (
+      <WorkoutSessionHeader workoutName={workoutName} startTime={startTime} date={sessionDate} />
+    ),
+    [sessionDate, startTime, workoutName]
+  )
+  const sessionList = useMemo(
+    () => (
+      <FlashList
+        style={{ flex: 1 }}
+        data={exercises}
+        renderItem={renderExercise}
+        keyExtractor={(item) => item.sessionId}
+        ItemSeparatorComponent={SessionExerciseSeparator}
+        ListHeaderComponent={ListHeaderComponent}
+        ListHeaderComponentStyle={{ marginBottom: 16 }}
+        showsVerticalScrollIndicator={false}
+        keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
+        keyboardShouldPersistTaps="handled"
+      />
+    ),
+    [ListHeaderComponent, exercises, renderExercise]
+  )
+  const nextStepText = useMemo(
+    () =>
+      activeTimer
+        ? getRestTimerNextStepText(exercises, activeTimer)
+        : 'Continue whenever you are ready.',
+    [activeTimer, exercises]
+  )
+
+  const leaveAction = useCallback(
+    () => (
+      <Pressable
+        className="min-h-touch justify-center px-compact"
+        accessibilityRole="button"
+        accessibilityLabel="Leave workout session"
+        onPress={goBack}
+      >
+        <UiText textRole="captionEmphasis">Leave</UiText>
+      </Pressable>
+    ),
+    [goBack]
   )
 
   return (
@@ -110,42 +123,18 @@ export default function WorkoutSessionScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={headerHeight}
     >
-      <YStack flex={1} px="$4" bg="$background">
+      <View className="flex-1 bg-background px-page">
         <Stack.Screen
           options={{
-            title: '',
+            title: 'Workout',
             headerBackVisible: false,
             headerLeft: () => null,
-            headerRight: () => (
-              <Button
-                unstyled
-                minH="$touch"
-                accessibilityLabel="Leave workout session"
-                onPress={goBack}
-              >
-                <Text fontSize="$caption" fontWeight="600" color={colors.accent}>
-                  Leave
-                </Text>
-              </Button>
-            ),
+            headerRight: leaveAction,
           }}
         />
-        <FlashList
-          style={{ flex: 1 }}
-          data={exercises}
-          renderItem={renderExercise}
-          keyExtractor={(item) => item.sessionId}
-          ItemSeparatorComponent={() => <YStack height={16} />}
-          ListHeaderComponent={ListHeaderComponent}
-          ListHeaderComponentStyle={{ marginBottom: 16 }}
-          showsVerticalScrollIndicator={false}
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-          keyboardShouldPersistTaps="handled"
-        />
-        <YStack
-          borderTopWidth={1}
-          borderColor="$borderColor"
-          bg="$background"
+        {sessionList}
+        <View
+          className="border-t border-divider bg-background"
           onLayout={(event: LayoutChangeEvent) => setFooterHeight(event.nativeEvent.layout.height)}
         >
           <WorkoutActions
@@ -153,16 +142,17 @@ export default function WorkoutSessionScreen() {
             onCancelWorkout={cancelWorkout}
             onGoBack={goBack}
           />
-        </YStack>
+        </View>
         <RestTimerOverlay
           active={!!activeTimer}
           remaining={remainingRest}
           total={restTime}
+          nextStepText={nextStepText}
           onExtend={extendRestTimer}
           onSkip={skipRestTimer}
           bottomOffset={footerHeight}
         />
-      </YStack>
+      </View>
     </KeyboardAvoidingView>
   )
 }

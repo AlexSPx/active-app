@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react'
-import { Vibration, Platform } from 'react-native'
-import { Button, Text, XStack, YStack, Separator, ScrollView, Paragraph, H3, H4 } from 'tamagui'
+import { useEffect, useState } from 'react'
+import { Platform, ScrollView, Vibration, View } from 'react-native'
+import { Button, UiText } from './ui/Controls'
 import { CadenceOverlay } from './ui/CadenceOverlay'
 import { Trophy, Timer as TimerIcon, Dumbbell, BarChart2 } from './ui/icons'
+import { useCadenceColors } from './ui/useCadenceColors'
 import { launchFacade } from '../features/launch/launchFacade'
 import type { WorkoutRecord } from '../types/api'
 
@@ -17,12 +18,13 @@ export function FinishedWorkoutCongrats({
   visible = true,
   onClose,
 }: FinishedWorkoutCongratsProps) {
-  // Start the sheet at the middle snap point (50%)
+  const colors = useCadenceColors()
+  // Start the sheet at the middle snap point (50%).
   const [position, setPosition] = useState(1)
 
   useEffect(() => {
     if (visible) {
-      // Reset to 50% whenever opened
+      // Reset to 50% whenever opened.
       setPosition(1)
       if (Platform.OS === 'android') {
         const pattern = [0, 550]
@@ -44,7 +46,7 @@ export function FinishedWorkoutCongrats({
     return `${m}:${String(ss).padStart(2, '0')}`
   }
 
-  // Derive from WorkoutRecord
+  // Derive from WorkoutRecord.
   const derived = (() => {
     const totalSets = data.exerciseRecords.reduce(
       (acc, ex) => acc + Math.max(ex.reps.length, ex.durationSeconds?.length ?? 0),
@@ -73,146 +75,105 @@ export function FinishedWorkoutCongrats({
 
   const snapPoints = [85, 50, 25]
   const achievements = launchFacade.training.getWorkoutAchievements(data)
+  const stats = [
+    {
+      label: 'Duration',
+      value: formatDuration(derived.durationSeconds),
+      icon: <TimerIcon size={14} color={colors.muted} aria-hidden />,
+    },
+    {
+      label: 'Volume',
+      value: `${(derived.totalVolume ?? 0).toLocaleString()} kg`,
+      icon: <Dumbbell size={14} color={colors.muted} aria-hidden />,
+    },
+    {
+      label: 'Sets',
+      value: `${derived.totalSets ?? 0}`,
+      icon: null,
+    },
+  ]
 
   return (
-    <>
-      <CadenceOverlay
-        title="Workout saved"
-        open={visible}
-        onOpenChange={(open) => {
-          if (!open) onClose?.()
-        }}
-        snapPoints={snapPoints}
-        position={position}
-        onPositionChange={setPosition}
-      >
-        <YStack flex={1} justify="flex-start" items="stretch" gap="$3">
-          <ScrollView flex={1} showsVerticalScrollIndicator>
-            <YStack gap="$3" width="100%">
-              <YStack gap="$2" width="100%">
-                <Paragraph color="$color10" style={{ textAlign: 'center' }} fontSize="$3">
-                  Your workout is saved on this device.
-                </Paragraph>
-              </YStack>
+    <CadenceOverlay
+      title="Workout saved"
+      open={visible}
+      onOpenChange={(open) => {
+        if (!open) onClose?.()
+      }}
+      snapPoints={snapPoints}
+      position={position}
+      onPositionChange={setPosition}
+    >
+      <View className="flex-1 gap-field">
+        <ScrollView className="flex-1" showsVerticalScrollIndicator>
+          <View className="w-full gap-field">
+            <UiText textRole="bodyMuted" className="text-center">
+              Your workout is saved on this device.
+            </UiText>
 
-              <YStack gap="$2" width="100%">
-                <H4>{derived.workoutName}</H4>
-                {/* Compact stat cards */}
-                <XStack width="100%" gap="$2">
-                  <YStack
-                    flex={1}
-                    bg="$background"
-                    borderWidth={1}
-                    borderColor="$borderColor"
-                    rounded="$4"
-                    p="$2"
-                    items="center"
-                    gap="$1"
+            <View className="gap-compact">
+              <UiText textRole="cardTitle" accessibilityRole="header">
+                {derived.workoutName}
+              </UiText>
+              <View className="w-full flex-row gap-compact">
+                {stats.map(({ label, value, icon }) => (
+                  <View
+                    key={label}
+                    className="min-w-0 flex-1 items-center gap-compact rounded-card border border-divider bg-surface p-compact"
                   >
-                    <XStack items="center" gap="$1">
-                      <TimerIcon size={14} color="$color10" />
-                      <Text fontWeight="700" color="$color" fontSize="$3">
-                        {formatDuration(derived.durationSeconds)}
-                      </Text>
-                    </XStack>
-                    <Text color="$color10" fontSize="$1">
-                      Duration
-                    </Text>
-                  </YStack>
+                    <View className="min-w-0 flex-row items-center justify-center gap-compact">
+                      {icon}
+                      <UiText textRole="bodyEmphasis" className="shrink text-center">
+                        {value}
+                      </UiText>
+                    </View>
+                    <UiText textRole="meta">{label}</UiText>
+                  </View>
+                ))}
+              </View>
+            </View>
 
-                  <YStack
-                    flex={1}
-                    bg="$background"
-                    borderWidth={1}
-                    borderColor="$borderColor"
-                    rounded="$4"
-                    p="$2"
-                    items="center"
-                    gap="$1"
-                  >
-                    <XStack items="center" gap="$1">
-                      <Dumbbell size={14} color="$color10" />
-                      <Text fontWeight="700" color="$color" fontSize="$3">
-                        {(derived.totalVolume ?? 0).toLocaleString()} kg
-                      </Text>
-                    </XStack>
-                    <Text color="$color10" fontSize="$1">
-                      Volume
-                    </Text>
-                  </YStack>
+            {achievements.length > 0 && (
+              <View className="gap-field">
+                <View className="h-px bg-divider" />
+                <UiText textRole="cardTitle" accessibilityRole="header">
+                  New Achievements
+                </UiText>
+                <View className="gap-field">
+                  {achievements.map((achievement, index) => (
+                    <View
+                      key={`${achievement.type}-${achievement.exercise}-${index}`}
+                      className="flex-row items-center gap-field rounded-card border border-divider bg-surface px-field py-compact"
+                    >
+                      {achievement.type === '1RM' ? (
+                        <Trophy size={18} color={colors.accent} aria-hidden />
+                      ) : (
+                        <BarChart2 size={18} color={colors.accent} aria-hidden />
+                      )}
+                      <View className="min-w-0 flex-1 gap-compact">
+                        <UiText textRole="bodyEmphasis">
+                          {achievement.type === '1RM'
+                            ? `${achievement.value.toLocaleString()} kg 1RM` +
+                              (typeof achievement.setIndex === 'number'
+                                ? ` (set ${achievement.setIndex + 1})`
+                                : '')
+                            : `${achievement.value.toLocaleString()} kg volume`}
+                        </UiText>
+                        <UiText textRole="meta">{achievement.exercise}</UiText>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        </ScrollView>
 
-                  <YStack
-                    flex={1}
-                    bg="$background"
-                    borderWidth={1}
-                    borderColor="$borderColor"
-                    rounded="$4"
-                    p="$2"
-                    items="center"
-                    gap="$1"
-                  >
-                    <XStack items="center" gap="$1">
-                      <Text fontWeight="700" color="$color" fontSize="$3">
-                        {derived.totalSets ?? 0}
-                      </Text>
-                    </XStack>
-                    <Text color="$color10" fontSize="$1">
-                      Sets
-                    </Text>
-                  </YStack>
-                </XStack>
-              </YStack>
-
-              {achievements.length > 0 && (
-                <YStack gap="$2" width="100%">
-                  <Separator />
-                  <H4>New Achievements</H4>
-                  <YStack>
-                    <YStack gap="$2">
-                      {achievements.map((a, idx) => (
-                        <XStack
-                          key={`${a.type}-${a.exercise}-${idx}`}
-                          bg="$background"
-                          borderWidth={1}
-                          borderColor="$borderColor"
-                          rounded="$4"
-                          px="$3"
-                          py="$2"
-                          items="center"
-                          gap="$3"
-                        >
-                          {a.type === '1RM' ? (
-                            <Trophy size={18} color="$primary" />
-                          ) : (
-                            <BarChart2 size={18} color="$secondary" />
-                          )}
-                          <YStack gap="$1" flex={1}>
-                            <Text color="$color" fontSize="$3" fontWeight="700">
-                              {a.type === '1RM'
-                                ? `${a.value.toLocaleString()} kg 1RM` +
-                                  (typeof a.setIndex === 'number' ? ` (set ${a.setIndex + 1})` : '')
-                                : `${a.value.toLocaleString()} kg volume`}
-                            </Text>
-                            <Text color="$color10" fontSize="$2">
-                              {a.exercise}
-                            </Text>
-                          </YStack>
-                        </XStack>
-                      ))}
-                    </YStack>
-                  </YStack>
-                </YStack>
-              )}
-            </YStack>
-          </ScrollView>
-
-          {/* Bottom action - always visible */}
-          <Button onPress={onClose} size="$5" width="100%" bg="$primary" style={{ flexShrink: 0 }}>
-            Continue
-          </Button>
-        </YStack>
-      </CadenceOverlay>
-    </>
+        <Button onPress={onClose} className="w-full shrink-0">
+          Continue
+        </Button>
+      </View>
+    </CadenceOverlay>
   )
 }
 

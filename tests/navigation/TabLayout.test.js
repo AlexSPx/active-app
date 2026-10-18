@@ -11,6 +11,13 @@ jest.mock('uniwind', () => ({
   useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
   useResolveClassNames: () => ({}),
 }))
+jest.mock('../../components/ui/Controls', () => {
+  const React = require('react')
+  return {
+    Button: ({ children, ...props }) => React.createElement('Button', props, children),
+    UiText: ({ children, ...props }) => React.createElement('Text', props, children),
+  }
+})
 jest.mock('expo-router', () => {
   const React = require('react')
   const Tabs = (props) => React.createElement('Tabs', props, props.children)
@@ -22,14 +29,6 @@ jest.mock('expo-router', () => {
     useRouter: () => ({ push: mockPush }),
   }
 })
-jest.mock('tamagui', () =>
-  Object.fromEntries(
-    ['Button', 'Text', 'XStack', 'YStack'].map((name) => [
-      name,
-      (props) => require('react').createElement(name, props, props.children),
-    ])
-  )
-)
 jest.mock('../../components/ui/icons', () => ({
   Home: () => null,
   History: () => null,
@@ -93,9 +92,11 @@ test('a measured running shortcut clears the content, resumes the session, and h
   const shortcut = () => view.root.findByType('Button')
   expect(shortcut().props.accessibilityLabel).toBe('Resume Morning workout, workout in progress')
   expect(shortcut().props.accessibilityValue.text).toContain('1 of 2 sets complete')
-  const card = () => view.root.findAllByType('YStack').find((node) => node.props.onLayout)
+  const card = () => view.root.findAllByType('View').find((node) => node.props.onLayout)
   act(() => card().props.onLayout({ nativeEvent: { layout: { height: 132 } } }))
-  expect(options().sceneStyle.paddingBottom).toBeGreaterThanOrEqual(card().props.b + 132)
+  expect(options().sceneStyle.paddingBottom).toBeGreaterThanOrEqual(
+    card().props.style.bottom + 132 + 16
+  )
   act(() => shortcut().props.onPress())
   expect(mockPush).toHaveBeenCalledWith('/workouts/session')
   act(() => keyboard('keyboardDidShow'))
@@ -103,5 +104,7 @@ test('a measured running shortcut clears the content, resumes the session, and h
   expect(options().sceneStyle.paddingBottom).toBe(0)
   act(() => keyboard('keyboardDidHide'))
   expect(shortcut().props.accessibilityRole).toBe('button')
-  expect(options().sceneStyle.paddingBottom).toBeGreaterThanOrEqual(card().props.b + 132)
+  expect(options().sceneStyle.paddingBottom).toBeGreaterThanOrEqual(
+    card().props.style.bottom + 132 + 16
+  )
 })

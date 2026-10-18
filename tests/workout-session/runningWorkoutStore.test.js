@@ -124,6 +124,42 @@ describe('running workout ID remapping', () => {
     expect(useRunningWorkoutStore.getState().runningWorkout).toBeNull()
   })
 
+  it('does not let an older save clear a replacement session or its recording state', async () => {
+    const pendingSaves = []
+    const recordWorkout = jest.fn(
+      () =>
+        new Promise((resolve) => {
+          pendingSaves.push(resolve)
+        })
+    )
+    getDatabase.mockResolvedValue({})
+    WorkoutRepository.mockImplementation(() => ({ recordWorkout }))
+
+    const firstFinish = useRunningWorkoutStore.getState().stopWorkout()
+    await Promise.resolve()
+    expect(recordWorkout).toHaveBeenCalledTimes(1)
+
+    useRunningWorkoutStore.getState().startWorkout({
+      id: 'replacement_workout',
+      name: 'Replacement',
+      exercises: [],
+    })
+    const replacementStartTime = useRunningWorkoutStore.getState().runningWorkout.startTime
+    const replacementFinish = useRunningWorkoutStore.getState().stopWorkout()
+    await Promise.resolve()
+    expect(recordWorkout).toHaveBeenCalledTimes(2)
+
+    pendingSaves[0]({ kind: 'local', workoutRecord: { id: 'old_record' } })
+    await expect(firstFinish).resolves.toBeUndefined()
+    expect(useRunningWorkoutStore.getState().runningWorkout.startTime).toBe(replacementStartTime)
+    expect(useRunningWorkoutStore.getState().isRecording).toBe(true)
+
+    pendingSaves[1]({ kind: 'local', workoutRecord: { id: 'replacement_record' } })
+    await replacementFinish
+    expect(useRunningWorkoutStore.getState().runningWorkout).toBeNull()
+    expect(useRunningWorkoutStore.getState().isRecording).toBe(false)
+  })
+
   it('resolves a persisted session when sync replays its ID remap after hydration', async () => {
     await useRunningWorkoutStore.persist.clearStorage()
     const workout = {

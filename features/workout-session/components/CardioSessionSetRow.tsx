@@ -1,7 +1,13 @@
-import { YStack, XStack, Text, Checkbox } from 'tamagui'
 import { memo } from 'react'
+import { View } from 'react-native'
 import { Check } from '../../../components/ui/icons'
-import { DurationTargetInput, SwipeToDeleteRow } from '../../../components/ui'
+import {
+  Button,
+  DurationTargetInput,
+  SwipeToDeleteRow,
+  UiText,
+  useCadenceColors,
+} from '../../../components/ui'
 import type { Set } from '../../../types/workout-session'
 
 interface CardioSessionSetRowProps {
@@ -22,19 +28,17 @@ export const CardioSessionSetRow = memo(
     onToggleComplete,
     onDelete,
   }: CardioSessionSetRowProps) {
+    const colors = useCadenceColors()
+
     return (
       <SwipeToDeleteRow onDelete={onDelete} canDelete={canDelete}>
-        <XStack
-          width="100%"
-          minW={0}
-          items="center"
-          gap="$compact"
-          bg={set.completed ? '$primary' : '$surface'}
+        <View
+          className={`w-full min-w-0 flex-row items-center gap-compact ${set.completed ? 'bg-accent' : 'bg-surface'}`}
         >
-          <YStack width="$setRow" items="center">
-            <Text
-              fontSize="$caption"
-              color={set.completed ? '$onPrimary' : '$colorSubtle'}
+          <View className="w-8 items-center">
+            <UiText
+              textRole="caption"
+              className={set.completed ? 'text-on-accent' : ''}
               accessibilityLabel={`Interval ${index + 1}`}
               accessibilityHint={
                 canDelete
@@ -47,8 +51,8 @@ export const CardioSessionSetRow = memo(
               }}
             >
               {index + 1}
-            </Text>
-          </YStack>
+            </UiText>
+          </View>
           <DurationTargetInput
             mode="session"
             index={index}
@@ -56,28 +60,24 @@ export const CardioSessionSetRow = memo(
             completed={set.completed}
             onChange={onUpdateDuration}
           />
-          <YStack width="$setRow" items="center">
-            <Checkbox
-              unstyled
-              width="$setRow"
-              height="$setRow"
-              rounded="$block"
-              items="center"
-              justify="center"
-              borderWidth="$0.5"
+          <View className="w-touch items-center">
+            <Button
+              variant={set.completed ? 'primary' : 'secondary'}
+              shape="control"
+              density="compact"
+              className={`h-touch w-touch min-w-touch border p-0 ${set.completed ? 'border-accent' : 'border-divider'}`}
               hitSlop={6}
-              checked={set.completed}
-              onCheckedChange={onToggleComplete}
+              onPress={onToggleComplete}
+              accessibilityRole="checkbox"
               accessibilityLabel={`Interval ${index + 1} completed`}
-              bg={set.completed ? '$primary' : '$backgroundStrong'}
-              borderColor={set.completed ? '$primary' : '$borderColor'}
+              accessibilityState={{ checked: set.completed }}
             >
-              <Checkbox.Indicator>
-                <Check size="$iconSmall" color="$onPrimary" strokeWidth={2} />
-              </Checkbox.Indicator>
-            </Checkbox>
-          </YStack>
-        </XStack>
+              {set.completed && (
+                <Check size={18} color={colors.onAccent} strokeWidth={2} aria-hidden />
+              )}
+            </Button>
+          </View>
+        </View>
       </SwipeToDeleteRow>
     )
   },

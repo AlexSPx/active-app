@@ -3,7 +3,6 @@ import { AppState } from 'react-native'
 import type { Exercise } from '../../../types/workout-session'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 import { useSettingsStore } from '../../settings'
-import { useOptimizedTimer, useElapsedTimeFormatter } from './useOptimizedTimer'
 import type { LocalWorkoutRecordingResult } from '../../../types/api'
 import {
   scheduleRestNotification,
@@ -20,7 +19,6 @@ export interface WorkoutSessionState {
   exercises: Exercise[]
   workoutName: string
   workoutTag: string
-  workoutDuration: string
   activeTimer: string | null
   restTime: number
   remainingRest: number
@@ -46,16 +44,13 @@ export interface WorkoutSessionActions {
 export function useWorkoutSession(
   options: UseWorkoutSessionOptions = {}
 ): WorkoutSessionState & WorkoutSessionActions {
-  const {
-    runningWorkout,
-    updateExerciseSet,
-    completeSet,
-    removeExerciseSet,
-    addExerciseSet,
-    stopWorkout,
-    cancelWorkout: cancelInStore,
-    getElapsedTime,
-  } = useRunningWorkoutStore()
+  const runningWorkout = useRunningWorkoutStore((state) => state.runningWorkout)
+  const updateExerciseSet = useRunningWorkoutStore((state) => state.updateExerciseSet)
+  const completeSet = useRunningWorkoutStore((state) => state.completeSet)
+  const removeExerciseSet = useRunningWorkoutStore((state) => state.removeExerciseSet)
+  const addExerciseSet = useRunningWorkoutStore((state) => state.addExerciseSet)
+  const stopWorkout = useRunningWorkoutStore((state) => state.stopWorkout)
+  const cancelInStore = useRunningWorkoutStore((state) => state.cancelWorkout)
 
   const [exercises, setExercises] = useState<Exercise[]>([])
   // Active rest timer references a completed set ID while counting down, otherwise null
@@ -68,14 +63,13 @@ export function useWorkoutSession(
   const [remainingRest, setRemainingRest] = useState<number>(0)
   const restIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const restDeadlineRef = useRef<number | null>(null)
-  const [workoutDuration, setWorkoutDuration] = useState('0:00')
 
   // Get workout data from running workout store
   const workoutName = runningWorkout?.name || 'No Workout'
   const workoutTag = 'In Progress'
 
   // Convert running workout exercises to session format
-  const convertToSessionExercises = (): Exercise[] => {
+  const convertToSessionExercises = useCallback((): Exercise[] => {
     if (runningWorkout) {
       return runningWorkout.exercises.map((ex) => ({
         ...ex, // Include all API exercise properties
@@ -85,151 +79,133 @@ export function useWorkoutSession(
 
     // Return fallback exercises or empty array if no running workout
     return options.fallbackExercises || []
-  }
+  }, [options.fallbackExercises, runningWorkout])
 
   // Update exercises when running workout changes
   useEffect(() => {
     setExercises(convertToSessionExercises())
-  }, [runningWorkout])
+  }, [convertToSessionExercises])
 
-  // Initialize exercises
-  useEffect(() => {
-    if (exercises.length === 0) {
-      setExercises(convertToSessionExercises())
-    }
-  }, [])
+  const updateSet = useCallback(
+    (
+      exerciseId: string,
+      setId: string,
+      field: 'reps' | 'weight' | 'duration',
+      value: number | null
+    ) => {
+      // Update in the store if running workout exists
+      if (runningWorkout) {
+        const currentSet = runningWorkout.exercises
+          .find((ex) => ex.sessionId === exerciseId)
+          ?.sessionSets.find((set) => set.id === setId)
 
-  // Timer optimization
-  const formatElapsedTime = useElapsedTimeFormatter()
-
-  const updateDuration = () => {
-    if (runningWorkout) {
-      const startTime = new Date(runningWorkout.startTime).getTime()
-      setWorkoutDuration(formatElapsedTime(startTime))
-    } else {
-      setWorkoutDuration('0:00')
-    }
-  }
-
-  // Use optimized timer instead of setInterval
-  useOptimizedTimer(updateDuration, {
-    enabled: !!runningWorkout,
-    interval: 1000,
-  })
-
-  // Set initial duration when workout starts/stops
-  useEffect(() => {
-    updateDuration()
-  }, [runningWorkout, formatElapsedTime])
-
-  const updateSet = (
-    exerciseId: string,
-    setId: string,
-    field: 'reps' | 'weight' | 'duration',
-    value: number | null
-  ) => {
-    // Update in the store if running workout exists
-    if (runningWorkout) {
-      const currentSet = runningWorkout.exercises
-        .find((ex) => ex.sessionId === exerciseId)
-        ?.sessionSets.find((set) => set.id === setId)
-
-      if (currentSet) {
-        if (field === 'duration') {
-          updateExerciseSet(exerciseId, setId, currentSet.reps, currentSet.weight, value)
-        } else {
-          const newReps = field === 'reps' ? value : currentSet.reps
-          const newWeight = field === 'weight' ? value : currentSet.weight
-          updateExerciseSet(exerciseId, setId, newReps, newWeight, currentSet.durationSeconds)
+        if (currentSet) {
+          if (field === 'duration') {
+            updateExerciseSet(exerciseId, setId, currentSet.reps, currentSet.weight, value)
+          } else {
+            const newReps = field === 'reps' ? value : currentSet.reps
+            const newWeight = field === 'weight' ? value : currentSet.weight
+            updateExerciseSet(exerciseId, setId, newReps, newWeight, currentSet.durationSeconds)
+          }
         }
+      } else {
+        // Fallback to local state for non-running workouts
+        setExercises((prev) =>
+          prev.map((exercise) =>
+            exercise.sessionId === exerciseId
+              ? {
+                  ...exercise,
+                  sets: exercise.sets.map((set) =>
+                    set.id === setId
+                      ? field === 'duration'
+                        ? { ...set, durationSeconds: value }
+                        : { ...set, [field]: value }
+                      : set
+                  ),
+                }
+              : exercise
+          )
+        )
       }
-    } else {
-      // Fallback to local state for non-running workouts
-      setExercises((prev) =>
-        prev.map((exercise) =>
-          exercise.sessionId === exerciseId
-            ? {
-                ...exercise,
-                sets: exercise.sets.map((set) =>
-                  set.id === setId
-                    ? field === 'duration'
-                      ? { ...set, durationSeconds: value }
-                      : { ...set, [field]: value }
-                    : set
-                ),
-              }
-            : exercise
-        )
-      )
-    }
-  }
+    },
+    [runningWorkout, setExercises, updateExerciseSet]
+  )
 
-  const toggleSetComplete = (exerciseId: string, setId: string) => {
-    // Update in the store if running workout exists
-    if (runningWorkout) {
-      completeSet(exerciseId, setId)
-    } else {
-      // Fallback to local state for non-running workouts
-      setExercises((prev) =>
-        prev.map((exercise) =>
-          exercise.sessionId === exerciseId
-            ? {
-                ...exercise,
-                sets: exercise.sets.map((set) =>
-                  set.id === setId ? { ...set, completed: !set.completed } : set
-                ),
-              }
-            : exercise
+  const toggleSetComplete = useCallback(
+    (exerciseId: string, setId: string) => {
+      // Update in the store if running workout exists
+      if (runningWorkout) {
+        completeSet(exerciseId, setId)
+      } else {
+        // Fallback to local state for non-running workouts
+        setExercises((prev) =>
+          prev.map((exercise) =>
+            exercise.sessionId === exerciseId
+              ? {
+                  ...exercise,
+                  sets: exercise.sets.map((set) =>
+                    set.id === setId ? { ...set, completed: !set.completed } : set
+                  ),
+                }
+              : exercise
+          )
         )
-      )
-    }
-  }
+      }
+    },
+    [completeSet, runningWorkout, setExercises]
+  )
 
-  const addSet = (exerciseId: string) => {
-    // Update in the store if running workout exists
-    if (runningWorkout) {
-      addExerciseSet(exerciseId)
-    } else {
-      // Fallback to local state for non-running workouts
-      setExercises((prev) =>
-        prev.map((exercise) =>
-          exercise.sessionId === exerciseId
-            ? {
-                ...exercise,
-                sets: [
-                  ...exercise.sets,
-                  {
-                    id: `${exercise.sessionId}-set-${exercise.sets.length + 1}`,
-                    reps: null,
-                    weight: null,
-                    completed: false,
-                  },
-                ],
-              }
-            : exercise
+  const addSet = useCallback(
+    (exerciseId: string) => {
+      // Update in the store if running workout exists
+      if (runningWorkout) {
+        addExerciseSet(exerciseId)
+      } else {
+        // Fallback to local state for non-running workouts
+        setExercises((prev) =>
+          prev.map((exercise) =>
+            exercise.sessionId === exerciseId
+              ? {
+                  ...exercise,
+                  sets: [
+                    ...exercise.sets,
+                    {
+                      id: `${exercise.sessionId}-set-${exercise.sets.length + 1}`,
+                      reps: null,
+                      weight: null,
+                      completed: false,
+                    },
+                  ],
+                }
+              : exercise
+          )
         )
-      )
-    }
-  }
+      }
+    },
+    [addExerciseSet, runningWorkout, setExercises]
+  )
 
-  const removeSet = (exerciseId: string, setIndex: number) => {
-    // Update in the store if running workout exists
-    if (runningWorkout) {
-      removeExerciseSet(exerciseId, setIndex)
-    } else {
-      // Fallback to local state for non-running workouts
-      setExercises((prev) =>
-        prev.map((exercise) =>
-          exercise.sessionId === exerciseId && exercise.sets.length > 1
-            ? {
-                ...exercise,
-                sets: exercise.sets.filter((_, index) => index !== setIndex),
-              }
-            : exercise
+  const removeSet = useCallback(
+    (exerciseId: string, setIndex: number) => {
+      // Update in the store if running workout exists
+      if (runningWorkout) {
+        removeExerciseSet(exerciseId, setIndex)
+      } else {
+        // Fallback to local state for non-running workouts
+        setExercises((prev) =>
+          prev.map((exercise) =>
+            exercise.sessionId === exerciseId && exercise.sets.length > 1
+              ? {
+                  ...exercise,
+                  sets: exercise.sets.filter((_, index) => index !== setIndex),
+                }
+              : exercise
+          )
         )
-      )
-    }
-  }
+      }
+    },
+    [removeExerciseSet, runningWorkout, setExercises]
+  )
 
   const clearRestTimer = useCallback(() => {
     if (restIntervalRef.current) clearInterval(restIntervalRef.current)
@@ -323,24 +299,26 @@ export function useWorkoutSession(
     return () => sub.remove()
   }, [activeTimer, finishRestTimer])
 
-  const finishWorkout = async (notes?: string) => {
-    const result = await stopWorkout(notes)
-    if (result) {
-      queryClient.invalidateQueries({ queryKey: ownerKeys.records.all })
-    }
-    return result
-  }
+  const finishWorkout = useCallback(
+    async (notes?: string) => {
+      const result = await stopWorkout(notes)
+      if (result) {
+        queryClient.invalidateQueries({ queryKey: ownerKeys.records.all })
+      }
+      return result
+    },
+    [ownerKeys.records.all, stopWorkout]
+  )
 
-  const cancelWorkout = () => {
+  const cancelWorkout = useCallback(() => {
     cancelInStore()
-  }
+  }, [cancelInStore])
 
   return {
     // State
     exercises,
     workoutName,
     workoutTag,
-    workoutDuration,
     activeTimer,
     restTime,
     remainingRest,

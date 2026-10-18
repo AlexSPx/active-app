@@ -1,10 +1,14 @@
-import { YStack, XStack, Text, Button } from 'tamagui'
+import { Button, UiText } from '../../../components/ui/Controls'
 import { View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback, memo } from 'react'
 import type { Exercise, Set } from '../../../types/workout-session'
 import { WorkoutSessionSetRow } from './WorkoutSessionSetRow'
 import { CardioSessionSetRow } from './CardioSessionSetRow'
+
+function SetRowSeparator() {
+  return <View className="h-compact" />
+}
 
 interface WorkoutSessionExerciseProps {
   exercise: Exercise
@@ -74,41 +78,33 @@ export const WorkoutSessionExercise = memo(
     )
 
     return (
-      <YStack
-        width="100%"
-        p="$card"
-        gap="$field"
-        bg="$surface"
-        rounded="$card"
-        borderColor="$borderColor"
-        borderWidth="$0.5"
-      >
-        <YStack minH="$touch">
-          <Text fontSize="$header" lineHeight="$header" fontWeight="$screenTitle" color="$color">
+      <View className="w-full gap-field rounded-card border border-divider bg-surface p-card">
+        <View className="min-h-touch justify-center gap-compact">
+          <UiText accessibilityRole="header" textRole="cardTitle">
             {index + 1}. {exercise.name}
-          </Text>
-          <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+          </UiText>
+          <UiText textRole="caption">
             {exercise.primaryMuscles[0] || (isCardio ? 'Cardio' : 'Other')} · {exercise.sets.length}{' '}
             {isCardio ? 'intervals' : 'sets'}
-          </Text>
-        </YStack>
-        <YStack gap="$compact">
-          <XStack width="100%" minW={0} gap="$compact" mb="$compact" items="center">
-            <Text width="$setRow" text="center" fontSize="$caption" color="$colorSubtle">
+          </UiText>
+        </View>
+        <View className="gap-compact">
+          <View className="mb-compact w-full min-w-0 flex-row items-center gap-compact">
+            <UiText textRole="meta" className="w-8 text-center">
               {isCardio ? '#' : 'Set'}
-            </Text>
-            <Text flex={1} text="center" fontSize="$caption" color="$colorSubtle">
+            </UiText>
+            <UiText textRole="meta" className="flex-1 text-center">
               {isCardio ? 'Duration (min:sec)' : 'Weight (kg)'}
-            </Text>
+            </UiText>
             {!isCardio && (
-              <Text flex={1} text="center" fontSize="$caption" color="$colorSubtle">
+              <UiText textRole="meta" className="flex-1 text-center">
                 Reps
-              </Text>
+              </UiText>
             )}
-            <Text width="$setRow" text="center" fontSize="$caption" color="$colorSubtle">
+            <UiText textRole="meta" className="w-touch text-center">
               ✓
-            </Text>
-          </XStack>
+            </UiText>
+          </View>
 
           {/* Sets */}
           <View>
@@ -116,7 +112,7 @@ export const WorkoutSessionExercise = memo(
               data={exercise.sets}
               renderItem={renderSetRow}
               keyExtractor={(item) => item.id}
-              ItemSeparatorComponent={() => <View style={{ height: 4 }} />}
+              ItemSeparatorComponent={SetRowSeparator}
               showsVerticalScrollIndicator={false}
               scrollEnabled={false}
             />
@@ -124,18 +120,15 @@ export const WorkoutSessionExercise = memo(
 
           {/* Add Set Button */}
           <Button
-            height="$touch"
-            mt="$compact"
-            rounded="$day"
-            bg="$backgroundStrong"
+            variant="secondary"
+            className="mt-compact"
+            accessibilityLabel={`Add ${isCardio ? 'interval' : 'set'} to ${exercise.name}`}
             onPress={() => onAddSet(exercise.sessionId)}
           >
-            <Text color="$primary" fontSize="$caption">
-              + Add {isCardio ? 'interval' : 'set'}
-            </Text>
+            <UiText textRole="captionEmphasis">+ Add {isCardio ? 'interval' : 'set'}</UiText>
           </Button>
-        </YStack>
-      </YStack>
+        </View>
+      </View>
     )
   },
   (prevProps, nextProps) => {
