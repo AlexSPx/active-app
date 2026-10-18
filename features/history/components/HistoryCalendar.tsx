@@ -1,5 +1,5 @@
 import { Pressable, useWindowDimensions, View } from 'react-native'
-import { IconButton, SegmentedSelection, UiText } from '../../../components/ui/Controls'
+import { Button, IconButton, UiText } from '../../../components/ui/Controls'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { ChevronLeft, ChevronRight } from '../../../components/ui/icons'
 import { formatMonthYear, generateCalendar, sameDay, startOfWeek, toISODate } from './date'
@@ -28,55 +28,60 @@ export function HistoryCalendar({
   onSelectDate,
 }: HistoryCalendarProps) {
   const colors = useCadenceColors()
-  const { fontScale, width } = useWindowDimensions()
+  const { width } = useWindowDimensions()
   const days = generateCalendar(monthDate, selectedDate)
   const selectedWeek = startOfWeek(selectedDate ?? monthDate)
   const visibleDays =
     view === 'week' ? days.filter((day) => sameDay(startOfWeek(day.date), selectedWeek)) : days
   const period = formatMonthYear(monthDate)
   const periodName = view === 'week' ? 'week' : 'month'
-  const headingOnOwnRow = width < 400 || fontScale > 1.15
-  const calendarViewWidth = fontScale > 1.15 ? 'w-44' : 'w-40'
 
   return (
     <View className="gap-field border-b border-divider pb-section">
-      <View className="flex-row flex-wrap items-center justify-between gap-compact px-page">
-        <UiText
-          textRole="cardTitle"
-          className={headingOnOwnRow ? 'w-full' : 'min-w-0 flex-1'}
-          accessibilityRole="header"
-        >
+      <View className="gap-compact px-page">
+        <UiText textRole="cardTitle" accessibilityRole="header">
           {period}
         </UiText>
-        <View className="flex-row items-center gap-compact">
-          <IconButton
-            variant="ghost"
-            shape="control"
-            accessibilityLabel={`Previous ${periodName}`}
-            onPress={() => onNavigatePeriod(-1)}
-            className="px-0"
-          >
-            <ChevronLeft size={18} color={colors.accent} />
-          </IconButton>
-          <IconButton
-            variant="ghost"
-            shape="control"
-            accessibilityLabel={`Next ${periodName}`}
-            onPress={() => onNavigatePeriod(1)}
-            className="px-0"
-          >
-            <ChevronRight size={18} color={colors.accent} />
-          </IconButton>
-          <SegmentedSelection
-            value={view}
-            options={[
-              { value: 'month', label: 'Month' },
-              { value: 'week', label: 'Week' },
-            ]}
-            onValueChange={onViewChange}
+        <View className="flex-row flex-wrap items-center justify-between gap-compact">
+          <View className="flex-row items-center gap-compact">
+            <IconButton
+              variant="ghost"
+              shape="control"
+              accessibilityLabel={`Previous ${periodName}`}
+              onPress={() => onNavigatePeriod(-1)}
+              className="px-0"
+            >
+              <ChevronLeft size={18} color={colors.accent} />
+            </IconButton>
+            <IconButton
+              variant="ghost"
+              shape="control"
+              accessibilityLabel={`Next ${periodName}`}
+              onPress={() => onNavigatePeriod(1)}
+              className="px-0"
+            >
+              <ChevronRight size={18} color={colors.accent} />
+            </IconButton>
+          </View>
+          <View
+            accessibilityRole="radiogroup"
             accessibilityLabel="Calendar view"
-            className={`${calendarViewWidth} shrink-0`}
-          />
+            className="ml-auto flex-row gap-compact rounded-control bg-raised p-compact"
+          >
+            {(['month', 'week'] as const).map((option) => (
+              <Button
+                key={option}
+                variant={view === option ? 'selected' : 'ghost'}
+                shape="control"
+                accessibilityRole="radio"
+                accessibilityLabel={option === 'month' ? 'Month' : 'Week'}
+                accessibilityState={{ checked: view === option }}
+                onPress={() => onViewChange(option)}
+              >
+                {option === 'month' ? 'Month' : 'Week'}
+              </Button>
+            ))}
+          </View>
         </View>
       </View>
 
