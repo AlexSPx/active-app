@@ -4,6 +4,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "legal:sync": "python3 scripts/sync-legal.py",
+    "legal:check": "python3 scripts/test_sync_legal.py && python3 scripts/sync-legal.py --check",
     "postinstall": "patch-package --error-on-fail",
     "upgrade:tamagui": "npm update '*tamagui*' '@tamagui/*'",
     "upgrade:tamagui:canary": "npm install '*tamagui*'@canary '@tamagui/*'@canary",
