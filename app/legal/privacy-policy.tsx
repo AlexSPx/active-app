@@ -1,39 +1,37 @@
-import { Button, Paragraph, ScrollView, Spinner, Text, YStack } from 'tamagui'
+import { ActivityIndicator, ScrollView, View } from 'react-native'
 import { useLegal } from '../../features/legal'
 import { MarkdownDisplay } from '../../components/ui/MarkdownDisplay'
+import { Button, UiText } from '../../components/ui/Controls'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
 
 export default function LegalScreen() {
   const { content, loading, error, refetch } = useLegal('privacy')
+  const colors = useCadenceColors()
+
   return (
-    <YStack flex={1} bg="$background">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <YStack p="$page" gap="$section" width="100%" maxW="$content" self="center">
-          <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600">
-            Privacy policy
-          </Text>
+    <View className="flex-1 bg-background">
+      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+        <View className="w-full max-w-[720px] self-center gap-section p-page">
           {loading ? (
-            <YStack p="$section" items="center">
-              <Spinner size="large" color="$primary" accessibilityLabel="Loading privacy policy" />
-            </YStack>
+            <View className="items-center p-section">
+              <ActivityIndicator
+                size="large"
+                color={colors.accent}
+                accessibilityLabel="Loading privacy policy"
+              />
+            </View>
           ) : error ? (
-            <YStack gap="$field">
-              <Paragraph fontSize="$body" lineHeight="$body" color="$destructive">
-                {error}
-              </Paragraph>
-              <Button
-                height="$action"
-                rounded="$button"
-                bg="$backgroundStrong"
-                onPress={() => refetch()}
-              >
+            <View className="gap-field">
+              <UiText textRole="bodyDestructive">{error}</UiText>
+              <Button variant="surface" onPress={() => void refetch()}>
                 Try again
               </Button>
-            </YStack>
+            </View>
           ) : (
             <MarkdownDisplay content={content} />
           )}
-        </YStack>
+        </View>
       </ScrollView>
-    </YStack>
+    </View>
   )
 }

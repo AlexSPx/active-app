@@ -1,38 +1,18 @@
-import { Link, Stack } from 'expo-router'
-import { StyleSheet } from 'react-native'
-import { View, Text } from 'tamagui'
+import { Link } from 'expo-router'
+import { View } from 'react-native'
+import { Button, UiText } from '../components/ui/Controls'
 
 export default function NotFoundScreen() {
   return (
-    <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <View m={10}>
-        <Text>This screen doesn't exist.</Text>
-        <Link href="/" style={styles.link}>
-          <Text style={styles.linkText}>Go to home screen!</Text>
+    <View className="flex-1 items-center justify-center bg-background p-page">
+      <View className="w-full max-w-[480px] items-center gap-field">
+        <UiText accessibilityRole="header" textRole="screenTitle" className="text-center">
+          This screen doesn’t exist.
+        </UiText>
+        <Link href="/" asChild>
+          <Button className="w-full">Go to home screen!</Button>
         </Link>
       </View>
-    </>
+    </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 20,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  link: {
-    marginTop: 15,
-    paddingVertical: 15,
-  },
-  linkText: {
-    fontSize: 14,
-    color: '#2e78b7',
-  },
-})

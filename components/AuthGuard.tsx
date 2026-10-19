@@ -2,9 +2,47 @@ import { useAuth } from '../contexts/AuthContext'
 import { RootLayoutNav } from '../components/RootLayoutNav'
 import { useEffect } from 'react'
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router'
-import { Button, Text, YStack, Spinner } from 'tamagui'
+import { View } from 'react-native'
 import { initializeAuth, useAuthStore } from '../stores/authStore'
 import { launchFacade } from '../features/launch/launchFacade'
+import { Button, UiText } from './ui/Controls'
+import { LoadingSpinner } from './ui/LoadingSpinner'
+
+function RecoveryScreen({
+  title,
+  message,
+  actionLabel,
+  onAction,
+}: {
+  title: string
+  message: string
+  actionLabel: string
+  onAction: () => void
+}) {
+  return (
+    <View className="flex-1 items-center justify-center bg-background p-page">
+      <View className="w-full max-w-[480px] items-center gap-field">
+        <UiText accessibilityRole="header" textRole="screenTitle" className="text-center">
+          {title}
+        </UiText>
+        <UiText textRole="bodyMuted" className="text-center">
+          {message}
+        </UiText>
+        <Button className="w-full" onPress={onAction}>
+          {actionLabel}
+        </Button>
+      </View>
+    </View>
+  )
+}
+
+function LoadingScreen({ text }: { text?: string }) {
+  return (
+    <View className="flex-1 items-center justify-center bg-background">
+      <LoadingSpinner text={text} />
+    </View>
+  )
+}
 
 export function AuthGuard() {
   const { isAuthenticated, user, isLoading } = useAuth()
@@ -41,94 +79,58 @@ export function AuthGuard() {
   }, [isAuthenticated, isStartupReady, segments, navigationState?.key, profileOwnerId, user])
 
   if (isDeviceDataErasing) {
-    return (
-      <YStack flex={1} items="center" justify="center" gap="$4" bg="$background" p="$6">
-        {deviceDataEraseError ? (
-          <>
-            <Text fontSize="$6" fontWeight="700" color="$color12">
-              Data erase needs to be retried
-            </Text>
-            <Text color="$color11" style={{ textAlign: 'center' }}>
-              {deviceDataEraseError}
-            </Text>
-            <Button onPress={() => void retryDeviceDataErase().catch(() => {})}>
-              Retry clearing this device
-            </Button>
-          </>
-        ) : (
-          <>
-            <Spinner size="large" color="$blue9" />
-            <Text color="$color11">Clearing data on this device…</Text>
-          </>
-        )}
-      </YStack>
-    )
+    if (deviceDataEraseError) {
+      return (
+        <RecoveryScreen
+          title="Data erase needs to be retried"
+          message={deviceDataEraseError}
+          actionLabel="Retry clearing this device"
+          onAction={() => void retryDeviceDataErase().catch(() => {})}
+        />
+      )
+    }
+    return <LoadingScreen text="Clearing data on this device…" />
   }
 
   if (!isStartupReady || isAuthenticated == null || (isLoading && !isAuthenticated)) {
-    return (
-      <YStack flex={1} items="center" justify="center" bg="$background">
-        <Spinner size="large" color="$blue9" />
-      </YStack>
-    )
+    return <LoadingScreen />
   }
 
   if (logoutRetryRequired) {
     return (
-      <YStack flex={1} items="center" justify="center" gap="$4" bg="$background" p="$6">
-        <Text fontSize="$6" fontWeight="700" color="$color12">
-          Sign-out needs to be retried
-        </Text>
-        <Text color="$color11" style={{ textAlign: 'center' }}>
-          {authError || 'We couldn’t finish signing out. Please try again.'}
-        </Text>
-        <Button onPress={() => void retryLogout()}>Retry sign out</Button>
-      </YStack>
+      <RecoveryScreen
+        title="Sign-out needs to be retried"
+        message={authError || 'We couldn’t finish signing out. Please try again.'}
+        actionLabel="Retry sign out"
+        onAction={() => void retryLogout()}
+      />
     )
   }
 
   if (startupError) {
     return (
-      <YStack flex={1} items="center" justify="center" gap="$4" bg="$background" p="$6">
-        <Text fontSize="$6" fontWeight="700" color="$color12">
-          Local data needs to be restored
-        </Text>
-        <Text color="$color11" style={{ textAlign: 'center' }}>
-          {startupError}
-        </Text>
-        <Button onPress={() => void initializeAuth(true)}>Retry</Button>
-      </YStack>
+      <RecoveryScreen
+        title="Local data needs to be restored"
+        message={startupError}
+        actionLabel="Retry"
+        onAction={() => void initializeAuth(true)}
+      />
     )
   }
 
   if (isProfileTransitioning) {
-    return (
-      <YStack flex={1} items="center" justify="center" bg="$background">
-        <Spinner size="large" color="$blue9" />
-      </YStack>
-    )
+    return <LoadingScreen />
   }
 
   if (isAuthenticated && !user) {
+    if (isProfileLoading) return <LoadingScreen text="Restoring your profile…" />
     return (
-      <YStack flex={1} items="center" justify="center" gap="$4" bg="$background" p="$6">
-        {isProfileLoading ? (
-          <>
-            <Spinner size="large" color="$blue9" />
-            <Text color="$color11">Restoring your profile…</Text>
-          </>
-        ) : (
-          <>
-            <Text fontSize="$6" fontWeight="700" color="$color12">
-              Your sign-in is saved
-            </Text>
-            <Text color="$color11" style={{ textAlign: 'center' }}>
-              We couldn’t load your profile. Check your connection and try again.
-            </Text>
-            <Button onPress={() => void retryProfile().catch(() => {})}>Retry</Button>
-          </>
-        )}
-      </YStack>
+      <RecoveryScreen
+        title="Your sign-in is saved"
+        message="We couldn’t load your profile. Check your connection and try again."
+        actionLabel="Retry"
+        onAction={() => void retryProfile().catch(() => {})}
+      />
     )
   }
 

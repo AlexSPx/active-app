@@ -9,16 +9,30 @@ jest.mock('expo-router', () => ({
   useSegments: () => mockSegments,
   useRootNavigationState: () => ({ key: 'root' }),
 }))
-jest.mock('tamagui', () => {
+jest.mock('../../components/ui/Controls', () => {
   const React = require('react')
   return {
     Button: ({ children, onPress }) =>
       React.createElement('button', { onClick: onPress }, children),
-    Text: ({ children }) => React.createElement('mock-text', null, children),
-    YStack: ({ children }) => React.createElement('mock-stack', null, children),
-    Spinner: () => React.createElement('mock-spinner'),
+    UiText: ({ children }) => React.createElement('mock-text', null, children),
   }
 })
+jest.mock('../../components/ui/LoadingSpinner', () => ({
+  LoadingSpinner: ({ text }) => {
+    const React = require('react')
+    return React.createElement('mock-spinner', null, text)
+  },
+}))
+jest.mock('../../components/ui/useCadenceColors', () => ({
+  useCadenceColors: () => ({
+    background: '#faf7fc',
+    foreground: '#2d2235',
+    muted: '#76627e',
+    divider: '#dcd0e4',
+    accent: '#624572',
+    onAccent: '#faf5fc',
+  }),
+}))
 jest.mock('../../stores/authStore', () => ({
   useAuthStore: (selector) => selector(mockAuthState),
   initializeAuth: (...args) => mockInitializeAuth(...args),

@@ -16,8 +16,16 @@ import { WorkOSSignInButton } from '../../components/WorkOSSignInButton'
 import { InputField } from '../../components/ui/InputField'
 import { registrationFormSchema, type RegistrationFormData } from '../../lib/schemas/forms'
 import { launchFacade } from '../../features/launch/launchFacade'
+import LocalProfileRegistration from '../../features/onboarding/components/LocalProfileRegistration'
 
-const RegisterPage = () => {
+const RegisterPage = () =>
+  launchFacade.auth.getStartupPlan().kind === 'local-profile' ? (
+    <LocalProfileRegistration />
+  ) : (
+    <AccountRegisterPage />
+  )
+
+const AccountRegisterPage = () => {
   const localProfile = launchFacade.auth.getStartupPlan().kind === 'local-profile'
   const STEPS = localProfile
     ? ['Account', 'Personal', 'Body', 'Notifications']

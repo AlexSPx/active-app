@@ -1,7 +1,9 @@
 import React, { useState } from 'react'
-import { Button, Circle, Input, Paragraph, ScrollView, Text, XStack, YStack } from 'tamagui'
+import { ScrollView, View } from 'react-native'
 import { CadenceOverlay } from './ui/CadenceOverlay'
+import { Button, TextField, UiText } from './ui/Controls'
 import { Check, ChevronDown } from './ui/icons'
+import { useCadenceColors } from './ui/useCadenceColors'
 import { timeZonesNames } from '@vvo/tzdb'
 import { useSettingsStore, useUpdateUser } from '../features/settings'
 
@@ -30,6 +32,7 @@ export default function TimeZoneSelector({
 }: TimeZoneSelectorProps) {
   const { timeZone } = useSettingsStore()
   const { updateUserProfile, isUpdating, error } = useUpdateUser()
+  const colors = useCadenceColors()
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const current = value ?? timeZone
@@ -55,100 +58,89 @@ export default function TimeZoneSelector({
     setOpen(false)
     setSearch('')
   }
+
   const choices = (
-    <YStack gap="$field">
-      <Input
+    <View className="gap-field">
+      <TextField
+        id="time-zone-search"
         accessibilityLabel="Search time zones"
         placeholder="City or region"
         value={search}
         onChangeText={setSearch}
-        height="$action"
-        rounded="$control"
-        bg="$surface"
-        borderColor="$borderColor"
         autoCapitalize="none"
         autoCorrect={false}
       />
       {zones.length === 0 && (
-        <Paragraph fontSize="$body" color="$colorSubtle">
-          No matching time zones. Try a city or region.
-        </Paragraph>
+        <UiText textRole="bodyMuted">No matching time zones. Try a city or region.</UiText>
       )}
-      {zones.map((zone) => (
-        <Button
-          key={zone}
-          unstyled
-          py="$field"
-          minH="$touch"
-          disabled={isUpdating}
-          accessibilityRole="radio"
-          accessibilityState={{ checked: current === zone }}
-          onPress={() => select(zone)}
-          pressStyle={{ bg: '$backgroundPress' }}
-        >
-          <XStack gap="$field" items="center">
-            <Circle
-              size="$icon"
-              borderWidth={1}
-              borderColor={current === zone ? '$primary' : '$borderColor'}
-              bg={current === zone ? '$primary' : '$backgroundTransparent'}
-            >
-              {current === zone && <Check size="$iconSmall" color="$onPrimary" />}
-            </Circle>
-            <YStack flex={1} gap="$compact">
-              <Text fontSize="$body" fontWeight="600">
-                {zoneName(zone)}
-              </Text>
-              <Text fontSize="$caption" color="$colorSubtle">
-                {zoneOffset(zone)}
-              </Text>
-            </YStack>
-            {current === zone && (
-              <Text fontSize="$caption" color="$primary">
-                Selected
-              </Text>
-            )}
-          </XStack>
-        </Button>
-      ))}
-    </YStack>
+      {zones.map((zone) => {
+        const selected = current === zone
+        return (
+          <Button
+            key={zone}
+            variant={selected ? 'selected' : 'ghost'}
+            density="compact"
+            className="w-full justify-start"
+            disabled={isUpdating}
+            accessibilityRole="radio"
+            accessibilityLabel={zoneName(zone)}
+            accessibilityState={{ checked: selected }}
+            onPress={() => select(zone)}
+          >
+            <View className="w-full flex-row items-center gap-field">
+              <View
+                className={`h-8 w-8 items-center justify-center rounded-full border ${selected ? 'border-accent bg-accent' : 'border-divider bg-surface'}`}
+                accessible={false}
+              >
+                {selected && <Check size={16} color={colors.onAccent} aria-hidden />}
+              </View>
+              <View className="flex-1 gap-compact">
+                <UiText textRole="bodyEmphasis">{zoneName(zone)}</UiText>
+                <UiText textRole="caption">{zoneOffset(zone)}</UiText>
+              </View>
+              {selected && <UiText textRole="captionEmphasis">Selected</UiText>}
+            </View>
+          </Button>
+        )
+      })}
+    </View>
   )
+
   return (
-    <YStack gap="$section">
-      <YStack gap="$compact">
-        <Text fontSize="$body" fontWeight="600">
-          {zoneName(current)}
-        </Text>
-        <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+    <View className="gap-section">
+      <View className="gap-compact">
+        <UiText textRole="bodyEmphasis">{zoneName(current)}</UiText>
+        <UiText textRole="caption">
           {zoneOffset(current)} · Local time {currentTime}
-        </Text>
-      </YStack>
+        </UiText>
+      </View>
       {!!error && (
-        <Paragraph fontSize="$caption" color="$destructive" accessibilityLiveRegion="polite">
+        <UiText textRole="captionDestructive" accessibilityLiveRegion="polite">
           {error}
-        </Paragraph>
+        </UiText>
       )}
       {inline ? (
         <>
-          <YStack gap="$field">
-            <Text fontSize="$body" fontWeight="600">
-              Search time zones
-            </Text>
+          <View className="gap-field">
+            <UiText textRole="bodyEmphasis">Search time zones</UiText>
             {choices}
-          </YStack>
-          <Paragraph fontSize="$caption" color="$colorSubtle">
-            Changes apply automatically.
-          </Paragraph>
+          </View>
+          <UiText textRole="caption">Changes apply automatically.</UiText>
         </>
       ) : (
         <>
           <Button
-            height="$action"
-            rounded="$control"
-            iconAfter={<ChevronDown size="$icon" />}
+            variant="surface"
+            className="w-full"
+            accessibilityLabel={`Choose time zone, ${zoneName(current)}`}
             onPress={() => setOpen(true)}
           >
-            {zoneName(current)}
+            <View className="w-full flex-row items-center justify-between gap-field">
+              <UiText textRole="bodyEmphasis" className="flex-1">
+                {zoneName(current)}
+              </UiText>
+              <ChevronDown size={20} color={colors.muted} />
+            </View>
           </Button>
           <CadenceOverlay
             open={open}
@@ -160,24 +152,26 @@ export default function TimeZoneSelector({
             title="Time zone"
             dismissible={!isUpdating}
           >
-            <YStack flex={1} gap="$field">
-              <XStack items="center" justify="flex-end">
-                <Button
-                  chromeless
-                  disabled={isUpdating}
-                  onPress={() => {
-                    setOpen(false)
-                    setSearch('')
-                  }}
-                >
-                  Cancel
-                </Button>
-              </XStack>
-              <ScrollView keyboardShouldPersistTaps="handled">{choices}</ScrollView>
-            </YStack>
+            <View className="flex-1 gap-field">
+              <Button
+                variant="ghost"
+                density="compact"
+                className="self-end"
+                disabled={isUpdating}
+                onPress={() => {
+                  setOpen(false)
+                  setSearch('')
+                }}
+              >
+                Cancel
+              </Button>
+              <ScrollView keyboardShouldPersistTaps="handled" className="flex-1">
+                <View className="gap-field pb-section">{choices}</View>
+              </ScrollView>
+            </View>
           </CadenceOverlay>
         </>
       )}
-    </YStack>
+    </View>
   )
 }
