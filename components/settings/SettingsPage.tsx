@@ -2,11 +2,7 @@ import { useTabContentInset } from '../../navigation/TabContentInset'
 import type { ReactNode } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { useHeaderHeight } from '@react-navigation/elements'
-import { Surface, UiText } from '../ui/Controls'
-
-export function SettingsCard({ children, className }: { children: ReactNode; className?: string }) {
-  return <Surface className={className}>{children}</Surface>
-}
+import { UiText } from '../ui/Controls'
 
 export function SettingsPage({
   title,

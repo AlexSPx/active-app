@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import { View } from 'react-native'
-import { SettingsCard, SettingsPage } from '../../../components/settings/SettingsPage'
-import { Button, SegmentedSelection, TextField, UiText } from '../../../components/ui/Controls'
+import { SettingsPage } from '../../../components/settings/SettingsPage'
+import {
+  Button,
+  Surface,
+  SegmentedSelection,
+  TextField,
+  UiText,
+} from '../../../components/ui/Controls'
 import { useSettingsStore, useUpdateUser } from '../../../features/settings'
 import { measurementText, parseMeasurement } from '../../../features/settings/inputs'
 
@@ -62,7 +68,7 @@ export default function BodySettingsScreen() {
         </>
       }
     >
-      <SettingsCard>
+      <Surface>
         <View className="flex-row items-center justify-between gap-field">
           <View className="flex-row items-baseline gap-compact">
             <UiText>Body weight</UiText>
@@ -101,8 +107,8 @@ export default function BodySettingsScreen() {
           />
           <UiText textRole="caption">{weightUnit}</UiText>
         </View>
-      </SettingsCard>
-      <SettingsCard>
+      </Surface>
+      <Surface>
         <View className="flex-row items-center justify-between gap-field">
           <View className="flex-row items-baseline gap-compact">
             <UiText>Height</UiText>
@@ -141,7 +147,7 @@ export default function BodySettingsScreen() {
           />
           <UiText textRole="caption">{heightUnit}</UiText>
         </View>
-      </SettingsCard>
+      </Surface>
       <UiText textRole="caption">
         Switching units converts the current value. Leave a measurement blank if you prefer not to
         add it.
