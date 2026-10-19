@@ -64,7 +64,12 @@ jest.mock('../../components/ui/icons', () => {
 })
 
 jest.mock('../../components/ui/useCadenceColors', () => ({
-  useCadenceColors: () => ({ accent: '#6b4f7b', foreground: '#241e27', muted: '#77717b' }),
+  useCadenceColors: () => ({
+    accent: '#6b4f7b',
+    onAccent: '#faf5fc',
+    foreground: '#241e27',
+    muted: '#77717b',
+  }),
 }))
 
 jest.mock('../../components/WorkOSSignInButton', () => ({

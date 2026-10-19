@@ -11,6 +11,7 @@ import {
   Weight,
 } from '../../../components/ui/icons'
 import { Button, TextField, UiText } from '../../../components/ui/Controls'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import NotificationPermissions from '../../../components/NotificationPermissions'
 import { useUpdateUser } from '../../settings'
 import { launchFacade } from '../../launch/launchFacade'
@@ -79,6 +80,7 @@ function UnitSelector<T extends string>({
 
 export default function LocalProfileRegistration() {
   const router = useRouter()
+  const colors = useCadenceColors()
   const { user } = useAuthStore()
   const registration = useRegistrationController(user)
   const { updateUserProfile, isUpdating } = useUpdateUser()
@@ -268,7 +270,7 @@ export default function LocalProfileRegistration() {
                       className={`mt-0.5 h-5 w-5 items-center justify-center rounded-[5px] border ${registration.agreementAccepted ? 'border-accent bg-accent' : 'border-divider bg-background'}`}
                     >
                       {registration.agreementAccepted && (
-                        <Check size={14} color="$onAccent" aria-hidden />
+                        <Check size={14} color={colors.onAccent} aria-hidden />
                       )}
                     </View>
                     <UiText textRole="body" className="flex-1">
