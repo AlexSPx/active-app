@@ -13,6 +13,8 @@ import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 import type { FinishedCongratsPayload } from '../../../types/congrats'
 import { haptics } from '../../../utils/haptics'
 
+let recordingAttempt = 0
+
 export interface RunningWorkoutExercise extends ApiExercise {
   sessionId: string
   sets: number
@@ -69,6 +71,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
       recordingError: null,
 
       startWorkout: (workout) => {
+        recordingAttempt += 1
         // Convert exercises to include session sets
         const exercisesWithSets = workout.exercises.map((exercise) => ({
           ...exercise,
@@ -89,6 +92,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
             currentExerciseIndex: 0,
             completedExercises: 0,
           },
+          isRecording: false,
           recordingError: null,
         })
       },
@@ -98,6 +102,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         const state = get()
         const runningWorkout = state.runningWorkout
         if (!runningWorkout || state.isRecording) return
+        const attempt = ++recordingAttempt
 
         try {
           set({ isRecording: true, recordingError: null })
@@ -152,15 +157,30 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           // Save to local SQLite FIRST, then queue for server sync.
           // This guarantees no data loss even if the app is offline.
           const db = await getDatabase()
-          if (!isCurrentProfile(scope)) return
+          if (attempt !== recordingAttempt) return
+          if (!isCurrentProfile(scope)) {
+            set({ isRecording: false })
+            return
+          }
           const currentWorkout = get().runningWorkout
-          if (!currentWorkout || currentWorkout.startTime !== runningWorkout.startTime) return
+          if (!currentWorkout || currentWorkout.startTime !== runningWorkout.startTime) {
+            set({ isRecording: false })
+            return
+          }
           const workoutRepo = new WorkoutRepository(db)
           const result = await workoutRepo.recordWorkout(
             { ...workoutRecord, workoutId: currentWorkout.id },
             runningWorkout.name || 'Workout'
           )
-          if (!isCurrentProfile(scope)) return result
+          if (attempt !== recordingAttempt) return
+          if (!isCurrentProfile(scope)) {
+            set({ isRecording: false })
+            return result
+          }
+          if (get().runningWorkout?.startTime !== currentWorkout.startTime) {
+            set({ isRecording: false })
+            return result
+          }
 
           // Clear the running workout after successful local save
           set({ runningWorkout: null, isRecording: false })
@@ -168,7 +188,16 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
 
           return result
         } catch (error) {
-          if (!isCurrentProfile(scope)) return
+          if (attempt !== recordingAttempt) return
+          if (!isCurrentProfile(scope)) {
+            set({ isRecording: false })
+            return
+          }
+          const currentWorkout = get().runningWorkout
+          if (!currentWorkout || currentWorkout.startTime !== runningWorkout.startTime) {
+            set({ isRecording: false })
+            return
+          }
           console.error('Failed to record workout:', error)
           const errorMessage = error instanceof Error ? error.message : 'Failed to record workout'
           set({ recordingError: errorMessage, isRecording: false })
@@ -178,6 +207,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
 
       // Discard the current running workout without recording
       cancelWorkout: () => {
+        recordingAttempt += 1
         set({ runningWorkout: null, isRecording: false, recordingError: null })
       },
 
@@ -341,6 +371,7 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
       },
 
       reset: () => {
+        recordingAttempt += 1
         set({
           runningWorkout: null,
           isRecording: false,

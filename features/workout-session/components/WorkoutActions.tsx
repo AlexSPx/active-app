@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { YStack, Button, Text } from 'tamagui'
+import { View } from 'react-native'
+import { Button, UiText } from '../../../components/ui/Controls'
 import { Plus } from '../../../components/ui/icons'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
@@ -41,48 +42,41 @@ export function WorkoutActions({
   }
 
   return (
-    <YStack gap="$field" pt="$section" pb="$section">
+    <View className="gap-field py-section">
       {onAddExercise && (
         <Button
-          height="$action"
-          rounded="$button"
-          bg="$backgroundStrong"
-          icon={<Plus size="$iconSmall" color={colors.accent} />}
+          variant="secondary"
+          className="h-action flex-row gap-compact"
+          accessibilityLabel="Add exercise"
           onPress={onAddExercise}
         >
-          <Text color={colors.accent} fontSize="$caption">
-            Add exercise
-          </Text>
+          <Plus size={18} color={colors.accent} aria-hidden />
+          <UiText textRole="captionEmphasis">Add exercise</UiText>
         </Button>
       )}
 
       <Button
-        height="$action"
-        rounded="$button"
-        bg={colors.accent}
+        variant="primary"
+        className="h-action"
         onPress={handleFinishWorkout}
-        disabled={isFinishing}
+        loading={isFinishing}
+        accessibilityLabel="Finish workout"
       >
-        <Text color={colors.onAccent} fontSize="$caption" fontWeight="$screenTitle">
-          {isFinishing ? 'Saving…' : 'Finish workout'}
-        </Text>
+        <UiText textRole="buttonOnAccent">{isFinishing ? 'Saving…' : 'Finish workout'}</UiText>
       </Button>
 
       {onCancelWorkout && (
         <Button
-          chromeless
-          height="$touch"
-          rounded="$button"
+          variant="ghost"
+          disabled={isFinishing}
           onPress={() => {
             onCancelWorkout()
             onGoBack()
           }}
         >
-          <Text color="$destructive" fontSize="$caption" fontWeight="$screenTitle">
-            Cancel workout
-          </Text>
+          <UiText textRole="captionDestructive">Cancel workout</UiText>
         </Button>
       )}
-    </YStack>
+    </View>
   )
 }

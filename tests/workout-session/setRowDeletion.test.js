@@ -1,19 +1,3 @@
-jest.mock('tamagui', () => {
-  const React = require('react')
-  const primitive = (name) =>
-    function Primitive({ children, ...props }) {
-      return React.createElement(name, props, children)
-    }
-  const Checkbox = primitive('Checkbox')
-  Checkbox.Indicator = primitive('CheckboxIndicator')
-  return {
-    Button: primitive('Button'),
-    Checkbox,
-    Text: primitive('Text'),
-    XStack: primitive('XStack'),
-    YStack: primitive('YStack'),
-  }
-})
 jest.mock('@shopify/flash-list', () => {
   const React = require('react')
   return {
@@ -32,9 +16,12 @@ jest.mock('@shopify/flash-list', () => {
   }
 })
 jest.mock('../../components/ui', () => ({
+  Button: 'Button',
   DurationTargetInput: 'DurationTargetInput',
   StrengthTargetInput: 'StrengthTargetInput',
   SwipeToDeleteRow: ({ children }) => children,
+  UiText: 'Text',
+  useCadenceColors: () => ({ onAccent: '#faf5fc' }),
 }))
 jest.mock('../../components/ui/icons', () => ({ Check: 'Check' }))
 
@@ -100,11 +87,11 @@ function SessionExerciseWithAddSet({ category }) {
 }
 
 test.each([
-  ['STRENGTH', 'Set 1', 'Delete set'],
-  ['CARDIO', 'Interval 1', 'Delete interval'],
+  ['STRENGTH', 'Set 1', 'Delete set', 'Add set to Squat'],
+  ['CARDIO', 'Interval 1', 'Delete interval', 'Add interval to Run'],
 ])(
   '%s original row enables its delete action after adding a set',
-  async (category, label, actionLabel) => {
+  async (category, label, actionLabel, addLabel) => {
     let renderer
     await act(async () => {
       renderer = create(React.createElement(SessionExerciseWithAddSet, { category }))
@@ -115,7 +102,7 @@ test.each([
     expect(rowLabel().props.accessibilityActions).toEqual([])
 
     await act(async () => {
-      renderer.root.findByType('Button').props.onPress()
+      renderer.root.findByProps({ accessibilityLabel: addLabel }).props.onPress()
     })
 
     expect(rowLabel().props.accessibilityActions).toEqual([{ name: 'delete', label: actionLabel }])
