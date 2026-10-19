@@ -269,6 +269,76 @@ test('record calculations retain strength volume, actual cardio intervals and UT
   ).toBe(3600)
 })
 
+test('record details follow the mock header, summary and recorded-set order', () => {
+  mockRecords = [
+    {
+      ...mockRecord,
+      workoutTitle: 'Lower body foundations',
+      startTime: '2026-10-14T08:00:00Z',
+      createdAt: '2026-10-14T08:38:00Z',
+      exerciseRecords: [
+        { exerciseName: 'Barbell full squat', reps: [8, 8, 8], weight: [70, 70, 70] },
+        { exerciseName: 'Barbell lunge', reps: [10, 10, 10], weight: [20, 20, 20] },
+      ],
+    },
+  ]
+  const tree = mount(React.createElement(RecordScreen))
+  const text = []
+  function collect(node) {
+    if (typeof node === 'string') text.push(node)
+    else if (Array.isArray(node)) node.forEach(collect)
+    else node?.children?.forEach(collect)
+  }
+  collect(tree.toJSON())
+  const headerStart = text.indexOf('October 14, 2026')
+  expect(text.slice(headerStart, headerStart + 10)).toEqual([
+    'October 14, 2026',
+    'Lower body foundations',
+    'A session in the books.',
+    '38',
+    'minutes',
+    '6',
+    'sets',
+    '2,280',
+    'kg lifted',
+    'Recorded sets',
+  ])
+  const squatStart = text.indexOf('Barbell full squat')
+  expect(text.slice(squatStart, squatStart + 13)).toEqual([
+    'Barbell full squat',
+    'Set',
+    'Weight (kg)',
+    'Reps',
+    '1',
+    '70',
+    '8',
+    '2',
+    '70',
+    '8',
+    '3',
+    '70',
+    '8',
+  ])
+  const lungeStart = text.indexOf('Barbell lunge')
+  expect(text.slice(lungeStart, lungeStart + 13)).toEqual([
+    'Barbell lunge',
+    'Set',
+    'Weight (kg)',
+    'Reps',
+    '1',
+    '20',
+    '10',
+    '2',
+    '20',
+    '10',
+    '3',
+    '20',
+    '10',
+  ])
+  expect(hasText(tree, 'Finished at')).toBe(false)
+  act(() => tree.unmount())
+})
+
 test('opening and cancelling a record never deletes data; explicit confirmation deletes its real ID', async () => {
   mockDelete.mockResolvedValue(true)
   const tree = mount(React.createElement(RecordScreen))
@@ -304,7 +374,7 @@ test('failed deletion keeps recorded strength/cardio values and the confirmation
   expect(hasText(tree, '12:00')).toBe(true)
   expect(hasText(tree, '8:00')).toBe(true)
   expect(hasText(tree, '60')).toBe(true)
-  expect(hasText(tree, 'Interval time')).toBe(true)
+  expect(hasText(tree, 'interval minutes')).toBe(true)
   await act(async () => {
     await findLabel(tree, 'Confirm delete record').props.onPress()
   })
@@ -332,12 +402,15 @@ test('date selection filters records; Today, Show all, and record navigation wor
   pressLabel(tree, completedDay)
   expect(hasText(tree, '1 completed session')).toBe(true)
   expect(hasText(tree, 'Mixed session')).toBe(true)
-  expect(hasText(tree, 'elapsed')).toBe(true)
+  expect(hasText(tree, '60 min / 2 sets / 2 intervals / 870 kg')).toBe(true)
+  expect(hasText(tree, 'elapsed')).toBe(false)
+  expect(hasText(tree, 'Squat · Run')).toBe(false)
   expect(hasText(tree, 'Today run')).toBe(false)
   pressLabel(tree, 'Show all sessions')
   expect(hasText(tree, '2 completed sessions')).toBe(true)
   pressLabel(tree, 'Go to today')
   expect(hasText(tree, 'Today run')).toBe(true)
+  expect(hasText(tree, '60 min / 2 intervals')).toBe(true)
   expect(hasText(tree, 'Mixed session')).toBe(false)
   const todayLabel = `${longDate(new Date(2026, 9, 1))}, today, completed session`
   expect(findLabel(tree, todayLabel)).toBeTruthy()
@@ -353,6 +426,33 @@ test('date selection filters records; Today, Show all, and record navigation wor
   jest.useRealTimers()
 })
 
+test('history cards show the compact title and summary from the mock', () => {
+  mockRecords = [
+    {
+      ...mockRecord,
+      workoutTitle: 'Lower body foundations',
+      startTime: '2026-10-14T08:00:00',
+      createdAt: '2026-10-14T08:38:00',
+      exerciseRecords: [
+        { exerciseName: 'Squat', reps: [10, 10, 10, 10, 10, 10], weight: [38, 38, 38, 38, 38, 38] },
+      ],
+    },
+  ]
+  const tree = mount(React.createElement(HistoryPage))
+  expect(hasText(tree, 'Lower body foundations')).toBe(true)
+  expect(hasText(tree, '38 min / 6 sets / 2,280 kg')).toBe(true)
+  expect(hasText(tree, 'Squat')).toBe(false)
+  const card = tree.root.findAll((node) =>
+    node.props.accessibilityLabel?.startsWith('View Lower body foundations,')
+  )[0]
+  act(() => card.props.onPress())
+  expect(mockPush).toHaveBeenCalledWith({
+    pathname: '/(tabs)/(history)/record/[id]',
+    params: { id: 'record-1' },
+  })
+  act(() => tree.unmount())
+})
+
 test('history summaries use singular labels for one set and one interval', () => {
   mockRecords = [
     {
@@ -365,8 +465,7 @@ test('history summaries use singular labels for one set and one interval', () =>
     },
   ]
   const tree = mount(React.createElement(HistoryPage))
-  expect(hasText(tree, '1 set')).toBe(true)
-  expect(hasText(tree, '1 interval')).toBe(true)
+  expect(hasText(tree, '60 min / 1 set / 1 interval / 500 kg')).toBe(true)
   expect(hasText(tree, '1 sets')).toBe(false)
   expect(hasText(tree, '1 intervals')).toBe(false)
   act(() => tree.unmount())

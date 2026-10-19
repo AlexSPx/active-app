@@ -2,11 +2,10 @@ import { FlashList } from '@shopify/flash-list'
 import type { ReactNode } from 'react'
 import { Pressable, View } from 'react-native'
 import { useTabContentInset } from '../../../navigation/TabContentInset'
-import { Button, UiBadge, UiText } from '../../../components/ui/Controls'
+import { Button, UiText } from '../../../components/ui/Controls'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ChevronRight } from '../../../components/ui/icons'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
-import { formatSeconds } from '../../../utils/workoutUtils'
 import { formatWeekRange, startOfWeek } from './date'
 
 export type HistoryListItem = {
@@ -64,41 +63,38 @@ function HistoryRecordCard({ item, onPress }: { item: HistoryListItem; onPress: 
   })
   const timeLabel = item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const metrics = [
-    `${formatSeconds(item.duration)} elapsed`,
+    `${Math.round(item.duration / 60)} min`,
     ...(item.strengthSets > 0
       ? [`${item.strengthSets} ${item.strengthSets === 1 ? 'set' : 'sets'}`]
       : []),
     ...(item.intervals > 0
       ? [`${item.intervals} ${item.intervals === 1 ? 'interval' : 'intervals'}`]
       : []),
-    ...(item.strengthSets > 0 ? [`${item.totalVolume.toLocaleString()} kg volume`] : []),
+    ...(item.strengthSets > 0 ? [`${item.totalVolume.toLocaleString()} kg`] : []),
   ]
 
   return (
     <Pressable
-      className="min-h-touch flex-row items-center gap-field rounded-card border border-divider bg-surface p-compact active:bg-raised"
+      className="min-h-[76px] flex-row items-center gap-field rounded-card bg-surface p-3.5 active:bg-raised"
       accessibilityRole="button"
       accessibilityLabel={`View ${item.name}, ${dateLabel} at ${timeLabel}`}
       onPress={onPress}
     >
-      <View className="min-w-14 items-center justify-center rounded-control bg-raised px-compact py-compact">
-        <UiText textRole="meta">{item.date.toLocaleDateString([], { month: 'short' })}</UiText>
-        <UiText textRole="bodyEmphasis">{item.date.getDate()}</UiText>
+      <View className="w-[42px] shrink-0 items-center justify-center rounded-[11px] bg-background py-1.5">
+        <UiText textRole="meta" style={{ fontSize: 10, lineHeight: 17 }}>
+          {item.date.toLocaleDateString([], { month: 'short' })}
+        </UiText>
+        <UiText textRole="cardTitle" style={{ lineHeight: 22 }}>
+          {item.date.getDate()}
+        </UiText>
       </View>
       <View className="min-w-0 flex-1 gap-compact">
-        <View className="flex-row items-start gap-compact">
-          <UiText textRole="bodyEmphasis" className="min-w-0 flex-1">
-            {item.name}
-          </UiText>
-          <ChevronRight size={16} color={colors.accent} />
-        </View>
-        <UiText textRole="meta">{timeLabel}</UiText>
-        <UiText textRole="caption">{metrics.join(' · ')}</UiText>
-        {!!item.exerciseNames.length && (
-          <UiText textRole="caption">{item.exerciseNames.join(' · ')}</UiText>
-        )}
-        {(item.prOneRm || item.prVolume) && <UiBadge variant="pill">Personal record</UiBadge>}
+        <UiText textRole="bodyEmphasis" style={{ lineHeight: 20 }}>
+          {item.name}
+        </UiText>
+        <UiText textRole="meta">{metrics.join(' / ')}</UiText>
       </View>
+      <ChevronRight size={16} color={colors.muted} opacity={0.65} />
     </Pressable>
   )
 }

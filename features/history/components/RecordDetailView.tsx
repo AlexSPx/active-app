@@ -1,4 +1,5 @@
-import { ScrollView, View } from 'react-native'
+import type { ReactNode } from 'react'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useTabContentInset } from '../../../navigation/TabContentInset'
 import { Button, UiBadge, UiText } from '../../../components/ui/Controls'
 import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
@@ -51,12 +52,47 @@ function ErrorState({
   )
 }
 
-function SummaryMetric({ label, value }: { label: string; value: string }) {
+function SummaryMetric({
+  label,
+  value,
+  divider = false,
+}: {
+  label: string
+  value: string
+  divider?: boolean
+}) {
   return (
-    <View className="min-w-0 flex-1 gap-compact px-compact">
-      <UiText textRole="meta">{label}</UiText>
-      <UiText textRole="cardTitle" selectable>
+    <View
+      className="min-w-0 flex-1 items-center gap-compact border-divider px-compact"
+      style={divider && styles.metricDivider}
+    >
+      <UiText textRole="cardTitle" style={{ fontSize: 21, lineHeight: 25 }} selectable>
         {value}
+      </UiText>
+      <UiText textRole="meta" style={{ fontSize: 10, lineHeight: 15 }}>
+        {label}
+      </UiText>
+    </View>
+  )
+}
+
+function RecordTableCell({
+  column,
+  header = false,
+  children,
+}: {
+  column: 'set' | 'interval' | 'weight' | 'value'
+  header?: boolean
+  children: ReactNode
+}) {
+  return (
+    <View style={[styles.cell, styles[column]]}>
+      <UiText
+        textRole={header ? 'meta' : column === 'set' || column === 'interval' ? 'caption' : 'body'}
+        style={header ? styles.columnLabel : styles.cellText}
+        selectable={!header}
+      >
+        {children}
       </UiText>
     </View>
   )
@@ -115,7 +151,7 @@ export function RecordDetailView({
         contentContainerStyle={{ paddingBottom: bottomInset }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="w-full max-w-3xl self-center gap-field px-page py-section">
+        <View className="w-full max-w-3xl self-center px-page pb-section" style={styles.content}>
           {!!error && (
             <View className="gap-compact rounded-control border border-divider bg-raised p-field">
               <UiText textRole="bodyMuted" accessibilityRole="alert">
@@ -131,30 +167,29 @@ export function RecordDetailView({
               </Button>
             </View>
           )}
-          <UiText textRole="screenTitle" selectable>
+          <UiText textRole="meta" selectable>
+            {date.toLocaleDateString([], {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </UiText>
+          <UiText textRole="screenTitle" style={styles.title} selectable>
             {record.workoutTitle}
           </UiText>
-          <View className="gap-compact">
-            <UiText textRole="caption" selectable>
-              {date.toLocaleDateString([], {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </UiText>
-            <UiText textRole="caption" selectable>
-              Finished at {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </UiText>
-          </View>
+          <UiText textRole="bodyMuted" style={{ fontSize: 13 }}>
+            A session in the books.
+          </UiText>
 
-          <View className="flex-row flex-wrap rounded-card border border-divider bg-surface py-card">
+          <View className="flex-row bg-surface" style={styles.summary}>
             <SummaryMetric
-              label={intervals > 0 ? 'Interval time' : 'Duration'}
-              value={duration > 0 ? formatSeconds(duration) : '—'}
+              divider
+              label={intervals > 0 ? 'interval minutes' : 'minutes'}
+              value={duration > 0 ? `${Math.round(duration / 60)}` : '—'}
             />
             <SummaryMetric
-              label={strengthSets > 0 ? (intervals > 0 ? 'Sets / intervals' : 'Sets') : 'Intervals'}
+              divider
+              label={strengthSets > 0 ? (intervals > 0 ? 'sets / intervals' : 'sets') : 'intervals'}
               value={
                 strengthSets > 0
                   ? intervals > 0
@@ -164,76 +199,61 @@ export function RecordDetailView({
               }
             />
             <SummaryMetric
-              label="Volume · kg × reps"
+              label="kg lifted"
               value={strengthSets > 0 ? totalVolume.toLocaleString() : '—'}
             />
           </View>
 
-          <UiText textRole="bodyEmphasis" accessibilityRole="header" className="pt-field">
-            Recorded exercises
+          <UiText
+            textRole="bodyEmphasis"
+            accessibilityRole="header"
+            style={styles.recordedSetsTitle}
+          >
+            Recorded sets
           </UiText>
-          <View className="gap-field">
+          <View style={styles.exerciseList}>
             {record.exerciseRecords.map((exercise, index) => {
               const cardio = isCardioExerciseRecord(exercise)
               const rows = cardio ? exercise.durationSeconds || [] : exercise.reps || []
-              const volume =
-                exercise.reps?.reduce(
-                  (sum, reps, rowIndex) => sum + reps * (exercise.weight?.[rowIndex] || 0),
-                  0
-                ) || 0
               const achievements = launchFacade.training.getExerciseAchievements(exercise)
               const oneRm = achievements.some((achievement) => achievement.type === '1RM')
               const volumePr = achievements.some((achievement) => achievement.type === 'VOLUME')
 
               return (
-                <View
-                  key={`${exercise.exerciseName}-${index}`}
-                  className="gap-compact rounded-card border border-divider bg-surface p-card"
-                >
+                <View key={`${exercise.exerciseName}-${index}`}>
                   <UiText textRole="bodyEmphasis" accessibilityRole="header" selectable>
                     {exercise.exerciseName}
                   </UiText>
-                  <UiText textRole="caption">
-                    {rows.length}{' '}
-                    {cardio
-                      ? rows.length === 1
-                        ? 'recorded interval'
-                        : 'recorded intervals'
-                      : 'sets'}
-                    {!cardio ? ` · ${volume.toLocaleString()} kg volume` : ''}
-                  </UiText>
-                  <View className="flex-row items-center gap-field border-b border-divider pb-compact">
-                    <UiText textRole="meta" className="flex-1">
+                  <View style={[styles.row, styles.tableHeader]}>
+                    <RecordTableCell column={cardio ? 'interval' : 'set'} header>
                       {cardio ? 'Interval' : 'Set'}
-                    </UiText>
+                    </RecordTableCell>
                     {!cardio && (
-                      <UiText textRole="meta" className="flex-1 text-right">
-                        Weight · kg
-                      </UiText>
+                      <RecordTableCell column="weight" header>
+                        Weight (kg)
+                      </RecordTableCell>
                     )}
-                    <UiText textRole="meta" className="flex-1 text-right">
+                    <RecordTableCell column="value" header>
                       {cardio ? 'Duration' : 'Reps'}
-                    </UiText>
+                    </RecordTableCell>
                   </View>
                   {rows.map((value, rowIndex) => (
                     <View
                       key={rowIndex}
-                      className="min-h-touch flex-row items-center gap-field border-b border-divider py-compact"
+                      className="border-divider"
+                      style={[styles.row, styles.tableRow]}
                     >
-                      <View className="flex-1 flex-row items-center gap-compact">
-                        <UiText textRole="bodyMuted">{rowIndex + 1}</UiText>
-                        {!cardio && oneRm && exercise.achievedOneRmSetIndex === rowIndex && (
-                          <UiBadge variant="pill">PR</UiBadge>
-                        )}
-                      </View>
+                      <RecordTableCell column={cardio ? 'interval' : 'set'}>
+                        {rowIndex + 1}
+                      </RecordTableCell>
                       {!cardio && (
-                        <UiText textRole="body" className="flex-1 text-right" selectable>
+                        <RecordTableCell column="weight">
                           {(exercise.weight?.[rowIndex] ?? 0).toLocaleString()}
-                        </UiText>
+                        </RecordTableCell>
                       )}
-                      <UiText textRole="body" className="flex-1 text-right" selectable>
+                      <RecordTableCell column="value">
                         {cardio ? formatSeconds(value) : value}
-                      </UiText>
+                      </RecordTableCell>
                     </View>
                   ))}
                   {rows.length === 0 && <UiText textRole="bodyMuted">No recorded sets.</UiText>}
@@ -312,3 +332,22 @@ export function RecordDetailView({
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  content: { paddingTop: 20 },
+  title: { marginTop: 12, marginBottom: 10 },
+  summary: { marginVertical: 18, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 10 },
+  metricDivider: { borderRightWidth: 1 },
+  recordedSetsTitle: { marginTop: 2, marginBottom: 20 },
+  exerciseList: { gap: 20 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  tableHeader: { marginTop: 12, paddingVertical: 8 },
+  tableRow: { borderTopWidth: 1, paddingVertical: 9 },
+  cell: { paddingHorizontal: 8 },
+  set: { width: 36 },
+  interval: { width: 64 },
+  weight: { flex: 2 },
+  value: { flex: 1 },
+  columnLabel: { fontSize: 10, lineHeight: 15 },
+  cellText: { fontSize: 12, lineHeight: 18 },
+})
