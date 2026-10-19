@@ -1,5 +1,5 @@
-import { useEffect } from 'react'
-import { YStack, XStack, Text, Button, Card, Progress } from 'tamagui'
+import { View } from 'react-native'
+import { Button, UiText } from '../../../components/ui/Controls'
 
 interface RestTimerOverlayProps {
   active: boolean
@@ -7,77 +7,72 @@ interface RestTimerOverlayProps {
   total: number
   onExtend: () => void
   onSkip: () => void
+  nextStepText: string
   bottomOffset?: number
 }
 
 // A floating overlay shown when a rest timer is active.
-// Future configuration (enable/disable + duration) to be added in settings; kept simple for now.
 export function RestTimerOverlay({
   active,
   remaining,
   total,
   onExtend,
   onSkip,
+  nextStepText,
   bottomOffset = 0,
 }: RestTimerOverlayProps) {
-  useEffect(() => {
-    // Potential animation hook / focus effects
-  }, [active])
-
   if (!active) return null
 
-  const progress = 1 - remaining / total
+  const progress = total <= 0 ? 0 : Math.max(0, Math.min(1, 1 - remaining / total))
   const minutes = Math.floor(remaining / 60)
   const seconds = Math.floor(remaining % 60)
   const formatted = `${minutes}:${seconds.toString().padStart(2, '0')}`
 
   return (
-    <YStack
-      position="absolute"
-      style={{ left: 0, right: 0, bottom: bottomOffset }}
-      px="$4"
-      pb="$6"
+    <View
       pointerEvents="box-none"
+      className="absolute left-0 right-0 px-page pb-section"
+      style={{ bottom: bottomOffset }}
     >
-      <Card
-        elevate
-        bg="$background"
-        p="$4"
-        borderColor="$borderColor"
-        animation="quick"
-        enterStyle={{ opacity: 0, y: 20 }}
-        exitStyle={{ opacity: 0, y: 20 }}
-      >
-        <YStack gap="$3">
-          <Text fontSize="$6" fontWeight="700" color="$primary">
-            Rest
-          </Text>
-          <Text fontSize="$9" fontWeight="800" color="$color" style={{ textAlign: 'center' }}>
-            {formatted}
-          </Text>
-          <Progress value={progress * 100} mx={0} size="$4" bg="$backgroundPress">
-            <Progress.Indicator animation="bouncy" bg="$primary" />
-          </Progress>
-          <XStack gap="$3" style={{ justifyContent: 'space-between' }}>
-            <Button
-              flex={1}
-              size="$4"
-              variant="outlined"
-              borderColor="$borderColor"
-              color="$color"
-              onPress={onSkip}
-            >
-              <Text numberOfLines={1}>Skip</Text>
-            </Button>
-            <Button flex={1} size="$4" bg="$primary" color="$onPrimary" onPress={onExtend}>
-              <Text numberOfLines={1}>+15s</Text>
-            </Button>
-          </XStack>
-          <Text fontSize="$2" color="$colorSubtle" style={{ textAlign: 'center' }}>
-            Automatically starts after completing a set
-          </Text>
-        </YStack>
-      </Card>
-    </YStack>
+      <View className="gap-field rounded-card border border-divider bg-surface p-card shadow-lg">
+        <UiText textRole="captionEmphasis" accessibilityRole="header">
+          Rest
+        </UiText>
+        <UiText textRole="screenTitle" className="text-center">
+          {formatted}
+        </UiText>
+        <View
+          accessibilityRole="progressbar"
+          accessibilityLabel="Rest timer progress"
+          accessibilityValue={{ min: 0, max: 100, now: Math.round(progress * 100) }}
+          className="h-2 overflow-hidden rounded-full bg-raised"
+        >
+          <View className="h-full rounded-full bg-accent" style={{ width: `${progress * 100}%` }} />
+        </View>
+        <View className="flex-row gap-field">
+          <Button
+            variant="surface"
+            shape="control"
+            className="flex-1"
+            onPress={onSkip}
+            accessibilityLabel="Skip rest timer"
+          >
+            Skip
+          </Button>
+          <Button
+            variant="primary"
+            shape="control"
+            className="flex-1"
+            onPress={onExtend}
+            accessibilityLabel="Extend rest timer by 15 seconds"
+          >
+            +15s
+          </Button>
+        </View>
+        <UiText textRole="caption" className="text-center">
+          {nextStepText}
+        </UiText>
+      </View>
+    </View>
   )
 }

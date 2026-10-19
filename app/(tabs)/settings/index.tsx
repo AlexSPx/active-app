@@ -1,3 +1,4 @@
+import { useTabContentInset } from '../../../navigation/TabContentInset'
 import { useCallback, useRef } from 'react'
 import { Alert, ScrollView, View } from 'react-native'
 import { Link, useFocusEffect } from 'expo-router'
@@ -31,6 +32,7 @@ import {
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
 export default function SettingsMenuScreen() {
+  const bottomInset = useTabContentInset()
   const scrollViewRef = useRef<ScrollView>(null)
   const localProfile = launchFacade.auth.getStartupPlan().kind === 'local-profile'
   const { logout, user } = useAuth()
@@ -57,7 +59,12 @@ export default function SettingsMenuScreen() {
 
   return (
     <View className="flex-1 bg-background">
-      <ScrollView ref={scrollViewRef} className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        ref={scrollViewRef}
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: bottomInset }}
+      >
         <View className="w-full max-w-[720px] self-center gap-field p-page">
           <Link href={launchFacade.settings.profileRoute() as any} asChild>
             <Button

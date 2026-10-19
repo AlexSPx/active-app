@@ -11,9 +11,23 @@ jest.mock('uniwind', () => ({
   useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
   useResolveClassNames: () => ({}),
 }))
+jest.mock('../../components/ui/Controls', () => {
+  const React = require('react')
+  return {
+    Button: ({ children, ...props }) => React.createElement('Button', props, children),
+    UiText: ({ children, ...props }) => React.createElement('Text', props, children),
+  }
+})
 jest.mock('expo-router', () => {
   const React = require('react')
-  const Tabs = (props) => React.createElement('Tabs', props, props.children)
+  const Tabs = (props) => {
+    const { useTabContentInset } = require('../../navigation/TabContentInset')
+    return React.createElement(
+      'Tabs',
+      { ...props, contentBottomInset: useTabContentInset() },
+      props.children
+    )
+  }
   Tabs.Screen = () => null
   return {
     Tabs,
@@ -22,14 +36,6 @@ jest.mock('expo-router', () => {
     useRouter: () => ({ push: mockPush }),
   }
 })
-jest.mock('tamagui', () =>
-  Object.fromEntries(
-    ['Button', 'Text', 'XStack', 'YStack'].map((name) => [
-      name,
-      (props) => require('react').createElement(name, props, props.children),
-    ])
-  )
-)
 jest.mock('../../components/ui/icons', () => ({
   Home: () => null,
   History: () => null,
@@ -66,6 +72,7 @@ afterEach(() => {
   jest.useRealTimers()
 })
 const options = () => view.root.findByType('Tabs').props.screenOptions
+const bottomInset = () => view.root.findByType('Tabs').props.contentBottomInset
 const keyboard = (event) => Keyboard.addListener.mock.calls.find(([name]) => name === event)[1]()
 
 test('idle tabs reserve content space and grow for larger text', () => {
@@ -74,11 +81,14 @@ test('idle tabs reserve content space and grow for larger text', () => {
   })
   expect(view.root.findAllByType('Button')).toHaveLength(0)
   const normal = options()
-  expect(normal.sceneStyle.paddingBottom).toBeGreaterThan(normal.tabBarStyle.height)
+  expect(normal.sceneStyle.backgroundColor).toBe('transparent')
+  expect(normal.sceneStyle.paddingBottom).toBeUndefined()
+  const normalInset = bottomInset()
+  expect(normalInset).toBeGreaterThan(normal.tabBarStyle.height)
   useWindowDimensions.mockReturnValue({ fontScale: 1.5 })
   act(() => view.update(React.createElement(TabLayout)))
   expect(options().tabBarStyle.height).toBeGreaterThan(normal.tabBarStyle.height)
-  expect(options().sceneStyle.paddingBottom).toBeGreaterThan(normal.sceneStyle.paddingBottom)
+  expect(bottomInset()).toBeGreaterThan(normalInset)
 })
 
 test('a measured running shortcut clears the content, resumes the session, and hides for the keyboard', () => {
@@ -91,17 +101,18 @@ test('a measured running shortcut clears the content, resumes the session, and h
     view = create(React.createElement(TabLayout))
   })
   const shortcut = () => view.root.findByType('Button')
+  expect(options().sceneStyle.backgroundColor).toBe('transparent')
   expect(shortcut().props.accessibilityLabel).toBe('Resume Morning workout, workout in progress')
   expect(shortcut().props.accessibilityValue.text).toContain('1 of 2 sets complete')
-  const card = () => view.root.findAllByType('YStack').find((node) => node.props.onLayout)
+  const card = () => view.root.findAllByType('View').find((node) => node.props.onLayout)
   act(() => card().props.onLayout({ nativeEvent: { layout: { height: 132 } } }))
-  expect(options().sceneStyle.paddingBottom).toBeGreaterThanOrEqual(card().props.b + 132)
+  expect(bottomInset()).toBeGreaterThanOrEqual(card().props.style.bottom + 132 + 16)
   act(() => shortcut().props.onPress())
   expect(mockPush).toHaveBeenCalledWith('/workouts/session')
   act(() => keyboard('keyboardDidShow'))
   expect(view.root.findAllByType('Button')).toHaveLength(0)
-  expect(options().sceneStyle.paddingBottom).toBe(0)
+  expect(bottomInset()).toBe(0)
   act(() => keyboard('keyboardDidHide'))
   expect(shortcut().props.accessibilityRole).toBe('button')
-  expect(options().sceneStyle.paddingBottom).toBeGreaterThanOrEqual(card().props.b + 132)
+  expect(bottomInset()).toBeGreaterThanOrEqual(card().props.style.bottom + 132 + 16)
 })

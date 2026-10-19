@@ -1,6 +1,6 @@
 import { Pressable, View } from 'react-native'
-import { Button, UiText } from './ui/Controls'
-import { AlertTriangle, ArrowRight, Check, Dumbbell } from './ui/icons'
+import { UiText } from './ui/Controls'
+import { AlertTriangle, ArrowRight, Check } from './ui/icons'
 import { useCadenceColors } from './ui/useCadenceColors'
 import type {
   TrainingHomeWeekDay,
@@ -40,17 +40,12 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
 
   return (
     <View className="gap-field">
-      <View className="flex-row items-end justify-between gap-field">
-        <View className="min-w-0 flex-1 gap-compact">
-          <UiText textRole="bodyEmphasis" accessibilityRole="header">
-            Your training week
-          </UiText>
-          <UiText textRole="meta" numberOfLines={1}>
-            {plan.kind === 'setup' ? 'No routine' : plan.routineName} · {plan.weekRange}
-          </UiText>
-        </View>
+      <View className="flex-row flex-wrap items-baseline justify-between gap-field">
+        <UiText textRole="body" accessibilityRole="header">
+          Your training rhythm
+        </UiText>
         {flexible && plan.completedCount !== null && (
-          <UiText textRole="captionEmphasis">
+          <UiText textRole="bodyMuted">
             {plan.completedCount} of {plan.workouts.length} complete
           </UiText>
         )}
@@ -105,13 +100,13 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
             const background = selected
               ? 'border-accent bg-accent'
               : day.isToday
-                ? 'border-divider bg-raised'
-                : 'border-transparent bg-surface'
+                ? 'border-divider'
+                : 'border-transparent'
 
             return (
               <Pressable
                 key={day.date.toISOString()}
-                className={`min-h-20 min-w-0 flex-1 items-center justify-center gap-compact rounded-control border px-1 py-compact ${background}`}
+                className={`min-h-20 min-w-0 flex-1 items-center justify-center gap-compact rounded-full border px-1 py-compact ${background}`}
                 accessibilityRole={canSelect ? 'button' : undefined}
                 accessibilityLabel={`${dayLabel}, ${describeDay(day)}`}
                 accessibilityState={{ selected, disabled: !canSelect }}
@@ -123,19 +118,17 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
                   {day.date.getDate()}
                 </UiText>
                 {day.kind === 'scheduled' ? (
-                  <Dumbbell
-                    size={13}
-                    color={selected ? colors.onAccent : colors.accent}
-                    aria-hidden
-                  />
+                  <View className="h-3 items-center justify-center">
+                    <View
+                      className={`h-1 w-1 rounded-full ${selected ? 'bg-on-accent' : 'bg-accent'}`}
+                    />
+                  </View>
                 ) : day.kind === 'unavailable' ? (
                   <AlertTriangle
                     size={13}
                     color={selected ? colors.onAccent : colors.muted}
                     aria-hidden
                   />
-                ) : day.kind === 'rest' ? (
-                  <UiText textRole={selected ? 'captionOnAccent' : 'caption'}>–</UiText>
                 ) : (
                   <View className="h-3 w-3" />
                 )}

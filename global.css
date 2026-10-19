@@ -41,6 +41,13 @@
   --text-button-label: 13px;
   --text-button-label--line-height: 18px;
 
+  --color-featured: #e3d7ee;
+  --color-on-featured: #2d2235;
+  --color-featured-muted: #76627e;
+  --color-featured-divider: #c6b8d0;
+  --color-featured-action: #2d2235;
+  --color-on-featured-action: #faf5fc;
+
   --font-dm-sans: 'DM Sans';
   --font-dm-regular: 'DM Sans';
   --font-dm-medium: 'DM Sans Medium';

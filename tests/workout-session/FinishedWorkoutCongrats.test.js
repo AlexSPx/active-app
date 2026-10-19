@@ -6,30 +6,23 @@ jest.mock('react-native', () => ({
   Platform: { OS: 'android' },
   Vibration: { vibrate: jest.fn() },
   Image: () => null,
+  ScrollView: 'ScrollView',
+  View: 'View',
 }))
 jest.mock('../../components/ui/icons', () => {
   const Icon = () => null
   return { Trophy: Icon, Timer: Icon, Dumbbell: Icon, BarChart2: Icon }
 })
-jest.mock('tamagui', () => {
-  const React = require('react')
-  const primitive = (name) =>
-    function Primitive({ children, ...props }) {
-      return React.createElement(name, props, children)
-    }
-  return {
-    Button: primitive('Button'),
-    H3: primitive('H3'),
-    H4: primitive('H4'),
-    Paragraph: primitive('Paragraph'),
-    ScrollView: primitive('ScrollView'),
-    Separator: primitive('Separator'),
-    Text: primitive('Text'),
-    XStack: primitive('XStack'),
-    YStack: primitive('YStack'),
-  }
-})
-
+jest.mock('../../components/ui/Controls', () => ({
+  Button: 'Button',
+  UiText: 'Text',
+}))
+jest.mock('../../components/ui/useCadenceColors', () => ({
+  useCadenceColors: () => ({
+    accent: '#624572',
+    muted: '#76627e',
+  }),
+}))
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 const { FinishedWorkoutCongrats } = require('../../components/FinishedWorkoutCongrats')

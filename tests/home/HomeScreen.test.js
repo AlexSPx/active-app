@@ -176,7 +176,7 @@ describe('Home setup states', () => {
 
     expect(visibleText(renderer)).toEqual(
       expect.arrayContaining([
-        'Your training week',
+        'Your training rhythm',
         'Make room for your routine.',
         'Choose exercises and set your sets and reps to create your first workout.',
         'Create workout',
@@ -282,7 +282,10 @@ describe('Home schedule and workout actions', () => {
 
     act(() => getDayButton(renderer, 'rest day').props.onPress())
     expect(renderer.root.findByType(TodayView).props.session.kind).toBe('rest')
-    expect(visibleText(renderer)).toContain('Rest day')
+    expect(visibleText(renderer)).toContain('Rest day.')
+    expect(visibleText(renderer)).toContain('No workout scheduled for this date.')
+    act(() => getButton(renderer, 'View your routine').props.onPress())
+    expect(mockPush).toHaveBeenCalledWith('/(tabs)/(workouts)/routines')
 
     act(() => getDayButton(renderer, 'scheduled workout unavailable').props.onPress())
     expect(renderer.root.findByType(TodayView).props.session).toMatchObject({

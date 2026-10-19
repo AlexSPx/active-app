@@ -1,3 +1,4 @@
+import { useTabContentInset } from '../../navigation/TabContentInset'
 import type { ReactNode } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
 import { useHeaderHeight } from '@react-navigation/elements'
@@ -20,6 +21,7 @@ export function SettingsPage({
   footer?: ReactNode
   className?: string
 }) {
+  const bottomInset = useTabContentInset()
   const headerHeight = useHeaderHeight()
   return (
     <KeyboardAvoidingView
@@ -31,6 +33,7 @@ export function SettingsPage({
         className="flex-1"
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingBottom: footer ? 0 : bottomInset }}
       >
         <View className={`w-full max-w-[720px] self-center gap-section p-page ${className}`}>
           <View className="gap-field">
@@ -42,7 +45,14 @@ export function SettingsPage({
           {children}
         </View>
       </ScrollView>
-      {footer && <View className="gap-field border-t border-divider p-page">{footer}</View>}
+      {footer && (
+        <View
+          className="gap-field border-t border-divider p-page"
+          style={{ marginBottom: bottomInset }}
+        >
+          {footer}
+        </View>
+      )}
     </KeyboardAvoidingView>
   )
 }

@@ -5,14 +5,6 @@ jest.mock('expo-router', () => ({
 jest.mock('uniwind', () => ({
   useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
 }))
-jest.mock('tamagui', () => {
-  const React = require('react')
-  return {
-    useTheme: () => ({}),
-    View: ({ children }) => React.createElement('View', null, children),
-    YStack: ({ children }) => React.createElement('YStack', null, children),
-  }
-})
 jest.mock('../../components/feedback/FeedbackProvider', () => ({
   useFeedback: () => ({ show: (...args) => mockToastShow(...args) }),
 }))
@@ -38,6 +30,7 @@ jest.mock('../../features/workout-session', () => {
       return React.createElement('WorkoutActions')
     },
     useWorkoutSession: () => mockSession,
+    useRunningWorkoutStore: mockUseRunningWorkoutStore,
     RestTimerOverlay: () => null,
   }
 })
@@ -47,21 +40,27 @@ jest.mock('../../navigation/useAppNavigation', () => ({
 jest.mock('../../stores/authStore', () => ({
   useAuthStore: { getState: () => mockAuthState.current },
 }))
+jest.mock('../../features/workout-session/stores/runningWorkoutStore', () => ({
+  useRunningWorkoutStore: mockUseRunningWorkoutStore,
+}))
 
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 const { useUiStore } = require('../../stores/uiStore')
 const { LOCAL_PROFILE_OWNER, setActiveProfileOwner } = require('../../lib/profileScope')
-const WorkoutSessionScreen = require('../../app/workouts/session').default
 
 const mockToastShow = jest.fn()
 const mockGoBack = jest.fn()
 const mockFinishWorkout = jest.fn()
+const mockRunningWorkoutState = { current: null }
+const mockUseRunningWorkoutStore = Object.assign(
+  (selector) => selector({ runningWorkout: mockRunningWorkoutState.current }),
+  { getState: () => ({ runningWorkout: mockRunningWorkoutState.current }) }
+)
 const mockSession = {
   exercises: [],
   workoutName: 'Workout',
   workoutTag: 'In Progress',
-  workoutDuration: '0:00',
   updateSet: jest.fn(),
   toggleSetComplete: jest.fn(),
   addSet: jest.fn(),
@@ -77,12 +76,14 @@ const mockSession = {
 }
 const mockAuthState = { current: null }
 let mockFinishHandler
+const WorkoutSessionScreen = require('../../app/workouts/session').default
 
 describe('workout session completion', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     setActiveProfileOwner(LOCAL_PROFILE_OWNER)
     useUiStore.getState().reset()
+    mockRunningWorkoutState.current = null
     mockAuthState.current = {
       isAuthenticated: false,
       isProfileTransitioning: false,
@@ -167,6 +168,49 @@ describe('workout session completion', () => {
       visible: true,
       payload: response,
     })
+    expect(mockToastShow).not.toHaveBeenCalled()
+    act(() => renderer.unmount())
+  })
+
+  it('allows the saved session to clear before its completion result is shown', async () => {
+    mockRunningWorkoutState.current = {
+      id: 'workout_a',
+      startTime: '2026-10-18T10:00:00.000Z',
+    }
+    const { finishPromise, renderer, resolveFinish } = await beginDeferredFinish()
+    const response = { kind: 'local', workoutRecord: { id: 'current_record' } }
+    mockRunningWorkoutState.current = null
+
+    let result
+    await act(async () => {
+      resolveFinish(response)
+      result = await finishPromise
+    })
+
+    expect(result).toBe(true)
+    expect(useUiStore.getState().finishedCongrats.payload).toEqual(response)
+    act(() => renderer.unmount())
+  })
+
+  it('does not show a saved completion after a different session replaces it', async () => {
+    mockRunningWorkoutState.current = {
+      id: 'workout_a',
+      startTime: '2026-10-18T10:00:00.000Z',
+    }
+    const { finishPromise, renderer, resolveFinish } = await beginDeferredFinish()
+    mockRunningWorkoutState.current = {
+      id: 'workout_b',
+      startTime: '2026-10-18T10:05:00.000Z',
+    }
+
+    let result
+    await act(async () => {
+      resolveFinish({ kind: 'local', workoutRecord: { id: 'old_record' } })
+      result = await finishPromise
+    })
+
+    expect(result).toBe(false)
+    expect(useUiStore.getState().finishedCongrats.visible).toBe(false)
     expect(mockToastShow).not.toHaveBeenCalled()
     act(() => renderer.unmount())
   })
