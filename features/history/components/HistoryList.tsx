@@ -1,3 +1,4 @@
+import { useTabContentInset } from '../../../navigation/TabContentInset'
 import { forwardRef } from 'react'
 import { Card, Text, View, XStack, YStack } from 'tamagui'
 import { ArrowRight } from '../../../components/ui/icons'
@@ -28,131 +29,142 @@ type Props = {
 }
 
 const HistoryList = forwardRef<FlashListRef<HistoryListItem>, Props>(
-  ({ data, onPressItem, refreshing, onRefresh }, ref) => (
-    <FlashList
-      ref={ref}
-      data={data}
-      keyExtractor={(item) => item.id}
-      refreshing={refreshing}
-      onRefresh={onRefresh}
-      contentContainerStyle={data.length === 0 ? { flexGrow: 1 } : undefined}
-      ListHeaderComponent={
-        data.length > 0 ? (
-          <YStack pt="$section" gap="$compact">
-            <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600" color="$color">
-              Your history
-            </Text>
-            <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-              {data.length} completed {data.length === 1 ? 'session' : 'sessions'}
+  ({ data, onPressItem, refreshing, onRefresh }, ref) => {
+    const bottomInset = useTabContentInset()
+    return (
+      <FlashList
+        ref={ref}
+        data={data}
+        keyExtractor={(item) => item.id}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        contentContainerStyle={{
+          paddingBottom: bottomInset,
+          ...(data.length === 0 ? { flexGrow: 1 } : {}),
+        }}
+        ListHeaderComponent={
+          data.length > 0 ? (
+            <YStack pt="$section" gap="$compact">
+              <Text
+                fontSize="$screenTitle"
+                lineHeight="$screenTitle"
+                fontWeight="600"
+                color="$color"
+              >
+                Your history
+              </Text>
+              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                {data.length} completed {data.length === 1 ? 'session' : 'sessions'}
+              </Text>
+            </YStack>
+          ) : null
+        }
+        ListEmptyComponent={
+          <YStack flex={1} py="$section" items="center" justify="center">
+            <Text fontSize="$body" lineHeight="$body" color="$colorSubtle" text="center">
+              No records yet
             </Text>
           </YStack>
-        ) : null
-      }
-      ListEmptyComponent={
-        <YStack flex={1} py="$section" items="center" justify="center">
-          <Text fontSize="$body" lineHeight="$body" color="$colorSubtle" text="center">
-            No records yet
-          </Text>
-        </YStack>
-      }
-      ListFooterComponent={data.length > 0 ? <View py="$field" /> : null}
-      ItemSeparatorComponent={() => <View py="$2" />}
-      renderItem={({ item, index }) => {
-        const showHeader =
-          index === 0 ||
-          startOfWeek(item.date).getTime() !== startOfWeek(data[index - 1].date).getTime()
-        return (
-          <YStack>
-            {showHeader && (
-              <Text
-                mt="$section"
-                mb="$field"
-                fontSize="$caption"
-                lineHeight="$caption"
-                fontWeight="600"
-                color="$colorSubtle"
-              >
-                {formatWeekRange(item.date)}
-              </Text>
-            )}
-            <Card
-              p="$card"
-              rounded="$card"
-              bg="$surface"
-              borderWidth="$0.5"
-              borderColor="$borderColor"
-              gap="$compact"
-              accessible
-              accessibilityRole="button"
-              accessibilityLabel={`View ${item.name}, ${item.date.toLocaleDateString()}`}
-              onPress={() => onPressItem(item)}
-              pressStyle={{ bg: '$surfacePress' }}
-            >
-              <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                {item.date.toLocaleDateString([], {
-                  weekday: 'short',
-                  day: 'numeric',
-                  month: 'short',
-                })}{' '}
-                · {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-              <XStack gap="$field" minH="$touch" items="flex-start">
+        }
+        ListFooterComponent={data.length > 0 ? <View py="$field" /> : null}
+        ItemSeparatorComponent={() => <View py="$2" />}
+        renderItem={({ item, index }) => {
+          const showHeader =
+            index === 0 ||
+            startOfWeek(item.date).getTime() !== startOfWeek(data[index - 1].date).getTime()
+          return (
+            <YStack>
+              {showHeader && (
                 <Text
-                  flex={1}
-                  fontSize="$cardTitle"
-                  lineHeight="$cardTitle"
-                  fontWeight="600"
-                  color="$color"
-                >
-                  {item.name}
-                </Text>
-                <ArrowRight size="$iconSmall" color="$primary" />
-              </XStack>
-              <XStack flexWrap="wrap" gap="$field" mt="$compact">
-                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                  {formatSeconds(item.duration)}
-                </Text>
-                {item.strengthSets > 0 && (
-                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                    {item.strengthSets} sets
-                  </Text>
-                )}
-                {item.intervals > 0 && (
-                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                    {item.intervals} intervals
-                  </Text>
-                )}
-                {item.strengthSets > 0 && (
-                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                    {item.totalVolume.toLocaleString()} kg volume
-                  </Text>
-                )}
-              </XStack>
-              <Text mt="$compact" fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
-                {item.exerciseNames.join(' · ')}
-              </Text>
-              {(item.prOneRm || item.prVolume) && (
-                <Text
-                  self="flex-start"
-                  mt="$compact"
-                  px="$2"
-                  py="$compact"
-                  rounded="$badge"
-                  bg="$backgroundAccent"
-                  color="$primary"
+                  mt="$section"
+                  mb="$field"
                   fontSize="$caption"
                   lineHeight="$caption"
                   fontWeight="600"
+                  color="$colorSubtle"
                 >
-                  Personal record
+                  {formatWeekRange(item.date)}
                 </Text>
               )}
-            </Card>
-          </YStack>
-        )
-      }}
-    />
-  )
+              <Card
+                p="$card"
+                rounded="$card"
+                bg="$surface"
+                borderWidth="$0.5"
+                borderColor="$borderColor"
+                gap="$compact"
+                accessible
+                accessibilityRole="button"
+                accessibilityLabel={`View ${item.name}, ${item.date.toLocaleDateString()}`}
+                onPress={() => onPressItem(item)}
+                pressStyle={{ bg: '$surfacePress' }}
+              >
+                <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                  {item.date.toLocaleDateString([], {
+                    weekday: 'short',
+                    day: 'numeric',
+                    month: 'short',
+                  })}{' '}
+                  · {item.date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+                <XStack gap="$field" minH="$touch" items="flex-start">
+                  <Text
+                    flex={1}
+                    fontSize="$cardTitle"
+                    lineHeight="$cardTitle"
+                    fontWeight="600"
+                    color="$color"
+                  >
+                    {item.name}
+                  </Text>
+                  <ArrowRight size="$iconSmall" color="$primary" />
+                </XStack>
+                <XStack flexWrap="wrap" gap="$field" mt="$compact">
+                  <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                    {formatSeconds(item.duration)}
+                  </Text>
+                  {item.strengthSets > 0 && (
+                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                      {item.strengthSets} sets
+                    </Text>
+                  )}
+                  {item.intervals > 0 && (
+                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                      {item.intervals} intervals
+                    </Text>
+                  )}
+                  {item.strengthSets > 0 && (
+                    <Text fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                      {item.totalVolume.toLocaleString()} kg volume
+                    </Text>
+                  )}
+                </XStack>
+                <Text mt="$compact" fontSize="$caption" lineHeight="$caption" color="$colorSubtle">
+                  {item.exerciseNames.join(' · ')}
+                </Text>
+                {(item.prOneRm || item.prVolume) && (
+                  <Text
+                    self="flex-start"
+                    mt="$compact"
+                    px="$2"
+                    py="$compact"
+                    rounded="$badge"
+                    bg="$backgroundAccent"
+                    color="$primary"
+                    fontSize="$caption"
+                    lineHeight="$caption"
+                    fontWeight="600"
+                  >
+                    Personal record
+                  </Text>
+                )}
+              </Card>
+            </YStack>
+          )
+        }}
+      />
+    )
+  }
 )
 
 export default HistoryList

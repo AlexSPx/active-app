@@ -1,3 +1,4 @@
+import { useTabContentInset } from '../../../navigation/TabContentInset'
 import { FlashList, type FlashListRef } from '@shopify/flash-list'
 import { memo, useEffect, useRef } from 'react'
 import type { ApiWorkout } from '../../../types/api'
@@ -33,6 +34,7 @@ export const WorkoutList = memo(function WorkoutList({
 }: WorkoutListProps) {
   const listRef = useRef<FlashListRef<ApiWorkout>>(null)
   const insets = useSafeAreaInsets()
+  const bottomInset = useTabContentInset()
 
   useEffect(() => {
     if (!focusId || !workouts?.length) return
@@ -69,7 +71,7 @@ export const WorkoutList = memo(function WorkoutList({
         style={{ flex: 1 }}
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{
-          paddingBottom: 24 + insets.bottom,
+          paddingBottom: 24 + insets.bottom + bottomInset,
           paddingHorizontal: 20,
         }}
         ListHeaderComponent={listHeader}

@@ -20,7 +20,14 @@ jest.mock('../../components/ui/Controls', () => {
 })
 jest.mock('expo-router', () => {
   const React = require('react')
-  const Tabs = (props) => React.createElement('Tabs', props, props.children)
+  const Tabs = (props) => {
+    const { useTabContentInset } = require('../../navigation/TabContentInset')
+    return React.createElement(
+      'Tabs',
+      { ...props, contentBottomInset: useTabContentInset() },
+      props.children
+    )
+  }
   Tabs.Screen = () => null
   return {
     Tabs,
@@ -65,6 +72,7 @@ afterEach(() => {
   jest.useRealTimers()
 })
 const options = () => view.root.findByType('Tabs').props.screenOptions
+const bottomInset = () => view.root.findByType('Tabs').props.contentBottomInset
 const keyboard = (event) => Keyboard.addListener.mock.calls.find(([name]) => name === event)[1]()
 
 test('idle tabs reserve content space and grow for larger text', () => {
@@ -74,11 +82,13 @@ test('idle tabs reserve content space and grow for larger text', () => {
   expect(view.root.findAllByType('Button')).toHaveLength(0)
   const normal = options()
   expect(normal.sceneStyle.backgroundColor).toBe('transparent')
-  expect(normal.sceneStyle.paddingBottom).toBeGreaterThan(normal.tabBarStyle.height)
+  expect(normal.sceneStyle.paddingBottom).toBeUndefined()
+  const normalInset = bottomInset()
+  expect(normalInset).toBeGreaterThan(normal.tabBarStyle.height)
   useWindowDimensions.mockReturnValue({ fontScale: 1.5 })
   act(() => view.update(React.createElement(TabLayout)))
   expect(options().tabBarStyle.height).toBeGreaterThan(normal.tabBarStyle.height)
-  expect(options().sceneStyle.paddingBottom).toBeGreaterThan(normal.sceneStyle.paddingBottom)
+  expect(bottomInset()).toBeGreaterThan(normalInset)
 })
 
 test('a measured running shortcut clears the content, resumes the session, and hides for the keyboard', () => {
@@ -96,17 +106,13 @@ test('a measured running shortcut clears the content, resumes the session, and h
   expect(shortcut().props.accessibilityValue.text).toContain('1 of 2 sets complete')
   const card = () => view.root.findAllByType('View').find((node) => node.props.onLayout)
   act(() => card().props.onLayout({ nativeEvent: { layout: { height: 132 } } }))
-  expect(options().sceneStyle.paddingBottom).toBeGreaterThanOrEqual(
-    card().props.style.bottom + 132 + 16
-  )
+  expect(bottomInset()).toBeGreaterThanOrEqual(card().props.style.bottom + 132 + 16)
   act(() => shortcut().props.onPress())
   expect(mockPush).toHaveBeenCalledWith('/workouts/session')
   act(() => keyboard('keyboardDidShow'))
   expect(view.root.findAllByType('Button')).toHaveLength(0)
-  expect(options().sceneStyle.paddingBottom).toBe(0)
+  expect(bottomInset()).toBe(0)
   act(() => keyboard('keyboardDidHide'))
   expect(shortcut().props.accessibilityRole).toBe('button')
-  expect(options().sceneStyle.paddingBottom).toBeGreaterThanOrEqual(
-    card().props.style.bottom + 132 + 16
-  )
+  expect(bottomInset()).toBeGreaterThanOrEqual(card().props.style.bottom + 132 + 16)
 })

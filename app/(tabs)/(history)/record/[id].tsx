@@ -1,3 +1,4 @@
+import { useTabContentInset } from '../../../../navigation/TabContentInset'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { Button, Text, YStack, XStack, View, ScrollView } from 'tamagui'
 import { ActionMenu } from '../../../../components/ui/ActionMenu'
@@ -17,6 +18,7 @@ import { recordDurationSeconds } from '../../../../features/history/components/r
 import { launchFacade } from '../../../../features/launch/launchFacade'
 
 export default function RecordDetailScreen() {
+  const bottomInset = useTabContentInset()
   const { id } = useLocalSearchParams<{ id: string }>()
   const router = useRouter()
   const { workoutRecords, loading, error, refetch } = useWorkoutRecords()
@@ -139,7 +141,7 @@ export default function RecordDetailScreen() {
             ) : null,
         }}
       />
-      <ScrollView flex={1}>
+      <ScrollView flex={1} contentContainerStyle={{ pb: bottomInset }}>
         <YStack width="100%" maxW="$content" self="center" px="$page" py="$section">
           <Text fontSize="$screenTitle" lineHeight="$screenTitle" fontWeight="600" color="$color">
             {record.workoutTitle}
