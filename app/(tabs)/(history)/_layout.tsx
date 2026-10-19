@@ -2,6 +2,7 @@ import { Stack } from 'expo-router'
 import { useResolveClassNames } from 'uniwind'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { BackHeaderButton } from '../../../navigation/BackHeaderButton'
+import { TabHeader } from '../../../navigation/TabHeader'
 
 export default function HistoryStackLayout() {
   const colors = useCadenceColors()
@@ -21,7 +22,10 @@ export default function HistoryStackLayout() {
         contentStyle: { backgroundColor: colors.background },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'History' }} />
+      <Stack.Screen
+        name="index"
+        options={{ title: 'History', header: () => <TabHeader title="History" /> }}
+      />
       <Stack.Screen
         name="record/[id]"
         options={{

@@ -9,6 +9,7 @@ import { RunningWorkoutStrip } from '../../features/workout-session'
 import { useCadenceColors } from '../../components/ui/useCadenceColors'
 import { useRunningWorkoutStore } from '../../features/workout-session/stores/runningWorkoutStore'
 import { TabContentInsetContext } from '../../navigation/TabContentInset'
+import { TabHeader } from '../../navigation/TabHeader'
 
 const TAB_BAR_MARGIN = 8
 const CONTENT_GAP = 16
@@ -39,8 +40,6 @@ export default function TabLayout() {
   const workoutRunning = useRunningWorkoutStore((state) => !!state.runningWorkout)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
   const [runningStripHeight, setRunningStripHeight] = useState(RUNNING_STRIP_ESTIMATED_HEIGHT)
-  const titleStyles = useResolveClassNames('text-header font-dm-semibold')
-  const workoutTitleStyles = useResolveClassNames('text-workout-header font-dm-semibold')
   const tabBarSurfaceStyles = useResolveClassNames('bg-raised')
   const tabBarHeight = Math.max(64, 64 + (fontScale - 1) * 18)
   const contentBottomClearance = keyboardVisible
@@ -118,16 +117,7 @@ export default function TabLayout() {
             sceneStyle: {
               backgroundColor: 'transparent',
             },
-            headerStyle: {
-              backgroundColor: colors.background,
-            },
-            headerTintColor: colors.accent,
-            headerTitleAlign: 'left',
-            headerShadowVisible: false,
-            headerTitleStyle: {
-              ...titleStyles,
-              color: colors.foreground,
-            },
+            header: ({ options }) => <TabHeader title={options.title ?? ''} />,
           }}
         >
           <Tabs.Screen
@@ -152,11 +142,6 @@ export default function TabLayout() {
             name="(workouts)"
             options={{
               title: 'Workouts',
-              headerStyle: { backgroundColor: colors.background, height: 64 },
-              headerTitleStyle: {
-                ...workoutTitleStyles,
-                color: colors.foreground,
-              },
               tabBarLabel: 'Workouts',
               tabBarAccessibilityLabel: 'Workouts',
               tabBarIcon: ({ color }) => <Dumbbell color={color} size={24} />,

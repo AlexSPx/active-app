@@ -2,6 +2,7 @@ import { Stack, usePathname } from 'expo-router'
 import { useResolveClassNames } from 'uniwind'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { BackHeaderButton } from '../../../navigation/BackHeaderButton'
+import { TabHeader } from '../../../navigation/TabHeader'
 
 export default function SettingsStackLayout() {
   const pathname = usePathname()
@@ -12,6 +13,7 @@ export default function SettingsStackLayout() {
     <Stack
       screenOptions={{
         title: isSettingsMenu ? 'Settings' : '',
+        header: isSettingsMenu ? () => <TabHeader title="Settings" /> : undefined,
         headerBackTitle: 'Settings',
         headerTitleAlign: 'left',
         headerStyle: { backgroundColor: colors.background },
