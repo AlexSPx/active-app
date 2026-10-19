@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Switch, View } from 'react-native'
-import { SettingsCard, SettingsPage } from '../../../components/settings/SettingsPage'
-import { Button, TextField, UiText } from '../../../components/ui/Controls'
+import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { Button, Surface, TextField, UiText } from '../../../components/ui/Controls'
 import { useSettingsStore } from '../../../features/settings'
 import { parseRestDuration } from '../../../features/settings/inputs'
 
@@ -31,7 +31,7 @@ export default function RestTimerSettingsScreen() {
 
   return (
     <SettingsPage title="Rest timer" description="Choose how long to rest after a set.">
-      <SettingsCard>
+      <Surface>
         <View className="flex-row items-center justify-between gap-field">
           <View className="flex-1 gap-compact">
             <UiText textRole="bodyEmphasis">Start after each set</UiText>
@@ -48,8 +48,8 @@ export default function RestTimerSettingsScreen() {
             onValueChange={setRestTimerEnabled}
           />
         </View>
-      </SettingsCard>
-      <SettingsCard>
+      </Surface>
+      <Surface>
         <View className={`gap-field ${restTimerEnabled ? '' : 'opacity-50'}`}>
           <UiText textRole="bodyEmphasis">Default duration</UiText>
           <View className="flex-row items-center gap-field">
@@ -105,7 +105,7 @@ export default function RestTimerSettingsScreen() {
           </View>
           <UiText textRole="caption">Used when the timer starts after a completed set.</UiText>
         </View>
-      </SettingsCard>
+      </Surface>
       <UiText
         textRole={restTimerEnabled && duration === null ? 'captionDestructive' : 'caption'}
         accessibilityLiveRegion="polite"

@@ -175,14 +175,15 @@ export const IconButton = forwardRef<View, IconButtonProps>(function IconButton(
 
 export function Surface({
   className = '',
+  variant = 'card',
   ...props
-}: Omit<ViewProps, 'style'> & { className?: string }) {
-  return (
-    <View
-      {...props}
-      className={`gap-field rounded-card border border-divider bg-surface p-card ${className}`}
-    />
-  )
+}: Omit<ViewProps, 'style'> & { className?: string; variant?: 'card' | 'settings' }) {
+  const variantClasses =
+    variant === 'settings'
+      ? 'overflow-hidden rounded-settings bg-surface'
+      : 'gap-field rounded-card bg-surface p-card'
+
+  return <View {...props} className={`border border-divider ${variantClasses} ${className}`} />
 }
 
 export function SettingsGroup({
@@ -199,9 +200,7 @@ export function SettingsGroup({
       <UiText accessibilityRole="header" textRole="captionEmphasis" className="px-compact">
         {title}
       </UiText>
-      <View className="overflow-hidden rounded-settings border border-divider bg-settings-surface">
-        {children}
-      </View>
+      <Surface variant="settings">{children}</Surface>
     </View>
   )
 }

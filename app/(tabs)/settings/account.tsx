@@ -2,8 +2,8 @@ import { Alert, View } from 'react-native'
 import { useEffect, useState } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import { useAuthMutations } from '../../../features/auth'
-import { SettingsCard, SettingsPage } from '../../../components/settings/SettingsPage'
-import { Button, TextField, UiText } from '../../../components/ui/Controls'
+import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { Button, Surface, TextField, UiText } from '../../../components/ui/Controls'
 import { launchFacade } from '../../../features/launch/launchFacade'
 
 export default function AccountSettingsScreen() {
@@ -72,7 +72,7 @@ export default function AccountSettingsScreen() {
       title={presentation.profileEditor ? 'Training profile' : 'Account'}
       description={presentation.description}
     >
-      <SettingsCard>
+      <Surface>
         {!presentation.profileEditor && (
           <View className="gap-compact">
             <UiText textRole="caption">Name</UiText>
@@ -130,7 +130,7 @@ export default function AccountSettingsScreen() {
             </Button>
           </View>
         )}
-      </SettingsCard>
+      </Surface>
       {presentation.accountActions.map((action) =>
         action.kind === 'sign-out' ? (
           <Button
