@@ -1,5 +1,7 @@
-import { YStack, Text, Button } from 'tamagui'
-import { ComponentType } from 'react'
+import { type ComponentType } from 'react'
+import { View } from 'react-native'
+import { Button, UiText } from './Controls'
+import { useCadenceColors } from './useCadenceColors'
 
 interface EmptyStateProps {
   title: string
@@ -17,52 +19,34 @@ export function EmptyState({
   icon: Icon,
   actionLabel,
   onAction,
-  iconColor = '$color11',
+  iconColor,
   alignTop = false,
 }: EmptyStateProps) {
+  const colors = useCadenceColors()
+
   return (
-    <YStack
-      flex={1}
-      items="center"
-      justify={alignTop ? 'flex-start' : 'center'}
-      py={alignTop ? '$4' : '$8'}
-      px="$4"
-      gap="$3"
+    <View
+      className={`flex-1 items-center px-page gap-field ${alignTop ? 'justify-start py-card' : 'justify-center py-8'}`}
     >
       {Icon && (
-        <YStack
-          bg="$backgroundStrong"
-          p="$3"
-          r={1000}
-          animation="bouncy"
-          enterStyle={{ scale: 0.5, opacity: 0 }}
-        >
-          <Icon size={40} color={iconColor} strokeWidth={1.5} />
-        </YStack>
+        <View className="rounded-full bg-raised p-field">
+          <Icon size={40} color={iconColor ?? colors.muted} strokeWidth={1.5} />
+        </View>
       )}
 
-      <Text fontSize="$6" fontWeight="700" color="$color" text="center">
+      <UiText textRole="cardTitle" className="text-[20px] text-center">
         {title}
-      </Text>
+      </UiText>
 
-      <Text fontSize="$3" color="$colorSubtle" text="center" maxW={300} lineHeight={22}>
+      <UiText textRole="bodyMuted" className="max-w-[300px] text-center leading-[22px]">
         {description}
-      </Text>
+      </UiText>
 
       {actionLabel && onAction && (
-        <Button
-          mt="$2"
-          size="$4"
-          bg="$primary"
-          onPress={onAction}
-          animation="quick"
-          pressStyle={{ scale: 0.97, opacity: 0.85 }}
-        >
-          <Text color="$onPrimary" fontWeight="600">
-            {actionLabel}
-          </Text>
+        <Button className="mt-compact" onPress={onAction}>
+          <UiText textRole="buttonOnAccent">{actionLabel}</UiText>
         </Button>
       )}
-    </YStack>
+    </View>
   )
 }

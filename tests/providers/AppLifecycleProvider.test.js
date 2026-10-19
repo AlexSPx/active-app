@@ -27,7 +27,6 @@ jest.mock('../../config/launchPolicy', () => ({
   isBackendEnabledForLaunch: () => true,
   isSyncEnabledForLaunch: () => true,
 }))
-jest.mock('@tamagui/core', () => ({ useEvent: (callback) => callback }))
 jest.mock('uniwind', () => ({ Uniwind: { setTheme: jest.fn() } }))
 jest.mock(
   'expo-network',
@@ -92,16 +91,6 @@ jest.mock('../../features/settings/stores/settingsStore', () => ({
 jest.mock('../../lib/legacyTrainingProfile', () => ({
   readLegacyTrainingProfile: jest.fn(async () => null),
 }))
-jest.mock('tamagui', () => {
-  const React = require('react')
-  const ThemeContext = React.createContext('light')
-  return {
-    ThemeContext,
-    TamaguiProvider: ({ defaultTheme, children }) =>
-      React.createElement(ThemeContext.Provider, { value: defaultTheme }, children),
-    Theme: ({ children }) => children,
-  }
-})
 jest.mock('../../lib/db/ProfileSQLiteProvider', () => {
   const React = require('react')
   const SQLiteContext = React.createContext(null)
@@ -151,7 +140,6 @@ jest.mock('../../lib/db/migrations', () => ({ migrateDbIfNeeded: jest.fn() }))
 jest.mock('../../components/feedback/FeedbackProvider', () => ({
   FeedbackProvider: ({ children }) => children,
 }))
-jest.mock('../../tamagui.config', () => ({ config: {} }))
 jest.mock('../../stores/uiStore', () => ({
   useUiStore: jest.requireActual('../../stores/uiStore').useUiStore,
 }))
@@ -263,12 +251,10 @@ const { apiService } = require('../../services/apiService')
 const { queryClient } = require('../../lib/queryClient')
 const { AppState } = require('react-native')
 const expoNetwork = require('expo-network')
-const { ThemeContext } = require('tamagui')
 const { NavigationContext } = require('@react-navigation/native')
 const { useProfileDatabase } = require('../../lib/db/ProfileSQLiteProvider')
 function ThemeProbe() {
   return React.createElement('Probe', {
-    appearance: React.useContext(ThemeContext),
     navigationDark: React.useContext(NavigationContext).dark,
   })
 }
@@ -286,7 +272,7 @@ function LifecycleThemeProbe() {
     }
   }, [])
   return React.createElement('LifecycleProbe', {
-    appearance: React.useContext(ThemeContext),
+    appearance: useSettingsStore((state) => state.theme),
     navigationDark: React.useContext(NavigationContext).dark,
     database,
     draft,

@@ -1,4 +1,4 @@
-import { getTokenValue, useTheme, type SizeTokens } from 'tamagui'
+import { useCSSVariable } from 'uniwind'
 import {
   AlertTriangle as AlertTriangleIcon,
   ArrowDown as ArrowDownIcon,
@@ -41,59 +41,51 @@ import {
   type LucideProps,
 } from 'lucide-react-native'
 
-type IconProps = Omit<LucideProps, 'size'> & { size?: number | Extract<SizeTokens, `$${string}`> }
+type IconProps = LucideProps
 
-// Tamagui consumers still pass symbolic theme colors and size tokens to icons.
-function themedIcon(Icon: LucideIcon) {
-  return function ThemedIcon({ color, size = 24, ...props }: IconProps) {
-    const theme = useTheme()
-    const resolvedColor =
-      typeof color === 'string' && color.startsWith('$') ? theme[color.slice(1)]?.get('web') : color
+function cadenceIcon(Icon: LucideIcon) {
+  return function CadenceIcon({ color, ...props }: IconProps) {
+    const foreground = useCSSVariable('--color-foreground')
+    const resolvedColor = color ?? (typeof foreground === 'string' ? foreground : '#2D2235')
 
-    return (
-      <Icon
-        {...props}
-        color={resolvedColor ?? theme.color.get('web')}
-        size={typeof size === 'string' ? getTokenValue(size, 'size') : size}
-      />
-    )
+    return <Icon {...props} color={resolvedColor} />
   }
 }
 
-export const AlertTriangle = themedIcon(AlertTriangleIcon)
-export const ArrowDown = themedIcon(ArrowDownIcon)
-export const ArrowRight = themedIcon(ArrowRightIcon)
-export const ArrowUp = themedIcon(ArrowUpIcon)
-export const BarChart2 = themedIcon(BarChart2Icon)
-export const Bell = themedIcon(BellIcon)
-export const Calendar = themedIcon(CalendarIcon)
-export const Check = themedIcon(CheckIcon)
-export const CheckCircle2 = themedIcon(CheckCircle2Icon)
-export const ChevronDown = themedIcon(ChevronDownIcon)
-export const ChevronLeft = themedIcon(ChevronLeftIcon)
-export const ChevronRight = themedIcon(ChevronRightIcon)
-export const Clock = themedIcon(ClockIcon)
-export const Clock3 = themedIcon(Clock3Icon)
-export const Database = themedIcon(DatabaseIcon)
-export const Dumbbell = themedIcon(DumbbellIcon)
-export const Edit3 = themedIcon(Edit3Icon)
-export const Globe2 = themedIcon(Globe2Icon)
-export const History = themedIcon(HistoryIcon)
-export const Home = themedIcon(HomeIcon)
-export const Lock = themedIcon(LockIcon)
-export const LogOut = themedIcon(LogOutIcon)
-export const MoreHorizontal = themedIcon(MoreHorizontalIcon)
-export const Palette = themedIcon(PaletteIcon)
-export const Play = themedIcon(PlayIcon)
-export const Plus = themedIcon(PlusIcon)
-export const Ruler = themedIcon(RulerIcon)
-export const ScrollText = themedIcon(ScrollTextIcon)
-export const Search = themedIcon(SearchIcon)
-export const Settings = themedIcon(SettingsIcon)
-export const ShieldCheck = themedIcon(ShieldCheckIcon)
-export const Timer = themedIcon(TimerIcon)
-export const Trash2 = themedIcon(Trash2Icon)
-export const Trophy = themedIcon(TrophyIcon)
-export const UserRound = themedIcon(UserRoundIcon)
-export const Weight = themedIcon(WeightIcon)
-export const X = themedIcon(XIcon)
+export const AlertTriangle = cadenceIcon(AlertTriangleIcon)
+export const ArrowDown = cadenceIcon(ArrowDownIcon)
+export const ArrowRight = cadenceIcon(ArrowRightIcon)
+export const ArrowUp = cadenceIcon(ArrowUpIcon)
+export const BarChart2 = cadenceIcon(BarChart2Icon)
+export const Bell = cadenceIcon(BellIcon)
+export const Calendar = cadenceIcon(CalendarIcon)
+export const Check = cadenceIcon(CheckIcon)
+export const CheckCircle2 = cadenceIcon(CheckCircle2Icon)
+export const ChevronDown = cadenceIcon(ChevronDownIcon)
+export const ChevronLeft = cadenceIcon(ChevronLeftIcon)
+export const ChevronRight = cadenceIcon(ChevronRightIcon)
+export const Clock = cadenceIcon(ClockIcon)
+export const Clock3 = cadenceIcon(Clock3Icon)
+export const Database = cadenceIcon(DatabaseIcon)
+export const Dumbbell = cadenceIcon(DumbbellIcon)
+export const Edit3 = cadenceIcon(Edit3Icon)
+export const Globe2 = cadenceIcon(Globe2Icon)
+export const History = cadenceIcon(HistoryIcon)
+export const Home = cadenceIcon(HomeIcon)
+export const Lock = cadenceIcon(LockIcon)
+export const LogOut = cadenceIcon(LogOutIcon)
+export const MoreHorizontal = cadenceIcon(MoreHorizontalIcon)
+export const Palette = cadenceIcon(PaletteIcon)
+export const Play = cadenceIcon(PlayIcon)
+export const Plus = cadenceIcon(PlusIcon)
+export const Ruler = cadenceIcon(RulerIcon)
+export const ScrollText = cadenceIcon(ScrollTextIcon)
+export const Search = cadenceIcon(SearchIcon)
+export const Settings = cadenceIcon(SettingsIcon)
+export const ShieldCheck = cadenceIcon(ShieldCheckIcon)
+export const Timer = cadenceIcon(TimerIcon)
+export const Trash2 = cadenceIcon(Trash2Icon)
+export const Trophy = cadenceIcon(TrophyIcon)
+export const UserRound = cadenceIcon(UserRoundIcon)
+export const Weight = cadenceIcon(WeightIcon)
+export const X = cadenceIcon(XIcon)

@@ -1,5 +1,4 @@
 const { getDefaultConfig } = require('expo/metro-config')
-const { withTamagui } = require('@tamagui/metro-plugin')
 const { withUniwindConfig } = require('uniwind/metro')
 const path = require('path')
 
@@ -48,16 +47,7 @@ if (!config.resolver.assetExts.includes('wasm')) {
   config.resolver.assetExts.push('wasm')
 }
 
-module.exports = withUniwindConfig(
-  withTamagui(config, {
-    components: ['tamagui'],
-    config: './tamagui.config.ts',
-    outputCSS: './tamagui.css',
-
-    disableExtraction: process.env.NODE_ENV === 'development',
-  }),
-  {
-    cssEntryFile: './global.css',
-    dtsFile: './uniwind-types.d.ts',
-  }
-)
+module.exports = withUniwindConfig(config, {
+  cssEntryFile: './global.css',
+  dtsFile: './uniwind-types.d.ts',
+})

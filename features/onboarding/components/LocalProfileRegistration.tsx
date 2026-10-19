@@ -221,7 +221,7 @@ export default function LocalProfileRegistration() {
 
                   <View className="mt-section rounded-[20px] bg-surface px-card py-compact">
                     <View className="flex-row items-start gap-field py-section">
-                      <Dumbbell size={20} color="$accent" aria-hidden />
+                      <Dumbbell size={20} color={colors.accent} aria-hidden />
                       <View className="flex-1 gap-1">
                         <UiText textRole="bodyEmphasis">Your training, in one place</UiText>
                         <UiText textRole="caption">
@@ -230,7 +230,7 @@ export default function LocalProfileRegistration() {
                       </View>
                     </View>
                     <View className="flex-row items-start gap-field border-t border-divider py-section">
-                      <BarChart2 size={20} color="$accent" aria-hidden />
+                      <BarChart2 size={20} color={colors.accent} aria-hidden />
                       <View className="flex-1 gap-1">
                         <UiText textRole="bodyEmphasis">A record of every session</UiText>
                         <UiText textRole="caption">Keep track of your sets and progress.</UiText>
@@ -375,7 +375,7 @@ export default function LocalProfileRegistration() {
                     <View className="gap-field rounded-[18px] bg-surface p-card">
                       <View className="flex-row items-center justify-between gap-field">
                         <View className="flex-row items-center gap-compact">
-                          <Weight size={18} color="$accent" aria-hidden />
+                          <Weight size={18} color={colors.accent} aria-hidden />
                           <UiText textRole="bodyEmphasis">Weight</UiText>
                         </View>
                         <UnitSelector
@@ -432,7 +432,7 @@ export default function LocalProfileRegistration() {
                             registration.adjustWeight(1)
                           }}
                         >
-                          <Plus size={17} color="$accent" aria-hidden />
+                          <Plus size={17} color={colors.accent} aria-hidden />
                         </Button>
                       </View>
                       {(registration.weightEntryError || registration.errors.weight?.message) && (
@@ -445,7 +445,7 @@ export default function LocalProfileRegistration() {
                     <View className="gap-field rounded-[18px] bg-surface p-card">
                       <View className="flex-row items-center justify-between gap-field">
                         <View className="flex-row items-center gap-compact">
-                          <Ruler size={18} color="$accent" aria-hidden />
+                          <Ruler size={18} color={colors.accent} aria-hidden />
                           <UiText textRole="bodyEmphasis">Height</UiText>
                         </View>
                         <UnitSelector
@@ -502,7 +502,7 @@ export default function LocalProfileRegistration() {
                             registration.adjustHeight(1)
                           }}
                         >
-                          <Plus size={17} color="$accent" aria-hidden />
+                          <Plus size={17} color={colors.accent} aria-hidden />
                         </Button>
                       </View>
                       {(registration.heightEntryError || registration.errors.height?.message) && (

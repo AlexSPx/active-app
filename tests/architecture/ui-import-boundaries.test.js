@@ -4,17 +4,21 @@ const ts = require('typescript')
 
 const repoRoot = path.resolve(__dirname, '../..')
 const uiRoot = path.join(repoRoot, 'components/ui')
-const migratedUiFiles = new Set([
-  'components/ui/Controls.tsx',
-  'components/ui/CadenceOverlay.tsx',
-  'components/ui/ActionMenu.tsx',
-  'components/ui/Badge.tsx',
-  'components/ui/useCadenceColors.ts',
-  'components/ui/StartWorkoutButton.tsx',
-  'components/ui/ErrorDisplay.tsx',
-  'components/ui/LoadingSpinner.tsx',
-  'components/ui/index.ts',
-])
+const productionRoots = [
+  'app',
+  'components',
+  'config',
+  'constants',
+  'contexts',
+  'features',
+  'lib',
+  'navigation',
+  'providers',
+  'services',
+  'stores',
+  'types',
+  'utils',
+]
 const projectAliases = new Set([
   'app',
   'components',
@@ -113,22 +117,22 @@ function findBoundaryViolations(filename, source) {
       }
     }
 
-    if (
-      migratedUiFiles.has(relativePath) &&
-      (specifier === 'tamagui' || specifier.startsWith('@tamagui/'))
-    ) {
-      violations.push(`${specifier} is forbidden in migrated shared UI`)
-    }
     return violations.map((reason) => `${relativePath}: ${reason}`)
   })
 }
 
-function uiSourceFiles(directory = uiRoot) {
+function sourceFiles(directory) {
   return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const filename = path.join(directory, entry.name)
-    if (entry.isDirectory()) return uiSourceFiles(filename)
+    if (entry.isDirectory()) return sourceFiles(filename)
     return /\.(?:js|jsx|ts|tsx)$/.test(entry.name) ? [filename] : []
   })
+}
+
+function findTamaguiImports(filename, source) {
+  return collectModuleSpecifiers(filename, source)
+    .filter((specifier) => specifier === 'tamagui' || specifier.startsWith('@tamagui/'))
+    .map((specifier) => `${path.relative(repoRoot, filename)}: ${specifier}`)
 }
 
 describe('shared UI import boundaries', () => {
@@ -148,31 +152,35 @@ describe('shared UI import boundaries', () => {
     ).not.toHaveLength(0)
   })
 
-  test.each([...migratedUiFiles])('rejects Tamagui imports from %s', (relativePath) => {
-    const filename = path.join(repoRoot, relativePath)
-    expect(findBoundaryViolations(filename, "import { View } from 'tamagui'")).not.toHaveLength(0)
-    expect(
-      findBoundaryViolations(filename, "import { Sheet } from '@tamagui/sheet'")
-    ).not.toHaveLength(0)
+  test('rejects Tamagui imports from application source', () => {
+    const files = productionRoots.flatMap((root) => {
+      const directory = path.join(repoRoot, root)
+      return fs.existsSync(directory) ? sourceFiles(directory) : []
+    })
+    const violations = files.flatMap((filename) =>
+      findTamaguiImports(filename, fs.readFileSync(filename, 'utf8'))
+    )
+    expect(violations).toEqual([])
   })
 
-  test('does not apply the Tamagui boundary to legacy shared UI or AppThemeProvider', () => {
-    expect(
-      findBoundaryViolations(
-        path.join(uiRoot, 'EmptyState.tsx'),
-        "import { YStack } from 'tamagui'"
-      )
-    ).toEqual([])
-    expect(
-      findBoundaryViolations(
-        path.join(repoRoot, 'providers/AppThemeProvider.tsx'),
-        "import { TamaguiProvider } from 'tamagui'"
-      )
-    ).toEqual([])
+  test('dependencies, scripts, and bundler configs have no Tamagui wiring', () => {
+    const manifest = require('../../package.json')
+    const packageReferences = [
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.devDependencies ?? {}),
+      ...Object.entries(manifest.scripts ?? {}).flat(),
+    ].filter((entry) => /tamagui/i.test(entry))
+    const buildReferences = ['metro.config.js', 'babel.config.js']
+      .map((filename) => fs.readFileSync(path.join(repoRoot, filename), 'utf8'))
+      .filter((contents) => /@tamagui|tamagui[.-](?:config|css)/i.test(contents))
+    expect({ packageReferences, buildReferences }).toEqual({
+      packageReferences: [],
+      buildReferences: [],
+    })
   })
 
   test('current shared UI modules comply with the import boundaries', () => {
-    const violations = uiSourceFiles().flatMap((filename) =>
+    const violations = sourceFiles(uiRoot).flatMap((filename) =>
       findBoundaryViolations(filename, fs.readFileSync(filename, 'utf8'))
     )
     expect(violations).toEqual([])

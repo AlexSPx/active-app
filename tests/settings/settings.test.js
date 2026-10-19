@@ -21,26 +21,6 @@ jest.mock('react-native', () => {
   }
 })
 
-jest.mock('tamagui', () => {
-  const React = require('react')
-  const components = Object.fromEntries(
-    [
-      'Button',
-      'Input',
-      'Label',
-      'Paragraph',
-      'Text',
-      'XStack',
-      'YStack',
-      'Switch',
-      'Separator',
-      'Circle',
-      'ScrollView',
-    ].map((name) => [name, (props) => React.createElement(name, props, props.children)])
-  )
-  components.Switch.Thumb = (props) => React.createElement('Thumb', props)
-  return components
-})
 jest.mock('../../contexts/AuthContext', () => ({ useAuth: jest.fn() }))
 jest.mock('../../config/launchPolicy', () => ({
   isBackendEnabledForLaunch: jest.fn(() => true),

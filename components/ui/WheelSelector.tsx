@@ -1,6 +1,6 @@
 import React from 'react'
 import { FlatList, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
-import { YStack, XStack, Text, useTheme } from 'tamagui'
+import { UiText } from './Controls'
 
 export interface WheelSelectorProps<T extends number | string> {
   values: T[]
@@ -25,8 +25,6 @@ export function WheelSelector<T extends number | string>({
   allowNull = false,
   nullLabel = '-',
 }: WheelSelectorProps<T>) {
-  const theme = useTheme()
-
   const listRef = React.useRef<FlatList<T | null>>(null)
 
   const augmentedValues = React.useMemo<(T | null)[]>(
@@ -85,28 +83,24 @@ export function WheelSelector<T extends number | string>({
     const distance = Math.abs(index - selectedIndex)
     const opacity = isSel ? 1 : Math.max(fadedOpacity, 1 - distance * 0.3)
     return (
-      <XStack height={itemHeight} style={{ alignItems: 'center', justifyContent: 'center' }}>
-        <Text fontSize={isSel ? '$6' : '$5'} fontWeight={isSel ? '700' : '400'} opacity={opacity}>
+      <View style={{ height: itemHeight }} className="items-center justify-center">
+        <UiText
+          textRole="body"
+          className={isSel ? 'font-dm-semibold' : 'font-dm-regular'}
+          style={{ opacity, fontSize: isSel ? 20 : 18, lineHeight: 24 }}
+        >
           {item === null ? nullLabel : formatItem(item)}
-        </Text>
-      </XStack>
+        </UiText>
+      </View>
     )
   }
 
   return (
-    <YStack height={containerHeight} overflow="hidden" position="relative">
+    <View style={{ height: containerHeight }} className="relative overflow-hidden">
       <View
         pointerEvents="none"
-        style={{
-          position: 'absolute',
-          top: pad,
-          left: 0,
-          right: 0,
-          height: itemHeight,
-          borderTopWidth: 1,
-          borderBottomWidth: 1,
-          borderColor: theme.borderColor.val,
-        }}
+        style={{ top: pad, height: itemHeight }}
+        className="absolute left-0 right-0 border-t border-b border-divider"
       />
       <FlatList
         ref={listRef}
@@ -133,7 +127,7 @@ export function WheelSelector<T extends number | string>({
         initialNumToRender={visibleCount + 2}
         windowSize={visibleCount + 6}
       />
-    </YStack>
+    </View>
   )
 }
 

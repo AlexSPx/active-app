@@ -1,13 +1,12 @@
-import React, { useEffect, useState } from 'react'
-import { Input } from 'tamagui'
-
-type InputProps = React.ComponentProps<typeof Input>
+import { useEffect, useState } from 'react'
+import { TextInput, type TextInputProps } from 'react-native'
 
 type Props = {
   seconds?: number
   onChangeSeconds?: (secs: number) => void
   placeholder?: string
-} & Partial<InputProps>
+  className?: string
+} & Omit<TextInputProps, 'value' | 'onChangeText' | 'onKeyPress' | 'onBlur' | 'placeholder'>
 
 // Helper: format raw digits into mm:ss live (e.g. "7" -> 0:07, "70" -> 0:70, "700" -> 7:00)
 const formatTimeFromDigits = (raw: string) => {
@@ -46,6 +45,8 @@ export default function SmartTimeInput({
   seconds = 0,
   onChangeSeconds,
   placeholder = '0:00',
+  keyboardType = 'numeric',
+  className = '',
   ...rest
 }: Props) {
   const [digits, setDigits] = useState<string>(secondsToDigits(seconds))
@@ -86,26 +87,18 @@ export default function SmartTimeInput({
     if (onChangeSeconds) onChangeSeconds(secs)
   }
 
-  // Default styles align with other set inputs in the app
-  const defaultProps: Partial<InputProps> = {
-    width: '100%',
-    size: '$3',
-    py: '$0',
-    px: '$3',
-    keyboardType: 'numeric',
-    bg: '$backgroundPress',
-    borderColor: '$borderColor',
-  }
-
   return (
-    <Input
-      {...defaultProps}
-      {...(rest as InputProps)}
+    <TextInput
+      {...rest}
+      className={`w-full h-action rounded-control border border-divider bg-raised px-field text-body font-dm-regular text-foreground focus:border-accent ${className}`}
+      keyboardType={keyboardType}
       value={display}
       onChangeText={handleChange}
       onKeyPress={handleKeyPress}
       onBlur={handleBlur}
       placeholder={placeholder}
+      placeholderTextColorClassName="accent-muted"
+      cursorColorClassName="accent-accent"
     />
   )
 }

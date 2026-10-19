@@ -30,20 +30,6 @@ jest.mock('expo-router', () => {
     useFocusEffect: (callback) => React.useEffect(callback, [callback]),
   }
 })
-jest.mock('tamagui', () => {
-  const React = require('react')
-  const components = Object.fromEntries(
-    ['Button', 'Paragraph', 'Text', 'XStack', 'YStack'].map((name) => [
-      name,
-      (props) => React.createElement(name, props, props.children),
-    ])
-  )
-  const Switch = (props) => React.createElement('Switch', props, props.children)
-  Switch.Thumb = (props) => React.createElement('SwitchThumb', props)
-  components.Label = (props) => React.createElement('Label', props, props.children)
-  components.Switch = Switch
-  return components
-})
 jest.mock('../../components/settings/SettingsPage', () => ({
   SettingsPage: (props) => require('react').createElement('Page', {}, props.children, props.footer),
 }))

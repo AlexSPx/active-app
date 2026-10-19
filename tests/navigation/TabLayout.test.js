@@ -15,6 +15,9 @@ jest.mock('@react-navigation/elements', () => ({
   PlatformPressable: (props) =>
     require('react').createElement('PlatformPressable', props, props.children),
 }))
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 24, right: 0, bottom: 0, left: 0 }),
+}))
 jest.mock('uniwind', () => ({
   useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
   useResolveClassNames: () => ({}),
