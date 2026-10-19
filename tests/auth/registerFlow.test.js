@@ -50,11 +50,14 @@ jest.mock('../../components/ui/icons', () => {
   const icon = (name) => (props) => React.createElement(name, props)
   return {
     BarChart2: icon('BarChart2'),
+    Bell: icon('Bell'),
     Calendar: icon('Calendar'),
+    Check: icon('Check'),
     ChevronLeft: icon('ChevronLeft'),
     Clock: icon('Clock'),
     Clock3: icon('Clock3'),
     Dumbbell: icon('Dumbbell'),
+    Plus: icon('Plus'),
     Ruler: icon('Ruler'),
     Weight: icon('Weight'),
   }
@@ -122,6 +125,12 @@ function findButton(root, label) {
   return root.root.findAllByType('Button').find((button) => button.props.children === label)
 }
 
+function findAccessibleButton(root, label) {
+  return root.root
+    .findAllByType('Button')
+    .find((button) => button.props.accessibilityLabel === label)
+}
+
 function findField(root, label) {
   return root.root
     .findAllByType('TextField')
@@ -135,22 +144,23 @@ function findText(root, text) {
 test('the local profile agreement is required before personal details', async () => {
   const root = await renderRegistration()
 
-  expect(findText(root, 'Your local profile')).toBeTruthy()
+  expect(findText(root, 'Your local profile.')).toBeTruthy()
   const continueButton = findButton(root, 'Continue')
   expect(continueButton.props.disabled).toBe(true)
 
   await act(async () => continueButton.props.onPress())
-  expect(findText(root, 'Your local profile')).toBeTruthy()
+  expect(findText(root, 'Your local profile.')).toBeTruthy()
   expect(mockUpdateUserProfile).not.toHaveBeenCalled()
 
   const agreement = root.root.findByProps({
-    accessibilityLabel: 'Agree to the Terms of Service and acknowledge the Privacy Policy',
+    accessibilityLabel: 'I agree to the Terms of Service and Privacy Policy.',
   })
-  await act(async () => agreement.props.onValueChange(true))
+  expect(agreement.props.accessibilityRole).toBe('checkbox')
+  await act(async () => agreement.props.onPress())
   expect(findButton(root, 'Continue').props.disabled).toBe(false)
 
   await act(async () => findButton(root, 'Continue').props.onPress())
-  expect(findText(root, 'Personal details')).toBeTruthy()
+  expect(findText(root, 'About you.')).toBeTruthy()
   await act(async () => root.unmount())
 })
 
@@ -161,9 +171,9 @@ test('values and unit conversion survive back and forward, including a failed sa
   const root = await renderRegistration()
 
   const agreement = root.root.findByProps({
-    accessibilityLabel: 'Agree to the Terms of Service and acknowledge the Privacy Policy',
+    accessibilityLabel: 'I agree to the Terms of Service and Privacy Policy.',
   })
-  await act(async () => agreement.props.onValueChange(true))
+  await act(async () => agreement.props.onPress())
   await act(async () => findButton(root, 'Continue').props.onPress())
 
   await act(async () => findField(root, 'Username').props.onChangeText('cadence'))
@@ -171,30 +181,49 @@ test('values and unit conversion survive back and forward, including a failed sa
   await act(async () => findField(root, 'Last name').props.onChangeText('Stone'))
   await act(async () => findButton(root, 'Continue').props.onPress())
 
-  expect(findText(root, 'Body measurements')).toBeTruthy()
+  expect(findText(root, 'Your starting point.')).toBeTruthy()
   expect(findField(root, 'Weight').props.value).toBe('70')
   expect(findField(root, 'Height').props.value).toBe('170')
 
-  const weightUnits = root.root.findAllByType('SegmentedSelection')[0]
-  await act(async () => weightUnits.props.onValueChange('lb'))
+  await act(async () => findAccessibleButton(root, 'Increase weight').props.onPress())
+  expect(findField(root, 'Weight').props.value).toBe('70.5')
+  await act(async () => findAccessibleButton(root, 'Decrease weight').props.onPress())
+  expect(findField(root, 'Weight').props.value).toBe('70')
+  await act(async () => findAccessibleButton(root, 'Increase height').props.onPress())
+  expect(findField(root, 'Height').props.value).toBe('171')
+  await act(async () => findAccessibleButton(root, 'Decrease height').props.onPress())
+  expect(findField(root, 'Height').props.value).toBe('170')
+
+  const weightUnits = root.root.findByProps({
+    accessibilityRole: 'radio',
+    accessibilityLabel: 'lb',
+  })
+  await act(async () => weightUnits.props.onPress())
   expect(findField(root, 'Weight').props.value).toBe('154.3')
+  await act(async () => findAccessibleButton(root, 'Increase weight').props.onPress())
+  expect(findField(root, 'Weight').props.value).toBe('155.3')
+  await act(async () => findAccessibleButton(root, 'Decrease weight').props.onPress())
+  expect(findField(root, 'Weight').props.value).toBe('154.3')
+  await act(async () => findField(root, 'Weight').props.onChangeText('999'))
+  await act(async () => findButton(root, 'Continue').props.onPress())
+  expect(findText(root, 'Your starting point.')).toBeTruthy()
   await act(async () => findField(root, 'Weight').props.onChangeText(''))
   await act(async () => findField(root, 'Height').props.onChangeText(''))
   await act(async () => findButton(root, 'Continue').props.onPress())
-  expect(findText(root, 'Notifications')).toBeTruthy()
-  await act(async () => findButton(root, 'Back').props.onPress())
+  expect(findText(root, 'A timely reminder.')).toBeTruthy()
+  await act(async () => findAccessibleButton(root, 'Back to Body measurements').props.onPress())
   expect(findField(root, 'Weight').props.value).toBe('')
   expect(findField(root, 'Height').props.value).toBe('')
   await act(async () => findField(root, 'Weight').props.onChangeText('176'))
   await act(async () => findField(root, 'Height').props.onChangeText('180'))
 
   await act(async () => findButton(root, 'Continue').props.onPress())
-  expect(findText(root, 'Notifications')).toBeTruthy()
+  expect(findText(root, 'A timely reminder.')).toBeTruthy()
 
-  await act(async () => findButton(root, 'Back').props.onPress())
+  await act(async () => findAccessibleButton(root, 'Back to Body measurements').props.onPress())
   expect(findField(root, 'Weight').props.value).toBe('176')
   expect(findField(root, 'Height').props.value).toBe('180')
-  await act(async () => findButton(root, 'Back').props.onPress())
+  await act(async () => findAccessibleButton(root, 'Back to Personal details').props.onPress())
   expect(findField(root, 'Username').props.value).toBe('cadence')
   expect(findField(root, 'First name').props.value).toBe('Ava')
   await act(async () => findButton(root, 'Continue').props.onPress())
@@ -218,14 +247,14 @@ test('values and unit conversion survive back and forward, including a failed sa
       .some((node) => String(node.props.children).includes('Your profile could not be saved'))
   ).toBe(true)
 
-  await act(async () => findButton(root, 'Back').props.onPress())
+  await act(async () => findAccessibleButton(root, 'Back to Body measurements').props.onPress())
   expect(findField(root, 'Weight').props.value).toBe('176')
   expect(findField(root, 'Height').props.value).toBe('180')
 
   await act(async () => findField(root, 'Weight').props.onChangeText(''))
   await act(async () => findField(root, 'Height').props.onChangeText(''))
   await act(async () => findButton(root, 'Continue').props.onPress())
-  expect(findText(root, 'Notifications')).toBeTruthy()
+  expect(findText(root, 'A timely reminder.')).toBeTruthy()
   await act(async () => findButton(root, 'Finish setup').props.onPress())
 
   expect(mockUpdateUserProfile).toHaveBeenCalledTimes(2)
@@ -235,6 +264,32 @@ test('values and unit conversion survive back and forward, including a failed sa
     registrationCompleted: true,
   })
   expect(optionalPreferences).toEqual({ bodyWeightUnit: 'lb', heightUnit: 'cm' })
+  expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
+  await act(async () => root.unmount())
+})
+
+test('Skip clears both measurements and advances to notifications', async () => {
+  mockUpdateUserProfile.mockResolvedValue({ id: 'local:device', registrationCompleted: true })
+  const root = await renderRegistration()
+
+  const agreement = root.root.findByProps({
+    accessibilityLabel: 'I agree to the Terms of Service and Privacy Policy.',
+  })
+  await act(async () => agreement.props.onPress())
+  await act(async () => findButton(root, 'Continue').props.onPress())
+  await act(async () => findField(root, 'Username').props.onChangeText('cadence'))
+  await act(async () => findField(root, 'First name').props.onChangeText('Ava'))
+  await act(async () => findField(root, 'Last name').props.onChangeText('Stone'))
+  await act(async () => findButton(root, 'Continue').props.onPress())
+  await act(async () => findField(root, 'Weight').props.onChangeText('80'))
+  await act(async () => findField(root, 'Height').props.onChangeText('180'))
+
+  await act(async () => findAccessibleButton(root, 'Skip measurements').props.onPress())
+  expect(findText(root, 'A timely reminder.')).toBeTruthy()
+  await act(async () => findButton(root, 'Finish setup').props.onPress())
+
+  const [update] = mockUpdateUserProfile.mock.calls[0]
+  expect(update.measurements).toEqual({ weightKg: null, heightCm: null })
   expect(mockReplace).toHaveBeenCalledWith('/(tabs)')
   await act(async () => root.unmount())
 })

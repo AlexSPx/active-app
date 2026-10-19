@@ -293,6 +293,8 @@ export function TextField({
   className = '',
   disabled = false,
   invalid = false,
+  backgroundTone = 'raised',
+  appearance = 'standard',
   id,
   editable,
   ...props
@@ -301,7 +303,14 @@ export function TextField({
   disabled?: boolean
   id?: string
   invalid?: boolean
+  backgroundTone?: 'raised' | 'background'
+  appearance?: 'standard' | 'measurement'
 }) {
+  const appearanceClasses =
+    appearance === 'measurement'
+      ? 'min-h-[65px] py-field pr-9 text-center text-[26px] font-dm-medium'
+      : 'h-action px-field text-body font-dm-regular'
+
   return (
     <NativeTextInput
       {...props}
@@ -309,7 +318,7 @@ export function TextField({
       editable={disabled ? false : editable}
       placeholderTextColorClassName="accent-muted"
       cursorColorClassName="accent-accent"
-      className={`h-action rounded-control border ${invalid ? 'border-destructive' : 'border-divider'} bg-raised px-field text-body font-dm-regular text-foreground focus:border-accent ${disabled ? 'opacity-50' : ''} ${className}`}
+      className={`rounded-control border ${invalid ? 'border-destructive' : 'border-divider'} ${backgroundTone === 'background' ? 'bg-background' : 'bg-raised'} ${appearanceClasses} text-foreground focus:border-accent ${disabled ? 'opacity-50' : ''} ${className}`}
     />
   )
 }

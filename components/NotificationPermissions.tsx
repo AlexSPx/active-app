@@ -5,15 +5,18 @@ import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
 import { useFocusEffect } from 'expo-router'
 import { Button, UiText } from './ui/Controls'
+import { Bell, Clock3 } from './ui/icons'
 
 interface NotificationPermissionsProps {
   onStatusChange?: (status: { notifications: boolean; alarms: boolean }) => void
   summaryOnly?: boolean
+  onboarding?: boolean
 }
 
 export default function NotificationPermissions({
   onStatusChange,
   summaryOnly = false,
+  onboarding = false,
 }: NotificationPermissionsProps) {
   const [notifications, setNotifications] = useState<boolean | null>(null)
   const [alarms, setAlarms] = useState<boolean | null>(null)
@@ -93,27 +96,91 @@ export default function NotificationPermissions({
       </UiText>
     )
 
+  const permissions = [
+    {
+      title: 'Notifications',
+      allowed: notifications,
+      description: onboarding
+        ? 'Rest timer alerts and training reminders.'
+        : 'Allow local rest timer alerts and reminders.',
+      onPress: openNotifications,
+      icon: Bell,
+      visible: true,
+    },
+    {
+      title: 'Alarms & reminders',
+      allowed: alarms,
+      description: onboarding
+        ? 'Precise timer alerts while the app is in the background.'
+        : 'Allow precise timer alerts, including when Active is in the background.',
+      onPress: openAlarms,
+      icon: Clock3,
+      visible: Platform.OS === 'android',
+    },
+  ].filter((permission) => permission.visible)
+
+  if (onboarding)
+    return (
+      <View>
+        {permissions.map((permission, index) => {
+          const Icon = permission.icon
+          const status =
+            permission.allowed === null
+              ? permission.title === 'Alarms & reminders' && alarmUnavailable
+                ? 'Unavailable'
+                : 'Checking…'
+              : permission.allowed
+                ? 'Allowed'
+                : 'Not allowed'
+
+          return (
+            <View
+              key={permission.title}
+              className={`gap-field p-field ${index > 0 ? 'border-t border-divider' : ''}`}
+            >
+              <View className="flex-row items-center justify-between gap-field">
+                <View className="min-w-0 flex-1 flex-row items-center gap-compact">
+                  <Icon size={18} color="$accent" aria-hidden />
+                  <UiText textRole="bodyEmphasis" className="flex-1">
+                    {permission.title}
+                  </UiText>
+                </View>
+                <View className="rounded-full bg-background px-compact py-1">
+                  <UiText textRole="caption">{status}</UiText>
+                </View>
+              </View>
+              <UiText textRole="caption">{permission.description}</UiText>
+              <Button
+                variant="ghost"
+                className="min-h-[44px] self-start px-0"
+                onPress={permission.onPress}
+              >
+                <UiText textRole="captionEmphasis">
+                  {permission.allowed
+                    ? 'Manage in device settings'
+                    : permission.allowed === false
+                      ? 'Allow access'
+                      : 'Review device settings'}
+                </UiText>
+              </Button>
+            </View>
+          )
+        })}
+        {!!error && (
+          <UiText
+            textRole="captionDestructive"
+            className="mx-field mb-field"
+            accessibilityLiveRegion="polite"
+          >
+            {error}
+          </UiText>
+        )}
+      </View>
+    )
+
   return (
     <View className="gap-section">
-      {[
-        {
-          title: 'Notifications',
-          allowed: notifications,
-          description: 'Allow local rest timer alerts and reminders.',
-          onPress: openNotifications,
-        },
-        ...(Platform.OS === 'android'
-          ? [
-              {
-                title: 'Alarms & reminders',
-                allowed: alarms,
-                description:
-                  'Allow precise timer alerts, including when Active is in the background.',
-                onPress: openAlarms,
-              },
-            ]
-          : []),
-      ].map((permission) => (
+      {permissions.map((permission) => (
         <View key={permission.title} className="gap-field">
           <View className="flex-row items-center justify-between gap-field">
             <UiText textRole="bodyEmphasis" className="flex-1">

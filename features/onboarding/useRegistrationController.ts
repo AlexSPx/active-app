@@ -86,6 +86,36 @@ export function useRegistrationController(user: User | null) {
     setHeightEntryError(null)
   }
 
+  const adjustWeight = (direction: -1 | 1) => {
+    const step = weightUnit === 'kg' ? 0.5 : 1 / 2.2046226218
+    const next = Math.max(20, Math.min(300, (weight ?? 70) + direction * step))
+    const value = Math.round(next * 1000) / 1000
+    form.setValue('weight', value, { shouldDirty: true, shouldValidate: true })
+    setWeightText(measurementText(value, weightUnit))
+    setWeightEntryError(null)
+  }
+
+  const adjustHeight = (direction: -1 | 1) => {
+    const step = heightUnit === 'cm' ? 1 : 2.54
+    const next = Math.max(100, Math.min(250, (height ?? 170) + direction * step))
+    const value = Math.round(next * 1000) / 1000
+    form.setValue('height', value, { shouldDirty: true, shouldValidate: true })
+    setHeightText(measurementText(value, heightUnit))
+    setHeightEntryError(null)
+  }
+
+  const skipBody = () => {
+    form.setValue('weight', null, { shouldDirty: true })
+    form.setValue('height', null, { shouldDirty: true })
+    form.clearErrors(['weight', 'height'])
+    setWeightText('')
+    setHeightText('')
+    setWeightEntryError(null)
+    setHeightEntryError(null)
+    setDirection('forward')
+    setStep('notifications')
+  }
+
   const updateWeightText = (text: string) => {
     setWeightText(text)
     const value = parseMeasurement(text, weightUnit)
@@ -160,6 +190,8 @@ export function useRegistrationController(user: User | null) {
     heightEntryError,
     setWeightUnit,
     setHeightUnit,
+    adjustWeight,
+    adjustHeight,
     updateWeightText,
     updateHeightText,
     setUsername: (value: string) =>
@@ -170,5 +202,6 @@ export function useRegistrationController(user: User | null) {
       form.setValue('lastName', value, { shouldDirty: true, shouldValidate: true }),
     next,
     back,
+    skipBody,
   }
 }
