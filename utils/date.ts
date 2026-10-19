@@ -75,7 +75,7 @@ export function toISODate(d: Date) {
   return `${y}-${m}-${dd}`
 }
 
-export function generateCalendar(dateInMonth: Date, selected: Date): DayCell[] {
+export function generateCalendar(dateInMonth: Date, selected: Date | null): DayCell[] {
   const firstOfMonth = startOfMonth(dateInMonth)
   const lastOfMonth = endOfMonth(dateInMonth)
   const firstGridDay = startOfWeek(firstOfMonth)
@@ -88,7 +88,7 @@ export function generateCalendar(dateInMonth: Date, selected: Date): DayCell[] {
       date: new Date(d),
       inCurrentMonth: d.getMonth() === dateInMonth.getMonth(),
       isToday: sameDay(d, today),
-      isSelected: sameDay(d, selected),
+      isSelected: selected ? sameDay(d, selected) : false,
     })
   }
   return days
@@ -158,10 +158,10 @@ export function routinePatternIndex(
     // Treat startDate as a local date (YYYY-MM-DD) regardless of time component
     const datePart = startDateIso.split('T')[0]
     const created = parseLocalDate(datePart)
-    
+
     // Normalize target to local midnight
     const b = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate())
-    
+
     if (b.getTime() < created.getTime()) return -1
 
     const msPerDay = 24 * 60 * 60 * 1000
