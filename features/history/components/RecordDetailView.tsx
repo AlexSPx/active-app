@@ -53,10 +53,12 @@ function ErrorState({
 
 function SummaryMetric({ label, value }: { label: string; value: string }) {
   return (
-    <View className="min-w-0 flex-1 gap-compact px-compact">
-      <UiText textRole="meta">{label}</UiText>
-      <UiText textRole="cardTitle" selectable>
+    <View className="min-w-0 flex-1 items-center gap-compact px-compact">
+      <UiText textRole="cardTitle" style={{ fontSize: 21, lineHeight: 25 }} selectable>
         {value}
+      </UiText>
+      <UiText textRole="meta" style={{ fontSize: 10, lineHeight: 15 }}>
+        {label}
       </UiText>
     </View>
   )
@@ -115,7 +117,7 @@ export function RecordDetailView({
         contentContainerStyle={{ paddingBottom: bottomInset }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="w-full max-w-3xl self-center gap-field px-page py-section">
+        <View className="w-full max-w-3xl self-center px-page pb-section pt-5">
           {!!error && (
             <View className="gap-compact rounded-control border border-divider bg-raised p-field">
               <UiText textRole="bodyMuted" accessibilityRole="alert">
@@ -131,30 +133,28 @@ export function RecordDetailView({
               </Button>
             </View>
           )}
-          <UiText textRole="screenTitle" selectable>
+          <UiText textRole="meta" selectable>
+            {date.toLocaleDateString([], {
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </UiText>
+          <UiText textRole="screenTitle" className="mb-2.5 mt-field" selectable>
             {record.workoutTitle}
           </UiText>
-          <View className="gap-compact">
-            <UiText textRole="caption" selectable>
-              {date.toLocaleDateString([], {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-              })}
-            </UiText>
-            <UiText textRole="caption" selectable>
-              Finished at {date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-            </UiText>
-          </View>
+          <UiText textRole="bodyMuted" style={{ fontSize: 13 }}>
+            A session in the books.
+          </UiText>
 
-          <View className="flex-row flex-wrap rounded-card border border-divider bg-surface py-card">
+          <View className="my-[18px] flex-row rounded-[16px] bg-surface px-2.5 py-card">
             <SummaryMetric
-              label={intervals > 0 ? 'Interval time' : 'Duration'}
-              value={duration > 0 ? formatSeconds(duration) : '—'}
+              label={intervals > 0 ? 'interval minutes' : 'minutes'}
+              value={duration > 0 ? `${Math.round(duration / 60)}` : '—'}
             />
+            <View className="w-px self-stretch bg-divider" />
             <SummaryMetric
-              label={strengthSets > 0 ? (intervals > 0 ? 'Sets / intervals' : 'Sets') : 'Intervals'}
+              label={strengthSets > 0 ? (intervals > 0 ? 'sets / intervals' : 'sets') : 'intervals'}
               value={
                 strengthSets > 0
                   ? intervals > 0
@@ -163,75 +163,84 @@ export function RecordDetailView({
                   : `${intervals}`
               }
             />
+            <View className="w-px self-stretch bg-divider" />
             <SummaryMetric
-              label="Volume · kg × reps"
+              label="kg lifted"
               value={strengthSets > 0 ? totalVolume.toLocaleString() : '—'}
             />
           </View>
 
-          <UiText textRole="bodyEmphasis" accessibilityRole="header" className="pt-field">
-            Recorded exercises
+          <UiText textRole="bodyEmphasis" accessibilityRole="header" className="mb-5 mt-0.5">
+            Recorded sets
           </UiText>
-          <View className="gap-field">
+          <View className="gap-5">
             {record.exerciseRecords.map((exercise, index) => {
               const cardio = isCardioExerciseRecord(exercise)
               const rows = cardio ? exercise.durationSeconds || [] : exercise.reps || []
-              const volume =
-                exercise.reps?.reduce(
-                  (sum, reps, rowIndex) => sum + reps * (exercise.weight?.[rowIndex] || 0),
-                  0
-                ) || 0
               const achievements = launchFacade.training.getExerciseAchievements(exercise)
               const oneRm = achievements.some((achievement) => achievement.type === '1RM')
               const volumePr = achievements.some((achievement) => achievement.type === 'VOLUME')
 
               return (
-                <View
-                  key={`${exercise.exerciseName}-${index}`}
-                  className="gap-compact rounded-card border border-divider bg-surface p-card"
-                >
+                <View key={`${exercise.exerciseName}-${index}`} className="gap-0">
                   <UiText textRole="bodyEmphasis" accessibilityRole="header" selectable>
                     {exercise.exerciseName}
                   </UiText>
-                  <UiText textRole="caption">
-                    {rows.length}{' '}
-                    {cardio
-                      ? rows.length === 1
-                        ? 'recorded interval'
-                        : 'recorded intervals'
-                      : 'sets'}
-                    {!cardio ? ` · ${volume.toLocaleString()} kg volume` : ''}
-                  </UiText>
-                  <View className="flex-row items-center gap-field border-b border-divider pb-compact">
-                    <UiText textRole="meta" className="flex-1">
+                  <View className="mt-field flex-row items-center py-2">
+                    <UiText
+                      textRole="meta"
+                      style={{ fontSize: 10, lineHeight: 15 }}
+                      className={cardio ? 'w-16 px-2' : 'w-9 px-2'}
+                    >
                       {cardio ? 'Interval' : 'Set'}
                     </UiText>
                     {!cardio && (
-                      <UiText textRole="meta" className="flex-1 text-right">
-                        Weight · kg
+                      <UiText
+                        textRole="meta"
+                        style={{ fontSize: 10, lineHeight: 15 }}
+                        className="flex-[2] px-2"
+                      >
+                        Weight (kg)
                       </UiText>
                     )}
-                    <UiText textRole="meta" className="flex-1 text-right">
+                    <UiText
+                      textRole="meta"
+                      style={{ fontSize: 10, lineHeight: 15 }}
+                      className="flex-1 px-2"
+                    >
                       {cardio ? 'Duration' : 'Reps'}
                     </UiText>
                   </View>
                   {rows.map((value, rowIndex) => (
                     <View
                       key={rowIndex}
-                      className="min-h-touch flex-row items-center gap-field border-b border-divider py-compact"
+                      className="flex-row items-center border-t border-divider py-[9px]"
                     >
-                      <View className="flex-1 flex-row items-center gap-compact">
-                        <UiText textRole="bodyMuted">{rowIndex + 1}</UiText>
-                        {!cardio && oneRm && exercise.achievedOneRmSetIndex === rowIndex && (
-                          <UiBadge variant="pill">PR</UiBadge>
-                        )}
+                      <View
+                        className={
+                          cardio ? 'w-16 flex-row items-center' : 'w-9 flex-row items-center'
+                        }
+                      >
+                        <UiText textRole="caption" className="px-2">
+                          {rowIndex + 1}
+                        </UiText>
                       </View>
                       {!cardio && (
-                        <UiText textRole="body" className="flex-1 text-right" selectable>
+                        <UiText
+                          textRole="body"
+                          style={{ fontSize: 12, lineHeight: 18 }}
+                          className="flex-[2] px-2"
+                          selectable
+                        >
                           {(exercise.weight?.[rowIndex] ?? 0).toLocaleString()}
                         </UiText>
                       )}
-                      <UiText textRole="body" className="flex-1 text-right" selectable>
+                      <UiText
+                        textRole="body"
+                        style={{ fontSize: 12, lineHeight: 18 }}
+                        className="flex-1 px-2"
+                        selectable
+                      >
                         {cardio ? formatSeconds(value) : value}
                       </UiText>
                     </View>
