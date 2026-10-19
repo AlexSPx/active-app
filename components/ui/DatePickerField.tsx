@@ -1,7 +1,7 @@
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { useState } from 'react'
-import { Platform } from 'react-native'
-import { Button, Text, View, XStack, YStack } from 'tamagui'
+import { Platform, View } from 'react-native'
+import { Button, UiText } from './Controls'
 
 interface DatePickerFieldProps {
   label: string
@@ -21,14 +21,18 @@ export function DatePickerField({ label, value, onChange }: DatePickerFieldProps
   }
 
   return (
-    <YStack gap="$2">
-      <Text fontSize="$3" color="$color10" fontWeight="600">
+    <View className="gap-compact">
+      <UiText textRole="bodyEmphasis" className="text-muted">
         {label}
-      </Text>
-      
+      </UiText>
+
       {Platform.OS === 'android' && (
-        <Button onPress={() => setShow(true)} chromeless bordered>
-          <Text>{value.toLocaleDateString()}</Text>
+        <Button
+          variant="surface"
+          onPress={() => setShow(true)}
+          accessibilityLabel={`${label}, ${value.toLocaleDateString()}`}
+        >
+          {value.toLocaleDateString()}
         </Button>
       )}
 
@@ -42,6 +46,6 @@ export function DatePickerField({ label, value, onChange }: DatePickerFieldProps
           style={Platform.OS === 'ios' ? { alignSelf: 'flex-start' } : undefined}
         />
       )}
-    </YStack>
+    </View>
   )
 }

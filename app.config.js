@@ -41,8 +41,8 @@ export default {
       name: 'Active Next',
       shortName: 'Active',
       description: 'Active Next - Your personal activity companion',
-      themeColor: '#000000',
-      backgroundColor: '#000000',
+      themeColor: '#FAF7FC',
+      backgroundColor: '#FAF7FC',
     },
     plugins: [
       'expo-sqlite',

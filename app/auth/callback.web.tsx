@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'expo-router'
-import { View, Text, Spinner } from 'tamagui'
+import { View } from 'react-native'
+import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { useAuthStore } from '../../stores/authStore'
 import { config } from '../../config/api'
 
@@ -104,11 +105,8 @@ export default function AuthCallback() {
   }, [])
 
   return (
-    <View flex={1} justify="center" items="center" bg="$background">
-      <Spinner size="large" color="$color9" />
-      <Text mt="$4" color="$color11">
-        Completing sign in...
-      </Text>
+    <View className="flex-1 items-center justify-center bg-background">
+      <LoadingSpinner size="large" text="Completing sign in..." />
     </View>
   )
 }

@@ -5,6 +5,7 @@ import * as Linking from 'expo-linking'
 import * as Application from 'expo-application'
 import { useFocusEffect } from 'expo-router'
 import { Button, UiText } from './ui/Controls'
+import { useCadenceColors } from './ui/useCadenceColors'
 import { Bell, Clock3 } from './ui/icons'
 
 interface NotificationPermissionsProps {
@@ -22,6 +23,7 @@ export default function NotificationPermissions({
   const [alarms, setAlarms] = useState<boolean | null>(null)
   const [alarmUnavailable, setAlarmUnavailable] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const colors = useCadenceColors()
   const checkPermissions = useCallback(async () => {
     try {
       const settings = await Notifications.getPermissionsAsync()
@@ -140,7 +142,7 @@ export default function NotificationPermissions({
             >
               <View className="flex-row items-center justify-between gap-field">
                 <View className="min-w-0 flex-1 flex-row items-center gap-compact">
-                  <Icon size={18} color="$accent" aria-hidden />
+                  <Icon size={18} color={colors.accent} aria-hidden />
                   <UiText textRole="bodyEmphasis" className="flex-1">
                     {permission.title}
                   </UiText>

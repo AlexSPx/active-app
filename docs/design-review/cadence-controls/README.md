@@ -8,7 +8,7 @@ Run the preview outside the production route tree with `PORT=8083 ./scripts/prev
 
 TypeScript, Prettier, and `git diff --check` passed. The settings, control, design-config, and provider-theme Jest suites passed all 25 tests. An isolated launcher fixture checked failure cleanup, repeated launches, overlap rejection, preservation of concurrent package edits, and rejection of an already-active preview entry.
 
-Production Settings navigation and persistence were not exercised on Android because the client was at first-run consent. No terms were accepted or profile created. Web verification was skipped at the user's request. This change retains Tamagui for the remaining migration stages.
+This earlier control review covered the staged migration only.
 
 ![Light controls](light.png)
 

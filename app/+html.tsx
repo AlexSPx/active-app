@@ -6,11 +6,11 @@ export default function Root({ children }: { children: React.ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1.00001,viewport-fit=cover" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
         <ScrollViewStyleReset />
-        
+
         {/* PWA Meta Tags */}
-        <meta name="theme-color" content="#000000" />
+        <meta name="theme-color" content="#FAF7FC" />
         <meta name="description" content="Active Next - Your personal activity companion" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -19,8 +19,7 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <link rel="apple-touch-icon" href="/icon-192.png" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icon-192.png" />
-        
-        {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
+        {/* Keep the shell aligned with the system theme until the saved preference hydrates. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
       </head>
       <body>
@@ -33,37 +32,49 @@ export default function Root({ children }: { children: React.ReactNode }) {
 
 const responsiveBackground = `
 html, body, #root {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
   padding: 0;
 }
 
-/* Center app and constrain to mobile width for PWA */
+html, body {
+  min-height: 100svh;
+  background-color: #faf7fc;
+  color: #2d2235;
+}
+
 #root {
-  max-width: 550px;
+  width: 100%;
+  max-width: 1200px;
+  min-height: 100svh;
   margin: 0 auto;
   position: relative;
-  overflow: hidden;
-  background-color: #fff;
+  background-color: var(--color-background, #faf7fc);
 }
 
 body {
-  background-color: #fff;
+  min-width: 320px;
 }
 
 @media (prefers-color-scheme: dark) {
-  body {
-    background-color: #1a1a1a;
+  html, body {
+    background-color: #2d2235;
+    color: #faf5fc;
   }
   #root {
-    background-color: #000;
+    background-color: var(--color-background, #2d2235);
   }
 }
 
-/* Add shadow on larger screens for visual separation */
-@media (min-width: 431px) {
-  #root {
-    box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+@media (min-width: 768px) {
+  body {
+    background-color: #f0e9f5;
+  }
+}
+
+@media (min-width: 768px) and (prefers-color-scheme: dark) {
+  body {
+    background-color: #382b42;
   }
 }`
 

@@ -1,5 +1,6 @@
-import { YStack, XStack, Text } from 'tamagui'
-import { ReactNode } from 'react'
+import { type ReactNode } from 'react'
+import { View } from 'react-native'
+import { UiText } from './Controls'
 
 interface StatItemProps {
   icon?: ReactNode
@@ -11,23 +12,19 @@ interface StatItemProps {
 export function StatItem({ icon, value, label, layout = 'horizontal' }: StatItemProps) {
   if (layout === 'vertical') {
     return (
-      <YStack items="center" flex={1}>
-        <Text fontSize="$6" fontWeight="bold" color="$color">
-          {value}
-        </Text>
-        <Text fontSize="$3" color="$colorSubtle">
-          {label}
-        </Text>
-      </YStack>
+      <View className="flex-1 items-center">
+        <UiText textRole="cardTitle">{value}</UiText>
+        <UiText textRole="bodyMuted">{label}</UiText>
+      </View>
     )
   }
 
   return (
-    <XStack items="center" gap="$2" flex={1}>
+    <View className="flex-1 flex-row items-center gap-compact">
       {icon}
-      <Text fontSize="$3" color="$colorSubtle">
+      <UiText textRole="bodyMuted">
         {value} {label}
-      </Text>
-    </XStack>
+      </UiText>
+    </View>
   )
 }

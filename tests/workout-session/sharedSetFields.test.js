@@ -65,7 +65,7 @@ test('editor duration input keeps invalid text until corrected', async () => {
   await act(async () => renderer.unmount())
 })
 
-test('session duration keeps digit entry and commits on blur', async () => {
+test('session duration keeps digit entry and commits before blur', async () => {
   const onChange = jest.fn()
   let renderer
   await act(async () => {
@@ -83,8 +83,9 @@ test('session duration keeps digit entry and commits on blur', async () => {
   expect(field.props.keyboardType).toBe('number-pad')
   await act(async () => field.props.onChangeText('700'))
   expect(field.props.value).toBe('7:00')
-  expect(onChange).not.toHaveBeenCalled()
-  await act(async () => field.props.onBlur())
+  expect(onChange).toHaveBeenCalledTimes(1)
   expect(onChange).toHaveBeenCalledWith(420)
+  await act(async () => field.props.onBlur())
+  expect(onChange).toHaveBeenCalledTimes(1)
   await act(async () => renderer.unmount())
 })

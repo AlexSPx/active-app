@@ -1,8 +1,10 @@
+import { View } from 'react-native'
 import { Check, Dumbbell } from './ui/icons'
-import { XStack, YStack, Text, Progress } from 'tamagui'
+import { UiText } from './ui/Controls'
 import { StreakUpdateResponse } from '../types/api'
 import { useActiveRoutine } from '../features/routines'
 import { routinePatternIndex } from '../utils/date'
+import { useCadenceColors } from './ui/useCadenceColors'
 
 type StreakViewProps = {
   streak: StreakUpdateResponse
@@ -12,34 +14,26 @@ type DayCircleProps = {
   label: string
   isWorkout: boolean
   isStreak: boolean
-  isToday: boolean
+  colors: ReturnType<typeof useCadenceColors>
 }
 
 // Small day indicator driven by simple booleans
-function DayCircle({ label, isWorkout, isStreak, isToday }: DayCircleProps) {
-  const getIcon = () =>
-    isWorkout ? <Dumbbell size={16} color={isStreak ? '$color' : '$color8'} /> : null
+function DayCircle({ label, isWorkout, isStreak, colors }: DayCircleProps) {
+  const hasStreakWorkout = isWorkout && isStreak
 
   return (
-    <YStack gap="$1" items="center">
-      <Text fontSize="$2" color={isStreak ? '$color' : '$color10'}>
+    <View className="items-center gap-compact">
+      <UiText textRole="caption" className={isStreak ? 'text-foreground' : ''}>
         {label}
-      </Text>
-      <XStack
-        width={32}
-        height={32}
-        rounded={99}
-        borderWidth={2}
-        borderStyle={isWorkout ? 'solid' : 'dashed'}
-        borderColor={isStreak ? '$green9' : '$color4'}
-        // Fill workout days when streaked
-        bg={isWorkout && isStreak ? '$green9' : 'transparent'}
-        items="center"
-        justify="center"
+      </UiText>
+      <View
+        className={`h-8 w-8 items-center justify-center rounded-full border-2 ${isWorkout ? 'border-solid' : 'border-dashed'} ${isStreak ? 'border-accent' : 'border-divider'} ${hasStreakWorkout ? 'bg-accent' : 'bg-transparent'}`}
       >
-        {getIcon()}
-      </XStack>
-    </YStack>
+        {isWorkout ? (
+          <Dumbbell size={16} color={hasStreakWorkout ? colors.onAccent : colors.muted} />
+        ) : null}
+      </View>
+    </View>
   )
 }
 
@@ -52,51 +46,58 @@ function WeeklyStreakView({
   routineDays: boolean[]
 }) {
   const dayNames = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
-  const jsDay = new Date().getDay() // 0 = Sun ... 6 = Sat
-  const todayIndex = (jsDay + 6) % 7
+  const colors = useCadenceColors()
 
   return (
-    <XStack gap="$3" justify="space-between" width="100%">
+    <View className="w-full flex-row justify-between gap-field">
       {dayNames.map((day, index) => (
         <DayCircle
           key={index}
           label={day}
           isWorkout={!!routineDays[index]}
           isStreak={!!streakDays[index]}
-          isToday={index === todayIndex}
+          colors={colors}
         />
       ))}
-    </XStack>
+    </View>
   )
 }
 
 // Progress view for WEEKLY_COMPLETION routines
 function WeeklyCompletionProgress({ completed, total }: { completed: number; total: number }) {
+  const colors = useCadenceColors()
   const progress = total > 0 ? (completed / total) * 100 : 0
   const isComplete = completed >= total
 
   return (
-    <YStack gap="$3" width="100%">
-      <XStack justify="space-between" items="center">
-        <Text fontSize="$3" color="$colorSubtle" fontWeight="500">
-          This week's progress
-        </Text>
-        <Text fontSize="$4" fontWeight="700" color={isComplete ? '$green10' : '$primary'}>
+    <View className="w-full gap-field">
+      <View className="flex-row items-center justify-between gap-field">
+        <UiText textRole="bodyMuted">This week's progress</UiText>
+        <UiText
+          textRole="body"
+          className={
+            isComplete ? 'font-dm-semibold text-accent' : 'font-dm-semibold text-foreground'
+          }
+          style={{ fontSize: 16, lineHeight: 20, fontWeight: '700' }}
+        >
           {completed}/{total} workouts
-        </Text>
-      </XStack>
-      <Progress value={progress} size="$2">
-        <Progress.Indicator animation="bouncy" bg={isComplete ? '$green9' : '$primary'} />
-      </Progress>
+        </UiText>
+      </View>
+      <View className="h-2 w-full overflow-hidden rounded-full bg-raised">
+        <View
+          className="h-full rounded-full bg-accent"
+          style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
+        />
+      </View>
       {isComplete && (
-        <XStack items="center" gap="$2" justify="center">
-          <Check size={16} color="$green10" />
-          <Text fontSize="$3" color="$green10" fontWeight="600">
+        <View className="flex-row items-center justify-center gap-compact">
+          <Check size={16} color={colors.accent} />
+          <UiText textRole="bodyEmphasis" className="font-dm-semibold text-accent">
             Week complete! Streak +1
-          </Text>
-        </XStack>
+          </UiText>
+        </View>
       )}
-    </YStack>
+    </View>
   )
 }
 
@@ -159,30 +160,24 @@ export function StreakView({ streak }: StreakViewProps) {
   }
 
   return (
-    <YStack
-      gap="$4"
-      p="$4"
-      rounded="$6"
-      bg="$background"
-      borderWidth={1}
-      borderColor="$borderColor"
-      width="100%"
-    >
-      <XStack gap="$4" items="center" width="100%" justify="flex-start">
-        <Text fontSize={32}>🔥</Text>
-        <YStack>
-          <Text fontSize="$5" fontWeight="700">
+    <View className="w-full gap-card rounded-card border border-divider bg-background p-card">
+      <View className="w-full flex-row items-center gap-card">
+        <UiText textRole="body" style={{ fontSize: 32, lineHeight: 38 }}>
+          🔥
+        </UiText>
+        <View className="gap-compact">
+          <UiText textRole="cardTitle">
             {streak.currentStreak} {isWeeklyCompletion ? 'week' : 'day'} streak
-          </Text>
-          <Text color="$color10">{getStatusMessage()}</Text>
-        </YStack>
-      </XStack>
+          </UiText>
+          <UiText textRole="bodyMuted">{getStatusMessage()}</UiText>
+        </View>
+      </View>
 
       {isWeeklyCompletion && weeklyRequired > 0 ? (
         <WeeklyCompletionProgress completed={weeklyCompleted} total={weeklyRequired} />
       ) : (
         <WeeklyStreakView streakDays={streakDays} routineDays={routineDays} />
       )}
-    </YStack>
+    </View>
   )
 }

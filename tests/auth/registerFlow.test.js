@@ -80,6 +80,25 @@ jest.mock('../../components/feedback/FeedbackProvider', () => ({
   useFeedback: () => ({ show: jest.fn() }),
 }))
 
+jest.mock('lucide-react-native', () =>
+  jest.requireActual('../../node_modules/lucide-react-native/dist/cjs/lucide-react-native.js')
+)
+
+jest.mock('react-native-reanimated', () => {
+  const React = require('react')
+  const AnimatedView = (props) => React.createElement('AnimatedView', props, props.children)
+  const transition = { duration: () => transition }
+  return {
+    __esModule: true,
+    default: { View: AnimatedView },
+    FadeInDown: transition,
+    FadeInLeft: transition,
+    FadeInRight: transition,
+    FadeInUp: transition,
+    FadeOut: transition,
+  }
+})
+
 jest.mock('expo-haptics', () => ({
   selectionAsync: jest.fn(),
   impactAsync: jest.fn(),
@@ -87,21 +106,6 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'light' },
   NotificationFeedbackType: { Success: 'success', Error: 'error' },
 }))
-
-jest.mock('tamagui', () => {
-  const React = require('react')
-  const component = (name) => (props) => React.createElement(name, props, props.children)
-  return {
-    YStack: component('YStack'),
-    XStack: component('XStack'),
-    Text: component('Text'),
-    Button: component('Button'),
-    H2: component('H2'),
-    ScrollView: component('ScrollView'),
-    Label: component('Label'),
-    AnimatePresence: ({ children }) => children,
-  }
-})
 
 const React = require('react')
 const { act, create } = require('react-test-renderer')

@@ -1,9 +1,10 @@
-import React, { useEffect, useCallback } from 'react'
-import { Button, Text } from 'tamagui'
+import { useEffect, useCallback } from 'react'
+import { Alert, Platform } from 'react-native'
 import { Lock } from './ui/icons'
+import { Button, UiText } from './ui/Controls'
+import { useCadenceColors } from './ui/useCadenceColors'
 import { useAuthStore } from '../stores/authStore'
 import { useRouter } from 'expo-router'
-import { Alert, Platform } from 'react-native'
 
 // WorkOS Configuration
 const discovery = {
@@ -32,6 +33,7 @@ const WebWorkOSSignInButton = ({
 }: WorkOSSignInButtonProps) => {
   const { loginWithWorkOS } = useAuthStore()
   const router = useRouter()
+  const colors = useCadenceColors()
   const redirectUri = getRedirectUri()
 
   const handleLogin = useCallback(
@@ -134,19 +136,11 @@ const WebWorkOSSignInButton = ({
   return (
     <Button
       onPress={handleWebAuth}
-      bg="$color9"
-      size="$5"
-      rounded="$6"
-      mt="$4"
-      pressStyle={{ opacity: 0.9, scale: 0.98 }}
-      animation="fast"
-      icon={<Lock size={20} color="$color1" />}
-      width="100%"
-      height="$6"
+      className="mt-field min-h-action w-full flex-row gap-compact rounded-control"
+      accessibilityLabel={label}
     >
-      <Text fontWeight="600" color="$color1" fontSize="$4">
-        {label}
-      </Text>
+      <Lock size={20} color={colors.onAccent} />
+      <UiText textRole="buttonOnAccent">{label}</UiText>
     </Button>
   )
 }

@@ -144,7 +144,11 @@ export function DurationTargetInput(props: DurationTargetInputProps) {
           props.onChange(parsed)
           return
         }
-        setSessionDigits(next.replace(/\D/g, ''))
+        const nextDigits = next.replace(/\D/g, '')
+        setSessionDigits(nextDigits)
+        const nextSeconds = digitsToSeconds(nextDigits)
+        lastReportedSeconds.current = nextSeconds
+        props.onChange(nextSeconds)
       }}
       onKeyPress={
         mode === 'session'
@@ -159,8 +163,10 @@ export function DurationTargetInput(props: DurationTargetInputProps) {
         mode === 'session'
           ? () => {
               const nextSeconds = digitsToSeconds(sessionDigits)
-              lastReportedSeconds.current = nextSeconds
-              props.onChange(nextSeconds)
+              if (lastReportedSeconds.current !== nextSeconds) {
+                lastReportedSeconds.current = nextSeconds
+                props.onChange(nextSeconds)
+              }
             }
           : undefined
       }

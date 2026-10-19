@@ -1,7 +1,23 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { YStack, XStack, Text, Button, H2, ScrollView, Label, AnimatePresence } from 'tamagui'
-import { Clock, Ruler, Weight } from '../../components/ui/icons'
-import { useRouter, Link } from 'expo-router'
+import { Link, useRouter } from 'expo-router'
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
+import Animated, {
+  FadeInDown,
+  FadeInLeft,
+  FadeInRight,
+  FadeInUp,
+  FadeOut,
+} from 'react-native-reanimated'
+import { Clock, Ruler, Weight } from 'lucide-react-native'
+import {
+  Button,
+  SegmentedSelection,
+  Surface,
+  TextField,
+  UiText,
+  type SegmentedOption,
+} from '../../components/ui/Controls'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
 import { useFeedback } from '../../components/feedback/FeedbackProvider'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,13 +26,21 @@ import { useUpdateUser } from '../../features/settings'
 import WheelSelector from '../../components/ui/WheelSelector'
 import TimeZoneSelector from '../../components/TimeZoneSelector'
 import NotificationPermissions from '../../components/NotificationPermissions'
-import { Platform, KeyboardAvoidingView } from 'react-native'
 import * as Haptics from 'expo-haptics'
 import { WorkOSSignInButton } from '../../components/WorkOSSignInButton'
-import { InputField } from '../../components/ui/InputField'
 import { registrationFormSchema, type RegistrationFormData } from '../../lib/schemas/forms'
 import { launchFacade } from '../../features/launch/launchFacade'
 import LocalProfileRegistration from '../../features/onboarding/components/LocalProfileRegistration'
+
+const WEIGHT_UNIT_OPTIONS: readonly SegmentedOption<RegistrationFormData['weightUnit']>[] = [
+  { value: 'kg', label: 'kg' },
+  { value: 'lb', label: 'lb' },
+]
+
+const HEIGHT_UNIT_OPTIONS: readonly SegmentedOption<RegistrationFormData['heightUnit']>[] = [
+  { value: 'cm', label: 'cm' },
+  { value: 'in', label: 'in' },
+]
 
 const RegisterPage = () =>
   launchFacade.auth.getStartupPlan().kind === 'local-profile' ? (
@@ -32,6 +56,7 @@ const AccountRegisterPage = () => {
     : ['Account', 'Personal', 'Body', 'Time Zone', 'Notifications']
   const router = useRouter()
   const toast = useFeedback()
+  const colors = useCadenceColors()
   const { user, logout } = useAuthStore()
   const { updateUserProfile } = useUpdateUser()
 
@@ -255,27 +280,21 @@ const AccountRegisterPage = () => {
     switch (STEPS[step]) {
       case 'Account':
         return (
-          <YStack gap="$4" items="center" mt="$6">
-            <Text fontSize="$5" style={{ textAlign: 'center' }} color="$color11" mb="$4">
+          <View className="mt-section items-center gap-section">
+            <UiText textRole="bodyMuted" className="text-center">
               {accountStep.description}
-            </Text>
+            </UiText>
             {accountStep.action.kind === 'continue' ? (
               <Button
-                size="$5"
-                bg="$blue9"
-                rounded="$6"
-                width="100%"
+                variant="primary"
+                className="w-full"
                 onPress={() => {
                   setDirection(1)
                   setStep(1)
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
                 }}
-                pressStyle={{ bg: '$blue10', scale: 0.98 }}
-                animation="fast"
               >
-                <Text color="white" fontWeight="700" fontSize="$4">
-                  {accountStep.action.label}
-                </Text>
+                <UiText textRole="buttonOnAccent">{accountStep.action.label}</UiText>
               </Button>
             ) : (
               <WorkOSSignInButton
@@ -284,174 +303,125 @@ const AccountRegisterPage = () => {
               />
             )}
 
-            <Text fontSize="$2" color="$color11" style={{ textAlign: 'center' }} mt="$2" px="$2">
+            <UiText textRole="caption" className="px-compact text-center">
               {accountStep.action.kind === 'continue'
                 ? 'By setting up a local profile, you agree to our '
                 : 'By creating an account, you agree to our '}
               <Link href="/legal/terms-of-service" asChild>
-                <Text color="$blue9" textDecorationLine="underline">
+                <UiText accessibilityRole="link" className="text-accent underline">
                   Terms of Service
-                </Text>
+                </UiText>
               </Link>{' '}
               and{' '}
               <Link href="/legal/privacy-policy" asChild>
-                <Text color="$blue9" textDecorationLine="underline">
+                <UiText accessibilityRole="link" className="text-accent underline">
                   Privacy Policy
-                </Text>
+                </UiText>
               </Link>
               .
-            </Text>
-          </YStack>
+            </UiText>
+          </View>
         )
       case 'Personal':
         return (
-          <YStack gap="$4">
-            <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">
-                Username
-              </Label>
-              <InputField
+          <View className="gap-field">
+            <View className="gap-compact">
+              <UiText textRole="bodyEmphasis">Username</UiText>
+              <TextField
+                accessibilityLabel="Username"
                 placeholder="coolrunner123"
                 value={username}
                 onChangeText={(val) => setValue('username', val)}
               />
-            </YStack>
-            <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">
-                First Name
-              </Label>
-              <InputField
+            </View>
+            <View className="gap-compact">
+              <UiText textRole="bodyEmphasis">First Name</UiText>
+              <TextField
+                accessibilityLabel="First Name"
                 placeholder="Jane"
                 value={firstName}
                 onChangeText={(val) => setValue('firstName', val)}
               />
-            </YStack>
-            <YStack gap="$2">
-              <Label color="$color11" fontSize="$3">
-                Last Name
-              </Label>
-              <InputField
+            </View>
+            <View className="gap-compact">
+              <UiText textRole="bodyEmphasis">Last Name</UiText>
+              <TextField
+                accessibilityLabel="Last Name"
                 placeholder="Doe"
                 value={lastName}
                 onChangeText={(val) => setValue('lastName', val)}
               />
-            </YStack>
-          </YStack>
+            </View>
+          </View>
         )
       case 'Body':
         return (
-          <YStack gap="$4">
-            <YStack bg="$color2" p="$4" rounded="$6" gap="$4">
-              <XStack justify="space-between" items="center">
-                <XStack gap="$2" items="center">
-                  <Weight size={20} color="$blue9" />
-                  <Text fontWeight="600" fontSize="$5">
-                    Weight
-                  </Text>
-                </XStack>
-                <XStack bg="$color4" p="$1" rounded="$4">
-                  <Button
-                    size="$2"
-                    chromeless
-                    bg={weightUnit === 'kg' ? '$background' : 'transparent'}
-                    onPress={() => {
-                      setValue('weightUnit', 'kg')
-                      Haptics.selectionAsync()
-                    }}
-                    rounded="$3"
-                  >
-                    kg
-                  </Button>
-                  <Button
-                    size="$2"
-                    chromeless
-                    bg={weightUnit === 'lb' ? '$background' : 'transparent'}
-                    onPress={() => {
-                      setValue('weightUnit', 'lb')
-                      Haptics.selectionAsync()
-                    }}
-                    rounded="$3"
-                  >
-                    lb
-                  </Button>
-                </XStack>
-              </XStack>
+          <View className="gap-field">
+            <Surface className="gap-field">
+              <View className="flex-row items-center justify-between gap-field">
+                <View className="flex-row items-center gap-compact">
+                  <Weight size={20} color={colors.accent} aria-hidden />
+                  <UiText textRole="cardTitle">Weight</UiText>
+                </View>
+                <SegmentedSelection
+                  value={weightUnit}
+                  options={WEIGHT_UNIT_OPTIONS}
+                  onValueChange={(unit) => {
+                    setValue('weightUnit', unit)
+                    Haptics.selectionAsync()
+                  }}
+                  accessibilityLabel="Weight unit"
+                />
+              </View>
               <WheelSelector
                 values={weightUnit === 'kg' ? weightValuesKg : weightValuesLb}
                 selected={displayWeight}
-                onChange={(v) => onSelectWeight(v as number | null)}
+                onChange={onSelectWeight}
                 formatItem={(v) =>
                   weightUnit === 'kg' ? Number(v).toFixed(1) : Math.round(Number(v)).toString()
                 }
                 itemHeight={40}
               />
-            </YStack>
+            </Surface>
 
-            <YStack bg="$color2" p="$4" rounded="$6" gap="$4">
-              <XStack justify="space-between" items="center">
-                <XStack gap="$2" items="center">
-                  <Ruler size={20} color="$blue9" />
-                  <Text fontWeight="600" fontSize="$5">
-                    Height
-                  </Text>
-                </XStack>
-                <XStack bg="$color4" p="$1" rounded="$4">
-                  <Button
-                    size="$2"
-                    chromeless
-                    bg={heightUnit === 'cm' ? '$background' : 'transparent'}
-                    onPress={() => {
-                      setValue('heightUnit', 'cm')
-                      Haptics.selectionAsync()
-                    }}
-                    rounded="$3"
-                  >
-                    cm
-                  </Button>
-                  <Button
-                    size="$2"
-                    chromeless
-                    bg={heightUnit === 'in' ? '$background' : 'transparent'}
-                    onPress={() => {
-                      setValue('heightUnit', 'in')
-                      Haptics.selectionAsync()
-                    }}
-                    rounded="$3"
-                  >
-                    in
-                  </Button>
-                </XStack>
-              </XStack>
+            <Surface className="gap-field">
+              <View className="flex-row items-center justify-between gap-field">
+                <View className="flex-row items-center gap-compact">
+                  <Ruler size={20} color={colors.accent} aria-hidden />
+                  <UiText textRole="cardTitle">Height</UiText>
+                </View>
+                <SegmentedSelection
+                  value={heightUnit}
+                  options={HEIGHT_UNIT_OPTIONS}
+                  onValueChange={(unit) => {
+                    setValue('heightUnit', unit)
+                    Haptics.selectionAsync()
+                  }}
+                  accessibilityLabel="Height unit"
+                />
+              </View>
               <WheelSelector
                 values={heightUnit === 'cm' ? heightValuesCm : heightValuesIn}
                 selected={displayHeight}
-                onChange={(v) => onSelectHeight(v as number | null)}
+                onChange={onSelectHeight}
                 formatItem={(v) => Math.round(Number(v)).toString()}
                 itemHeight={40}
               />
-            </YStack>
-          </YStack>
+            </Surface>
+          </View>
         )
       case 'Time Zone':
         return (
-          <YStack gap="$4">
-            <YStack bg="$color2" p="$4" rounded="$6" gap="$4">
-              <XStack gap="$2" items="center">
-                <Clock size={20} color="$blue9" />
-                <Text fontWeight="600" fontSize="$5">
-                  Time Zone
-                </Text>
-              </XStack>
-              <TimeZoneSelector value={timezone} onValueChange={(tz) => setValue('timezone', tz)} />
-            </YStack>
-          </YStack>
+          <Surface className="gap-field">
+            <View className="flex-row items-center gap-compact">
+              <Clock size={20} color={colors.accent} aria-hidden />
+              <UiText textRole="cardTitle">Time Zone</UiText>
+            </View>
+            <TimeZoneSelector value={timezone} onValueChange={(tz) => setValue('timezone', tz)} />
+          </Surface>
         )
       case 'Notifications':
-        return (
-          <YStack gap="$4">
-            <NotificationPermissions onStatusChange={() => {}} />
-          </YStack>
-        )
+        return <NotificationPermissions onStatusChange={() => {}} />
       default:
         return null
     }
@@ -459,98 +429,80 @@ const AccountRegisterPage = () => {
 
   return (
     <KeyboardAvoidingView
+      className="flex-1 bg-background"
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      style={{ flex: 1 }}
     >
-      <YStack flex={1} bg="$background" px="$4" pt="$8" pb="$4">
-        {/* Header */}
-        <YStack mb="$6" animation="quick" enterStyle={{ opacity: 0, y: -20 }} opacity={1} y={0}>
-          <H2 fontSize="$8" fontWeight="bold" mb="$4">
+      <View className="mx-auto w-full max-w-[560px] flex-1 px-page pb-page pt-section">
+        <Animated.View entering={FadeInUp.duration(180)} className="mb-section">
+          <UiText accessibilityRole="header" textRole="screenTitle" className="mb-field">
             {launchFacade.onboarding.title()}
-          </H2>
+          </UiText>
 
-          {/* Step Indicator */}
-          <YStack>
-            <XStack gap="$2" mb="$2">
-              {STEPS.map((s, i) => {
-                const isLockedStep = isWorkOSAuth && i === 0
-                const isActive = i <= step
+          <View
+            className="mb-compact flex-row gap-compact"
+            accessibilityRole="progressbar"
+            accessibilityLabel="Registration progress"
+            accessibilityValue={{
+              min: 1,
+              max: STEPS.length,
+              now: step + 1,
+              text: `Step ${step + 1} of ${STEPS.length}`,
+            }}
+          >
+            {STEPS.map((s, i) => {
+              const isLockedStep = isWorkOSAuth && i === 0
+              const isActive = i <= step
 
-                return (
-                  <YStack
-                    key={s}
-                    flex={1}
-                    height={4}
-                    bg={isLockedStep ? '$success' : isActive ? '$blue9' : '$color4'}
-                    rounded="$4"
-                    animation="fast"
-                  />
-                )
-              })}
-            </XStack>
-            <XStack justify="space-between">
-              <Text fontSize="$3" fontWeight="600" color="$color11">
-                {STEPS[step]}
-              </Text>
-              <Text fontSize="$3" color="$color10">
-                Step {step + 1} of {STEPS.length}
-              </Text>
-            </XStack>
-          </YStack>
-        </YStack>
+              return (
+                <View
+                  key={s}
+                  className={`h-1 flex-1 rounded-full ${isLockedStep || isActive ? 'bg-accent' : 'bg-divider'}`}
+                />
+              )
+            })}
+          </View>
+          <View className="flex-row justify-between">
+            <UiText textRole="captionEmphasis">{STEPS[step]}</UiText>
+            <UiText textRole="caption">
+              Step {step + 1} of {STEPS.length}
+            </UiText>
+          </View>
+        </Animated.View>
 
-        {/* Content with Animation */}
-        <ScrollView flex={1} showsVerticalScrollIndicator={false}>
-          <AnimatePresence exitBeforeEnter custom={{ direction }} initial={false}>
-            <YStack
-              key={step}
-              animation="fast"
-              enterStyle={{ opacity: 0, x: direction * 10, scale: 0.95 }}
-              exitStyle={{ opacity: 0, x: direction * -10, scale: 0.95 }}
-              x={0}
-              scale={1}
-              opacity={1}
-              pb="$8"
-            >
-              {renderStepContent()}
-            </YStack>
-          </AnimatePresence>
+        <ScrollView
+          className="flex-1"
+          contentContainerStyle={{ flexGrow: 1 }}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Animated.View
+            key={step}
+            entering={direction > 0 ? FadeInRight.duration(180) : FadeInLeft.duration(180)}
+            exiting={FadeOut.duration(120)}
+            className="gap-section pb-section"
+          >
+            {renderStepContent()}
+          </Animated.View>
         </ScrollView>
 
-        {/* Footer Navigation */}
-        <XStack
-          gap="$3"
-          mt="$2"
-          animation="quick"
-          enterStyle={{ opacity: 0, y: 20 }}
-          opacity={1}
-          y={0}
-        >
-          <Button
-            flex={1}
-            variant="outlined"
-            onPress={handleBack}
-            disabled={isLoading}
-            borderColor="$color5"
-            color="$color11"
-          >
-            <Text>
+        <Animated.View entering={FadeInDown.duration(180)} className="mt-field flex-row gap-field">
+          <Button variant="surface" className="flex-1" onPress={handleBack} disabled={isLoading}>
+            <UiText textRole="bodyEmphasis">
               {backAction === 'leave-registration' || backAction === 'sign-out' ? 'Cancel' : 'Back'}
-            </Text>
+            </UiText>
           </Button>
           <Button
-            flex={1}
-            bg="$blue9"
+            variant="primary"
+            className="flex-1"
             onPress={handleNext}
             disabled={!isStepValid() || isLoading}
-            opacity={!isStepValid() ? 0.5 : 1}
-            pressStyle={{ bg: '$blue10', scale: 0.98 }}
-            animation="fast"
           >
-            <Text>{isLoading ? 'Creating...' : step === STEPS.length - 1 ? 'Finish' : 'Next'}</Text>
+            <UiText textRole="buttonOnAccent">
+              {isLoading ? 'Creating...' : step === STEPS.length - 1 ? 'Finish' : 'Next'}
+            </UiText>
           </Button>
-        </XStack>
-      </YStack>
+        </Animated.View>
+      </View>
     </KeyboardAvoidingView>
   )
 }

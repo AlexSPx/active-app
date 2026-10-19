@@ -1,5 +1,6 @@
-import { YStack, XStack, Text, Button } from 'tamagui'
-import { ReactNode } from 'react'
+import { type ReactNode } from 'react'
+import { View } from 'react-native'
+import { Button, UiText } from './Controls'
 
 interface PageHeaderProps {
   title: string
@@ -14,31 +15,28 @@ interface PageHeaderProps {
 
 export function PageHeader({ title, subtitle, action, icon }: PageHeaderProps) {
   return (
-    <XStack justify="space-between" items="center">
-      <YStack>
-        <XStack items="center" gap="$2">
+    <View className="flex-row items-center justify-between gap-field">
+      <View className="min-w-0 flex-1">
+        <View className="flex-row items-center gap-compact">
           {icon}
-          <Text fontSize="$6" fontWeight="700" color="$color">
+          <UiText textRole="screenTitle" accessibilityRole="header" className="shrink">
             {title}
-          </Text>
-        </XStack>
-        {subtitle && (
-          <Text fontSize="$4" color="$colorSubtle">
-            {subtitle}
-          </Text>
-        )}
-      </YStack>
+          </UiText>
+        </View>
+        {subtitle && <UiText textRole="bodyMuted">{subtitle}</UiText>}
+      </View>
       {action && (
         <Button
-          size="$3"
-          bg={action.variant === 'secondary' ? '$secondary' : '$primary'}
+          variant={action.variant === 'secondary' ? 'secondary' : 'primary'}
           onPress={action.onPress}
         >
-          <Text color={action.variant === 'secondary' ? '$onSecondary' : '$onPrimary'}>
-            {action.label}
-          </Text>
+          {action.variant === 'secondary' ? (
+            <UiText textRole="bodyEmphasis">{action.label}</UiText>
+          ) : (
+            <UiText textRole="buttonOnAccent">{action.label}</UiText>
+          )}
         </Button>
       )}
-    </XStack>
+    </View>
   )
 }
