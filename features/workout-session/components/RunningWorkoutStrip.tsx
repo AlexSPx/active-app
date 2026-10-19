@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react'
-import { View, type LayoutChangeEvent } from 'react-native'
+import { Pressable, View, type LayoutChangeEvent } from 'react-native'
 import { useRouter } from 'expo-router'
-import { Button, UiText } from '../../../components/ui/Controls'
-import { Clock, Play } from '../../../components/ui/icons'
+import { UiText } from '../../../components/ui/Controls'
+import { Clock } from '../../../components/ui/icons'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 
-type RunningWorkoutFloatProps = {
-  bottomOffset?: number
-  hidden?: boolean
+const stripSurfaceStyle = {
+  bottom: -16,
+  borderTopLeftRadius: 24,
+  borderTopRightRadius: 24,
+}
+
+type RunningWorkoutStripProps = {
   onHeightChange?: (height: number) => void
 }
 
-export default function RunningWorkoutFloat({
-  bottomOffset = 90,
-  hidden = false,
-  onHeightChange,
-}: RunningWorkoutFloatProps) {
+export default function RunningWorkoutStrip({ onHeightChange }: RunningWorkoutStripProps) {
   const router = useRouter()
   const colors = useCadenceColors()
   const { runningWorkout, isWorkoutRunning, getElapsedTime } = useRunningWorkoutStore()
@@ -54,11 +54,10 @@ export default function RunningWorkoutFloat({
   }
 
   // Don't render if no workout is running.
-  if (hidden || !workoutRunning || !runningWorkout) {
+  if (!workoutRunning || !runningWorkout) {
     return null
   }
 
-  const currentExercise = runningWorkout.exercises[runningWorkout.currentExerciseIndex]
   const completedSets = runningWorkout.exercises.reduce(
     (total, exercise) => total + exercise.sessionSets.filter((set) => set.completed).length,
     0
@@ -71,16 +70,21 @@ export default function RunningWorkoutFloat({
 
   return (
     <View
-      pointerEvents="box-none"
-      className="absolute left-page right-page"
-      style={{ bottom: bottomOffset }}
-      onLayout={(event: LayoutChangeEvent) => onHeightChange?.(event.nativeEvent.layout.height)}
+      className="mx-8"
+      style={{ marginBottom: -6 }}
+      onLayout={(event: LayoutChangeEvent) => onHeightChange?.(event.nativeEvent.layout.height - 6)}
     >
-      <Button
-        variant="surface"
-        shape="card"
-        density="card"
-        className="w-full flex-row items-center justify-start gap-field shadow-lg"
+      <View
+        pointerEvents="none"
+        className="absolute inset-x-0 top-0 bg-surface"
+        style={{
+          ...stripSurfaceStyle,
+          boxShadow: [{ inset: true, offsetX: 0, offsetY: 1, blurRadius: 4, color: '#0000001A' }],
+        }}
+      />
+      <Pressable
+        hitSlop={{ top: 6 }}
+        className="min-h-touch w-full flex-row items-center justify-start gap-compact rounded-t-[24px] px-field py-2 hover:opacity-90 active:opacity-80 focus:border-2 focus:border-accent"
         accessibilityRole="button"
         accessibilityLabel={`Resume ${runningWorkout.name}, workout in progress`}
         accessibilityHint="Opens the running workout session"
@@ -89,29 +93,17 @@ export default function RunningWorkoutFloat({
         }}
         onPress={handlePress}
       >
-        <View className="h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent">
-          <Play size={16} color={colors.onAccent} aria-hidden />
+        <UiText textRole="bodyEmphasis" className="min-w-0 flex-1" numberOfLines={1}>
+          {runningWorkout.name}
+        </UiText>
+        <View className="shrink-0 flex-row items-center gap-compact">
+          <Clock size={12} color={colors.muted} aria-hidden />
+          <UiText textRole="meta">{formattedElapsedTime}</UiText>
         </View>
-        <View className="min-w-0 flex-1 gap-compact">
-          <UiText textRole="bodyEmphasis" numberOfLines={1}>
-            {runningWorkout.name} • In Progress
-          </UiText>
-          <View className="flex-row items-center justify-between gap-field">
-            <View className="shrink-0 flex-row items-center gap-compact">
-              <Clock size={14} color={colors.muted} aria-hidden />
-              <UiText textRole="meta">{formattedElapsedTime}</UiText>
-            </View>
-            <UiText textRole="meta">
-              {completedSets}/{totalSets} sets
-            </UiText>
-          </View>
-          {currentExercise && (
-            <UiText textRole="meta" numberOfLines={1}>
-              {currentExercise.name}
-            </UiText>
-          )}
-        </View>
-      </Button>
+        <UiText textRole="meta" className="shrink-0">
+          {completedSets}/{totalSets} sets
+        </UiText>
+      </Pressable>
     </View>
   )
 }

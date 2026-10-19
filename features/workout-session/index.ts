@@ -9,7 +9,7 @@ export { useWorkoutRecording, convertRunningWorkoutToRecord } from './hooks/useW
 export { useOptimizedTimer, useElapsedTimeFormatter } from './hooks/useOptimizedTimer'
 
 // Components
-export { default as RunningWorkoutFloat } from './components/RunningWorkoutFloat'
+export { default as RunningWorkoutStrip } from './components/RunningWorkoutStrip'
 export { WorkoutSessionExercise } from './components/WorkoutSessionExercise'
 export { WorkoutSessionSetRow } from './components/WorkoutSessionSetRow'
 export { CardioSessionSetRow } from './components/CardioSessionSetRow'

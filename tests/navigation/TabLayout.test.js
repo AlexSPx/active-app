@@ -2,10 +2,14 @@ const React = require('react')
 const { act, create } = require('react-test-renderer')
 
 jest.mock('react-native', () => ({
+  Pressable: (props) => require('react').createElement('Pressable', props, props.children),
   View: (props) => require('react').createElement('View', props, props.children),
   Platform: { OS: 'android' },
   Keyboard: { addListener: jest.fn(() => ({ remove: jest.fn() })) },
   useWindowDimensions: jest.fn(() => ({ fontScale: 1 })),
+}))
+jest.mock('@react-navigation/bottom-tabs', () => ({
+  BottomTabBar: (props) => require('react').createElement('BottomTabBar', props),
 }))
 jest.mock('@react-navigation/elements', () => ({
   PlatformPressable: (props) =>
@@ -18,7 +22,6 @@ jest.mock('uniwind', () => ({
 jest.mock('../../components/ui/Controls', () => {
   const React = require('react')
   return {
-    Button: ({ children, ...props }) => React.createElement('Button', props, children),
     UiText: ({ children, ...props }) => React.createElement('Text', props, children),
   }
 })
@@ -29,7 +32,8 @@ jest.mock('expo-router', () => {
     return React.createElement(
       'Tabs',
       { ...props, contentBottomInset: useTabContentInset() },
-      props.children
+      props.children,
+      props.tabBar({})
     )
   }
   Tabs.Screen = () => null
@@ -46,10 +50,9 @@ jest.mock('../../components/ui/icons', () => ({
   Dumbbell: () => null,
   Settings: () => null,
   Clock: () => null,
-  Play: () => null,
 }))
 jest.mock('../../features/workout-session', () => ({
-  RunningWorkoutFloat: require('../../features/workout-session/components/RunningWorkoutFloat')
+  RunningWorkoutStrip: require('../../features/workout-session/components/RunningWorkoutStrip')
     .default,
 }))
 jest.mock('../../features/workout-session/stores/runningWorkoutStore', () => ({
@@ -76,6 +79,7 @@ afterEach(() => {
   jest.useRealTimers()
 })
 const options = () => view.root.findByType('Tabs').props.screenOptions
+const bar = () => view.root.findByType('BottomTabBar')
 const bottomInset = () => view.root.findByType('Tabs').props.contentBottomInset
 const keyboard = (event) => Keyboard.addListener.mock.calls.find(([name]) => name === event)[1]()
 
@@ -83,7 +87,7 @@ test('idle tabs reserve content space and grow for larger text', () => {
   act(() => {
     view = create(React.createElement(TabLayout))
   })
-  expect(view.root.findAllByType('Button')).toHaveLength(0)
+  expect(view.root.findAllByType('Pressable')).toHaveLength(0)
   const normal = options()
   expect(normal.sceneStyle.backgroundColor).toBe('transparent')
   expect(normal.sceneStyle.paddingBottom).toBeUndefined()
@@ -104,19 +108,27 @@ test('a measured running shortcut clears the content, resumes the session, and h
   act(() => {
     view = create(React.createElement(TabLayout))
   })
-  const shortcut = () => view.root.findByType('Button')
+  const shortcut = () => view.root.findByType('Pressable')
+  expect(bar().parent.parent.findAllByType('Pressable')).toHaveLength(0)
+  expect(options().tabBarStyle.backgroundColor).toBe('transparent')
   expect(options().sceneStyle.backgroundColor).toBe('transparent')
   expect(shortcut().props.accessibilityLabel).toBe('Resume Morning workout, workout in progress')
   expect(shortcut().props.accessibilityValue.text).toContain('1 of 2 sets complete')
   const card = () => view.root.findAllByType('View').find((node) => node.props.onLayout)
   act(() => card().props.onLayout({ nativeEvent: { layout: { height: 132 } } }))
-  expect(bottomInset()).toBeGreaterThanOrEqual(card().props.style.bottom + 132 + 16)
+  expect(bottomInset()).toBe(options().tabBarStyle.height + 8 + 126 + 16)
   act(() => shortcut().props.onPress())
   expect(mockPush).toHaveBeenCalledWith('/workouts/session')
   act(() => keyboard('keyboardDidShow'))
-  expect(view.root.findAllByType('Button')).toHaveLength(0)
+  expect(view.root.findAllByType('Pressable')).toHaveLength(0)
   expect(bottomInset()).toBe(0)
+  expect(view.root.findAllByType('BottomTabBar')).toHaveLength(0)
   act(() => keyboard('keyboardDidHide'))
   expect(shortcut().props.accessibilityRole).toBe('button')
-  expect(bottomInset()).toBeGreaterThanOrEqual(card().props.style.bottom + 132 + 16)
+  expect(bottomInset()).toBe(options().tabBarStyle.height + 8 + 126 + 16)
+  mockStore.runningWorkout = null
+  act(() => view.update(React.createElement(TabLayout)))
+  expect(view.root.findAllByType('Pressable')).toHaveLength(0)
+  expect(view.root.findAllByType('BottomTabBar')).toHaveLength(1)
+  expect(bottomInset()).toBe(options().tabBarStyle.height + 8 + 16)
 })
