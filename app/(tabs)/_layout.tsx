@@ -1,19 +1,18 @@
-import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs'
+import { BottomTabBar, type BottomTabBarButtonProps } from '@react-navigation/bottom-tabs'
 import { PlatformPressable } from '@react-navigation/elements'
 import { Tabs, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { Keyboard, Platform, View, useWindowDimensions } from 'react-native'
 import { useResolveClassNames } from 'uniwind'
 import { Dumbbell, History, Home, Settings as SettingsIcon } from '../../components/ui/icons'
-import { RunningWorkoutFloat } from '../../features/workout-session'
+import { RunningWorkoutStrip } from '../../features/workout-session'
 import { useCadenceColors } from '../../components/ui/useCadenceColors'
 import { useRunningWorkoutStore } from '../../features/workout-session/stores/runningWorkoutStore'
 import { TabContentInsetContext } from '../../navigation/TabContentInset'
 
 const TAB_BAR_MARGIN = 8
-const TAB_BAR_GAP = 12
 const CONTENT_GAP = 16
-const RUNNING_CARD_ESTIMATED_HEIGHT = 84
+const RUNNING_STRIP_ESTIMATED_HEIGHT = 48
 
 function TabBarButton(props: BottomTabBarButtonProps) {
   const selectedStyles = useResolveClassNames('bg-divider')
@@ -39,16 +38,15 @@ export default function TabLayout() {
   const { fontScale } = useWindowDimensions()
   const workoutRunning = useRunningWorkoutStore((state) => !!state.runningWorkout)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
-  const [runningCardHeight, setRunningCardHeight] = useState(RUNNING_CARD_ESTIMATED_HEIGHT)
+  const [runningStripHeight, setRunningStripHeight] = useState(RUNNING_STRIP_ESTIMATED_HEIGHT)
   const titleStyles = useResolveClassNames('text-header font-dm-semibold')
   const workoutTitleStyles = useResolveClassNames('text-workout-header font-dm-semibold')
   const tabBarSurfaceStyles = useResolveClassNames('bg-raised')
   const tabBarHeight = Math.max(64, 64 + (fontScale - 1) * 18)
-  const runningCardBottomOffset = tabBarHeight + TAB_BAR_MARGIN + TAB_BAR_GAP
   const contentBottomClearance = keyboardVisible
     ? 0
     : workoutRunning
-      ? runningCardBottomOffset + runningCardHeight + CONTENT_GAP
+      ? tabBarHeight + TAB_BAR_MARGIN + runningStripHeight + CONTENT_GAP
       : tabBarHeight + TAB_BAR_MARGIN + CONTENT_GAP
 
   useFocusEffect(
@@ -72,6 +70,29 @@ export default function TabLayout() {
     <TabContentInsetContext.Provider value={contentBottomClearance}>
       <View className="flex-1 bg-background">
         <Tabs
+          tabBar={(props) =>
+            keyboardVisible ? null : (
+              <View
+                style={{
+                  position: 'absolute',
+                  left: 16,
+                  right: 16,
+                  bottom: TAB_BAR_MARGIN,
+                }}
+              >
+                <RunningWorkoutStrip onHeightChange={setRunningStripHeight} />
+                <View
+                  style={{
+                    borderRadius: 32,
+                    ...tabBarSurfaceStyles,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <BottomTabBar {...props} />
+                </View>
+              </View>
+            )
+          }
           safeAreaInsets={{ top: 0, bottom: 0, left: 0, right: 0 }}
           screenOptions={{
             tabBarActiveTintColor: colors.foreground,
@@ -89,18 +110,10 @@ export default function TabLayout() {
             tabBarItemStyle: { padding: 4 },
             tabBarButton: (props) => <TabBarButton {...props} />,
             tabBarStyle: {
-              position: 'absolute',
-              marginHorizontal: 16,
-              bottom: TAB_BAR_MARGIN,
               height: tabBarHeight,
               borderTopWidth: 0,
-              borderRadius: 32,
-              ...tabBarSurfaceStyles,
-              elevation: 8,
-              shadowColor: '#24192b',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.14,
-              shadowRadius: 12,
+              backgroundColor: 'transparent',
+              elevation: 0,
             },
             sceneStyle: {
               backgroundColor: 'transparent',
@@ -159,13 +172,6 @@ export default function TabLayout() {
             }}
           />
         </Tabs>
-
-        {/* Running Workout - Floating above tab bar */}
-        <RunningWorkoutFloat
-          bottomOffset={runningCardBottomOffset}
-          hidden={keyboardVisible}
-          onHeightChange={setRunningCardHeight}
-        />
       </View>
     </TabContentInsetContext.Provider>
   )
