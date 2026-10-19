@@ -3,7 +3,6 @@ import { Pressable, View, type LayoutChangeEvent } from 'react-native'
 import { useRouter } from 'expo-router'
 import { UiText } from '../../../components/ui/Controls'
 import { Clock } from '../../../components/ui/icons'
-import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { useRunningWorkoutStore } from '../stores/runningWorkoutStore'
 
 const stripSurfaceStyle = {
@@ -18,7 +17,6 @@ type RunningWorkoutStripProps = {
 
 export default function RunningWorkoutStrip({ onHeightChange }: RunningWorkoutStripProps) {
   const router = useRouter()
-  const colors = useCadenceColors()
   const { runningWorkout, isWorkoutRunning, getElapsedTime } = useRunningWorkoutStore()
   const [elapsedTime, setElapsedTime] = useState(0)
   const workoutRunning = isWorkoutRunning()
@@ -76,10 +74,10 @@ export default function RunningWorkoutStrip({ onHeightChange }: RunningWorkoutSt
     >
       <View
         pointerEvents="none"
-        className="absolute inset-x-0 top-0 bg-surface"
+        className="absolute inset-x-0 top-0 bg-navigation"
         style={{
           ...stripSurfaceStyle,
-          boxShadow: [{ inset: true, offsetX: 0, offsetY: 1, blurRadius: 4, color: '#0000001A' }],
+          boxShadow: [{ inset: true, offsetX: 0, offsetY: 1, blurRadius: 4, color: '#0000003E' }],
         }}
       />
       <Pressable
@@ -93,14 +91,21 @@ export default function RunningWorkoutStrip({ onHeightChange }: RunningWorkoutSt
         }}
         onPress={handlePress}
       >
-        <UiText textRole="bodyEmphasis" className="min-w-0 flex-1" numberOfLines={1}>
+        <UiText
+          textRole="bodyEmphasis"
+          className="min-w-0 flex-1"
+          style={{ color: '#2d2235' }}
+          numberOfLines={1}
+        >
           {runningWorkout.name}
         </UiText>
         <View className="shrink-0 flex-row items-center gap-compact">
-          <Clock size={12} color={colors.muted} aria-hidden />
-          <UiText textRole="meta">{formattedElapsedTime}</UiText>
+          <Clock size={12} color="#76627d" aria-hidden />
+          <UiText textRole="meta" style={{ color: '#76627d' }}>
+            {formattedElapsedTime}
+          </UiText>
         </View>
-        <UiText textRole="meta" className="shrink-0">
+        <UiText textRole="meta" className="shrink-0" style={{ color: '#76627d' }}>
           {completedSets}/{totalSets} sets
         </UiText>
       </Pressable>

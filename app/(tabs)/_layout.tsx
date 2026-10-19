@@ -6,7 +6,6 @@ import { Keyboard, Platform, View, useWindowDimensions } from 'react-native'
 import { useResolveClassNames } from 'uniwind'
 import { Dumbbell, History, Home, Settings as SettingsIcon } from '../../components/ui/icons'
 import { RunningWorkoutStrip } from '../../features/workout-session'
-import { useCadenceColors } from '../../components/ui/useCadenceColors'
 import { useRunningWorkoutStore } from '../../features/workout-session/stores/runningWorkoutStore'
 import { TabContentInsetContext } from '../../navigation/TabContentInset'
 import { TabHeader } from '../../navigation/TabHeader'
@@ -16,7 +15,7 @@ const CONTENT_GAP = 16
 const RUNNING_STRIP_ESTIMATED_HEIGHT = 48
 
 function TabBarButton(props: BottomTabBarButtonProps) {
-  const selectedStyles = useResolveClassNames('bg-divider')
+  const selectedStyles = useResolveClassNames('bg-featured')
 
   return (
     <PlatformPressable
@@ -35,12 +34,11 @@ function TabBarButton(props: BottomTabBarButtonProps) {
 }
 
 export default function TabLayout() {
-  const colors = useCadenceColors()
   const { fontScale } = useWindowDimensions()
   const workoutRunning = useRunningWorkoutStore((state) => !!state.runningWorkout)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
   const [runningStripHeight, setRunningStripHeight] = useState(RUNNING_STRIP_ESTIMATED_HEIGHT)
-  const tabBarSurfaceStyles = useResolveClassNames('bg-raised')
+  const tabBarSurfaceStyles = useResolveClassNames('bg-navigation')
   const tabBarHeight = Math.max(64, 64 + (fontScale - 1) * 18)
   const contentBottomClearance = keyboardVisible
     ? 0
@@ -94,8 +92,8 @@ export default function TabLayout() {
           }
           safeAreaInsets={{ top: 0, bottom: 0, left: 0, right: 0 }}
           screenOptions={{
-            tabBarActiveTintColor: colors.foreground,
-            tabBarInactiveTintColor: colors.muted,
+            tabBarActiveTintColor: '#2d2235',
+            tabBarInactiveTintColor: '#76627d',
             tabBarLabelPosition: 'below-icon',
             tabBarHideOnKeyboard: true,
             tabBarAllowFontScaling: true,
