@@ -10,7 +10,7 @@ interface MarkdownDisplayProps {
 type MarkdownBlock =
   | { type: 'heading'; level: 1 | 2 | 3; content: string }
   | { type: 'paragraph'; content: string }
-  | { type: 'listItem'; content: string }
+  | { type: 'listItem'; marker: string; content: string }
   | { type: 'separator' }
 
 /**
@@ -50,7 +50,7 @@ export function MarkdownDisplay({ content }: MarkdownDisplayProps) {
         if (block.type === 'listItem') {
           return (
             <View key={index} className="ml-compact flex-row items-start gap-compact">
-              <UiText textRole="body">•</UiText>
+              <UiText textRole="body">{block.marker}</UiText>
               <UiText textRole="body" className="flex-1">
                 {parseInline(block.content)}
               </UiText>
@@ -111,10 +111,14 @@ function parseBlocks(content: string): MarkdownBlock[] {
       continue
     }
 
-    const listItem = line.match(/^[-*+]\s+(.+)$/)
+    const listItem = line.match(/^([-*+]|\d+\.)\s+(.+)$/)
     if (listItem) {
       flushParagraph()
-      blocks.push({ type: 'listItem', content: listItem[1] })
+      blocks.push({
+        type: 'listItem',
+        marker: /^\d/.test(listItem[1]) ? listItem[1] : '•',
+        content: listItem[2],
+      })
       continue
     }
 

@@ -5,10 +5,18 @@ on:
     branches: [master]
     paths:
       - 'landing/**'
+      - 'features/legal/**'
+      - 'public/privacy-policy.html'
+      - 'scripts/sync-legal.py'
+      - 'scripts/test_sync_legal.py'
       - '.github/workflows/pages.yml'
   pull_request:
     paths:
       - 'landing/**'
+      - 'features/legal/**'
+      - 'public/privacy-policy.html'
+      - 'scripts/sync-legal.py'
+      - 'scripts/test_sync_legal.py'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -24,6 +32,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Verify shared legal content
+        run: |
+          python3 scripts/test_sync_legal.py
+          python3 scripts/sync-legal.py --check
       - name: Prepare static site
         run: |
           mkdir _site
