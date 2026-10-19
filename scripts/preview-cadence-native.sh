@@ -5,7 +5,7 @@ set -euo pipefail
 # The launcher temporarily switches package.json main and restores that field on exit.
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 package_file="$project_root/package.json"
-preview_main="components/dev/cadence-preview/entry.tsx"
+preview_main="${PREVIEW_MAIN:-components/dev/cadence-preview/entry.tsx}"
 lock_dir="$project_root/.cadence-preview.lock"
 
 if ! mkdir "$lock_dir" 2>/dev/null; then
@@ -54,4 +54,4 @@ fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`)
 NODE
 
 cd "$project_root"
-"$project_root/node_modules/.bin/expo" start --dev-client --port "${PORT:-8083}" --lan "$@"
+"$project_root/node_modules/.bin/expo" start --max-workers 2 --dev-client --port "${PORT:-8083}" --lan "$@"

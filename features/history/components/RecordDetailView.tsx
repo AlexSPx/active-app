@@ -1,4 +1,5 @@
-import { ScrollView, View } from 'react-native'
+import type { ReactNode } from 'react'
+import { ScrollView, StyleSheet, View } from 'react-native'
 import { useTabContentInset } from '../../../navigation/TabContentInset'
 import { Button, UiBadge, UiText } from '../../../components/ui/Controls'
 import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
@@ -51,14 +52,47 @@ function ErrorState({
   )
 }
 
-function SummaryMetric({ label, value }: { label: string; value: string }) {
+function SummaryMetric({
+  label,
+  value,
+  divider = false,
+}: {
+  label: string
+  value: string
+  divider?: boolean
+}) {
   return (
-    <View className="min-w-0 flex-1 items-center gap-compact px-compact">
+    <View
+      className="min-w-0 flex-1 items-center gap-compact border-divider px-compact"
+      style={divider && styles.metricDivider}
+    >
       <UiText textRole="cardTitle" style={{ fontSize: 21, lineHeight: 25 }} selectable>
         {value}
       </UiText>
       <UiText textRole="meta" style={{ fontSize: 10, lineHeight: 15 }}>
         {label}
+      </UiText>
+    </View>
+  )
+}
+
+function RecordTableCell({
+  column,
+  header = false,
+  children,
+}: {
+  column: 'set' | 'interval' | 'weight' | 'value'
+  header?: boolean
+  children: ReactNode
+}) {
+  return (
+    <View style={[styles.cell, styles[column]]}>
+      <UiText
+        textRole={header ? 'meta' : column === 'set' || column === 'interval' ? 'caption' : 'body'}
+        style={header ? styles.columnLabel : styles.cellText}
+        selectable={!header}
+      >
+        {children}
       </UiText>
     </View>
   )
@@ -117,7 +151,7 @@ export function RecordDetailView({
         contentContainerStyle={{ paddingBottom: bottomInset }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="w-full max-w-3xl self-center px-page pb-section pt-5">
+        <View className="w-full max-w-3xl self-center px-page pb-section" style={styles.content}>
           {!!error && (
             <View className="gap-compact rounded-control border border-divider bg-raised p-field">
               <UiText textRole="bodyMuted" accessibilityRole="alert">
@@ -140,20 +174,21 @@ export function RecordDetailView({
               year: 'numeric',
             })}
           </UiText>
-          <UiText textRole="screenTitle" className="mb-2.5 mt-field" selectable>
+          <UiText textRole="screenTitle" style={styles.title} selectable>
             {record.workoutTitle}
           </UiText>
           <UiText textRole="bodyMuted" style={{ fontSize: 13 }}>
             A session in the books.
           </UiText>
 
-          <View className="my-[18px] flex-row rounded-[16px] bg-surface px-2.5 py-card">
+          <View className="flex-row bg-surface" style={styles.summary}>
             <SummaryMetric
+              divider
               label={intervals > 0 ? 'interval minutes' : 'minutes'}
               value={duration > 0 ? `${Math.round(duration / 60)}` : '—'}
             />
-            <View className="w-px self-stretch bg-divider" />
             <SummaryMetric
+              divider
               label={strengthSets > 0 ? (intervals > 0 ? 'sets / intervals' : 'sets') : 'intervals'}
               value={
                 strengthSets > 0
@@ -163,17 +198,20 @@ export function RecordDetailView({
                   : `${intervals}`
               }
             />
-            <View className="w-px self-stretch bg-divider" />
             <SummaryMetric
               label="kg lifted"
               value={strengthSets > 0 ? totalVolume.toLocaleString() : '—'}
             />
           </View>
 
-          <UiText textRole="bodyEmphasis" accessibilityRole="header" className="mb-5 mt-0.5">
+          <UiText
+            textRole="bodyEmphasis"
+            accessibilityRole="header"
+            style={styles.recordedSetsTitle}
+          >
             Recorded sets
           </UiText>
-          <View className="gap-5">
+          <View style={styles.exerciseList}>
             {record.exerciseRecords.map((exercise, index) => {
               const cardio = isCardioExerciseRecord(exercise)
               const rows = cardio ? exercise.durationSeconds || [] : exercise.reps || []
@@ -182,67 +220,40 @@ export function RecordDetailView({
               const volumePr = achievements.some((achievement) => achievement.type === 'VOLUME')
 
               return (
-                <View key={`${exercise.exerciseName}-${index}`} className="gap-0">
+                <View key={`${exercise.exerciseName}-${index}`}>
                   <UiText textRole="bodyEmphasis" accessibilityRole="header" selectable>
                     {exercise.exerciseName}
                   </UiText>
-                  <View className="mt-field flex-row items-center py-2">
-                    <UiText
-                      textRole="meta"
-                      style={{ fontSize: 10, lineHeight: 15 }}
-                      className={cardio ? 'w-16 px-2' : 'w-9 px-2'}
-                    >
+                  <View style={[styles.row, styles.tableHeader]}>
+                    <RecordTableCell column={cardio ? 'interval' : 'set'} header>
                       {cardio ? 'Interval' : 'Set'}
-                    </UiText>
+                    </RecordTableCell>
                     {!cardio && (
-                      <UiText
-                        textRole="meta"
-                        style={{ fontSize: 10, lineHeight: 15 }}
-                        className="flex-[2] px-2"
-                      >
+                      <RecordTableCell column="weight" header>
                         Weight (kg)
-                      </UiText>
+                      </RecordTableCell>
                     )}
-                    <UiText
-                      textRole="meta"
-                      style={{ fontSize: 10, lineHeight: 15 }}
-                      className="flex-1 px-2"
-                    >
+                    <RecordTableCell column="value" header>
                       {cardio ? 'Duration' : 'Reps'}
-                    </UiText>
+                    </RecordTableCell>
                   </View>
                   {rows.map((value, rowIndex) => (
                     <View
                       key={rowIndex}
-                      className="flex-row items-center border-t border-divider py-[9px]"
+                      className="border-divider"
+                      style={[styles.row, styles.tableRow]}
                     >
-                      <View
-                        className={
-                          cardio ? 'w-16 flex-row items-center' : 'w-9 flex-row items-center'
-                        }
-                      >
-                        <UiText textRole="caption" className="px-2">
-                          {rowIndex + 1}
-                        </UiText>
-                      </View>
+                      <RecordTableCell column={cardio ? 'interval' : 'set'}>
+                        {rowIndex + 1}
+                      </RecordTableCell>
                       {!cardio && (
-                        <UiText
-                          textRole="body"
-                          style={{ fontSize: 12, lineHeight: 18 }}
-                          className="flex-[2] px-2"
-                          selectable
-                        >
+                        <RecordTableCell column="weight">
                           {(exercise.weight?.[rowIndex] ?? 0).toLocaleString()}
-                        </UiText>
+                        </RecordTableCell>
                       )}
-                      <UiText
-                        textRole="body"
-                        style={{ fontSize: 12, lineHeight: 18 }}
-                        className="flex-1 px-2"
-                        selectable
-                      >
+                      <RecordTableCell column="value">
                         {cardio ? formatSeconds(value) : value}
-                      </UiText>
+                      </RecordTableCell>
                     </View>
                   ))}
                   {rows.length === 0 && <UiText textRole="bodyMuted">No recorded sets.</UiText>}
@@ -321,3 +332,22 @@ export function RecordDetailView({
     </View>
   )
 }
+
+const styles = StyleSheet.create({
+  content: { paddingTop: 20 },
+  title: { marginTop: 12, marginBottom: 10 },
+  summary: { marginVertical: 18, borderRadius: 16, paddingVertical: 16, paddingHorizontal: 10 },
+  metricDivider: { borderRightWidth: 1 },
+  recordedSetsTitle: { marginTop: 2, marginBottom: 20 },
+  exerciseList: { gap: 20 },
+  row: { flexDirection: 'row', alignItems: 'center' },
+  tableHeader: { marginTop: 12, paddingVertical: 8 },
+  tableRow: { borderTopWidth: 1, paddingVertical: 9 },
+  cell: { paddingHorizontal: 8 },
+  set: { width: 36 },
+  interval: { width: 64 },
+  weight: { flex: 2 },
+  value: { flex: 1 },
+  columnLabel: { fontSize: 10, lineHeight: 15 },
+  cellText: { fontSize: 12, lineHeight: 18 },
+})
