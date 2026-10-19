@@ -76,7 +76,7 @@ function HistoryRecordCard({ item, onPress }: { item: HistoryListItem; onPress: 
 
   return (
     <Pressable
-      className="min-h-touch flex-row items-center gap-field rounded-card border border-divider bg-surface p-compact active:bg-raised"
+      className="min-h-touch flex-row items-center gap-field rounded-card border border-divider bg-surface px-card py-compact active:bg-raised"
       accessibilityRole="button"
       accessibilityLabel={`View ${item.name}, ${dateLabel} at ${timeLabel}`}
       onPress={onPress}
@@ -86,12 +86,7 @@ function HistoryRecordCard({ item, onPress }: { item: HistoryListItem; onPress: 
         <UiText textRole="bodyEmphasis">{item.date.getDate()}</UiText>
       </View>
       <View className="min-w-0 flex-1 gap-compact">
-        <View className="flex-row items-start gap-compact">
-          <UiText textRole="bodyEmphasis" className="min-w-0 flex-1">
-            {item.name}
-          </UiText>
-          <ChevronRight size={16} color={colors.accent} />
-        </View>
+        <UiText textRole="bodyEmphasis">{item.name}</UiText>
         <UiText textRole="meta">{timeLabel}</UiText>
         <UiText textRole="caption">{metrics.join(' · ')}</UiText>
         {!!item.exerciseNames.length && (
@@ -99,6 +94,7 @@ function HistoryRecordCard({ item, onPress }: { item: HistoryListItem; onPress: 
         )}
         {(item.prOneRm || item.prVolume) && <UiBadge variant="pill">Personal record</UiBadge>}
       </View>
+      <ChevronRight size={16} color={colors.accent} />
     </Pressable>
   )
 }
