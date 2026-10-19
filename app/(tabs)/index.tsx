@@ -1,3 +1,4 @@
+import { useTabContentInset } from '../../navigation/TabContentInset'
 import { ScrollView, View } from 'react-native'
 import { Button, UiText } from '../../components/ui/Controls'
 import { ArrowRight, Plus } from '../../components/ui/icons'
@@ -10,6 +11,7 @@ import { TrainingWidgets } from '../../features/training/components/TrainingWidg
 import { useTrainingHomeController } from '../../features/training/hooks/useTrainingHomeController'
 
 export default function HomeScreen() {
+  const bottomInset = useTabContentInset()
   const home = useTrainingHomeController()
   const colors = useCadenceColors()
 
@@ -18,6 +20,7 @@ export default function HomeScreen() {
       className="flex-1 bg-background"
       contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
+      contentContainerStyle={{ paddingBottom: bottomInset }}
     >
       <View className="mx-auto w-full max-w-3xl gap-section px-page pb-section">
         <UiText textRole="meta" className="pt-page">

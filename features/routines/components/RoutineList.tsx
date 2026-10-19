@@ -1,3 +1,4 @@
+import { useTabContentInset } from '../../../navigation/TabContentInset'
 import { FlashList } from '@shopify/flash-list'
 import { memo } from 'react'
 import { View } from 'react-native'
@@ -33,6 +34,7 @@ export const RoutineList = memo(function RoutineList({
   disableActions,
 }: RoutineListProps) {
   const insets = useSafeAreaInsets()
+  const bottomInset = useTabContentInset()
   const renderRoutine = ({ item: routine }: { item: Routine }) => {
     return (
       <RoutineCard
@@ -57,7 +59,7 @@ export const RoutineList = memo(function RoutineList({
         keyExtractor={(item) => item.id}
         style={{ flex: 1 }}
         contentContainerStyle={{
-          paddingBottom: 24 + insets.bottom,
+          paddingBottom: 24 + insets.bottom + bottomInset,
           paddingHorizontal: 20,
         }}
         ListHeaderComponent={listHeader}

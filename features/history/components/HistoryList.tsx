@@ -1,7 +1,7 @@
 import { FlashList } from '@shopify/flash-list'
 import type { ReactNode } from 'react'
 import { Pressable, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTabContentInset } from '../../../navigation/TabContentInset'
 import { Button, UiBadge, UiText } from '../../../components/ui/Controls'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ChevronRight } from '../../../components/ui/icons'
@@ -115,7 +115,7 @@ export default function HistoryList({
   onShowAll,
   onPressItem,
 }: Props) {
-  const insets = useSafeAreaInsets()
+  const bottomInset = useTabContentInset()
   const dateTitle = filterDate?.toLocaleDateString([], {
     weekday: 'long',
     day: 'numeric',
@@ -220,7 +220,7 @@ export default function HistoryList({
       contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{
         paddingHorizontal: 0,
-        paddingBottom: 24 + insets.bottom,
+        paddingBottom: bottomInset,
         flexGrow: data.length === 0 ? 1 : undefined,
       }}
       ListHeaderComponent={listHeader}

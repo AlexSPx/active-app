@@ -61,7 +61,12 @@ jest.mock('@shopify/flash-list', () => {
       )
       return React.createElement(
         'FlashList',
-        { testID: 'history-flash-list', refreshing: props.refreshing, onRefresh: props.onRefresh },
+        {
+          testID: 'history-flash-list',
+          refreshing: props.refreshing,
+          onRefresh: props.onRefresh,
+          contentContainerStyle: props.contentContainerStyle,
+        },
         props.ListHeaderComponent,
         props.data.length ? rows : props.ListEmptyComponent,
         props.ListFooterComponent
@@ -422,4 +427,26 @@ test('a refresh error retains cached records and offers retry', () => {
   expect(hasText(tree, 'Mixed session')).toBe(true)
   expect(findLabel(tree, 'Try again')).toBeTruthy()
   act(() => tree.unmount())
+})
+
+test('history and record details reserve the floating tab content inset', () => {
+  const { TabContentInsetContext } = require('../../navigation/TabContentInset')
+  const withInset = (screen, inset) =>
+    React.createElement(
+      TabContentInsetContext.Provider,
+      { value: inset },
+      React.createElement(screen)
+    )
+  const history = mount(withInset(HistoryPage, 164))
+  expect(history.root.findByType('FlashList').props.contentContainerStyle.paddingBottom).toBe(164)
+  act(() => history.update(withInset(HistoryPage, 240)))
+  expect(history.root.findByType('FlashList').props.contentContainerStyle.paddingBottom).toBe(240)
+  act(() => history.unmount())
+
+  const detail = mount(withInset(RecordScreen, 164))
+  const { ScrollView } = require('react-native')
+  expect(detail.root.findByType(ScrollView).props.contentContainerStyle.paddingBottom).toBe(164)
+  act(() => detail.update(withInset(RecordScreen, 240)))
+  expect(detail.root.findByType(ScrollView).props.contentContainerStyle.paddingBottom).toBe(240)
+  act(() => detail.unmount())
 })

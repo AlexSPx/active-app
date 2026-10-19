@@ -1,4 +1,5 @@
 import { ScrollView, View } from 'react-native'
+import { useTabContentInset } from '../../../navigation/TabContentInset'
 import { Button, UiBadge, UiText } from '../../../components/ui/Controls'
 import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
@@ -73,6 +74,7 @@ export function RecordDetailView({
   onCancelConfirmation,
   onConfirmDelete,
 }: Props) {
+  const bottomInset = useTabContentInset()
   if (loading && !record) {
     return (
       <View className="flex-1 items-center justify-center gap-field bg-background">
@@ -110,6 +112,7 @@ export function RecordDetailView({
       <ScrollView
         className="flex-1"
         contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ paddingBottom: bottomInset }}
         showsVerticalScrollIndicator={false}
       >
         <View className="w-full max-w-3xl self-center gap-field px-page py-section">
