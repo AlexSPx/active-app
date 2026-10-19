@@ -1,0 +1,16 @@
+{
+  "name": "active-cadence-promo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "studio": "remotion studio src/index.jsx",
+    "render": "remotion render src/index.jsx CadenceAlive out/active-cadence-alive.mp4 --browser-executable=/opt/google/chrome/chrome --concurrency=4 --crf=17 --color-space=bt709 --image-format=png",
+    "poster": "remotion still src/index.jsx CadenceAlive out/cadence-poster.png --frame=210 --browser-executable=/opt/google/chrome/chrome"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.536",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.536"
+  }
+}
