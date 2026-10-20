@@ -41,3 +41,5 @@ Use these URLs after the first successful deployment:
 - Terms of Service: `https://alexspx.github.io/active-app/legal/terms-and-conditions.html`
 
 All site links and assets are relative, so the `/active-app/` prefix works without a build step. Run `python3 landing/verify.py` before publishing changes. For GitHub's setup instructions, see [Using custom workflows with GitHub Pages](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages).
+
+The main stylesheet URL includes the first 12 characters of its SHA-256 hash to refresh cached CSS when the layout changes. After editing `styles.css`, run `sha256sum landing/styles.css` and update `styles.css?v=...` in `index.html`. The page verifier rejects a stale version.
