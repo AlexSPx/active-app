@@ -815,6 +815,7 @@ h1 {
 }
 .testing-qr {
   display: block;
+  border-radius: 12px;
   width: 136px;
   height: 136px;
 }
