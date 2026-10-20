@@ -802,6 +802,73 @@ h1 {
 .closing .button {
   margin-top: 28px;
 }
+.testing-access {
+  display: grid;
+  grid-template-columns: 136px minmax(0, 1fr);
+  align-items: center;
+  gap: 0 18px;
+  max-width: 540px;
+  margin-top: 28px;
+}
+.testing-qr {
+  display: block;
+  width: 136px;
+  height: 136px;
+}
+.testing-copy h2 {
+  font-size: 18px;
+  letter-spacing: -0.4px;
+  line-height: 1.3;
+}
+.hero-copy .testing-access p {
+  font-size: 12px;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+.testing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.hero-copy .testing-actions .button {
+  min-height: 42px;
+  margin: 0;
+  padding: 10px 14px;
+  font-size: 12px;
+}
+.copy-testing-link {
+  border: 0;
+  padding: 8px 0;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.copy-testing-link[hidden] {
+  display: none;
+}
+.testing-access .copy-feedback {
+  grid-column: 1 / -1;
+}
+.copy-feedback:empty {
+  display: none;
+}
+@media (max-width: 800px) {
+  .testing-access {
+    grid-template-columns: 112px minmax(0, 1fr);
+    gap: 0 12px;
+  }
+  .testing-qr {
+    width: 112px;
+    height: 112px;
+  }
+  .testing-copy h2 {
+    font-size: 16px;
+  }
+}
 .legal-section {
   padding-bottom: 24px;
 }
