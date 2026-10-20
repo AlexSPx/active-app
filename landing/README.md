@@ -1,6 +1,6 @@
 # Active Next landing page
 
-Standalone, buildless landing page in the app’s Cadence palette, with bundled DM Sans, an interactive training preview, and the 32-second Cadence Alive promo. No dependencies or external font requests. The Android closed test includes a locally bundled QR code, a direct Google Play testing link, and a copy-link button. Public release status is “Coming soon”; project links point to `https://github.com/AlexSPx/active-app`.
+Standalone, buildless landing page in the app’s Cadence palette, with bundled DM Sans, an interactive training preview, and the 32-second Cadence Alive promo. No dependencies or external font requests. The Android closed test shows two steps: join the required Google Group, then join the test on Google Play with the same account. Both steps include locally bundled QR codes and direct links; the Play testing link also has a copy button. Public release status is “Coming soon”; project links point to `https://github.com/AlexSPx/active-app`.
 
 ## Preview
 
