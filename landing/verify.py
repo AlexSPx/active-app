@@ -1,5 +1,6 @@
 """Check the static site's links and assets before publishing to a repository subpath."""
 
+from hashlib import sha256
 from html.parser import HTMLParser
 from pathlib import Path
 import re
@@ -32,6 +33,14 @@ def verify(root):
     for required in ("index.html", "legal/privacy-policy.html", "legal/terms-and-conditions.html"):
         if root / required not in pages:
             raise ValueError(f"Missing required page: {required}")
+
+    version = sha256((root / "styles.css").read_bytes()).hexdigest()[:12]
+    stylesheet = f"styles.css?v={version}"
+    if stylesheet not in pages[root / "index.html"].links:
+        raise ValueError(
+            f'index.html: update the stylesheet link to href="{stylesheet}" '
+            "so returning visitors load the current CSS"
+        )
 
     def local_target(path, link):
         url = urlsplit(link)
