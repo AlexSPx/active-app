@@ -803,22 +803,29 @@ h1 {
   margin-top: 28px;
 }
 .testing-access {
+  max-width: 540px;
+  margin-top: 28px;
+}
+.testing-step {
   display: grid;
   grid-template-columns: 136px minmax(0, 1fr);
   align-items: center;
   gap: 0 18px;
-  max-width: 540px;
-  margin-top: 28px;
+  margin-top: 18px;
 }
 .testing-qr {
   display: block;
   width: 136px;
   height: 136px;
 }
-.testing-copy h2 {
+.testing-access h2 {
   font-size: 18px;
   letter-spacing: -0.4px;
   line-height: 1.3;
+}
+.testing-copy h3 {
+  font-size: 14px;
+  line-height: 1.4;
 }
 .hero-copy .testing-access p {
   font-size: 12px;
@@ -857,7 +864,7 @@ h1 {
   display: none;
 }
 @media (max-width: 800px) {
-  .testing-access {
+  .testing-step {
     grid-template-columns: 112px minmax(0, 1fr);
     gap: 0 12px;
   }
@@ -865,7 +872,7 @@ h1 {
     width: 112px;
     height: 112px;
   }
-  .testing-copy h2 {
+  .testing-access h2 {
     font-size: 16px;
   }
 }
