@@ -4,7 +4,17 @@ jest.mock('react-native-safe-area-context', () => ({
 
 const React = require('react')
 const { act, create } = require('react-test-renderer')
-const { AccessibilityInfo, Animated, Modal, PanResponder, Platform, View } = require('react-native')
+const {
+  AccessibilityInfo,
+  Animated,
+  Keyboard,
+  KeyboardAvoidingView,
+  Modal,
+  PanResponder,
+  Platform,
+  StyleSheet,
+  View,
+} = require('react-native')
 const { CadenceOverlay } = require('../../components/ui/CadenceOverlay')
 
 let tree
@@ -296,4 +306,55 @@ test.each([
   act(() => dismiss())
   expect(onClosed).not.toHaveBeenCalled()
   expect(restoreFocus).not.toHaveBeenCalled()
+})
+
+test('Android sheets release keyboard padding on hide even when the event includes system bar space', async () => {
+  const listeners = new Map()
+  jest.spyOn(Keyboard, 'addListener').mockImplementation((event, listener) => {
+    const callbacks = listeners.get(event) ?? new Set()
+    callbacks.add(listener)
+    listeners.set(event, callbacks)
+    return { remove: () => callbacks.delete(listener) }
+  })
+  const keyboardEvents = {
+    emit: (event, payload) => listeners.get(event)?.forEach((listener) => listener(payload)),
+  }
+  jest.spyOn(Animated, 'parallel').mockReturnValue({ start: jest.fn() })
+  jest.replaceProperty(Platform, 'OS', 'android')
+  act(() => {
+    tree = create(
+      <CadenceOverlay open onOpenChange={() => {}} snapPoints={[90]} title="Add widget">
+        <View />
+      </CadenceOverlay>
+    )
+  })
+
+  const avoidance = () => tree.root.findByType(KeyboardAvoidingView)
+  const layout = { x: 0, y: 0, width: 400, height: 889 }
+  await act(async () =>
+    avoidance()
+      .findAllByType(View)[0]
+      .props.onLayout({
+        persist() {},
+        nativeEvent: { layout },
+      })
+  )
+
+  await act(async () =>
+    keyboardEvents.emit('keyboardDidShow', {
+      duration: 0,
+      endCoordinates: { screenX: 0, screenY: 553, width: 400, height: 336 },
+    })
+  )
+  const padding = () =>
+    StyleSheet.flatten(avoidance().findAllByType(View)[0].props.style).paddingBottom
+  expect(padding()).toBe(336)
+
+  await act(async () =>
+    keyboardEvents.emit('keyboardDidHide', {
+      duration: 0,
+      endCoordinates: { screenX: 0, screenY: 817, width: 400, height: 0 },
+    })
+  )
+  expect(padding()).toBe(0)
 })

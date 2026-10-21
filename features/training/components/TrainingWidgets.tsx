@@ -54,11 +54,7 @@ export function TrainingWidgets() {
                 </UiText>
               </View>
             </View>
-            <Button
-              variant="ghost"
-              className="justify-start px-0"
-              onPress={() => setWidgetMode('add')}
-            >
+            <Button variant="ghost" className="w-full" onPress={() => setWidgetMode('add')}>
               <UiText textRole="captionEmphasis">Add your first widget</UiText>
             </Button>
           </View>
