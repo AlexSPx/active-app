@@ -48,6 +48,7 @@ export function CadenceOverlay({
   const insets = useSafeAreaInsets()
   const { height } = useWindowDimensions()
   const [availableHeight, setAvailableHeight] = useState(height)
+  const [keyboardVisible, setKeyboardVisible] = useState(() => Keyboard.isVisible())
   const points = snapPoints?.length ? snapPoints : undefined
   const [localPosition, setLocalPosition] = useState(0)
   const requestedPosition = position ?? localPosition
@@ -169,6 +170,16 @@ export function CadenceOverlay({
   )
 
   useEffect(() => {
+    if (Platform.OS !== 'android') return
+    const show = Keyboard.addListener('keyboardDidShow', () => setKeyboardVisible(true))
+    const hide = Keyboard.addListener('keyboardDidHide', () => setKeyboardVisible(false))
+    return () => {
+      show.remove()
+      hide.remove()
+    }
+  }, [])
+
+  useEffect(() => {
     let effectIsActive = true
 
     if (open) {
@@ -232,7 +243,8 @@ export function CadenceOverlay({
     >
       <KeyboardAvoidingView
         className="flex-1 justify-end"
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior="padding"
+        enabled={Platform.OS !== 'android' || keyboardVisible}
       >
         <View
           className="flex-1 justify-end"

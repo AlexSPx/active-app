@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ActivityIndicator, View } from 'react-native'
+import { ActivityIndicator, useWindowDimensions, View } from 'react-native'
 import { LineChart } from 'react-native-gifted-charts'
 import { ActionMenu } from './ui/ActionMenu'
 import { Button, UiText } from './ui/Controls'
@@ -14,6 +14,9 @@ interface ProgressionWidgetProps {
   onManage?: () => void
   onRemove?: () => void
 }
+
+const Y_AXIS_LABEL_WIDTH = 44
+const PLOT_INSET = 8
 
 function formatProgressionDate(date: string): string {
   return new Date(`${date}T12:00:00`).toLocaleDateString('en-US', {
@@ -34,6 +37,9 @@ export function ProgressionWidget({
   )
   const colors = useCadenceColors()
   const [width, setWidth] = useState(0)
+  const { fontScale } = useWindowDimensions()
+  const chartScale = Math.max(1, fontScale)
+  const yAxisLabelWidth = Y_AXIS_LABEL_WIDTH * chartScale
   const points =
     config.metric === 'oneRm'
       ? data?.oneRmProgression
@@ -43,7 +49,7 @@ export function ProgressionWidget({
   const chartData = (points ?? []).map((point) => ({ value: point.value, label: '' }))
   const value = data?.personalRecords[config.metric]
   const noHistory = error === 'No exercise data available'
-  const chartWidth = Math.max(0, width)
+  const chartWidth = Math.max(0, width - yAxisLabelWidth - PLOT_INSET)
   const firstDate = points?.[0]?.date
   const lastDate = points?.[points.length - 1]?.date
   const dateRangeLabel =
@@ -107,23 +113,57 @@ export function ProgressionWidget({
               <LineChart
                 data={chartData}
                 width={chartWidth}
-                height={100}
+                height={100 * chartScale}
                 color={colors.accent}
                 thickness={2}
                 dataPointsColor={colors.accent}
                 dataPointsRadius={3}
-                spacing={chartData.length > 1 ? chartWidth / (chartData.length - 1) : 0}
-                hideYAxisText
-                hideRules
+                spacing={
+                  chartData.length > 1
+                    ? Math.max(0, chartWidth - PLOT_INSET * 2) / (chartData.length - 1)
+                    : 0
+                }
+                yAxisLabelWidth={yAxisLabelWidth}
+                yAxisLabelContainerStyle={{
+                  justifyContent: 'flex-end',
+                  alignItems: 'center',
+                  paddingRight: PLOT_INSET,
+                }}
+                yAxisThickness={0}
+                noOfSections={4}
+                showFractionalValues
+                roundToDigits={1}
+                yAxisTextStyle={{
+                  color: colors.muted,
+                  fontSize: 10,
+                  lineHeight: 14,
+                  width: '100%',
+                  textAlign: 'right',
+                  includeFontPadding: false,
+                  fontVariant: ['tabular-nums'],
+                }}
+                formatYLabel={(label) =>
+                  Number(label).toLocaleString('en-US', {
+                    notation: 'compact',
+                    maximumFractionDigits: 1,
+                  })
+                }
+                rulesColor={colors.divider}
+                rulesLength={chartWidth}
+                xAxisLength={chartWidth}
+                disableScroll
                 xAxisColor={colors.divider}
                 yAxisColor="transparent"
                 backgroundColor="transparent"
-                initialSpacing={chartData.length === 1 ? chartWidth / 2 : 0}
-                endSpacing={chartData.length === 1 ? chartWidth / 2 : 0}
+                initialSpacing={chartData.length === 1 ? chartWidth / 2 : PLOT_INSET}
+                endSpacing={chartData.length === 1 ? chartWidth / 2 : PLOT_INSET}
               />
             )}
           </View>
-          <View className="flex-row justify-between gap-field">
+          <View
+            className={`flex-row gap-field ${firstDate === lastDate ? 'justify-center' : 'justify-between'}`}
+            style={{ paddingLeft: yAxisLabelWidth, paddingRight: PLOT_INSET }}
+          >
             {firstDate && <UiText textRole="meta">{formatProgressionDate(firstDate)}</UiText>}
             {lastDate && lastDate !== firstDate && (
               <UiText textRole="meta">{formatProgressionDate(lastDate)}</UiText>

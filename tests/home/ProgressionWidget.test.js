@@ -57,9 +57,19 @@ function render(state, props = {}) {
   return renderer
 }
 
+beforeEach(() => {
+  jest.spyOn(require('react-native'), 'useWindowDimensions').mockReturnValue({
+    width: 400,
+    height: 889,
+    scale: 1,
+    fontScale: 1,
+  })
+})
+
 afterEach(() => {
   act(() => renderers.splice(0).forEach((renderer) => renderer.unmount()))
   jest.clearAllMocks()
+  jest.restoreAllMocks()
 })
 
 test('keeps loading, empty history and retryable errors distinct', () => {
@@ -78,7 +88,7 @@ test('keeps loading, empty history and retryable errors distinct', () => {
   expect(refetch).toHaveBeenCalledTimes(1)
 })
 
-test('renders a full-width 100px chart with readable date endpoints and the selected metric', () => {
+test('fits the chart and value labels inside the card with readable date endpoints', () => {
   const renderer = render({
     data: {
       personalRecords: { maxWeight: 45 },
@@ -96,7 +106,14 @@ test('renders a full-width 100px chart with readable date endpoints and the sele
 
   const chart = renderer.root.findByType('LineChart')
   expect(chart.props.data.map((point) => point.value)).toEqual([35, 45])
-  expect(chart.props.width).toBe(300)
+  expect(chart.props.width).toBe(248)
+  expect(
+    chart.props.width + chart.props.yAxisLabelWidth + chart.props.dataPointsRadius
+  ).toBeLessThanOrEqual(300)
+  expect(chart.props.hideYAxisText).not.toBe(true)
+  expect(chart.props.formatYLabel('12500')).toBe('12.5K')
+  expect(chart.props.showFractionalValues).toBe(true)
+  expect(chart.props.formatYLabel('52.5')).toBe('52.5')
   expect(chart.props.height).toBe(100)
   expect(text(renderer)).toEqual(
     expect.arrayContaining(['45', 'Sep 7', 'Sep 28', '2 sessions', 'Last recorded Sep 28'])
@@ -125,3 +142,63 @@ test('exposes explicit actions on saved widgets but hides them in the picker pre
   )
   expect(preview.root.findAllByType('ActionMenu')).toHaveLength(0)
 })
+
+test.each([1, 2, 20])('keeps axes and all %i session points within the measured plot', (count) => {
+  const renderer = render({
+    data: {
+      personalRecords: { maxWeight: 45 },
+      maxWeightProgression: Array.from({ length: count }, (_, index) => ({
+        value: 25 + index,
+        date: `2026-09-${String(index + 1).padStart(2, '0')}`,
+      })),
+    },
+  })
+  const plot = renderer.root.findAll((node) => typeof node.props.onLayout === 'function')[0]
+  act(() => plot.props.onLayout({ nativeEvent: { layout: { width: 300 } } }))
+  const chart = renderer.root.findByType('LineChart').props
+  expect(chart.xAxisLength + chart.yAxisLabelWidth).toBeLessThanOrEqual(300)
+  expect(chart.rulesLength + chart.yAxisLabelWidth).toBeLessThanOrEqual(300)
+  expect(chart.xAxisLength).toBe(chart.width)
+  expect(chart.rulesLength).toBe(chart.width)
+  const lastPoint = chart.initialSpacing + chart.spacing * (count - 1)
+  expect(lastPoint + chart.dataPointsRadius).toBeLessThanOrEqual(chart.width)
+  const svgWidth = chart.initialSpacing + chart.spacing * count + chart.endSpacing
+  expect(lastPoint + chart.dataPointsRadius).toBeLessThanOrEqual(svgWidth)
+  if (count === 1) expect(chart.initialSpacing).toBe(chart.width / 2)
+  expect(chart.data).toHaveLength(count)
+  expect(chart.disableScroll).toBe(true)
+})
+
+test.each([1, 2, 3])(
+  'gives axis labels room and consistent alignment at %ix font scale',
+  (fontScale) => {
+    jest.spyOn(require('react-native'), 'useWindowDimensions').mockReturnValue({
+      width: 400,
+      height: 889,
+      scale: 1,
+      fontScale,
+    })
+    const renderer = render({
+      data: {
+        personalRecords: { maxWeight: 10 },
+        maxWeightProgression: [{ value: 10, date: '2026-10-21' }],
+      },
+    })
+    const plot = renderer.root.findAll((node) => typeof node.props.onLayout === 'function')[0]
+    act(() => plot.props.onLayout({ nativeEvent: { layout: { width: 300 } } }))
+    const chart = renderer.root.findByType('LineChart').props
+    expect(chart.yAxisLabelWidth).toBe(44 * fontScale)
+    expect(chart.height).toBe(100 * fontScale)
+    expect(chart.yAxisTextStyle).toMatchObject({
+      width: '100%',
+      textAlign: 'right',
+      lineHeight: 14,
+      includeFontPadding: false,
+    })
+    expect(chart.yAxisLabelContainerStyle).toMatchObject({
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+    })
+    expect(chart.width + chart.yAxisLabelWidth + chart.dataPointsRadius).toBeLessThanOrEqual(300)
+  }
+)
