@@ -1,12 +1,12 @@
-import { BottomTabBar, type BottomTabBarButtonProps } from '@react-navigation/bottom-tabs'
+import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs'
 import { PlatformPressable } from '@react-navigation/elements'
 import { Tabs, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { Keyboard, Platform, View, useWindowDimensions } from 'react-native'
-import { useResolveClassNames } from 'uniwind'
 import { Dumbbell, History, Home, Settings as SettingsIcon } from '../../components/ui/icons'
 import { RunningWorkoutStrip } from '../../features/workout-session'
 import { useRunningWorkoutStore } from '../../features/workout-session/stores/runningWorkoutStore'
+import { AnimatedTabBar } from '../../navigation/AnimatedTabBar'
 import { TabContentInsetContext } from '../../navigation/TabContentInset'
 import { TabHeader } from '../../navigation/TabHeader'
 
@@ -15,8 +15,6 @@ const CONTENT_GAP = 16
 const RUNNING_STRIP_ESTIMATED_HEIGHT = 48
 
 function TabBarButton(props: BottomTabBarButtonProps) {
-  const selectedStyles = useResolveClassNames('bg-featured')
-
   return (
     <PlatformPressable
       {...props}
@@ -27,7 +25,6 @@ function TabBarButton(props: BottomTabBarButtonProps) {
           padding: 0,
           borderRadius: 28,
         },
-        props['aria-selected'] ? selectedStyles : undefined,
       ]}
     />
   )
@@ -38,7 +35,6 @@ export default function TabLayout() {
   const workoutRunning = useRunningWorkoutStore((state) => !!state.runningWorkout)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
   const [runningStripHeight, setRunningStripHeight] = useState(RUNNING_STRIP_ESTIMATED_HEIGHT)
-  const tabBarSurfaceStyles = useResolveClassNames('bg-navigation')
   const tabBarHeight = Math.max(64, 64 + (fontScale - 1) * 18)
   const contentBottomClearance = keyboardVisible
     ? 0
@@ -78,15 +74,7 @@ export default function TabLayout() {
                 }}
               >
                 <RunningWorkoutStrip onHeightChange={setRunningStripHeight} />
-                <View
-                  style={{
-                    borderRadius: 32,
-                    ...tabBarSurfaceStyles,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <BottomTabBar {...props} />
-                </View>
+                <AnimatedTabBar {...props} />
               </View>
             )
           }
