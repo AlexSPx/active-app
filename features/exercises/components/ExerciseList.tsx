@@ -2,6 +2,8 @@ import { memo, useCallback } from 'react'
 import { FlashList } from '@shopify/flash-list'
 import { Pressable, View } from 'react-native'
 import { UiText } from '../../../components/ui/Controls'
+import { Check, Plus } from '../../../components/ui/icons'
+import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 import { LoadingSpinner } from '../../../components/ui/LoadingSpinner'
 import { ErrorDisplay } from '../../../components/ui/ErrorDisplay'
 import type { Exercise } from '../../../types/workout'
@@ -75,6 +77,7 @@ const ExerciseRow = memo(function ExerciseRow({
   onSelect,
   isSelected,
 }: ExerciseRowProps) {
+  const colors = useCadenceColors()
   const muscle = exercise.primaryMuscles[0] || 'Other'
   return (
     <Pressable
@@ -96,9 +99,11 @@ const ExerciseRow = memo(function ExerciseRow({
         accessible={false}
         importantForAccessibility="no"
       >
-        <UiText textRole={isSelected ? 'bodyOnAccent' : 'bodyMuted'}>
-          {isSelected ? '✓' : '+'}
-        </UiText>
+        {isSelected ? (
+          <Check size={18} color={colors.onAccent} aria-hidden />
+        ) : (
+          <Plus size={18} color={colors.muted} aria-hidden />
+        )}
       </View>
     </Pressable>
   )
