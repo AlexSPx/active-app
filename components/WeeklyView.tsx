@@ -102,6 +102,15 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
                 style={{ width: weekWidth }}
                 className={`flex-row gap-compact ${plan.kind === 'setup' ? 'opacity-60' : ''}`}
               >
+                {plan.kind === 'cycle' && weekIndex > 0 && (
+                  <View
+                    className="justify-center"
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                  >
+                    <ChevronLeft size={12} color={colors.muted} aria-hidden />
+                  </View>
+                )}
                 {plan.days.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
                   const selected = plan.kind === 'cycle' && day.isSelected
                   const canSelect = plan.kind === 'cycle'
@@ -150,17 +159,13 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
                     </Pressable>
                   )
                 })}
-                {plan.kind === 'cycle' && (
+                {plan.kind === 'cycle' && weekIndex === 0 && (
                   <View
                     className="justify-center"
                     accessibilityElementsHidden
                     importantForAccessibility="no-hide-descendants"
                   >
-                    {weekIndex === 0 ? (
-                      <ChevronRight size={12} color={colors.muted} aria-hidden />
-                    ) : (
-                      <ChevronLeft size={12} color={colors.muted} aria-hidden />
-                    )}
+                    <ChevronRight size={12} color={colors.muted} aria-hidden />
                   </View>
                 )}
               </View>
