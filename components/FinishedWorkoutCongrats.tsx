@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { Platform, ScrollView, Vibration, View } from 'react-native'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AccessibilityInfo, Animated, Platform, ScrollView, Vibration, View } from 'react-native'
 import { Button, UiText } from './ui/Controls'
 import { CadenceOverlay } from './ui/CadenceOverlay'
 import { Trophy, Timer as TimerIcon, Dumbbell, BarChart2 } from './ui/icons'
@@ -21,6 +21,34 @@ export function FinishedWorkoutCongrats({
   const colors = useCadenceColors()
   // Start the sheet at the middle snap point (50%).
   const [position, setPosition] = useState(1)
+  const [reduceMotion, setReduceMotion] = useState<boolean | null>(null)
+  const revealStarted = useRef(false)
+  const statsOpacity = useMemo(() => new Animated.Value(0), [])
+  const statsTranslateY = useMemo(() => new Animated.Value(8), [])
+  const achievementOpacity = useMemo(() => new Animated.Value(0), [])
+  const achievementScale = useMemo(() => new Animated.Value(0.94), [])
+
+  useEffect(() => {
+    let active = true
+    let changedSinceRequest = false
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', (enabled) => {
+      changedSinceRequest = true
+      setReduceMotion(enabled)
+    })
+
+    AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        if (active && !changedSinceRequest) setReduceMotion(enabled)
+      })
+      .catch(() => {
+        if (active && !changedSinceRequest) setReduceMotion(false)
+      })
+
+    return () => {
+      active = false
+      subscription.remove()
+    }
+  }, [])
 
   useEffect(() => {
     if (visible) {
@@ -34,6 +62,70 @@ export function FinishedWorkoutCongrats({
       }
     }
   }, [visible])
+
+  useEffect(() => {
+    if (!visible) {
+      revealStarted.current = false
+      statsOpacity.setValue(0)
+      statsTranslateY.setValue(8)
+      achievementOpacity.setValue(0)
+      achievementScale.setValue(0.94)
+      return
+    }
+
+    if (reduceMotion === null) return
+
+    if (reduceMotion) {
+      revealStarted.current = true
+      statsOpacity.stopAnimation()
+      statsTranslateY.stopAnimation()
+      achievementOpacity.stopAnimation()
+      achievementScale.stopAnimation()
+      statsOpacity.setValue(1)
+      statsTranslateY.setValue(0)
+      achievementOpacity.setValue(1)
+      achievementScale.setValue(1)
+      return
+    }
+
+    if (revealStarted.current) return
+    revealStarted.current = true
+
+    const animations = [
+      Animated.parallel([
+        Animated.timing(statsOpacity, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+        Animated.timing(statsTranslateY, {
+          toValue: 0,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]),
+      Animated.parallel([
+        Animated.timing(achievementOpacity, {
+          toValue: 1,
+          duration: 350,
+          useNativeDriver: true,
+        }),
+        Animated.spring(achievementScale, {
+          toValue: 1,
+          damping: 20,
+          stiffness: 240,
+          mass: 0.9,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]
+
+    animations.forEach((animation) => animation.start())
+
+    return () => {
+      animations.forEach((animation) => animation.stop())
+    }
+  }, [achievementOpacity, achievementScale, reduceMotion, statsOpacity, statsTranslateY, visible])
 
   if (!visible) return null
 
@@ -115,7 +207,13 @@ export function FinishedWorkoutCongrats({
               <UiText textRole="cardTitle" accessibilityRole="header">
                 {derived.workoutName}
               </UiText>
-              <View className="w-full flex-row gap-compact">
+              <Animated.View
+                className="w-full flex-row gap-compact"
+                style={{
+                  opacity: statsOpacity,
+                  transform: [{ translateY: statsTranslateY }],
+                }}
+              >
                 {stats.map(({ label, value, icon }) => (
                   <View
                     key={label}
@@ -130,11 +228,17 @@ export function FinishedWorkoutCongrats({
                     <UiText textRole="meta">{label}</UiText>
                   </View>
                 ))}
-              </View>
+              </Animated.View>
             </View>
 
             {achievements.length > 0 && (
-              <View className="gap-field">
+              <Animated.View
+                className="gap-field"
+                style={{
+                  opacity: achievementOpacity,
+                  transform: [{ scale: achievementScale }],
+                }}
+              >
                 <View className="h-px bg-divider" />
                 <UiText textRole="cardTitle" accessibilityRole="header">
                   New Achievements
@@ -164,7 +268,7 @@ export function FinishedWorkoutCongrats({
                     </View>
                   ))}
                 </View>
-              </View>
+              </Animated.View>
             )}
           </View>
         </ScrollView>
