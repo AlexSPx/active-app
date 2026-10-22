@@ -47,7 +47,7 @@ jest.mock('expo-router', () => {
       'Tabs',
       { ...props, contentBottomInset: useTabContentInset() },
       props.children,
-      props.tabBar({ state: { index: mockTabIndex, routes: [{}, {}, {}, {}] } })
+      props.tabBar({ state: { index: 0, routes: [{}, {}, {}, {}] } })
     )
   }
   Tabs.Screen = () => null
@@ -82,12 +82,10 @@ const mockStore = {
   getElapsedTime: () => 65000,
 }
 let view
-let mockTabIndex = 0
 beforeEach(() => {
   jest.useFakeTimers()
   jest.clearAllMocks()
   mockStore.runningWorkout = null
-  mockTabIndex = 0
   useWindowDimensions.mockReturnValue({ fontScale: 1 })
 })
 afterEach(() => {
@@ -150,21 +148,17 @@ test('a measured running shortcut clears the content, resumes the session, and h
 })
 
 test('the shared highlight follows selection, bar width, and right-to-left layout', () => {
+  const { AnimatedTabBar } = require('../../navigation/AnimatedTabBar')
   const { I18nManager } = require('react-native')
   const { withTiming } = require('react-native-reanimated')
-  const render = (index) => {
-    mockTabIndex = index
-    return React.createElement(TabLayout)
-  }
+  const routes = [{}, {}, {}, {}]
+  const render = (index) => React.createElement(AnimatedTabBar, { state: { index, routes } })
   const highlight = () => view.root.findByType('AnimatedView').props
   act(() => {
     view = create(render(2))
   })
   act(() => {
-    view.root
-      .findAllByType('View')
-      .find((node) => node.props.onLayout)
-      .props.onLayout({ nativeEvent: { layout: { width: 400 } } })
+    view.root.findByType('View').props.onLayout({ nativeEvent: { layout: { width: 400 } } })
   })
   expect(highlight().pointerEvents).toBe('none')
   expect(highlight().style[0].width).toBe(92)
@@ -175,10 +169,7 @@ test('the shared highlight follows selection, bar width, and right-to-left layou
   act(() => view.update(render(3)))
   expect(withTiming).toHaveBeenLastCalledWith(3, expect.objectContaining({ duration: 260 }))
   act(() => {
-    view.root
-      .findAllByType('View')
-      .find((node) => node.props.onLayout)
-      .props.onLayout({ nativeEvent: { layout: { width: 800 } } })
+    view.root.findByType('View').props.onLayout({ nativeEvent: { layout: { width: 800 } } })
   })
   expect(highlight().style[0].width).toBe(192)
   expect(highlight().style[2].transform).toEqual([{ translateX: 600 }])
