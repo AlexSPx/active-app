@@ -7,6 +7,17 @@ jest.mock('react-native', () => ({
   Platform: { OS: 'android' },
   Keyboard: { addListener: jest.fn(() => ({ remove: jest.fn() })) },
   useWindowDimensions: jest.fn(() => ({ fontScale: 1 })),
+  I18nManager: { isRTL: false },
+}))
+jest.mock('react-native-reanimated', () => ({
+  __esModule: true,
+  default: {
+    View: (props) => require('react').createElement('AnimatedView', props),
+  },
+  useSharedValue: (value) => require('react').useRef({ value }).current,
+  useAnimatedStyle: (callback) => callback(),
+  withTiming: jest.fn((value) => value),
+  Easing: { out: (easing) => easing, cubic: 'cubic' },
 }))
 jest.mock('@react-navigation/bottom-tabs', () => ({
   BottomTabBar: (props) => require('react').createElement('BottomTabBar', props),
@@ -36,7 +47,7 @@ jest.mock('expo-router', () => {
       'Tabs',
       { ...props, contentBottomInset: useTabContentInset() },
       props.children,
-      props.tabBar({})
+      props.tabBar({ state: { index: 0, routes: [{}, {}, {}, {}] } })
     )
   }
   Tabs.Screen = () => null
@@ -134,4 +145,62 @@ test('a measured running shortcut clears the content, resumes the session, and h
   expect(view.root.findAllByType('Pressable')).toHaveLength(0)
   expect(view.root.findAllByType('BottomTabBar')).toHaveLength(1)
   expect(bottomInset()).toBe(options().tabBarStyle.height + 8 + 16)
+})
+
+test('the shared highlight follows selection, bar width, and right-to-left layout', () => {
+  const { AnimatedTabBar } = require('../../navigation/AnimatedTabBar')
+  const { I18nManager } = require('react-native')
+  const { withTiming } = require('react-native-reanimated')
+  const routes = [{}, {}, {}, {}]
+  const render = (index) => React.createElement(AnimatedTabBar, { state: { index, routes } })
+  const highlight = () => view.root.findByType('AnimatedView').props
+  act(() => {
+    view = create(render(2))
+  })
+  act(() => {
+    view.root.findByType('View').props.onLayout({ nativeEvent: { layout: { width: 400 } } })
+  })
+  expect(highlight().pointerEvents).toBe('none')
+  expect(highlight().style[0].start).toBe(4)
+  expect(highlight().style[0].left).toBeUndefined()
+  expect(highlight().style[0].width).toBe(92)
+  expect(highlight().style[2].transform).toEqual([{ translateX: 200 }])
+
+  act(() => view.update(render(0)))
+  expect(withTiming).toHaveBeenLastCalledWith(0, expect.objectContaining({ duration: 260 }))
+  act(() => view.update(render(3)))
+  expect(withTiming).toHaveBeenLastCalledWith(3, expect.objectContaining({ duration: 260 }))
+  act(() => {
+    view.root.findByType('View').props.onLayout({ nativeEvent: { layout: { width: 800 } } })
+  })
+  expect(highlight().style[0].width).toBe(192)
+  expect(highlight().style[2].transform).toEqual([{ translateX: 600 }])
+
+  I18nManager.isRTL = true
+  act(() => view.update(render(3)))
+  expect(highlight().style[2].transform).toEqual([{ translateX: -600 }])
+  I18nManager.isRTL = false
+})
+
+test.each([0, 1, 2, 3])('RTL highlight aligns with tab %i from the logical start', (index) => {
+  const { AnimatedTabBar } = require('../../navigation/AnimatedTabBar')
+  const { I18nManager } = require('react-native')
+  I18nManager.isRTL = true
+  try {
+    act(() => {
+      view = create(
+        React.createElement(AnimatedTabBar, { state: { index, routes: [{}, {}, {}, {}] } })
+      )
+    })
+    act(() => {
+      view.root.findByType('View').props.onLayout({ nativeEvent: { layout: { width: 400 } } })
+    })
+    const styles = view.root.findByType('AnimatedView').props.style
+    const { start, width } = styles[0]
+    const { translateX } = styles[2].transform[0]
+    expect(start).toBe(4)
+    expect(400 - start - width + translateX).toBe((3 - index) * 100 + 4)
+  } finally {
+    I18nManager.isRTL = false
+  }
 })
