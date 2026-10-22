@@ -28,7 +28,7 @@ export function AnimatedTabBar(props: BottomTabBarProps) {
   const highlightStyle = useAnimatedStyle(() => ({
     transform: [
       {
-        translateX: (isRTL ? routeCount - 1 - selectedIndex.value : selectedIndex.value) * tabWidth,
+        translateX: (isRTL ? -selectedIndex.value : selectedIndex.value) * tabWidth,
       },
     ],
   }))
@@ -45,7 +45,7 @@ export function AnimatedTabBar(props: BottomTabBarProps) {
           style={[
             {
               position: 'absolute',
-              left: 4,
+              start: 4,
               top: 4,
               bottom: 4,
               width: tabWidth - 8,
