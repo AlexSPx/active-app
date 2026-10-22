@@ -6,6 +6,7 @@ import { useCadenceColors } from '../../components/ui/useCadenceColors'
 import { ErrorDisplay } from '../../components/ui/ErrorDisplay'
 import { LoadingSpinner } from '../../components/ui/LoadingSpinner'
 import { TodayView } from '../../components/TodayView'
+import { FlexibleRoutineView } from '../../features/training/components/FlexibleRoutineView'
 import { WeeklyView } from '../../components/WeeklyView'
 import { TrainingWidgets } from '../../features/training/components/TrainingWidgets'
 import { useTrainingHomeController } from '../../features/training/hooks/useTrainingHomeController'
@@ -39,11 +40,7 @@ export default function HomeScreen() {
           />
         ) : home.state.kind === 'setup' ? (
           <View className="gap-section">
-            <WeeklyView
-              plan={home.state.weekPlan}
-              onSelectDate={home.selectDate}
-              onOpenWorkout={home.openWorkout}
-            />
+            <WeeklyView plan={home.state.weekPlan} onSelectDate={home.selectDate} />
             <View className="gap-field rounded-card bg-raised p-card">
               <View className="gap-compact">
                 <UiText textRole="cardTitle" accessibilityRole="header">
@@ -65,11 +62,20 @@ export default function HomeScreen() {
           </View>
         ) : (
           <View className="gap-section">
-            <WeeklyView
-              plan={home.state.weekPlan}
-              onSelectDate={home.selectDate}
-              onOpenWorkout={home.openWorkout}
-            />
+            {home.state.weekPlan.kind === 'flexible' ? (
+              <FlexibleRoutineView
+                plan={home.state.weekPlan}
+                onOpenWorkout={home.openWorkout}
+                onOpenRecord={home.openCompletedRecord}
+                onManageRoutine={home.manageRoutines}
+                isWorkoutRunning={home.isWorkoutRunning}
+                onResume={home.resumeWorkout}
+                recordsError={home.recordsError}
+                onRetryRecords={home.retryRecords}
+              />
+            ) : (
+              <WeeklyView plan={home.state.weekPlan} onSelectDate={home.selectDate} />
+            )}
             {home.state.weekPlan.kind === 'cycle' && home.state.selectedSession && (
               <TodayView
                 session={home.state.selectedSession}
