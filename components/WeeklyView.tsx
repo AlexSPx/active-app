@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { UiText } from './ui/Controls'
-import { AlertTriangle, ArrowRight, Check, Dumbbell } from './ui/icons'
+import { AlertTriangle, ArrowRight, Check, ChevronLeft, ChevronRight, Dumbbell } from './ui/icons'
 import { useCadenceColors } from './ui/useCadenceColors'
 import type {
   TrainingHomeWeekDay,
@@ -89,9 +89,6 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
         </View>
       ) : (
         <View className="gap-compact">
-          {plan.kind === 'cycle' && (
-            <UiText textRole="caption">This week and next · Swipe to explore</UiText>
-          )}
           <ScrollView
             horizontal
             pagingEnabled
@@ -153,6 +150,19 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
                     </Pressable>
                   )
                 })}
+                {plan.kind === 'cycle' && (
+                  <View
+                    className="justify-center"
+                    accessibilityElementsHidden
+                    importantForAccessibility="no-hide-descendants"
+                  >
+                    {weekIndex === 0 ? (
+                      <ChevronRight size={12} color={colors.muted} aria-hidden />
+                    ) : (
+                      <ChevronLeft size={12} color={colors.muted} aria-hidden />
+                    )}
+                  </View>
+                )}
               </View>
             ))}
           </ScrollView>
