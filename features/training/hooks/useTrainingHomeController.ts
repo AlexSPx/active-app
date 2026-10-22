@@ -114,7 +114,7 @@ function getWeekPlan(input: {
   }
 
   const monday = startOfWeek(today)
-  const days = Array.from({ length: 7 }, (_, index): TrainingHomeWeekDay => {
+  const days = Array.from({ length: routine ? 14 : 7 }, (_, index): TrainingHomeWeekDay => {
     const date = new Date(monday)
     date.setDate(monday.getDate() + index)
     const base = {
