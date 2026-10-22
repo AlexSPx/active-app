@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { UiText } from './ui/Controls'
-import { AlertTriangle, ArrowRight, Check, ChevronLeft, ChevronRight, Dumbbell } from './ui/icons'
+import { AlertTriangle, ChevronLeft, ChevronRight, Dumbbell } from './ui/icons'
 import { useCadenceColors } from './ui/useCadenceColors'
 import type {
   TrainingHomeWeekDay,
@@ -9,9 +9,8 @@ import type {
 } from '../features/training/hooks/useTrainingHomeController'
 
 type WeeklyViewProps = {
-  plan: TrainingHomeWeekPlan
+  plan: Exclude<TrainingHomeWeekPlan, { kind: 'flexible' }>
   onSelectDate: (date: Date) => void
-  onOpenWorkout: (workoutId: string) => void
 }
 
 function describeDay(day: TrainingHomeWeekDay): string {
@@ -35,11 +34,10 @@ function describeDay(day: TrainingHomeWeekDay): string {
   }
 }
 
-export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProps) {
+export function WeeklyView({ plan, onSelectDate }: WeeklyViewProps) {
   const [weekWidth, setWeekWidth] = useState(0)
   const [visibleWeek, setVisibleWeek] = useState(0)
   const colors = useCadenceColors()
-  const flexible = plan.kind === 'flexible'
 
   return (
     <View className="gap-field">
@@ -47,141 +45,100 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
         <UiText textRole="body" accessibilityRole="header">
           Your training rhythm
         </UiText>
-        {flexible && plan.completedCount !== null && (
-          <UiText textRole="bodyMuted">
-            {plan.completedCount} of {plan.workouts.length} complete
-          </UiText>
-        )}
       </View>
 
-      {flexible ? (
-        <View className="gap-field">
-          <UiText textRole="caption">Any order · Monday–Sunday</UiText>
-          <View>
-            {plan.workouts.map(({ id, workout, completed }) => {
-              const title = workout?.title ?? 'Unavailable workout'
-              return (
-                <Pressable
-                  key={id}
-                  className="min-h-touch flex-row items-center gap-field border-b border-divider py-compact active:opacity-75"
-                  accessibilityRole="button"
-                  accessibilityLabel={`View workout ${title}${completed ? ', completed' : ''}`}
-                  accessibilityState={{ disabled: !workout }}
-                  disabled={!workout}
-                  onPress={() => onOpenWorkout(id)}
-                >
-                  {completed && <Check size={18} color={colors.accent} aria-hidden />}
-                  <UiText textRole="bodyEmphasis" className="min-w-0 flex-1" numberOfLines={2}>
-                    {title}
-                  </UiText>
-                  {plan.completedCount !== null && (
-                    <UiText textRole="caption">{completed ? 'Completed' : 'Remaining'}</UiText>
-                  )}
-                  <ArrowRight size={18} color={colors.accent} aria-hidden />
-                </Pressable>
-              )
-            })}
-          </View>
-          {plan.completedCount !== null &&
-            plan.workouts.length > 0 &&
-            plan.completedCount === plan.workouts.length && (
-              <UiText textRole="caption">All scheduled workouts are complete.</UiText>
-            )}
-        </View>
-      ) : (
-        <View className="flex-row items-center gap-compact">
-          {plan.kind === 'cycle' && (
-            <View
-              className="w-3"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
-            >
-              {visibleWeek > 0 && <ChevronLeft size={12} color={colors.muted} aria-hidden />}
-            </View>
-          )}
-          <ScrollView
-            className="flex-1"
-            horizontal
-            pagingEnabled
-            scrollEnabled={plan.kind === 'cycle'}
-            showsHorizontalScrollIndicator={false}
-            onLayout={(event) => setWeekWidth(event.nativeEvent.layout.width)}
-            scrollEventThrottle={16}
-            onScroll={(event) => {
-              const { contentOffset, layoutMeasurement } = event.nativeEvent
-              if (layoutMeasurement.width > 0) {
-                setVisibleWeek(Math.round(contentOffset.x / layoutMeasurement.width))
-              }
-            }}
+      <View className="flex-row items-center gap-compact">
+        {plan.kind === 'cycle' && (
+          <View
+            className="w-3"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
           >
-            {Array.from({ length: plan.days.length / 7 }, (_, weekIndex) => (
-              <View
-                key={weekIndex}
-                style={{ width: weekWidth }}
-                className={`flex-row gap-compact ${plan.kind === 'setup' ? 'opacity-60' : ''}`}
-              >
-                {plan.days.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
-                  const selected = plan.kind === 'cycle' && day.isSelected
-                  const canSelect = plan.kind === 'cycle'
-                  const dayLabel = day.date.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    month: 'long',
-                    day: 'numeric',
-                  })
-                  const background = selected
-                    ? 'border-accent bg-accent'
-                    : day.isToday
-                      ? 'border-divider'
-                      : 'border-transparent'
-
-                  return (
-                    <Pressable
-                      key={day.date.toISOString()}
-                      className={`min-h-20 min-w-0 flex-1 items-center justify-center gap-compact rounded-full border px-1 py-compact ${background}`}
-                      accessibilityRole={canSelect ? 'button' : undefined}
-                      accessibilityLabel={`${dayLabel}, ${describeDay(day)}`}
-                      accessibilityState={{ selected, disabled: !canSelect }}
-                      disabled={!canSelect}
-                      onPress={canSelect ? () => onSelectDate(day.date) : undefined}
-                    >
-                      <UiText textRole={selected ? 'captionOnAccent' : 'caption'}>
-                        {day.weekday}
-                      </UiText>
-                      <UiText textRole={selected ? 'bodyOnAccent' : 'bodyEmphasis'}>
-                        {day.date.getDate()}
-                      </UiText>
-                      {day.kind === 'scheduled' ? (
-                        <Dumbbell
-                          size={13}
-                          color={selected ? colors.onAccent : colors.accent}
-                          aria-hidden
-                        />
-                      ) : day.kind === 'unavailable' ? (
-                        <AlertTriangle
-                          size={13}
-                          color={selected ? colors.onAccent : colors.muted}
-                          aria-hidden
-                        />
-                      ) : (
-                        <View className="h-3 w-3" />
-                      )}
-                    </Pressable>
-                  )
-                })}
-              </View>
-            ))}
-          </ScrollView>
-          {plan.kind === 'cycle' && (
+            {visibleWeek > 0 && <ChevronLeft size={12} color={colors.muted} aria-hidden />}
+          </View>
+        )}
+        <ScrollView
+          className="flex-1"
+          horizontal
+          pagingEnabled
+          scrollEnabled={plan.kind === 'cycle'}
+          showsHorizontalScrollIndicator={false}
+          onLayout={(event) => setWeekWidth(event.nativeEvent.layout.width)}
+          scrollEventThrottle={16}
+          onScroll={(event) => {
+            const { contentOffset, layoutMeasurement } = event.nativeEvent
+            if (layoutMeasurement.width > 0) {
+              setVisibleWeek(Math.round(contentOffset.x / layoutMeasurement.width))
+            }
+          }}
+        >
+          {Array.from({ length: plan.days.length / 7 }, (_, weekIndex) => (
             <View
-              className="w-3"
-              accessibilityElementsHidden
-              importantForAccessibility="no-hide-descendants"
+              key={weekIndex}
+              style={{ width: weekWidth }}
+              className={`flex-row gap-compact ${plan.kind === 'setup' ? 'opacity-60' : ''}`}
             >
-              {visibleWeek === 0 && <ChevronRight size={12} color={colors.muted} aria-hidden />}
+              {plan.days.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
+                const selected = plan.kind === 'cycle' && day.isSelected
+                const canSelect = plan.kind === 'cycle'
+                const dayLabel = day.date.toLocaleDateString('en-US', {
+                  weekday: 'long',
+                  month: 'long',
+                  day: 'numeric',
+                })
+                const background = selected
+                  ? 'border-accent bg-accent'
+                  : day.isToday
+                    ? 'border-divider'
+                    : 'border-transparent'
+
+                return (
+                  <Pressable
+                    key={day.date.toISOString()}
+                    className={`min-h-20 min-w-0 flex-1 items-center justify-center gap-compact rounded-full border px-1 py-compact ${background}`}
+                    accessibilityRole={canSelect ? 'button' : undefined}
+                    accessibilityLabel={`${dayLabel}, ${describeDay(day)}`}
+                    accessibilityState={{ selected, disabled: !canSelect }}
+                    disabled={!canSelect}
+                    onPress={canSelect ? () => onSelectDate(day.date) : undefined}
+                  >
+                    <UiText textRole={selected ? 'captionOnAccent' : 'caption'}>
+                      {day.weekday}
+                    </UiText>
+                    <UiText textRole={selected ? 'bodyOnAccent' : 'bodyEmphasis'}>
+                      {day.date.getDate()}
+                    </UiText>
+                    {day.kind === 'scheduled' ? (
+                      <Dumbbell
+                        size={13}
+                        color={selected ? colors.onAccent : colors.accent}
+                        aria-hidden
+                      />
+                    ) : day.kind === 'unavailable' ? (
+                      <AlertTriangle
+                        size={13}
+                        color={selected ? colors.onAccent : colors.muted}
+                        aria-hidden
+                      />
+                    ) : (
+                      <View className="h-3 w-3" />
+                    )}
+                  </Pressable>
+                )
+              })}
             </View>
-          )}
-        </View>
-      )}
+          ))}
+        </ScrollView>
+        {plan.kind === 'cycle' && (
+          <View
+            className="w-3"
+            accessibilityElementsHidden
+            importantForAccessibility="no-hide-descendants"
+          >
+            {visibleWeek === 0 && <ChevronRight size={12} color={colors.muted} aria-hidden />}
+          </View>
+        )}
+      </View>
     </View>
   )
 }

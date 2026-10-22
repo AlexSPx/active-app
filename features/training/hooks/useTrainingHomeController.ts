@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { useRouter } from 'expo-router'
-import { useAuth } from '../../../contexts/AuthContext'
 import { useActiveRoutine, useRoutines } from '../../routines'
-import { useWorkoutManagement, useWorkouts } from '../../workouts'
-import { launchFacade } from '../../launch/launchFacade'
-import type { ApiWorkout } from '../../../types/api'
-import { formatWeekRange, routinePatternIndex, sameDay, startOfWeek } from '../../../utils/date'
+import { useWorkoutManagement, useWorkouts, useWorkoutRecords } from '../../workouts'
+import type { ApiWorkout, WorkoutRecord } from '../../../types/api'
+import {
+  formatWeekRange,
+  parseServerUtcDate,
+  routinePatternIndex,
+  sameDay,
+  startOfWeek,
+} from '../../../utils/date'
 
 type WeekDayBase = {
   date: Date
@@ -29,7 +33,11 @@ export type TrainingHomeWeekPlan =
       kind: 'flexible'
       routineName: string
       weekRange: string
-      workouts: Array<{ id: string; workout: ApiWorkout | null; completed: boolean }>
+      workouts: Array<{
+        id: string
+        workout: ApiWorkout | null
+        completedRecord: WorkoutRecord | null
+      }>
       completedCount: number | null
     }
 
@@ -82,9 +90,9 @@ function getWeekPlan(input: {
   workouts: ApiWorkout[]
   selectedDate: Date
   today: Date
-  completedWorkoutIds: string[] | null
+  records: WorkoutRecord[] | null
 }): TrainingHomeWeekPlan {
-  const { routine, workouts, selectedDate, today, completedWorkoutIds } = input
+  const { routine, workouts, selectedDate, today, records } = input
   const weekRange = formatWeekRange(today)
   const workoutById = new Map(workouts.map((workout) => [workout.id, workout]))
 
@@ -97,6 +105,25 @@ function getWeekPlan(input: {
       ),
     ]
 
+    const monday = startOfWeek(today)
+    const nextMonday = new Date(monday)
+    nextMonday.setDate(monday.getDate() + 7)
+    const completedByWorkout = new Map<string, WorkoutRecord>()
+    for (const record of records ?? []) {
+      const date = parseServerUtcDate(record.createdAt)
+      if (
+        !record.workoutId ||
+        date < monday ||
+        date >= nextMonday ||
+        !Number.isFinite(date.getTime())
+      )
+        continue
+      const previous = completedByWorkout.get(record.workoutId)
+      if (!previous || date > parseServerUtcDate(previous.createdAt)) {
+        completedByWorkout.set(record.workoutId, record)
+      }
+    }
+
     return {
       kind: 'flexible',
       routineName: routine.name,
@@ -104,12 +131,10 @@ function getWeekPlan(input: {
       workouts: workoutIds.map((id) => ({
         id,
         workout: workoutById.get(id) ?? null,
-        completed: completedWorkoutIds?.includes(id) ?? false,
+        completedRecord: completedByWorkout.get(id) ?? null,
       })),
       completedCount:
-        completedWorkoutIds === null
-          ? null
-          : workoutIds.filter((id) => completedWorkoutIds.includes(id)).length,
+        records === null ? null : workoutIds.filter((id) => completedByWorkout.has(id)).length,
     }
   }
 
@@ -181,7 +206,6 @@ function getSelectedSession(day: TrainingHomeWeekDay | undefined): TrainingHomeS
 
 export function useTrainingHomeController() {
   const router = useRouter()
-  const { user } = useAuth()
   const {
     activeRoutine,
     loading: activeRoutineLoading,
@@ -200,6 +224,12 @@ export function useTrainingHomeController() {
     error: workoutsError,
     refetch: refetchWorkouts,
   } = useWorkouts()
+  const {
+    workoutRecords,
+    loading: recordsLoading,
+    error: recordsError,
+    refetch: refetchRecords,
+  } = useWorkoutRecords()
   const workoutActions = useWorkoutManagement()
   const [selectedDate, setSelectedDate] = useState(() => new Date())
   const today = new Date()
@@ -207,13 +237,12 @@ export function useTrainingHomeController() {
   const setupError = activeRoutineError || routinesError || workoutsError
   const hasWorkouts = workouts.length > 0
   const canShowPlan = !setupLoading && !setupError && hasWorkouts && !!activeRoutine
-  const completedWorkoutIds = launchFacade.training.getWeeklyCompletion(user)
   const weekPlan = getWeekPlan({
     routine: canShowPlan ? activeRoutine : null,
     workouts,
     selectedDate,
     today,
-    completedWorkoutIds,
+    records: recordsLoading || recordsError ? null : workoutRecords,
   })
 
   const openWorkout = (workoutId: string) => {
@@ -223,7 +252,12 @@ export function useTrainingHomeController() {
   const manageRoutines = () => router.push('/(tabs)/(workouts)/routines')
 
   const retry = async () => {
-    await Promise.all([refetchActiveRoutine(), refetchRoutines(), refetchWorkouts()])
+    await Promise.all([
+      refetchActiveRoutine(),
+      refetchRoutines(),
+      refetchWorkouts(),
+      refetchRecords(),
+    ])
   }
 
   let state: TrainingHomeState
@@ -287,6 +321,14 @@ export function useTrainingHomeController() {
     selectDate: setSelectedDate,
     retry,
     openWorkout,
+    openCompletedRecord: (record: WorkoutRecord) =>
+      router.push({
+        pathname: '/(tabs)/(history)/record/[id]',
+        params: { id: record.id || `${record.workoutId}-${record.createdAt}` },
+      }),
+    resumeWorkout: () => router.push('/workouts/session'),
+    recordsError,
+    retryRecords: refetchRecords,
     startWorkout: workoutActions.startWorkout,
     isWorkoutRunning: workoutActions.isWorkoutRunning(),
     browseWorkouts,

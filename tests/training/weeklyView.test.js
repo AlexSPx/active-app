@@ -31,7 +31,6 @@ it('keeps the direction chevron outside the moving days throughout a swipe', () 
       React.createElement(WeeklyView, {
         plan: { kind: 'cycle', days },
         onSelectDate: jest.fn(),
-        onOpenWorkout: jest.fn(),
       })
     )
   })

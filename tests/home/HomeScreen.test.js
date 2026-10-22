@@ -21,6 +21,8 @@ jest.mock('../../components/ui/icons', () => {
     BarChart2: Icon,
     Check: Icon,
     ChevronRight: Icon,
+    ChevronDown: Icon,
+    Play: Icon,
     Dumbbell: Icon,
     Plus: Icon,
   }
@@ -53,21 +55,23 @@ jest.mock('../../features/routines', () => ({
 }))
 jest.mock('../../features/workouts', () => ({
   useWorkouts: jest.fn(),
+  useWorkoutRecords: jest.fn(),
   useWorkoutManagement: jest.fn(),
 }))
-jest.mock('../../contexts/AuthContext', () => ({ useAuth: jest.fn() }))
-jest.mock('../../features/launch/launchFacade', () => ({
-  launchFacade: { training: { getWeeklyCompletion: jest.fn() } },
-}))
+jest.mock('../../components/ui/CadenceOverlay', () => {
+  const React = require('react')
+  return {
+    CadenceOverlay: ({ children, ...props }) =>
+      React.createElement('Overlay', props, props.open ? children : null),
+  }
+})
 jest.mock('../../stores/widgetStore', () => ({ useWidgetStore: jest.fn() }))
 
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 const { useRouter } = require('expo-router')
 const { useActiveRoutine, useRoutines } = require('../../features/routines')
-const { useWorkoutManagement, useWorkouts } = require('../../features/workouts')
-const { useAuth } = require('../../contexts/AuthContext')
-const { launchFacade } = require('../../features/launch/launchFacade')
+const { useWorkoutManagement, useWorkouts, useWorkoutRecords } = require('../../features/workouts')
 const { useWidgetStore } = require('../../stores/widgetStore')
 const { TodayView } = require('../../components/TodayView')
 const HomeScreen = require('../../app/(tabs)/index').default
@@ -83,13 +87,17 @@ function setHomeData({
   routinesError = null,
   workoutsError = null,
   widgets = [],
+  records = [],
+  recordsLoading = false,
+  recordsError = null,
+  running = false,
 } = {}) {
   const refetchActiveRoutine = jest.fn()
   const refetchRoutines = jest.fn()
   const refetchWorkouts = jest.fn()
   const removeWidget = jest.fn()
   const startWorkout = jest.fn()
-  const isWorkoutRunning = jest.fn(() => false)
+  const isWorkoutRunning = jest.fn(() => running)
 
   useActiveRoutine.mockReturnValue({
     activeRoutine,
@@ -108,6 +116,12 @@ function setHomeData({
     loading,
     error: workoutsError,
     refetch: refetchWorkouts,
+  })
+  useWorkoutRecords.mockReturnValue({
+    workoutRecords: records,
+    loading: recordsLoading,
+    error: recordsError,
+    refetch: jest.fn(),
   })
   useWorkoutManagement.mockReturnValue({ startWorkout, isWorkoutRunning })
   useWidgetStore.mockReturnValue({ widgets, removeWidget })
@@ -165,8 +179,6 @@ function workout(id = 'workout-1', title = 'Upper body') {
 beforeEach(() => {
   jest.clearAllMocks()
   useRouter.mockReturnValue({ push: mockPush })
-  useAuth.mockReturnValue({ user: null })
-  launchFacade.training.getWeeklyCompletion.mockReturnValue(null)
 })
 
 describe('Home setup states', () => {
@@ -298,7 +310,6 @@ describe('Home schedule and workout actions', () => {
   })
 
   it('keeps flexible weekly completion and unavailable workout references safe', () => {
-    launchFacade.training.getWeeklyCompletion.mockReturnValue(['workout-1'])
     setHomeData({
       activeRoutine: routine(
         '2026-09-28',
@@ -310,11 +321,21 @@ describe('Home schedule and workout actions', () => {
       ),
       routines: [{ id: 'routine-1' }],
       workouts: [workout()],
+      records: [
+        {
+          id: 'completed-1',
+          workoutId: 'workout-1',
+          workoutTitle: 'Upper body',
+          createdAt: new Date().toISOString(),
+        },
+      ],
     })
     const renderer = renderHome()
 
     expect(renderer.root.findAllByType(TodayView)).toHaveLength(0)
     expect(visibleText(renderer)).toContain('1 of 2 complete')
+    expect(visibleText(renderer)).not.toContain('Unavailable workout')
+    act(() => getButton(renderer, 'Choose a workout').props.onPress())
     expect(visibleText(renderer)).toContain('Unavailable workout')
     expect(getDayButton(renderer, 'scheduled workout: Upper body')).toBeUndefined()
   })
@@ -351,5 +372,179 @@ describe('Home progression widget actions', () => {
     })
     act(() => cards[1].props.onRemove())
     expect(removeWidget).toHaveBeenCalledWith('later')
+  })
+})
+
+describe('Flexible Home', () => {
+  function setupFlexible(count, completedCount = 0, extra = {}) {
+    const workouts = Array.from({ length: count }, (_, index) =>
+      workout(`workout-${index}`, `Workout ${index}`)
+    )
+    const records = workouts.slice(0, completedCount).map((item, index) => ({
+      id: `record-${index}`,
+      workoutId: item.id,
+      workoutTitle: `Finished ${index}`,
+      createdAt: new Date().toISOString(),
+      exerciseRecords: [],
+    }))
+    setHomeData({
+      workouts,
+      records,
+      activeRoutine: routine(
+        '2026-01-01',
+        workouts.map((item) => ({ dayType: 'WORKOUT', workoutId: item.id })),
+        'WEEKLY_COMPLETION'
+      ),
+      ...extra,
+    })
+    return renderHome()
+  }
+
+  it.each([2, 5])(
+    'shows %i segments and fresh, partial, and complete states without workouts on Home',
+    (count) => {
+      for (const done of [0, 1, count]) {
+        const tree = setupFlexible(count, done)
+        expect(visibleText(tree)).toContain(`${done} of ${count} complete`)
+        expect(visibleText(tree)).toContain('Strength plan')
+        expect(visibleText(tree)).not.toContain('Workout 0')
+        expect(tree.root.findAllByType('WorkoutCard')).toHaveLength(0)
+        const progress = tree.root.findAll(
+          (node) => node.props.accessibilityRole === 'progressbar'
+        )[0]
+        expect(progress.props.accessibilityValue).toMatchObject({ min: 0, max: count, now: done })
+        expect(progress.props.children).toHaveLength(count)
+        act(() =>
+          getButton(tree, done === count ? 'View this week' : 'Choose a workout').props.onPress()
+        )
+        expect(visibleText(tree)).toContain(
+          `${count - done} remaining this week. Choose any order.`
+        )
+        expect(visibleText(tree)).not.toContain('Finished 0')
+        if (done) {
+          expect(getDayButton(tree, 'Completed this week').props.accessibilityState.expanded).toBe(
+            false
+          )
+          act(() => getDayButton(tree, 'Completed this week').props.onPress())
+          expect(visibleText(tree)).toContain('Finished 0')
+        }
+        act(() => tree.unmount())
+      }
+    }
+  )
+
+  it('routes remaining workouts through the existing preview and completed sessions by record ID after closing', () => {
+    const tree = setupFlexible(2, 1)
+    act(() => getButton(tree, 'Choose a workout').props.onPress())
+    act(() => getDayButton(tree, 'View workout Workout 1').props.onPress())
+    expect(mockPush).not.toHaveBeenCalled()
+    act(() => tree.root.findByType('Overlay').props.onClosed())
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: '/(tabs)/(workouts)',
+      params: { focusId: 'workout-1' },
+    })
+    act(() => getButton(tree, 'Choose a workout').props.onPress())
+    act(() => getDayButton(tree, 'Completed this week').props.onPress())
+    act(() => getDayButton(tree, 'View completed session Finished 0').props.onPress())
+    act(() => tree.root.findByType('Overlay').props.onClosed())
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: '/(tabs)/(history)/record/[id]',
+      params: { id: 'record-0' },
+    })
+  })
+
+  it.each([2, 5])('resumes the existing session with %i required workouts', (count) => {
+    const tree = setupFlexible(count, 1, { running: true })
+    expect(getButton(tree, 'Choose a workout')).toBeUndefined()
+    act(() => getButton(tree, 'Resume workout').props.onPress())
+    expect(mockPush).toHaveBeenCalledWith('/workouts/session')
+    expect(tree.root.findByType('Overlay').props.open).toBe(false)
+  })
+
+  it('counts each required workout once and uses its latest current-week record, excluding other weeks and workouts', () => {
+    const { startOfWeek } = require('../../utils/date')
+    const monday = startOfWeek(new Date())
+    const prior = new Date(monday)
+    prior.setMilliseconds(-1)
+    const next = new Date(monday)
+    next.setDate(next.getDate() + 7)
+    const record = (id, workoutId, date) => ({
+      id,
+      workoutId,
+      workoutTitle: id,
+      createdAt: date.toISOString(),
+      exerciseRecords: [],
+    })
+    const tree = setupFlexible(2, 0, {
+      activeRoutine: routine(
+        '2026-01-01',
+        ['workout-0', 'workout-1', 'workout-0'].map((workoutId) => ({
+          dayType: 'WORKOUT',
+          workoutId,
+        })),
+        'WEEKLY_COMPLETION'
+      ),
+      records: [
+        record('repeat', 'workout-0', new Date()),
+        record('first', 'workout-0', monday),
+        record('prior', 'workout-1', prior),
+        record('next', 'workout-1', next),
+        record('unrelated', 'other', monday),
+      ],
+    })
+    expect(visibleText(tree)).toContain('1 of 2 complete')
+    act(() => getButton(tree, 'Choose a workout').props.onPress())
+    act(() => getDayButton(tree, 'Completed this week').props.onPress())
+    expect(visibleText(tree)).toContain('repeat')
+    expect(visibleText(tree)).not.toContain('first')
+    act(() => getDayButton(tree, 'View completed session repeat').props.onPress())
+    act(() => tree.root.findByType('Overlay').props.onClosed())
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: '/(tabs)/(history)/record/[id]',
+      params: { id: 'repeat' },
+    })
+  })
+
+  it('opens the existing History fallback record identity even when the saved template is missing', () => {
+    const createdAt = new Date().toISOString()
+    const tree = setupFlexible(2, 0, {
+      workouts: [workout('workout-1')],
+      records: [
+        {
+          id: null,
+          workoutId: 'workout-0',
+          workoutTitle: 'Deleted template session',
+          createdAt,
+          exerciseRecords: [],
+        },
+      ],
+    })
+    expect(visibleText(tree)).toContain('1 of 2 complete')
+    act(() => getButton(tree, 'Choose a workout').props.onPress())
+    act(() => getDayButton(tree, 'Completed this week').props.onPress())
+    act(() => getDayButton(tree, 'View completed session Deleted template session').props.onPress())
+    act(() => tree.root.findByType('Overlay').props.onClosed())
+    expect(mockPush).toHaveBeenLastCalledWith({
+      pathname: '/(tabs)/(history)/record/[id]',
+      params: { id: `workout-0-${createdAt}` },
+    })
+  })
+
+  it('shows loading progress without treating completed workouts as remaining', () => {
+    const tree = setupFlexible(2, 1, { recordsLoading: true })
+    expect(visibleText(tree)).toContain('Loading progress…')
+    act(() => getButton(tree, 'Choose a workout').props.onPress())
+    expect(visibleText(tree)).toContain('Loading weekly progress…')
+    expect(getDayButton(tree, 'View workout')).toBeUndefined()
+  })
+
+  it('keeps unknown completion out of the remaining list and offers retry on failure', () => {
+    const tree = setupFlexible(2, 0, { recordsError: 'Offline' })
+    expect(visibleText(tree)).toContain('Progress unavailable')
+    act(() => getButton(tree, 'Choose a workout').props.onPress())
+    expect(visibleText(tree)).toContain('Could not load weekly progress.')
+    expect(visibleText(tree)).not.toContain('Workout 0')
+    act(() => getButton(tree, 'Try again').props.onPress())
+    expect(useWorkoutRecords().refetch).toHaveBeenCalledTimes(1)
   })
 })

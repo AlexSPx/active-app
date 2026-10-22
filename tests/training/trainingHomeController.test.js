@@ -1,15 +1,12 @@
 jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }))
-jest.mock('../../contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }))
 jest.mock('../../features/routines', () => ({
   useActiveRoutine: () => ({ activeRoutine: global.__homeRoutine, loading: false }),
   useRoutines: () => ({ routines: [], loading: false }),
 }))
 jest.mock('../../features/workouts', () => ({
   useWorkouts: () => ({ workouts: [{ id: 'strength', title: 'Strength' }], loading: false }),
+  useWorkoutRecords: () => ({ workoutRecords: [], loading: false, error: null }),
   useWorkoutManagement: () => ({ isWorkoutRunning: () => false }),
-}))
-jest.mock('../../features/launch/launchFacade', () => ({
-  launchFacade: { training: { getWeeklyCompletion: () => null } },
 }))
 
 const React = require('react')
