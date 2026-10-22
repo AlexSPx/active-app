@@ -37,6 +37,7 @@ function describeDay(day: TrainingHomeWeekDay): string {
 
 export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProps) {
   const [weekWidth, setWeekWidth] = useState(0)
+  const [visibleWeek, setVisibleWeek] = useState(0)
   const colors = useCadenceColors()
   const flexible = plan.kind === 'flexible'
 
@@ -88,13 +89,30 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
             )}
         </View>
       ) : (
-        <View className="gap-compact">
+        <View className="flex-row items-center gap-compact">
+          {plan.kind === 'cycle' && (
+            <View
+              className="w-3"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              {visibleWeek > 0 && <ChevronLeft size={12} color={colors.muted} aria-hidden />}
+            </View>
+          )}
           <ScrollView
+            className="flex-1"
             horizontal
             pagingEnabled
             scrollEnabled={plan.kind === 'cycle'}
             showsHorizontalScrollIndicator={false}
             onLayout={(event) => setWeekWidth(event.nativeEvent.layout.width)}
+            scrollEventThrottle={16}
+            onScroll={(event) => {
+              const { contentOffset, layoutMeasurement } = event.nativeEvent
+              if (layoutMeasurement.width > 0) {
+                setVisibleWeek(Math.round(contentOffset.x / layoutMeasurement.width))
+              }
+            }}
           >
             {Array.from({ length: plan.days.length / 7 }, (_, weekIndex) => (
               <View
@@ -102,15 +120,6 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
                 style={{ width: weekWidth }}
                 className={`flex-row gap-compact ${plan.kind === 'setup' ? 'opacity-60' : ''}`}
               >
-                {plan.kind === 'cycle' && weekIndex > 0 && (
-                  <View
-                    className="justify-center"
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants"
-                  >
-                    <ChevronLeft size={12} color={colors.muted} aria-hidden />
-                  </View>
-                )}
                 {plan.days.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day) => {
                   const selected = plan.kind === 'cycle' && day.isSelected
                   const canSelect = plan.kind === 'cycle'
@@ -159,18 +168,18 @@ export function WeeklyView({ plan, onSelectDate, onOpenWorkout }: WeeklyViewProp
                     </Pressable>
                   )
                 })}
-                {plan.kind === 'cycle' && weekIndex === 0 && (
-                  <View
-                    className="justify-center"
-                    accessibilityElementsHidden
-                    importantForAccessibility="no-hide-descendants"
-                  >
-                    <ChevronRight size={12} color={colors.muted} aria-hidden />
-                  </View>
-                )}
               </View>
             ))}
           </ScrollView>
+          {plan.kind === 'cycle' && (
+            <View
+              className="w-3"
+              accessibilityElementsHidden
+              importantForAccessibility="no-hide-descendants"
+            >
+              {visibleWeek === 0 && <ChevronRight size={12} color={colors.muted} aria-hidden />}
+            </View>
+          )}
         </View>
       )}
     </View>
