@@ -42,7 +42,7 @@ export function WorkoutActions({
   }
 
   return (
-    <View className="gap-field py-section">
+    <View className="gap-field pt-section">
       {onAddExercise && (
         <Button
           variant="secondary"

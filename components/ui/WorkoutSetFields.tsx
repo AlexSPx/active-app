@@ -27,6 +27,7 @@ export function StrengthTargetInput({
   onChange,
 }: StrengthTargetInputProps) {
   const [text, setText] = useState(() => strengthInputValue(value))
+  const [isFocused, setIsFocused] = useState(false)
   const lastReportedValue = useRef<number | null>(value ?? null)
 
   useEffect(() => {
@@ -42,7 +43,9 @@ export function StrengthTargetInput({
       className={`h-touch min-h-touch flex-1 px-compact text-center ${completed ? 'border-accent bg-accent text-on-accent' : 'border-divider bg-raised text-foreground'}`}
       accessibilityLabel={strengthLabel(field, index)}
       keyboardType={field === 'weight' ? 'decimal-pad' : 'number-pad'}
-      placeholder={field === 'weight' ? 'kg' : 'reps'}
+      placeholder={isFocused ? '' : field === 'weight' ? 'kg' : 'reps'}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => setIsFocused(false)}
       value={text}
       onChangeText={(next) => {
         setText(next)
