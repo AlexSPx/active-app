@@ -1458,6 +1458,13 @@
   resolved "https://registry.yarnpkg.com/@expo/sudo-prompt/-/sudo-prompt-9.3.2.tgz#0fd2813402a42988e49145cab220e25bea74b308"
   integrity sha512-HHQigo3rQWKMDzYDLkubN5WQOYXJJE2eNqIQC2axC2iO3mHdwnIR7FgZVvHWtBwAdzBgAP0ECp8KqS8TiMKvgw==
 
+"@expo/ui@~58.0.23":
+  version "58.0.23"
+  resolved "https://registry.yarnpkg.com/@expo/ui/-/ui-58.0.23.tgz#8f7ee02e15a442980b53925eb1e8c3f10a823e06"
+  integrity sha512-BFloYirvUs8Ea/LW0oY5gJM/teZaZ8G/1xg1CiXWnTomwJp82sUYFgJarCuRDdpEymgpI+npaR6GHioYkkVmcA==
+  dependencies:
+    sf-symbols-typescript "^2.1.0"
+
 "@expo/ws-tunnel@^2.0.1":
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@expo/ws-tunnel/-/ws-tunnel-2.0.1.tgz#d5eb8ecd186c89a13714e048e3f9bd2c0ae7538b"
@@ -4030,6 +4037,14 @@ expo-web-browser@~58.0.6:
   version "58.0.6"
   resolved "https://registry.yarnpkg.com/expo-web-browser/-/expo-web-browser-58.0.6.tgz#40ef0cc6b52b9a3756f5a69ac87f72d3057a99f8"
   integrity sha512-6/QtDqTOaTqM/ysYYdEZG4XDrWloOo1wVYCn4g3IgayF+1lZWTwMqa5j4kcn2TA1UBer8O7zbMQYLfSMppQ/zg==
+
+expo-widgets@~58.0.23:
+  version "58.0.23"
+  resolved "https://registry.yarnpkg.com/expo-widgets/-/expo-widgets-58.0.23.tgz#92ca9b1e55f607db5f8011e6ff9ff901392882e9"
+  integrity sha512-myDG/azF6Ua8FEt2c/83NYKGoBHceNFRUvS1wPKLqGrsedS1CnYhwYVUEVyODg6raxRYOi67IQDwvLFx9hEfFA==
+  dependencies:
+    "@expo/plist" "^0.10.1"
+    "@expo/ui" "~58.0.23"
 
 expo@^58.0.0:
   version "58.0.19"

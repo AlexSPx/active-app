@@ -1,0 +1,50 @@
+{
+  "training": {
+    "light": {
+      "paper": "#e3d7ee",
+      "ink": "#2d2235",
+      "muted": "#685572",
+      "accent": "#624572",
+      "border": "#e3d7ee"
+    },
+    "dark": {
+      "paper": "#493656",
+      "ink": "#faf5fc",
+      "muted": "#d3c2df",
+      "accent": "#e3d7ee",
+      "border": "#493656"
+    }
+  },
+  "rest": {
+    "light": {
+      "paper": "#eee6f3",
+      "ink": "#2d2235",
+      "muted": "#76627e",
+      "accent": "#76627e",
+      "border": "#eee6f3"
+    },
+    "dark": {
+      "paper": "#382b42",
+      "ink": "#faf5fc",
+      "muted": "#c0afcb",
+      "accent": "#c0afcb",
+      "border": "#382b42"
+    }
+  },
+  "empty": {
+    "light": {
+      "paper": "#faf7fc",
+      "ink": "#4c4253",
+      "muted": "#74677d",
+      "accent": "#624572",
+      "border": "#a391ae"
+    },
+    "dark": {
+      "paper": "#302a36",
+      "ink": "#f0e9f5",
+      "muted": "#c0afcb",
+      "accent": "#dbc7e9",
+      "border": "#9d88ad"
+    }
+  }
+}

@@ -46,6 +46,33 @@ export default {
     },
     plugins: [
       'expo-sqlite',
+      // Dangerous mods run in reverse order; customize the generated widget provider last.
+      './plugins/with-today-plan-widget',
+      [
+        'expo-widgets',
+        {
+          enableAndroid: true,
+          widgets: [
+            {
+              name: 'TodayPlan',
+              displayName: "Today's Plan",
+              description: 'See your training plan for today.',
+              ios: {
+                supportedFamilies: ['systemSmall', 'systemMedium'],
+                contentMarginsDisabled: true,
+                initialLayout: './features/training/widgets/TodayPlanWidget.tsx',
+              },
+              android: {
+                minWidth: 180,
+                minHeight: 64,
+                targetCellWidth: 4,
+                targetCellHeight: 2,
+                initialLayout: './features/training/widgets/TodayPlanWidget.android.tsx',
+              },
+            },
+          ],
+        },
+      ],
       [
         'expo-secure-store',
         {
