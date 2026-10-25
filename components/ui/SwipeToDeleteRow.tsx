@@ -45,7 +45,7 @@ export function SwipeToDeleteRow({
       <View className="mb-compact overflow-hidden rounded-control">
         <Animated.View
           className="absolute inset-0 items-end justify-center rounded-control bg-destructive px-field"
-          style={[StyleSheet.absoluteFillObject, deleteStyle]}
+          style={[StyleSheet.absoluteFill, deleteStyle]}
           pointerEvents="none"
           accessible={false}
           accessibilityElementsHidden

@@ -4,7 +4,7 @@ const mockRefetch = jest.fn()
 const mockRouter = { push: jest.fn() }
 const mockStartWorkout = jest.fn()
 
-jest.mock('@react-navigation/native', () => ({ usePreventRemove: jest.fn() }))
+jest.mock('expo-router/react-navigation', () => ({ usePreventRemove: jest.fn() }))
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({}),
   useRouter: () => mockRouter,

@@ -28,10 +28,10 @@ const { resolveRequest } = config.resolver
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (platform === 'web') {
     if (moduleName === 'zustand') {
-      return context.resolveRequest(context, 'zustand/index.js', platform)
+      return context.resolveRequest(context, require.resolve('zustand'), platform)
     }
     if (moduleName === 'zustand/middleware') {
-      return context.resolveRequest(context, 'zustand/middleware.js', platform)
+      return context.resolveRequest(context, require.resolve('zustand/middleware'), platform)
     }
   }
   // Chain to previous resolveRequest if it exists

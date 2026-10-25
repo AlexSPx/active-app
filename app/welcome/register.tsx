@@ -175,9 +175,9 @@ const AccountRegisterPage = () => {
   const isStepValid = useCallback(
     () =>
       launchFacade.onboarding.isStepValid(step, {
-        firstName,
-        lastName,
-        username,
+        firstName: firstName ?? '',
+        lastName: lastName ?? '',
+        username: username ?? '',
         weight,
         height: heightVal,
       }),
@@ -246,9 +246,9 @@ const AccountRegisterPage = () => {
       if (submissionError) throw new Error(submissionError)
 
       const updateUserRequest = launchFacade.onboarding.createProfileUpdate({
-        username: data.username,
-        firstName: data.firstName,
-        lastName: data.lastName,
+        username: data.username ?? '',
+        firstName: data.firstName ?? '',
+        lastName: data.lastName ?? '',
         timezone: data.timezone,
         weight: data.weight,
         height: data.height,

@@ -2,7 +2,6 @@ const mockReact = require('react')
 const { act, create } = require('react-test-renderer')
 
 const mockAlert = jest.fn()
-const mockDispatch = jest.fn()
 const mockRouter = { back: jest.fn(), push: jest.fn(), replace: jest.fn() }
 let mockOnPreventRemove
 let mockPreventRemoveEnabled
@@ -14,14 +13,13 @@ jest.mock('react-native', () => ({
   ScrollView: 'ScrollView',
   View: 'View',
 }))
-jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ dispatch: mockDispatch }),
+jest.mock('expo-router/react-navigation', () => ({
+  useHeaderHeight: () => 0,
   usePreventRemove: (enabled, listener) => {
     mockPreventRemoveEnabled = enabled
     mockOnPreventRemove = listener
   },
 }))
-jest.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 0 }))
 jest.mock('expo-router', () => ({
   Stack: { Screen: 'Screen' },
   useRouter: () => mockRouter,
@@ -95,14 +93,16 @@ test('explicit discard clears the draft and continues the blocked navigation act
   await act(async () => nameField.props.onChangeText('Changed name'))
   expect(mockPreventRemoveEnabled).toBe(true)
 
-  const action = { type: 'GO_BACK' }
-  await act(async () => mockOnPreventRemove({ data: { action } }))
+  const repeat = jest.fn()
+  await act(async () => mockOnPreventRemove({ repeat }))
+  expect(repeat).not.toHaveBeenCalled()
   const buttons = mockAlert.mock.calls[0][2]
   expect(buttons[0].text).toBe('Keep editing')
   expect(buttons[1].text).toBe('Discard workout')
   await act(async () => buttons[1].onPress())
 
   expect(clearExercises).toHaveBeenCalledTimes(1)
-  expect(mockDispatch).toHaveBeenCalledWith(action)
+  expect(repeat).toHaveBeenCalledTimes(1)
+  expect(mockPreventRemoveEnabled).toBe(false)
   await act(async () => renderer.unmount())
 })

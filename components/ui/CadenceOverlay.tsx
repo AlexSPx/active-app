@@ -1,3 +1,4 @@
+import type { TextInstance, ViewInstance } from 'react-native'
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react'
 import {
   AccessibilityInfo,
@@ -27,7 +28,7 @@ type CadenceOverlayProps = {
   position?: number
   onPositionChange?: (position: number) => void
   onClosed?: () => void
-  returnFocusRef?: RefObject<View | null>
+  returnFocusRef?: RefObject<ViewInstance | null>
 }
 
 const CLOSE_DISTANCE = 48
@@ -61,8 +62,8 @@ export function CadenceOverlay({
   const [mounted, setMounted] = useState(open)
   const translateY = useRef(new Animated.Value(open ? 0 : height)).current
   const opacity = useRef(new Animated.Value(open ? 1 : 0)).current
-  const titleRef = useRef<Text>(null)
-  const handleRef = useRef<View>(null)
+  const titleRef = useRef<TextInstance>(null)
+  const handleRef = useRef<ViewInstance>(null)
   const dragStart = useRef(0)
   const closeCompletion = useRef<(() => void) | null>(null)
   const current = useRef({
@@ -86,9 +87,9 @@ export function CadenceOverlay({
     returnFocusRef,
   }
 
-  const focus = (ref: RefObject<View | Text | null>) => {
+  const focus = (ref: RefObject<ViewInstance | TextInstance | null>) => {
     const tag = findNodeHandle(ref.current)
-    if (tag !== null) AccessibilityInfo.setAccessibilityFocus(tag)
+    if (tag != null) AccessibilityInfo.setAccessibilityFocus(tag)
   }
 
   const requestClose = () => {

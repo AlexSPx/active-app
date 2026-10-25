@@ -18,7 +18,7 @@ jest.mock('expo-router', () => ({
   router: { back: jest.fn(), push: jest.fn() },
   useNavigation: () => global.__routineNavigation,
 }))
-jest.mock('@react-navigation/native', () => ({
+jest.mock('expo-router/react-navigation', () => ({
   usePreventRemove: (...args) => global.__routinePreventRemove.push(args),
 }))
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ bottom: 0 }) }))
@@ -180,23 +180,25 @@ test('routine notes and start date stay visible while the routine is inactive', 
   act(() => renderer.unmount())
 })
 
-test('explicit discard asks and dispatches only after confirmation', () => {
+test('explicit discard disables prevention and repeats only after confirmation', () => {
   const { renderer } = renderForm()
 
   act(() => renderer.root.findAllByType('Input')[0].props.onChangeText('Unsaved routine'))
 
   const [prevent, listener] = global.__routinePreventRemove.at(-1)
   expect(prevent).toBe(true)
-  const action = { type: 'GO_BACK' }
-  act(() => listener({ data: { action } }))
+  const repeat = jest.fn()
+  act(() => listener({ repeat }))
+  expect(repeat).not.toHaveBeenCalled()
   expect(Alert.alert).toHaveBeenCalledWith(
     'Discard this routine?',
     expect.any(String),
     expect.any(Array)
   )
   const buttons = Alert.alert.mock.calls[0][2]
-  buttons.find((item) => item.text === 'Discard routine').onPress()
-  expect(global.__routineNavigation.dispatch).toHaveBeenCalledWith(action)
+  act(() => buttons.find((item) => item.text === 'Discard routine').onPress())
+  expect(repeat).toHaveBeenCalledTimes(1)
+  expect(global.__routinePreventRemove.at(-1)[0]).toBe(false)
   act(() => renderer.unmount())
 })
 

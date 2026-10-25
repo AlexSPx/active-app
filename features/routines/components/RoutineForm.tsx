@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, View } from 'react-native'
 import { useNavigation, router } from 'expo-router'
-import { usePreventRemove } from '@react-navigation/native'
+import { usePreventRemove } from 'expo-router/react-navigation'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { Button, SegmentedSelection, TextField, UiText } from '../../../components/ui/Controls'
 import type { RoutinePatternItem, RoutineType } from '../../../types/routine'
@@ -72,7 +72,7 @@ export function RoutineForm({
     setData((current) => ({ ...current, [key]: value }))
   }
 
-  usePreventRemove((dirty || busy) && !saved, ({ data: event }) => {
+  usePreventRemove((dirty || busy) && !saved, ({ repeat }) => {
     if (busy) return
     Alert.alert(
       'Discard this routine?',
@@ -82,7 +82,10 @@ export function RoutineForm({
         {
           text: 'Discard routine',
           style: 'destructive',
-          onPress: () => navigation.dispatch(event.action),
+          onPress: () => {
+            setSaved(true)
+            repeat()
+          },
         },
       ]
     )

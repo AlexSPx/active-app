@@ -1,3 +1,4 @@
+import type { FlatListInstance } from 'react-native'
 import React from 'react'
 import { FlatList, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import { UiText } from './Controls'
@@ -25,7 +26,7 @@ export function WheelSelector<T extends number | string>({
   allowNull = false,
   nullLabel = '-',
 }: WheelSelectorProps<T>) {
-  const listRef = React.useRef<FlatList<T | null>>(null)
+  const listRef = React.useRef<FlatListInstance>(null)
 
   const augmentedValues = React.useMemo<(T | null)[]>(
     () => (allowNull ? [null, ...values] : values),

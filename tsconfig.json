@@ -1,26 +1,20 @@
 {
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
-      "app/*": ["app/*"],
-      "components/*": ["components/*"],
-      "config/*": ["config/*"],
-      "constants/*": ["constants/*"],
-      "contexts/*": ["contexts/*"],
-      "features/*": ["features/*"],
-      "lib/*": ["lib/*"],
-      "navigation/*": ["navigation/*"],
-      "services/*": ["services/*"],
-      "stores/*": ["stores/*"],
-      "types/*": ["types/*"],
-      "utils/*": ["utils/*"]
+      "app/*": ["./app/*"],
+      "components/*": ["./components/*"],
+      "config/*": ["./config/*"],
+      "constants/*": ["./constants/*"],
+      "contexts/*": ["./contexts/*"],
+      "features/*": ["./features/*"],
+      "lib/*": ["./lib/*"],
+      "navigation/*": ["./navigation/*"],
+      "services/*": ["./services/*"],
+      "stores/*": ["./stores/*"],
+      "types/*": ["./types/*"],
+      "utils/*": ["./utils/*"]
     }
   },
   "extends": "expo/tsconfig.base",
-  "include": [
-    "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
-  ]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

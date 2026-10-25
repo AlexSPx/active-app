@@ -1,3 +1,4 @@
+import type { ViewInstance } from 'react-native'
 import { useRef, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import { MoreHorizontal } from './icons'
@@ -23,7 +24,7 @@ export function ActionMenu({
   onOpen?: () => void
 }) {
   const [open, setOpen] = useState(false)
-  const triggerRef = useRef<View>(null)
+  const triggerRef = useRef<ViewInstance>(null)
   const pendingAction = useRef<(() => void) | null>(null)
   return (
     <>

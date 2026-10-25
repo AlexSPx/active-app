@@ -1,4 +1,4 @@
-const CACHE_NAME = 'active-next-v1';
+const CACHE_NAME = 'active-next-v2.1.0';
 const urlsToCache = [
     '/',
     '/manifest.json',

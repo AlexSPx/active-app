@@ -67,12 +67,16 @@ function stalledBody(status = 200, reader = 'json', abortGate = Promise.resolve(
 const login = () => apiService.login({ email: 'a@example.com', password: 'secret' })
 
 describe('ApiService response-body deadlines', () => {
-  const originalFetch = global.fetch
+  const originalFetch = Object.getOwnPropertyDescriptor(global, 'fetch')
   let unauthorized
 
   beforeEach(() => {
     jest.useFakeTimers()
-    global.fetch = jest.fn()
+    Object.defineProperty(global, 'fetch', {
+      configurable: true,
+      writable: true,
+      value: jest.fn(),
+    })
     ExpoModulesCore.requireOptionalNativeModule.mockReturnValue({})
     apiService.resumePendingRequests()
     unauthorized = jest.fn()
@@ -83,7 +87,7 @@ describe('ApiService response-body deadlines', () => {
   afterEach(async () => {
     await apiService.invalidatePendingRequests()
     apiService.resumePendingRequests()
-    global.fetch = originalFetch
+    Object.defineProperty(global, 'fetch', originalFetch)
     jest.clearAllTimers()
     jest.useRealTimers()
   })
