@@ -18,6 +18,13 @@ jest.mock('../../features/workouts/hooks/useWorkouts', () => ({
     error: null,
   }),
 }))
+jest.mock('../../features/workouts/hooks/useWorkoutRecords', () => ({
+  useWorkoutRecords: () => ({
+    workoutRecords: global.__widgetRecords,
+    loading: false,
+    error: global.__widgetRecordsError,
+  }),
+}))
 jest.mock('../../stores/authStore', () => ({
   useAuthStore: (select) => select({ isProfileTransitioning: global.__widgetTransition }),
 }))
@@ -41,6 +48,8 @@ beforeEach(() => {
   global.__widgetAvailable = true
   global.__widgetTransition = false
   global.__widgetWorkoutTitle = 'Upper body'
+  global.__widgetRecords = []
+  global.__widgetRecordsError = null
   global.__widgetRoutine = {
     name: 'Strength cycle',
     startDate: '2026-10-25',
@@ -112,3 +121,33 @@ it('uses Android snapshots and refreshes on changes, midnight and foreground', (
   act(() => renderer.update(<TodayPlanWidgetSync />))
   expect(widget.updateSnapshot.mock.lastCall[0].title).toBe('No routine')
 })
+
+it.each(['ios', 'android'])(
+  'refreshes weekly progress after workout completion on %s',
+  (platform) => {
+    Platform.OS = platform
+    global.__widgetRoutine = {
+      ...global.__widgetRoutine,
+      routineType: 'WEEKLY_COMPLETION',
+      pattern: [
+        { dayType: 'WORKOUT', workoutId: 'upper' },
+        { dayType: 'WORKOUT', workoutId: 'lower' },
+      ],
+    }
+    const latestPlan = () =>
+      platform === 'ios'
+        ? widget.updateTimeline.mock.lastCall[0][0].props
+        : widget.updateSnapshot.mock.lastCall[0]
+    act(() => {
+      renderer = create(<TodayPlanWidgetSync />)
+    })
+    expect(latestPlan().progress).toEqual({ label: '0 of 2 workouts this week', value: 0 })
+    global.__widgetRecords = [{ workoutId: 'upper', createdAt: '2026-10-25T09:00:00Z' }]
+    act(() => renderer.update(<TodayPlanWidgetSync />))
+    expect(latestPlan().progress).toEqual({ label: '1 of 2 workouts this week', value: 0.5 })
+    global.__widgetRecordsError = 'History unavailable'
+    act(() => renderer.update(<TodayPlanWidgetSync />))
+    expect(latestPlan().title).toBe('Choose a workout')
+    expect(latestPlan().progress).toEqual({ label: 'Progress unavailable', value: null })
+  }
+)

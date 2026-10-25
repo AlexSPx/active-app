@@ -1,7 +1,6 @@
 const { withDangerousMod } = require('expo/config-plugins')
 const fs = require('node:fs')
 const path = require('node:path')
-const appearance = require('../features/training/widgets/appearance.json')
 
 const vector = (body) => `<vector xmlns:android="http://schemas.android.com/apk/res/android"
   android:width="32dp" android:height="32dp" android:viewportWidth="32" android:viewportHeight="32">
@@ -37,23 +36,6 @@ module.exports = (config) =>
       for (const [name, xml] of Object.entries(icons)) {
         fs.writeFileSync(path.join(drawable, `widget_${name}_icon.xml`), xml)
       }
-      for (const [kind, themes] of Object.entries(appearance)) {
-        for (const [theme, colors] of Object.entries(themes)) {
-          const border =
-            kind === 'empty'
-              ? `<stroke android:width="1.5dp" android:color="${colors.border}" android:dashWidth="3dp" android:dashGap="3dp"/>`
-              : ''
-          fs.writeFileSync(
-            path.join(drawable, `widget_${kind}_${theme}.xml`),
-            `<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-  <solid android:color="${colors.paper}"/>
-  <corners android:radius="21dp"/>
-  ${border}
-</shape>\n`
-          )
-        }
-      }
-
       // Expo's Android widget buttons broadcast interactions but don't offer deep links.
       const packageName = mod.android.package
       const provider = path.join(

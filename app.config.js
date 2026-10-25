@@ -63,8 +63,8 @@ export default {
                 initialLayout: './features/training/widgets/TodayPlanWidget.tsx',
               },
               android: {
-                minWidth: 180,
-                minHeight: 64,
+                minWidth: 250,
+                minHeight: 110,
                 targetCellWidth: 4,
                 targetCellHeight: 2,
                 initialLayout: './features/training/widgets/TodayPlanWidget.android.tsx',
