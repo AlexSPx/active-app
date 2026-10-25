@@ -6,7 +6,7 @@ jest.mock('../../lib/repositories/WorkoutRepository', () => ({ WorkoutRepository
 jest.mock('../../lib/sync', () => ({
   syncEngine: { resolveId: jest.fn((_table, id) => id) },
 }))
-jest.mock('../../utils/haptics', () => ({ haptics: { success: jest.fn() } }))
+jest.mock('../../utils/haptics', () => ({ haptics: { success: jest.fn(), error: jest.fn() } }))
 
 const AsyncStorage = require('@react-native-async-storage/async-storage')
 const { getDatabase } = require('../../lib/db/connection')
@@ -186,5 +186,79 @@ describe('running workout ID remapping', () => {
     }
 
     expect(useRunningWorkoutStore.getState().runningWorkout.id).toBe('server_workout_active')
+  })
+})
+
+describe('set completion values', () => {
+  const { haptics } = require('../../utils/haptics')
+  const readSet = () => useRunningWorkoutStore.getState().runningWorkout.exercises[0].sessionSets[0]
+  const store = () => useRunningWorkoutStore.getState()
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    useRunningWorkoutStore.setState({
+      runningWorkout: {
+        exercises: [
+          {
+            sessionId: 'exercise',
+            category: 'STRENGTH',
+            sessionSets: [{ id: 'set', reps: null, weight: null, completed: false }],
+          },
+        ],
+      },
+    })
+  })
+
+  it.each([
+    [null, null],
+    [5, null],
+    [null, 20],
+    [0, 20],
+  ])('rejects incomplete strength values (%s, %s) with error haptics', (reps, weight) => {
+    store().updateExerciseSet('exercise', 'set', reps, weight)
+    store().completeSet('exercise', 'set')
+    expect(readSet().completed).toBe(false)
+    expect(haptics.error).toHaveBeenCalledTimes(1)
+    expect(haptics.success).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [null, 20],
+    [5, null],
+  ])('unmarks a completed set when a value is cleared', (reps, weight) => {
+    store().updateExerciseSet('exercise', 'set', 5, 20)
+    store().completeSet('exercise', 'set')
+    expect(readSet().completed).toBe(true)
+    store().updateExerciseSet('exercise', 'set', reps, weight)
+    expect(readSet().completed).toBe(false)
+  })
+
+  it('allows zero weight and valid edits, and toggles completion off', () => {
+    store().updateExerciseSet('exercise', 'set', 5, 0)
+    store().completeSet('exercise', 'set')
+    expect(readSet().completed).toBe(true)
+    store().updateExerciseSet('exercise', 'set', 10, 0)
+    expect(readSet().completed).toBe(true)
+    store().completeSet('exercise', 'set')
+    expect(readSet().completed).toBe(false)
+  })
+
+  it('requires cardio duration and unmarks it when cleared or reset to zero', () => {
+    useRunningWorkoutStore.setState((state) => ({
+      runningWorkout: {
+        ...state.runningWorkout,
+        exercises: [{ ...state.runningWorkout.exercises[0], category: 'CARDIO' }],
+      },
+    }))
+    store().completeSet('exercise', 'set')
+    expect(readSet().completed).toBe(false)
+    expect(haptics.error).toHaveBeenCalledTimes(1)
+    for (const cleared of [null, 0]) {
+      store().updateExerciseSet('exercise', 'set', null, null, 60)
+      store().completeSet('exercise', 'set')
+      expect(readSet().completed).toBe(true)
+      store().updateExerciseSet('exercise', 'set', null, null, cleared)
+      expect(readSet().completed).toBe(false)
+    }
   })
 })

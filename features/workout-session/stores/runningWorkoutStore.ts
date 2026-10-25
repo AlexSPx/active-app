@@ -13,6 +13,8 @@ import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 import type { FinishedCongratsPayload } from '../../../types/congrats'
 import { haptics } from '../../../utils/haptics'
 
+import { hasSetValues } from '../utils'
+
 let recordingAttempt = 0
 
 export interface RunningWorkoutExercise extends ApiExercise {
@@ -251,11 +253,16 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
                 ...exercise,
                 sessionSets: exercise.sessionSets.map((set) => {
                   if (set.id === setId) {
-                    return {
+                    const updatedSet = {
                       ...set,
                       reps,
                       weight,
-                      durationSeconds: durationSeconds ?? set.durationSeconds,
+                      durationSeconds:
+                        durationSeconds === undefined ? set.durationSeconds : durationSeconds,
+                    }
+                    return {
+                      ...updatedSet,
+                      completed: set.completed && hasSetValues(exercise.category, updatedSet),
                     }
                   }
                   return set
@@ -283,6 +290,10 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
                 ...exercise,
                 sessionSets: exercise.sessionSets.map((set) => {
                   if (set.id === setId) {
+                    if (!set.completed && !hasSetValues(exercise.category, set)) {
+                      haptics.error()
+                      return set
+                    }
                     const newCompleted = !set.completed
                     if (newCompleted) {
                       haptics.success()
