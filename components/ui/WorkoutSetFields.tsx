@@ -78,18 +78,6 @@ type DurationTargetInputProps = {
   | { mode: 'session'; seconds: number; onChange: (seconds: number) => void }
 )
 
-function formatDuration(seconds: number | null | undefined) {
-  if (seconds == null) return ''
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
-}
-
-function parseDuration(text: string) {
-  const match = /^(\d+):([0-5]\d)$/.exec(text.trim())
-  if (!match) return null
-  const seconds = Number(match[1]) * 60 + Number(match[2])
-  return Number.isSafeInteger(seconds) ? seconds : null
-}
-
 function digitsToSeconds(raw: string) {
   const digits = raw.replace(/\D/g, '')
   if (!digits) return 0
@@ -112,67 +100,46 @@ function secondsToDigits(seconds: number) {
 }
 
 export function DurationTargetInput(props: DurationTargetInputProps) {
-  const { index, mode } = props
-  const [editorText, setEditorText] = useState(() =>
-    mode === 'editor' ? formatDuration(props.seconds) : ''
-  )
-  const [sessionDigits, setSessionDigits] = useState(() =>
-    mode === 'session' ? secondsToDigits(props.seconds) : ''
-  )
+  const { index } = props
+  const [digits, setDigits] = useState(() => secondsToDigits(props.seconds ?? 0))
   const lastReportedSeconds = useRef<number | null>(props.seconds ?? null)
   const seconds = props.seconds
 
   useEffect(() => {
     const currentSeconds = seconds ?? null
     if (currentSeconds !== lastReportedSeconds.current) {
-      if (mode === 'editor') setEditorText(formatDuration(seconds))
-      else setSessionDigits(secondsToDigits(seconds))
+      setDigits(secondsToDigits(seconds ?? 0))
       lastReportedSeconds.current = currentSeconds
     }
-  }, [mode, seconds])
+  }, [seconds])
 
   const completed = props.mode === 'session' && props.completed
   return (
     <TextField
       className={`h-touch min-h-touch flex-1 px-compact text-center ${completed ? 'border-accent bg-accent text-on-accent' : 'border-divider bg-raised text-foreground'}`}
       accessibilityLabel={`Interval ${index + 1} duration in minutes and seconds`}
-      keyboardType={mode === 'editor' ? 'default' : 'number-pad'}
+      keyboardType="number-pad"
       placeholder="0:00"
-      value={mode === 'editor' ? editorText : formatDigits(sessionDigits)}
+      value={formatDigits(digits)}
       onChangeText={(next) => {
-        if (mode === 'editor') {
-          setEditorText(next)
-          const parsed = parseDuration(next)
-          lastReportedSeconds.current = parsed
-          props.onChange(parsed)
-          return
-        }
         const nextDigits = next.replace(/\D/g, '')
-        setSessionDigits(nextDigits)
+        setDigits(nextDigits)
         const nextSeconds = digitsToSeconds(nextDigits)
         lastReportedSeconds.current = nextSeconds
         props.onChange(nextSeconds)
       }}
-      onKeyPress={
-        mode === 'session'
-          ? (event) => {
-              if (event.nativeEvent.key === 'Backspace') {
-                setSessionDigits((digits) => digits.slice(0, -1))
-              }
-            }
-          : undefined
-      }
-      onBlur={
-        mode === 'session'
-          ? () => {
-              const nextSeconds = digitsToSeconds(sessionDigits)
-              if (lastReportedSeconds.current !== nextSeconds) {
-                lastReportedSeconds.current = nextSeconds
-                props.onChange(nextSeconds)
-              }
-            }
-          : undefined
-      }
+      onKeyPress={(event) => {
+        if (event.nativeEvent.key === 'Backspace') {
+          setDigits((current) => current.slice(0, -1))
+        }
+      }}
+      onBlur={() => {
+        const nextSeconds = digitsToSeconds(digits)
+        if (lastReportedSeconds.current !== nextSeconds) {
+          lastReportedSeconds.current = nextSeconds
+          props.onChange(nextSeconds)
+        }
+      }}
     />
   )
 }
