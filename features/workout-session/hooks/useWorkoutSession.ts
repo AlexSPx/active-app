@@ -11,6 +11,9 @@ import {
 import { queryClient } from '../../../lib/queryClient'
 import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 
+import { hasSetValues } from '../utils'
+import { haptics } from '../../../utils/haptics'
+
 export interface UseWorkoutSessionOptions {
   fallbackExercises?: Exercise[]
 }
@@ -118,8 +121,20 @@ export function useWorkoutSession(
                   sets: exercise.sets.map((set) =>
                     set.id === setId
                       ? field === 'duration'
-                        ? { ...set, durationSeconds: value }
-                        : { ...set, [field]: value }
+                        ? {
+                            ...set,
+                            durationSeconds: value,
+                            completed:
+                              set.completed &&
+                              hasSetValues(exercise.category, { ...set, durationSeconds: value }),
+                          }
+                        : {
+                            ...set,
+                            [field]: value,
+                            completed:
+                              set.completed &&
+                              hasSetValues(exercise.category, { ...set, [field]: value }),
+                          }
                       : set
                   ),
                 }
@@ -137,7 +152,13 @@ export function useWorkoutSession(
       if (runningWorkout) {
         completeSet(exerciseId, setId)
       } else {
-        // Fallback to local state for non-running workouts
+        const exercise = exercises.find((exercise) => exercise.sessionId === exerciseId)
+        const targetSet = exercise?.sets.find((set) => set.id === setId)
+        if (!exercise || !targetSet) return
+        if (!targetSet.completed && !hasSetValues(exercise.category, targetSet)) {
+          haptics.error()
+          return
+        }
         setExercises((prev) =>
           prev.map((exercise) =>
             exercise.sessionId === exerciseId
@@ -152,7 +173,7 @@ export function useWorkoutSession(
         )
       }
     },
-    [completeSet, runningWorkout, setExercises]
+    [completeSet, exercises, runningWorkout, setExercises]
   )
 
   const addSet = useCallback(

@@ -1,10 +1,14 @@
 import { Button, UiText } from '../../../components/ui/Controls'
+import { Check } from '../../../components/ui/icons'
+import { useCadenceColors } from '../../../components/ui'
 import { View } from 'react-native'
 import { FlashList } from '@shopify/flash-list'
 import { useCallback, memo } from 'react'
 import type { Exercise, Set } from '../../../types/workout-session'
 import { WorkoutSessionSetRow } from './WorkoutSessionSetRow'
 import { CardioSessionSetRow } from './CardioSessionSetRow'
+
+import { hasSetValues } from '../utils'
 
 function SetRowSeparator() {
   return <View className="h-compact" />
@@ -35,6 +39,7 @@ export const WorkoutSessionExercise = memo(
     onRemoveSet,
     onStartRestTimer,
   }: WorkoutSessionExerciseProps) {
+    const colors = useCadenceColors()
     const isCardio = exercise.category === 'CARDIO'
     const renderSetRow = useCallback(
       ({ item: set, index }: { item: Set; index: number }) => {
@@ -58,7 +63,7 @@ export const WorkoutSessionExercise = memo(
             onUpdateSet={(field, value) => onUpdateSet(exercise.sessionId, set.id, field, value)}
             onToggleComplete={() => {
               onToggleSetComplete(exercise.sessionId, set.id)
-              if (!set.completed && set.reps && set.weight) {
+              if (!set.completed && hasSetValues(exercise.category, set)) {
                 onStartRestTimer(set.id)
               }
             }}
@@ -68,6 +73,7 @@ export const WorkoutSessionExercise = memo(
       },
       [
         isCardio,
+        exercise.category,
         exercise.sessionId,
         exercise.sets.length,
         onUpdateSet,
@@ -101,9 +107,9 @@ export const WorkoutSessionExercise = memo(
                 Reps
               </UiText>
             )}
-            <UiText textRole="meta" className="w-touch text-center">
-              ✓
-            </UiText>
+            <View className="w-touch items-center" accessibilityLabel="Completion">
+              <Check size={18} color={colors.muted} strokeWidth={2} aria-hidden />
+            </View>
           </View>
 
           {/* Sets */}
