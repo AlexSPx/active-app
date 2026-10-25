@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useColorScheme } from 'react-native'
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
+import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router/react-navigation'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { Uniwind } from 'uniwind'
 import { useSettingsStore } from '../features/settings'

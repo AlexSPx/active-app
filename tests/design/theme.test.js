@@ -15,7 +15,7 @@ jest.mock('../../components/feedback/FeedbackProvider', () => ({
 jest.mock('react-native-safe-area-context', () => ({
   SafeAreaProvider: ({ children }) => children,
 }))
-jest.mock('@react-navigation/native', () => {
+jest.mock('expo-router/react-navigation', () => {
   const React = require('react')
   const NavigationContext = React.createContext({ dark: false })
   return {
@@ -29,7 +29,7 @@ jest.mock('@react-navigation/native', () => {
 
 const { AppThemeProvider } = require('../../providers/AppThemeProvider')
 const { useSettingsStore } = require('../../features/settings')
-const { NavigationContext } = require('@react-navigation/native')
+const { NavigationContext } = require('expo-router/react-navigation')
 const { useColorScheme } = require('react-native')
 const { Uniwind } = require('uniwind')
 

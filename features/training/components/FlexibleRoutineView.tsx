@@ -1,3 +1,4 @@
+import type { ViewInstance } from 'react-native'
 import { useRef, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
 import { Button, UiText } from '../../../components/ui/Controls'
@@ -31,7 +32,7 @@ export function FlexibleRoutineView({
   const colors = useCadenceColors()
   const [chooserOpen, setChooserOpen] = useState(false)
   const [completedExpanded, setCompletedExpanded] = useState(false)
-  const actionRef = useRef<View>(null)
+  const actionRef = useRef<ViewInstance>(null)
   const pendingNavigation = useRef<(() => void) | null>(null)
   const remaining = plan.workouts.filter((item) => !item.completedRecord)
   const completed = plan.workouts.filter((item) => item.completedRecord)

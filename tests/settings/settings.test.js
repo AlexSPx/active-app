@@ -5,7 +5,7 @@ jest.mock('../../components/ui/CadenceOverlay', () => ({
 const React = require('react')
 const { act, create } = require('react-test-renderer')
 
-jest.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 80 }))
+jest.mock('expo-router/react-navigation', () => ({ useHeaderHeight: () => 80 }))
 jest.mock('react-native', () => {
   const React = require('react')
   const component = (name) => (props) => React.createElement(name, props, props.children)

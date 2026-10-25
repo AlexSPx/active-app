@@ -1,4 +1,4 @@
-import { usePreventRemove } from '@react-navigation/native'
+import { usePreventRemove } from 'expo-router/react-navigation'
 import { useState, useCallback } from 'react'
 import { useLocalSearchParams, useRouter } from 'expo-router'
 import { useWorkoutManagement } from './useWorkoutManagement'

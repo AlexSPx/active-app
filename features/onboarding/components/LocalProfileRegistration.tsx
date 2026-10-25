@@ -1,3 +1,4 @@
+import type { ScrollViewInstance } from 'react-native'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useRouter } from 'expo-router'
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, View } from 'react-native'
@@ -86,7 +87,7 @@ export default function LocalProfileRegistration() {
   const { updateUserProfile, isUpdating } = useUpdateUser()
   const [saveError, setSaveError] = useState<string | null>(null)
   const saveInProgress = useRef(false)
-  const scrollRef = useRef<ScrollView>(null)
+  const scrollRef = useRef<ScrollViewInstance>(null)
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ y: 0, animated: false })
@@ -108,9 +109,9 @@ export default function LocalProfileRegistration() {
     try {
       const values = result.values
       const update = launchFacade.onboarding.createProfileUpdate({
-        username: values.username,
-        firstName: values.firstName,
-        lastName: values.lastName,
+        username: values.username ?? '',
+        firstName: values.firstName ?? '',
+        lastName: values.lastName ?? '',
         timezone: values.timezone,
         weight: values.weight,
         height: values.height,

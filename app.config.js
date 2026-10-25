@@ -2,7 +2,7 @@ export default {
   expo: {
     name: 'Active Next',
     slug: 'active-next',
-    version: '2.0.0',
+    version: '2.1.0',
     orientation: 'portrait',
     scheme: 'activenext',
     userInterfaceStyle: 'automatic',
@@ -75,21 +75,11 @@ export default {
           },
         },
       ],
-      [
-        'expo-build-properties',
-        {
-          ios: {
-            newArchEnabled: true,
-          },
-          android: {
-            newArchEnabled: true,
-          },
-        },
-      ],
       'expo-web-browser',
       'expo-localization',
       '@react-native-community/datetimepicker',
       'expo-image',
+      'expo-status-bar',
     ],
     experiments: {
       typedRoutes: true,

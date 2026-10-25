@@ -7,7 +7,7 @@ import {
   type LayoutChangeEvent,
 } from 'react-native'
 import { Stack } from 'expo-router'
-import { useHeaderHeight } from '@react-navigation/elements'
+import { useHeaderHeight } from 'expo-router/react-navigation'
 import { FlashList } from '@shopify/flash-list'
 import { UiText } from '../../components/ui/Controls'
 

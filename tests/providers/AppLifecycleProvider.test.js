@@ -116,7 +116,7 @@ jest.mock('../../lib/db/ProfileSQLiteProvider', () => {
     },
   }
 })
-jest.mock('@react-navigation/native', () => {
+jest.mock('expo-router/react-navigation', () => {
   const React = require('react')
   const NavigationContext = React.createContext({ dark: false })
   return {
@@ -251,7 +251,7 @@ const { apiService } = require('../../services/apiService')
 const { queryClient } = require('../../lib/queryClient')
 const { AppState } = require('react-native')
 const expoNetwork = require('expo-network')
-const { NavigationContext } = require('@react-navigation/native')
+const { NavigationContext } = require('expo-router/react-navigation')
 const { useProfileDatabase } = require('../../lib/db/ProfileSQLiteProvider')
 function ThemeProbe() {
   return React.createElement('Probe', {

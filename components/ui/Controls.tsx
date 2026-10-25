@@ -9,6 +9,7 @@ import {
   type TextInputProps,
   type TextProps,
   type ViewProps,
+  type ViewInstance,
 } from 'react-native'
 
 export type TextRole =
@@ -115,7 +116,7 @@ const buttonTextClasses: Record<ButtonVariant, string> = {
   ghost: 'text-body font-dm-medium text-foreground',
 }
 
-export const Button = forwardRef<View, ButtonProps>(function Button(
+export const Button = forwardRef<ViewInstance, ButtonProps>(function Button(
   {
     children,
     variant = 'primary',
@@ -166,7 +167,7 @@ export type IconButtonProps = Omit<ButtonProps, 'accessibilityLabel'> & {
   accessibilityLabel: string
 }
 
-export const IconButton = forwardRef<View, IconButtonProps>(function IconButton(
+export const IconButton = forwardRef<ViewInstance, IconButtonProps>(function IconButton(
   { className = '', ...props },
   ref
 ) {
@@ -213,7 +214,7 @@ type SettingsRowProps = Omit<PressableProps, 'children' | 'style'> & {
   className?: string
 }
 
-export const SettingsRow = forwardRef<View, SettingsRowProps>(function SettingsRow(
+export const SettingsRow = forwardRef<ViewInstance, SettingsRowProps>(function SettingsRow(
   { title, description, icon, trailing, accessibilityLabel, className = '', ...props },
   ref
 ) {

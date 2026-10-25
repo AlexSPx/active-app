@@ -19,10 +19,10 @@ jest.mock('react-native-reanimated', () => ({
   withTiming: jest.fn((value) => value),
   Easing: { out: (easing) => easing, cubic: 'cubic' },
 }))
-jest.mock('@react-navigation/bottom-tabs', () => ({
+jest.mock('expo-router/js-tabs', () => ({
   BottomTabBar: (props) => require('react').createElement('BottomTabBar', props),
 }))
-jest.mock('@react-navigation/elements', () => ({
+jest.mock('expo-router/react-navigation', () => ({
   PlatformPressable: (props) =>
     require('react').createElement('PlatformPressable', props, props.children),
 }))

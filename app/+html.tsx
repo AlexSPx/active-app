@@ -1,8 +1,9 @@
-import { ScrollViewStyleReset } from 'expo-router/html'
+import { ScrollViewStyleReset, useServerDocumentContext } from 'expo-router/html'
 
 export default function Root({ children }: { children: React.ReactNode }) {
+  const { htmlAttributes, bodyAttributes, headNodes, bodyNodes } = useServerDocumentContext()
   return (
-    <html lang="en">
+    <html lang="en" {...htmlAttributes}>
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
@@ -21,9 +22,11 @@ export default function Root({ children }: { children: React.ReactNode }) {
         <link rel="icon" href="/icon-192.png" />
         {/* Keep the shell aligned with the system theme until the saved preference hydrates. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
+        {headNodes}
       </head>
-      <body>
+      <body {...bodyAttributes}>
         {children}
+        {bodyNodes}
         <script dangerouslySetInnerHTML={{ __html: serviceWorkerScript }} />
       </body>
     </html>

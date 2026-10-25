@@ -15,7 +15,7 @@ jest.mock('react-native', () => {
 jest.mock('uniwind', () => ({
   useCSSVariable: () => ['#faf7fc', '#2d2235', '#76627e', '#dcd0e4', '#624572', '#faf5fc'],
 }))
-jest.mock('@react-navigation/native', () => ({ usePreventRemove: jest.fn() }))
+jest.mock('expo-router/react-navigation', () => ({ usePreventRemove: jest.fn() }))
 jest.mock('../../lib/sync', () => ({ syncEngine: { resolveId: (_entity, id) => id } }))
 jest.mock('../../features/workouts/hooks/useWorkouts', () => ({
   useWorkouts: () => jest.requireMock('../../features/workouts').useWorkouts(),

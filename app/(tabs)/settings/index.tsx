@@ -1,3 +1,4 @@
+import type { ScrollViewInstance } from 'react-native'
 import { useTabContentInset } from '../../../navigation/TabContentInset'
 import { useCallback, useRef } from 'react'
 import { Alert, ScrollView, View } from 'react-native'
@@ -33,7 +34,7 @@ import { useCadenceColors } from '../../../components/ui/useCadenceColors'
 
 export default function SettingsMenuScreen() {
   const bottomInset = useTabContentInset()
-  const scrollViewRef = useRef<ScrollView>(null)
+  const scrollViewRef = useRef<ScrollViewInstance>(null)
   const localProfile = launchFacade.auth.getStartupPlan().kind === 'local-profile'
   const { logout, user } = useAuth()
   const settings = useSettingsStore()

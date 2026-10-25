@@ -1,4 +1,4 @@
-import { BottomTabBar, type BottomTabBarProps } from '@react-navigation/bottom-tabs'
+import { BottomTabBar, type BottomTabBarProps } from 'expo-router/js-tabs'
 import { useEffect, useState } from 'react'
 import { I18nManager, View } from 'react-native'
 import Animated, {

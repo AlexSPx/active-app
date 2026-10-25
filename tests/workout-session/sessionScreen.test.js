@@ -1,4 +1,4 @@
-jest.mock('@react-navigation/elements', () => ({ useHeaderHeight: () => 80 }))
+jest.mock('expo-router/react-navigation', () => ({ useHeaderHeight: () => 80 }))
 jest.mock('expo-router', () => ({
   Stack: { Screen: (props) => require('react').createElement('Screen', props) },
 }))

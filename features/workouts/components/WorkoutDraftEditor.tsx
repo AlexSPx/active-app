@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
-import { useNavigation, usePreventRemove } from '@react-navigation/native'
-import { useHeaderHeight } from '@react-navigation/elements'
+import { usePreventRemove, useHeaderHeight } from 'expo-router/react-navigation'
 import { Stack, useRouter, type Href } from 'expo-router'
 import { Button, TextField, UiText } from '../../../components/ui/Controls'
 import { ExerciseEditor } from '../../exercises'
@@ -46,10 +45,10 @@ export function WorkoutDraftEditor({
   onSave,
 }: Props) {
   const router = useRouter()
-  const navigation = useNavigation()
   const headerHeight = useHeaderHeight()
   const [name, setName] = useState(initialName)
   const [notes, setNotes] = useState(initialNotes)
+  const [discarded, setDiscarded] = useState(false)
 
   useEffect(() => {
     setName(initialName)
@@ -58,7 +57,7 @@ export function WorkoutDraftEditor({
 
   const dirty =
     name !== initialName || notes !== initialNotes || JSON.stringify(exercises) !== initialSignature
-  usePreventRemove(dirty && !saving, ({ data }) => {
+  usePreventRemove(dirty && !saving && !discarded, ({ repeat }) => {
     Alert.alert('Discard workout?', 'Your changes will be lost.', [
       { text: 'Keep editing', style: 'cancel' },
       {
@@ -66,7 +65,8 @@ export function WorkoutDraftEditor({
         style: 'destructive',
         onPress: () => {
           clearExercises()
-          navigation.dispatch(data.action)
+          setDiscarded(true)
+          repeat()
         },
       },
     ])

@@ -1,7 +1,7 @@
 import { useTabContentInset } from '../../navigation/TabContentInset'
 import type { ReactNode } from 'react'
 import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native'
-import { useHeaderHeight } from '@react-navigation/elements'
+import { useHeaderHeight } from 'expo-router/react-navigation'
 import { UiText } from '../ui/Controls'
 
 export function SettingsPage({

@@ -874,16 +874,15 @@ export class SyncEngine {
     scope: ProfileScope
   ): Promise<boolean> {
     if (!this.isCurrentEngine(db, scope)) return false
-    let currentJob: SyncJob | null = null
-    await this.withIdRemapLock(async () => {
-      if (!this.isCurrentEngine(db, scope)) return
+    const currentJob = await this.withIdRemapLock(async (): Promise<SyncJob | null> => {
+      if (!this.isCurrentEngine(db, scope)) return null
       const latest = await db.getFirstAsync<SyncJob>(
         'SELECT * FROM sync_queue WHERE id = ?',
         job.id
       )
-      if (!this.isCurrentEngine(db, scope) || !latest) return
-      if (latest.status !== 'pending' && latest.status !== 'failed') return
-      if (!this.uploadsEnabled || this.authenticationPaused || this.paused) return
+      if (!this.isCurrentEngine(db, scope) || !latest) return null
+      if (latest.status !== 'pending' && latest.status !== 'failed') return null
+      if (!this.uploadsEnabled || this.authenticationPaused || this.paused) return null
       const requestPayload = latest.request_payload ?? latest.payload
       await db.withTransactionAsync(async () => {
         await db.runAsync(
@@ -893,7 +892,7 @@ export class SyncEngine {
           latest.id
         )
       })
-      currentJob = { ...latest, status: 'processing', request_payload: requestPayload }
+      return { ...latest, status: 'processing', request_payload: requestPayload }
     })
     if (!currentJob || !this.isCurrentEngine(db, scope)) return false
     this.queueDidChange()

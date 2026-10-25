@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigation, router } from 'expo-router'
 import { useRoutines, useActiveRoutine, useRoutineMutations } from '../index'
-import { usePreventRemove } from '@react-navigation/native'
+import { usePreventRemove } from 'expo-router/react-navigation'
 import { syncEngine } from '../../../lib/sync'
 import type { Routine } from '../../../types/routine'
 
