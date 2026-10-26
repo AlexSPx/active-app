@@ -62,7 +62,7 @@ yarn-error.log*
 web-build/
 coverage/
 build-*.apk
-/build/android-dev-client.apk
+/build/android-release.apk
 /build/maestro-artifacts/
 
 # Misc

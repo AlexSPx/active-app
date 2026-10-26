@@ -1,0 +1,5 @@
+appId: com.alexspx.activenext
+---
+- stopApp
+- launchApp
+- assertVisible: 'Home'

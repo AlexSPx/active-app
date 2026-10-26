@@ -22,17 +22,6 @@ config.resolver.extraNodeModules = {
   utils: path.resolve(__dirname, 'utils'),
 }
 
-const generatedAndroidBuildArtifacts = /[/\\]node_modules[/\\].*[/\\]android[/\\]build[/\\].*/
-const existingBlockList = config.resolver.blockList
-config.resolver.blockList = [
-  ...(Array.isArray(existingBlockList)
-    ? existingBlockList
-    : existingBlockList
-      ? [existingBlockList]
-      : []),
-  generatedAndroidBuildArtifacts,
-]
-
 // START: Fix for zustand v5 import.meta issue on web
 // This overrides resolution for 'zustand' to force the CommonJS entry point
 const { resolveRequest } = config.resolver

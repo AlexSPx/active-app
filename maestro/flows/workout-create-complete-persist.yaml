@@ -1,6 +1,6 @@
 appId: com.alexspx.activenext
 ---
-- runFlow: ../shared/reset-development-client.yaml
+- runFlow: ../shared/reset-app.yaml
 - runFlow: ../shared/local-onboarding.yaml
 - tapOn: 'Workouts'
 - tapOn: 'Create workout'
@@ -91,7 +91,7 @@ appId: com.alexspx.activenext
 - assertVisible: '6'
 - stopApp:
     appId: com.alexspx.activenext
-- runFlow: ../shared/relaunch-development-client.yaml
+- runFlow: ../shared/relaunch-app.yaml
 - assertVisible: 'Home'
 - tapOn: 'Workouts'
 - assertVisible: 'Maestro persisted workout'

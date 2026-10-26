@@ -1,6 +1,6 @@
 appId: com.alexspx.activenext
 ---
-- runFlow: ../shared/reset-development-client.yaml
+- runFlow: ../shared/reset-app.yaml
 - runFlow: ../shared/local-onboarding.yaml
 - tapOn: 'Workouts'
 - tapOn: 'Create workout'

@@ -1,7 +1,8 @@
-name: Android Maestro regressions (dev client)
+name: Android release checks
 
 on:
   pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
   merge_group:
     types: [checks_requested]
   push:
@@ -48,7 +49,11 @@ jobs:
         run: yarn typecheck
 
   android-maestro:
-    name: Dev client APK and Maestro UI flows
+    name: Release APK and Maestro UI flows
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'Release'))
     needs: checks
     runs-on: ubuntu-24.04
     timeout-minutes: 60
@@ -69,31 +74,18 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Generate Android project from committed Expo config
-        run: yarn expo prebuild --platform android --no-install --clean
-      - name: Fingerprint Android native compatibility inputs
-        id: native-fingerprint
-        run: |
-          mkdir -p build
-          fingerprint="$(scripts/android-dev-client-fingerprint.sh)"
-          echo "hash=$fingerprint" >> "$GITHUB_OUTPUT"
-      - name: Restore compatible development client APK
-        id: dev-client-cache
-        uses: actions/cache@v4
-        with:
-          path: build/android-dev-client.apk
-          key: active-app-dev-client-v1-ubuntu-24.04-node-${{ env.NODE_VERSION }}-java17-api35-x86_64-${{ steps.native-fingerprint.outputs.hash }}
-      - name: Build development client on cache miss
-        if: steps.dev-client-cache.outputs.cache-hit != 'true'
+        run: MAESTRO_TEST_BUILD=1 yarn expo prebuild --platform android --no-install --clean
+      - name: Build standalone release APK
         run: |
           cd android
-          ./gradlew --no-daemon -PreactNativeArchitectures=x86_64 assembleDebug
+          ./gradlew --no-daemon -PreactNativeArchitectures=x86_64 assembleRelease
           cd ..
           mkdir -p build
-          cp android/app/build/outputs/apk/debug/app-debug.apk build/android-dev-client.apk
-      - name: Verify development client APK
+          cp android/app/build/outputs/apk/release/app-release.apk build/android-release.apk
+      - name: Verify release APK
         run: |
           aapt_path="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
-          app_id="$("$aapt_path" dump badging build/android-dev-client.apk | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+          app_id="$("$aapt_path" dump badging build/android-release.apk | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
           test "$app_id" = "com.alexspx.activenext"
       - name: Install pinned Maestro CLI
         run: |
@@ -116,15 +108,15 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            adb install -r build/android-dev-client.apk
+            adb install -r build/android-release.apk
             scripts/run-maestro-ci.sh
       - name: Upload APK, Maestro reports, and failure diagnostics
         if: always()
         uses: actions/upload-artifact@v6
         with:
-          name: android-dev-client-maestro-${{ github.run_attempt }}
+          name: android-release-maestro-${{ github.run_attempt }}
           path: |
-            build/android-dev-client.apk
+            build/android-release.apk
             build/maestro-artifacts/
           if-no-files-found: warn
           retention-days: 14

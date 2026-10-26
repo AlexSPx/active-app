@@ -1,0 +1,5 @@
+appId: com.alexspx.activenext
+---
+- launchApp:
+    clearState: true
+- assertVisible: 'Get started'
