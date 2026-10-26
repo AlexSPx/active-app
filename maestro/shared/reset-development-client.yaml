@@ -1,0 +1,6 @@
+appId: com.alexspx.activenext
+---
+- runFlow: start-development-client.yaml
+- extendedWaitUntil:
+    visible: 'Get started'
+    timeout: 120000

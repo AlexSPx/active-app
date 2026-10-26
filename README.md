@@ -57,6 +57,8 @@ A modern workout tracking app built with Expo, React Native, and TanStack Query.
 
 ## Getting Started
 
+See [Android Maestro regression testing](docs/testing/android-maestro.md) for local and CI commands.
+
 ### Prerequisites
 
 - Node.js 18+

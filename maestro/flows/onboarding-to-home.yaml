@@ -1,0 +1,6 @@
+appId: com.alexspx.activenext
+---
+- runFlow: ../shared/reset-development-client.yaml
+- runFlow: ../shared/local-onboarding.yaml
+- assertVisible: 'Home'
+- assertVisible: 'Workouts'

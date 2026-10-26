@@ -1,0 +1,10 @@
+appId: com.alexspx.activenext
+---
+- openLink: ${MAESTRO_DEV_CLIENT_URL}
+- runFlow:
+    when:
+      visible: 'Connect'
+    commands:
+      - tapOn: 'http://'
+      - inputText: ${MAESTRO_METRO_URL}
+      - tapOn: 'Connect'

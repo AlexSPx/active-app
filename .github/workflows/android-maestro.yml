@@ -1,0 +1,130 @@
+name: Android Maestro regressions (dev client)
+
+on:
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-maestro-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24.6.0
+  YARN_VERSION: 1.22.22
+  MAESTRO_CLI_NO_ANALYTICS: 'true'
+  MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: 'true'
+  EXPO_OFFLINE: '1'
+  EXPO_NO_DOTENV: '1'
+  EXPO_NO_CLIENT_ENV_VARS: '1'
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  checks:
+    name: Jest and typecheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+      - name: Activate pinned Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Run Jest suite
+        run: yarn test:once
+      - name: Typecheck
+        run: yarn typecheck
+
+  android-maestro:
+    name: Dev client APK and Maestro UI flows
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Activate pinned Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Generate Android project from committed Expo config
+        run: yarn expo prebuild --platform android --no-install --clean
+      - name: Fingerprint Android native compatibility inputs
+        id: native-fingerprint
+        run: |
+          mkdir -p build
+          fingerprint="$(scripts/android-dev-client-fingerprint.sh)"
+          echo "hash=$fingerprint" >> "$GITHUB_OUTPUT"
+      - name: Restore compatible development client APK
+        id: dev-client-cache
+        uses: actions/cache@v4
+        with:
+          path: build/android-dev-client.apk
+          key: active-app-dev-client-v1-ubuntu-24.04-node-${{ env.NODE_VERSION }}-java17-api35-x86_64-${{ steps.native-fingerprint.outputs.hash }}
+      - name: Build development client on cache miss
+        if: steps.dev-client-cache.outputs.cache-hit != 'true'
+        run: |
+          cd android
+          ./gradlew --no-daemon -PreactNativeArchitectures=x86_64 assembleDebug
+          cd ..
+          mkdir -p build
+          cp android/app/build/outputs/apk/debug/app-debug.apk build/android-dev-client.apk
+      - name: Verify development client APK
+        run: |
+          aapt_path="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          app_id="$("$aapt_path" dump badging build/android-dev-client.apk | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+          test "$app_id" = "com.alexspx.activenext"
+      - name: Install pinned Maestro CLI
+        run: |
+          maestro_version="$(cat .maestro-version)"
+          curl -fsSL "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-${maestro_version}/maestro.zip" \
+            -o "$RUNNER_TEMP/maestro.zip"
+          unzip -q "$RUNNER_TEMP/maestro.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/maestro/bin" >> "$GITHUB_PATH"
+      - name: Enable KVM permissions
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run Maestro on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 35
+          target: default
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install -r build/android-dev-client.apk
+            scripts/run-maestro-ci.sh
+      - name: Upload APK, Maestro reports, and failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: android-dev-client-maestro-${{ github.run_attempt }}
+          path: |
+            build/android-dev-client.apk
+            build/maestro-artifacts/
+          if-no-files-found: warn
+          retention-days: 14

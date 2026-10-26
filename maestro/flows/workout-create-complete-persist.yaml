@@ -1,0 +1,126 @@
+appId: com.alexspx.activenext
+---
+- runFlow: ../shared/reset-development-client.yaml
+- runFlow: ../shared/local-onboarding.yaml
+- tapOn: 'Workouts'
+- tapOn: 'Create workout'
+- tapOn: 'Workout name, required'
+- inputText: 'Maestro persisted workout'
+- tapOn: 'Create workout.'
+- tapOn: 'Add exercises'
+- tapOn: 'Search exercises'
+- inputText: 'Dumbbell Bench Press'
+- tapOn: 'Add exercises.'
+- assertVisible: 'Dumbbell Bench Press, chest, equipment: DUMBBELL'
+- tapOn: 'Dumbbell Bench Press, chest, equipment: DUMBBELL'
+- tapOn: 'Done, 1 selected'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- tapOn: 'Set 1 weight in kilograms'
+- inputText: '60'
+- tapOn: 'Set 1 reps'
+- inputText: '8'
+- tapOn: 'Exercises'
+- scrollUntilVisible:
+    element:
+      text: 'Add set to Dumbbell Bench Press'
+    direction: DOWN
+- tapOn: 'Add set to Dumbbell Bench Press'
+- scrollUntilVisible:
+    element:
+      text: 'Set 2 weight in kilograms'
+    direction: DOWN
+- tapOn: 'Set 2 weight in kilograms'
+- inputText: '65'
+- tapOn: 'Set 2 reps'
+- inputText: '6'
+- tapOn: 'Exercises'
+- tapOn: 'Save workout'
+- assertVisible: 'Maestro persisted workout'
+- tapOn: 'More actions for Maestro persisted workout'
+- tapOn: 'Edit'
+- assertVisible: 'Edit workout.'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- assertVisible: '60'
+- assertVisible: '8'
+- assertVisible: '65'
+- assertVisible: '6'
+- back
+- assertVisible: 'Maestro persisted workout'
+- tapOn: 'Start workout'
+- assertVisible: 'Maestro persisted workout'
+- tapOn: 'Set 1 weight in kilograms'
+- inputText: '60'
+- tapOn: 'Set 1 reps'
+- inputText: '8'
+- tapOn: 'Set 2 weight in kilograms'
+- inputText: '65'
+- tapOn: 'Set 2 reps'
+- inputText: '6'
+- tapOn: 'Set 1 completed'
+- tapOn: 'Skip rest timer'
+- tapOn: 'Set 2 completed'
+- tapOn: 'Skip rest timer'
+- tapOn: 'Finish workout'
+- assertVisible: 'Workout saved'
+- assertVisible: '870 kg'
+- tapOn: 'Continue'
+- tapOn: 'History'
+- assertVisible: 'Maestro persisted workout'
+- scrollUntilVisible:
+    element:
+      text: 'View Maestro persisted workout.*'
+    direction: DOWN
+    centerElement: true
+- assertVisible: '1 min / 2 sets / 870 kg'
+- tapOn: 'View Maestro persisted workout.*'
+- scrollUntilVisible:
+    element:
+      text: 'Recorded sets'
+    direction: DOWN
+- assertVisible: 'Recorded sets'
+- assertVisible: 'Dumbbell Bench Press'
+- assertVisible: '60'
+- assertVisible: '8'
+- assertVisible: '65'
+- assertVisible: '6'
+- stopApp:
+    appId: com.alexspx.activenext
+- runFlow: ../shared/relaunch-development-client.yaml
+- assertVisible: 'Home'
+- tapOn: 'Workouts'
+- assertVisible: 'Maestro persisted workout'
+- tapOn: 'More actions for Maestro persisted workout'
+- tapOn: 'Edit'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- assertVisible: '60'
+- assertVisible: '8'
+- assertVisible: '65'
+- assertVisible: '6'
+- back
+- tapOn: 'History'
+- assertVisible: 'Maestro persisted workout'
+- scrollUntilVisible:
+    element:
+      text: 'View Maestro persisted workout.*'
+    direction: DOWN
+    centerElement: true
+- assertVisible: '1 min / 2 sets / 870 kg'
+- tapOn: 'View Maestro persisted workout.*'
+- scrollUntilVisible:
+    element:
+      text: 'Recorded sets'
+    direction: DOWN
+- assertVisible: 'Recorded sets'
+- assertVisible: '60'
+- assertVisible: '8'
+- assertVisible: '65'
+- assertVisible: '6'

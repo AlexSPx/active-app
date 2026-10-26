@@ -1,0 +1,10 @@
+appId: com.alexspx.activenext
+---
+# Run only after installing the current APK over an earlier compatible app install.
+# The old install must contain a local workout named "Upgrade Retention Check" and a completed record for it.
+- runFlow: ../shared/relaunch-development-client.yaml
+- assertVisible: 'Workouts'
+- tapOn: 'Workouts'
+- assertVisible: 'Upgrade Retention Check'
+- tapOn: 'History'
+- assertVisible: 'Upgrade Retention Check'

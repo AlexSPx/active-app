@@ -3,6 +3,7 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "yarn@1.22.22",
   "scripts": {
     "legal:sync": "python3 scripts/sync-legal.py",
     "legal:check": "python3 scripts/test_sync_legal.py && python3 scripts/sync-legal.py --check",
@@ -13,6 +14,7 @@
     "web": "expo start --web --no-dev --port 8080",
     "test": "jest --watchAll",
     "test:once": "jest --runInBand",
+    "typecheck": "tsc --noEmit",
     "test:sync": "jest tests/sync --runInBand",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

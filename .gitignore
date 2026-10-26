@@ -62,6 +62,8 @@ yarn-error.log*
 web-build/
 coverage/
 build-*.apk
+/build/android-dev-client.apk
+/build/maestro-artifacts/
 
 # Misc
 .DS_Store

@@ -1,0 +1,58 @@
+appId: com.alexspx.activenext
+---
+- runFlow: ../shared/reset-development-client.yaml
+- runFlow: ../shared/local-onboarding.yaml
+- tapOn: 'Workouts'
+- tapOn: 'Create workout'
+- tapOn: 'Workout name, required'
+- inputText: 'Keep Original'
+- tapOn: 'Create workout.'
+- tapOn: 'Add exercises'
+- tapOn: 'Search exercises'
+- inputText: 'Dumbbell Bench Press'
+- tapOn: 'Add exercises.'
+- tapOn: 'Dumbbell Bench Press, chest, equipment: DUMBBELL'
+- tapOn: 'Done, 1 selected'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- tapOn: 'Set 1 weight in kilograms'
+- inputText: '50'
+- tapOn: 'Set 1 reps'
+- inputText: '8'
+- tapOn: 'Exercises'
+- tapOn: 'Save workout'
+- assertVisible: 'Keep Original'
+- tapOn: 'More actions for Keep Original'
+- tapOn: 'Edit'
+- tapOn: 'Workout name, required'
+- eraseText: 13
+- inputText: 'Discard Copy'
+- tapOn: 'Edit workout.'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- tapOn: 'Set 1 weight in kilograms'
+- eraseText: 2
+- inputText: '90'
+- tapOn: 'Cancel'
+- assertVisible: 'Discard workout?'
+- tapOn: 'Discard workout'
+- assertVisible: 'Keep Original'
+- tapOn: 'More actions for Keep Original'
+- tapOn: 'Edit'
+- assertVisible: 'Keep Original'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- assertVisible: '50'
+- assertVisible: '8'
+- back
+- tapOn: 'More actions for Keep Original'
+- tapOn: 'Delete'
+- assertVisible: 'Delete workout'
+- tapOn: 'Confirm delete workout'
+- assertVisible: 'Make your first workout.'
