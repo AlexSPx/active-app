@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useState } from 'react'
 import { Alert, KeyboardAvoidingView, Platform, ScrollView, Switch, View } from 'react-native'
 import { useNavigation, router } from 'expo-router'
 import { usePreventRemove } from 'expo-router/react-navigation'
@@ -91,7 +91,7 @@ export function RoutineForm({
     )
   })
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     navigation.setOptions({
       title: '',
       headerBackTitle: 'Routines',
