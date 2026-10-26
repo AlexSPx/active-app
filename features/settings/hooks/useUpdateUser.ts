@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import { useAuth } from '../../../contexts/AuthContext'
 import type { UpdateUserRequest, User, ApiError } from '../../../types/api'
-import { timeZonesNames } from '@vvo/tzdb'
 import { useQueryClient } from '@tanstack/react-query'
 import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
 import { saveSettingsProfile } from '../stores/settingsStore'
@@ -35,8 +34,10 @@ export function useUpdateUser(): UseUpdateUserResult {
     if (updates.email !== undefined) {
       if (!EMAIL_REGEX.test(updates.email)) return 'Invalid email format.'
     }
-    if (updates.timezone !== undefined) {
-      if (updates.timezone.trim() !== '' && !timeZonesNames.includes(updates.timezone)) {
+    if (updates.timezone !== undefined && updates.timezone.trim() !== '') {
+      try {
+        new Intl.DateTimeFormat('en', { timeZone: updates.timezone })
+      } catch {
         return 'Invalid timezone.'
       }
     }
