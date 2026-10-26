@@ -10,7 +10,7 @@ appId: com.alexspx.activenext
 - tapOn: 'Add exercises'
 - tapOn: 'Search exercises'
 - inputText: 'Dumbbell Bench Press'
-- tapOn: 'Add exercises.'
+- hideKeyboard
 - tapOn: 'Dumbbell Bench Press, chest, equipment: DUMBBELL'
 - tapOn: 'Done, 1 selected'
 - scrollUntilVisible:
