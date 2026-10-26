@@ -103,7 +103,8 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2.38.0
         with:
           api-level: 35
-          target: default
+          # The API 35 AOSP image's Quickstep ANR blocks Maestro with a system dialog.
+          target: google_apis
           arch: x86_64
           profile: pixel_6
           disable-animations: true

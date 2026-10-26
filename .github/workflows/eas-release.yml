@@ -1,0 +1,43 @@
+name: EAS Android release
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Build and submit Android
+    if: >-
+      github.event.pull_request.merged == true &&
+      contains(github.event.pull_request.labels.*.name, 'Release')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.6.0
+          cache: yarn
+      - name: Activate pinned Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@1.22.22 --activate
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: 26.0.0
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Build and submit to Google Play internal testing
+        run: >-
+          eas build
+          --platform android
+          --profile production
+          --auto-submit
+          --non-interactive

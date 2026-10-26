@@ -10,7 +10,7 @@ appId: com.alexspx.activenext
 - tapOn: 'Add exercises'
 - tapOn: 'Search exercises'
 - inputText: 'Dumbbell Bench Press'
-- tapOn: 'Add exercises.'
+- hideKeyboard
 - assertVisible: 'Dumbbell Bench Press, chest, equipment: DUMBBELL'
 - tapOn: 'Dumbbell Bench Press, chest, equipment: DUMBBELL'
 - tapOn: 'Done, 1 selected'
@@ -62,6 +62,7 @@ appId: com.alexspx.activenext
 - inputText: '65'
 - tapOn: 'Set 2 reps'
 - inputText: '6'
+- hideKeyboard
 - tapOn: 'Set 1 completed'
 - tapOn: 'Skip rest timer'
 - tapOn: 'Set 2 completed'

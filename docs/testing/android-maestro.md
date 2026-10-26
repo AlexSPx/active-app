@@ -17,7 +17,9 @@ The workflow does not publish the app or create a GitHub Release. Store submissi
 
 ## Run locally
 
-Use Bash 4 or newer, Node `24.6.0`, Yarn `1.22.22`, Java `17`, the Android SDK with an API 35 x86_64 emulator, GNU coreutils, and Maestro CLI `2.11.0`. Use a disposable test emulator: each independent flow clears `com.alexspx.activenext` app data. Restart assertions within a flow retain data.
+Use Bash 4 or newer, Node `24.6.0`, Yarn `1.22.22`, Java `17`, the Android SDK with an API 35 Google APIs x86_64 emulator, GNU coreutils, and Maestro CLI `2.11.0`. Use a disposable test emulator: each independent flow clears `com.alexspx.activenext` app data. Restart assertions within a flow retain data.
+
+CI uses the `google_apis` system image. The API 35 `default` AOSP image produced a Quickstep launcher ANR dialog that covered the app and blocked every flow at the first onboarding assertion.
 
 Install the pinned Maestro CLI:
 
