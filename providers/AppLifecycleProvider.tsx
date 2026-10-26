@@ -5,6 +5,7 @@ import { ProfileSQLiteProvider, useProfileDatabase } from '../lib/db/ProfileSQLi
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useUiStore } from '../stores/uiStore'
 import FinishedWorkoutCongrats from '../components/FinishedWorkoutCongrats'
+import { TodayPlanWidgetSync } from '../features/training/widgets/TodayPlanWidgetSync'
 import { initNotifications } from '../services/notificationService'
 import { useSettingsStore } from '../features/settings'
 import { saveSettingsProfile } from '../features/settings/stores/settingsStore'
@@ -562,6 +563,7 @@ function OwnerDatabaseContent({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <TodayPlanWidgetSync />
       {children}
       {congratsVisible && payload && (
         <FinishedWorkoutCongrats

@@ -4,6 +4,10 @@ const mockSQLiteDatabase = { current: null }
 const mockSQLiteProviderLifecycle = { mounts: 0, unmounts: 0 }
 const mockQueryClients = []
 
+jest.mock('../../features/training/widgets/TodayPlanWidgetSync', () => ({
+  TodayPlanWidgetSync: () => null,
+}))
+
 jest.mock('react-native', () => {
   const listeners = new Set()
   const appState = { currentState: 'active' }

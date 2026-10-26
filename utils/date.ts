@@ -165,7 +165,11 @@ export function routinePatternIndex(
     if (b.getTime() < created.getTime()) return -1
 
     const msPerDay = 24 * 60 * 60 * 1000
-    const diff = Math.floor((b.getTime() - created.getTime()) / msPerDay)
+    // Calendar days stay the same length when daylight-saving offsets change.
+    const diff =
+      (Date.UTC(b.getFullYear(), b.getMonth(), b.getDate()) -
+        Date.UTC(created.getFullYear(), created.getMonth(), created.getDate())) /
+      msPerDay
     const idx = ((diff % patternLength) + patternLength) % patternLength
     return idx
   } catch (e) {
