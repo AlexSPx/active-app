@@ -1,0 +1,122 @@
+name: Android release checks
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, labeled, unlabeled]
+  merge_group:
+    types: [checks_requested]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-maestro-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24.6.0
+  YARN_VERSION: 1.22.22
+  MAESTRO_CLI_NO_ANALYTICS: 'true'
+  MAESTRO_CLI_ANALYSIS_NOTIFICATION_DISABLED: 'true'
+  EXPO_OFFLINE: '1'
+  EXPO_NO_DOTENV: '1'
+  EXPO_NO_CLIENT_ENV_VARS: '1'
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  checks:
+    name: Jest and typecheck
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+      - name: Activate pinned Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Run Jest suite
+        run: yarn test:once
+      - name: Typecheck
+        run: yarn typecheck
+
+  android-maestro:
+    name: Release APK and Maestro UI flows
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' &&
+       contains(github.event.pull_request.labels.*.name, 'Release'))
+    needs: checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Activate pinned Yarn
+        run: |
+          corepack enable
+          corepack prepare yarn@${YARN_VERSION} --activate
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      - name: Generate Android project from committed Expo config
+        run: MAESTRO_TEST_BUILD=1 yarn expo prebuild --platform android --no-install --clean
+      - name: Build standalone release APK
+        run: |
+          cd android
+          ./gradlew --no-daemon -PreactNativeArchitectures=x86_64 assembleRelease
+          cd ..
+          mkdir -p build
+          cp android/app/build/outputs/apk/release/app-release.apk build/android-release.apk
+      - name: Verify release APK
+        run: |
+          aapt_path="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          app_id="$("$aapt_path" dump badging build/android-release.apk | sed -n "s/^package: name='\([^']*\)'.*/\1/p")"
+          test "$app_id" = "com.alexspx.activenext"
+      - name: Install pinned Maestro CLI
+        run: |
+          maestro_version="$(cat .maestro-version)"
+          curl -fsSL "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-${maestro_version}/maestro.zip" \
+            -o "$RUNNER_TEMP/maestro.zip"
+          unzip -q "$RUNNER_TEMP/maestro.zip" -d "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/maestro/bin" >> "$GITHUB_PATH"
+      - name: Enable KVM permissions
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Run Maestro on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2.38.0
+        with:
+          api-level: 35
+          target: default
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            adb install -r build/android-release.apk
+            scripts/run-maestro-ci.sh
+      - name: Upload APK, Maestro reports, and failure diagnostics
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: android-release-maestro-${{ github.run_attempt }}
+          path: |
+            build/android-release.apk
+            build/maestro-artifacts/
+          if-no-files-found: warn
+          retention-days: 14

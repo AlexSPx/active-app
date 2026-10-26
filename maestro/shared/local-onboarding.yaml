@@ -1,0 +1,14 @@
+appId: com.alexspx.activenext
+---
+- assertVisible: 'Get started'
+- tapOn: 'Get started'
+- assertVisible: 'I agree to the Terms of Service and Privacy Policy.'
+- tapOn: 'I agree to the Terms of Service and Privacy Policy.'
+- tapOn: 'Continue'
+- assertVisible: 'About you.'
+- tapOn: 'Continue'
+- assertVisible: 'Your starting point.'
+- tapOn: 'Skip measurements'
+- assertVisible: 'A timely reminder.'
+- tapOn: 'Finish setup'
+- assertVisible: 'Home'

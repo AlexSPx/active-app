@@ -1,0 +1,21 @@
+appId: com.alexspx.activenext
+---
+- runFlow: ../shared/reset-app.yaml
+- runFlow: ../shared/local-onboarding.yaml
+- tapOn: 'Settings'
+- tapOn:
+    text: 'Appearance'
+- assertVisible: 'Choose how Active looks on this device.'
+- tapOn: 'Dark'
+- back
+- assertVisible: 'Appearance, Dark'
+- stopApp:
+    appId: com.alexspx.activenext
+- runFlow: ../shared/relaunch-app.yaml
+- tapOn: 'Settings'
+- assertVisible: 'Appearance, Dark'
+- tapOn:
+    text: 'Appearance'
+- assertVisible:
+    text: 'Dark'
+    checked: true

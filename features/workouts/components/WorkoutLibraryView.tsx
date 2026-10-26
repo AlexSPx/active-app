@@ -89,7 +89,13 @@ export function WorkoutLibraryView({
           Are you sure? This will permanently delete this workout.
         </UiText>
         {!!deleteError && <ErrorDisplay title="Cannot delete workout" message={deleteError} />}
-        <Button variant="surface" disabled={deleting} loading={deleting} onPress={confirmDelete}>
+        <Button
+          variant="surface"
+          disabled={deleting}
+          loading={deleting}
+          accessibilityLabel="Confirm delete workout"
+          onPress={confirmDelete}
+        >
           <UiText textRole="bodyDestructive">{deleting ? 'Deleting…' : 'Delete workout'}</UiText>
         </Button>
         <Button variant="secondary" disabled={deleting} onPress={cancelDelete}>

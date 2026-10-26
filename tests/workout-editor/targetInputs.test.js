@@ -39,7 +39,7 @@ test('strength editor inputs preserve partial decimal text and update numeric ta
   })
 })
 
-test('cardio editor clears an invalid target while retaining input, then accepts a valid duration', async () => {
+test('cardio editor maps numeric keypad input to a formatted duration target', async () => {
   let renderer
   let durationSeconds
   function Editor() {
@@ -56,16 +56,17 @@ test('cardio editor clears an invalid target while retaining input, then accepts
     renderer = create(React.createElement(Editor))
   })
   const field = renderer.root.findByType('TextField')
-  expect(field.props.keyboardType).toBe('default')
+  expect(field.props.keyboardType).toBe('number-pad')
   await act(async () => {
-    field.props.onChangeText('15:0')
+    field.props.onChangeText('150')
   })
-  expect(durationSeconds).toBeNull()
-  expect(field.props.value).toBe('15:0')
+  expect(durationSeconds).toBe(110)
+  expect(field.props.value).toBe('1:50')
   await act(async () => {
-    field.props.onChangeText('15:05')
+    field.props.onChangeText('1505')
   })
   expect(durationSeconds).toBe(905)
+  expect(field.props.value).toBe('15:05')
   await act(async () => {
     renderer.unmount()
   })

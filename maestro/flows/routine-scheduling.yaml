@@ -1,0 +1,67 @@
+appId: com.alexspx.activenext
+---
+- runFlow: ../shared/reset-app.yaml
+- runFlow: ../shared/local-onboarding.yaml
+- tapOn: 'Workouts'
+- tapOn: 'Create workout'
+- tapOn: 'Workout name, required'
+- inputText: 'Maestro routine workout'
+- tapOn: 'Create workout.'
+- tapOn: 'Add exercises'
+- tapOn: 'Search exercises'
+- inputText: 'Dumbbell Bench Press'
+- tapOn: 'Add exercises.'
+- tapOn: 'Dumbbell Bench Press, chest, equipment: DUMBBELL'
+- tapOn: 'Done, 1 selected'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- tapOn: 'Set 1 weight in kilograms'
+- inputText: '50'
+- tapOn: 'Set 1 reps'
+- inputText: '8'
+- tapOn: 'Exercises'
+- tapOn: 'Save workout'
+- assertVisible: 'Maestro routine workout'
+- tapOn: 'Routines'
+- tapOn: 'Create routine'
+- tapOn: 'Routine name'
+- inputText: 'Maestro weekly cycle'
+- tapOn: 'Create routine.'
+- scrollUntilVisible:
+    element:
+      text: 'Add first day'
+    direction: DOWN
+- tapOn: 'Add first day'
+- tapOn: 'Choose a saved workout for day 1'
+- assertVisible: 'Choose a workout.'
+- tapOn: 'Maestro routine workout'
+- tapOn: 'Done'
+- assertVisible: 'Maestro routine workout'
+- tapOn: 'Add day'
+- scrollUntilVisible:
+    element:
+      text: 'Day 2 rest'
+    direction: DOWN
+- tapOn: 'Day 2 rest'
+- assertVisible:
+    text: 'Day 2 rest'
+    checked: true
+- scrollUntilVisible:
+    element:
+      text: 'Set as active routine'
+    direction: DOWN
+- tapOn: 'Set as active routine'
+- assertVisible:
+    text: 'Set as active routine'
+    checked: true
+- tapOn: 'Save & set active'
+- assertVisible: 'Maestro weekly cycle'
+- assertVisible: 'Repeating cycle'
+- assertVisible: 'Day 1 · Training'
+- assertVisible: 'Day 2 · Rest'
+- tapOn: 'View routine Maestro weekly cycle'
+- assertVisible: '2-day cycle'
+- assertVisible: '1 training day'
+- assertVisible: '1 rest day'

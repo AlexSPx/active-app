@@ -1,0 +1,53 @@
+appId: com.alexspx.activenext
+---
+- runFlow: ../shared/reset-app.yaml
+- runFlow: ../shared/local-onboarding.yaml
+- tapOn: 'Workouts'
+- tapOn: 'Create workout'
+- tapOn: 'Workout name, required'
+- inputText: 'Maestro interrupted workout'
+- tapOn: 'Create workout.'
+- tapOn: 'Add exercises'
+- tapOn: 'Search exercises'
+- inputText: 'Dumbbell Bench Press'
+- tapOn: 'Add exercises.'
+- tapOn: 'Dumbbell Bench Press, chest, equipment: DUMBBELL'
+- tapOn: 'Done, 1 selected'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- tapOn: 'Set 1 weight in kilograms'
+- inputText: '72'
+- tapOn: 'Set 1 reps'
+- inputText: '9'
+- tapOn: 'Exercises'
+- tapOn: 'Save workout'
+- tapOn: 'Start workout'
+- assertVisible: 'Maestro interrupted workout'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- tapOn: 'Set 1 weight in kilograms'
+- inputText: '72'
+- tapOn: 'Set 1 reps'
+- inputText: '9'
+- tapOn: 'Set 1 completed'
+- tapOn: 'Skip rest timer'
+- stopApp:
+    appId: com.alexspx.activenext
+- runFlow: ../shared/relaunch-app.yaml
+- assertVisible: 'Resume Maestro interrupted workout, workout in progress.*'
+- tapOn: 'Resume Maestro interrupted workout, workout in progress.*'
+- assertVisible: 'Maestro interrupted workout'
+- scrollUntilVisible:
+    element:
+      text: 'Set 1 weight in kilograms'
+    direction: DOWN
+- assertVisible: '72'
+- assertVisible: '9'
+- assertVisible: 'Set 1 completed'
+- tapOn: 'Finish workout'
+- assertVisible: 'Workout saved'
+- assertVisible: '648 kg'

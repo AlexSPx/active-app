@@ -144,6 +144,7 @@ export function RoutinePatternEditor({
                       variant={item.dayType === type ? 'selected' : 'ghost'}
                       className="flex-1"
                       accessibilityRole="radio"
+                      accessibilityLabel={`Day ${itemIndex + 1} ${type === 'WORKOUT' ? 'training' : 'rest'}`}
                       accessibilityState={{ checked: item.dayType === type }}
                       onPress={() =>
                         update(
