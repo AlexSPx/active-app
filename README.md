@@ -128,6 +128,18 @@ The development server uses two Metro workers to leave resources available for
 the emulator, backend, and desktop. Normal startup preserves the bundler cache;
 use `yarn start:clear` only when troubleshooting stale bundles.
 
+## Android releases
+
+Add the `Release` label to a pull request before merging it into `master` to trigger
+`.github/workflows/eas-release.yml`. The workflow builds the merged commit with the EAS
+`production` profile and automatically submits it to Google Play using the matching submission
+profile. Closed, unmerged pull requests and merges without the label do not trigger a build.
+
+The workflow uses the repository's `EXPO_TOKEN` Actions secret. Android signing credentials and
+Google Play submission credentials must already be configured in EAS for non-interactive use.
+The current `eas.json` submits a draft to the internal testing track; publish the release from
+Google Play Console to distribute it to testers. Build numbers increment automatically.
+
 ## Architecture
 
 Expo Router screens compose feature-owned workflows. Feature modules own data access, mutations,
