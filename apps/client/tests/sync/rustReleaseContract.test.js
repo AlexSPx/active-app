@@ -10,8 +10,8 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 const schemas = require('../../lib/schemas/api')
 const { z } = require('zod')
 const { createApi, makeJob, runQueue } = require('../helpers/syncTestUtils')
-const { operations } = require('../../../../contracts/ale-110/release-operations.json')
-const { requests } = require('../../../../contracts/ale-110/request-contract.cjs')
+const { operations } = require('../../../../contracts/active-api/v1/release-operations.json')
+const { requests } = require('../../../../contracts/active-api/v1/request-contract.cjs')
 const byId = Object.fromEntries(operations.map((operation) => [operation.id, operation]))
 
 describe('Rust release contract fixtures', () => {
@@ -169,7 +169,7 @@ describe('Rust release contract fixtures', () => {
     }
     const {
       authenticationExamples,
-    } = require('../../../../contracts/ale-110/release-operations.json')
+    } = require('../../../../contracts/active-api/v1/release-operations.json')
     expect(authenticationExamples.map(({ status }) => status)).toEqual([200, 401, 401, 401, 404])
     expect(authenticationExamples[0].identity).toEqual([
       'https://identity.example.test',

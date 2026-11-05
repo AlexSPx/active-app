@@ -1,6 +1,6 @@
-# Rust migration boundaries (ALE-110)
+# Rust migration boundaries
 
-This document records decisions and evidence. The release wire contract and fixture index are in [contracts/ale-110](../../contracts/ale-110/README.md); read them with [the source inventory](rust-contract-source-inventory.md). ALE-109 and ALE-110 override older offline plans where they conflict.
+This document records decisions and evidence. The release wire contract and fixture index are in [contracts/active-api/v1](../../contracts/active-api/v1/README.md); read them with [the source inventory](rust-contract-source-inventory.md). These decisions override older offline plans where they conflict.
 
 | Concern               | Decision                                                                                                                                           | Consequence                                                                                                                                                                                                                                                                                                                                                                         |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -16,10 +16,10 @@ This document records decisions and evidence. The release wire contract and fixt
 
 ## Actual client compatibility evidence
 
-`contracts/ale-110/client-parser-observations.json` and `apps/client/tests/sync/rustContractObservations.test.js` execute the existing Zod parsers, rather than a replacement schema. They show that a PR 30-style nullable catalog item is rejected and that accepted items lose `sourceKey`/`retired`; a record response without server `streakUpdate` and historical record with null `workoutId` are rejected. These are observations, not complete Rust success/error fixtures. Current `apiService` has optional versions and accepts empty delete acknowledgements; the new protocol and client migration must explicitly close those gaps.
+`contracts/active-api/v1/client-parser-observations.json` and `apps/client/tests/sync/rustContractObservations.test.js` execute the existing Zod parsers, rather than a replacement schema. They show that a PR 30-style nullable catalog item is rejected and that accepted items lose `sourceKey`/`retired`; a record response without server `streakUpdate` and historical record with null `workoutId` are rejected. These are observations, not complete Rust success/error fixtures. Current `apiService` has optional versions and accepts empty delete acknowledgements; the new protocol and client migration must explicitly close those gaps.
 
 `apps/client/tests/sync/SyncEngine.test.js` exercises persisted request freezing, lost responses, remapping, successor version advancement and conflict recovery. Those tests cover current queue behavior, not full wire compatibility. Historical imports also need completion time and timezone in the queued payload; the present `WorkoutRecordRequest` has only a timezone-free `startTime`.
 
 ## Release contract
 
-The operation matrix, fixture examples, wire rules and migration gates are in [contracts/ale-110](../../contracts/ale-110/README.md). The existing client remains incompatible with the deliberate changes identified there; the Rust server and client migration are follow-on work.
+The [contract directory](../../contracts/active-api/v1/README.md) contains the operation matrix and fixtures; the [wire contract](../../contracts/active-api/v1/wire-contract.md) specifies the rules and migration gates. The existing client remains incompatible with the deliberate changes identified there; the Rust server and client migration are follow-on work.
