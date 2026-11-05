@@ -11,6 +11,7 @@ const schemas = require('../../lib/schemas/api')
 const { z } = require('zod')
 const { createApi, makeJob, runQueue } = require('../helpers/syncTestUtils')
 const { operations } = require('../../../../contracts/ale-110/release-operations.json')
+const { requests } = require('../../../../contracts/ale-110/request-contract.cjs')
 const byId = Object.fromEntries(operations.map((operation) => [operation.id, operation]))
 
 describe('Rust release contract fixtures', () => {
@@ -24,6 +25,114 @@ describe('Rust release contract fixtures', () => {
       expect(operation.error.status).toBeGreaterThanOrEqual(400)
       expect(operation.error.body.code || operation.error.body.error).toBeTruthy()
     }
+  })
+
+  it('validates every Active request fixture and its path and query contract', () => {
+    const active = operations.filter((operation) => !operation.id.startsWith('auth.'))
+    expect(Object.keys(requests).sort()).toEqual(active.map((operation) => operation.id).sort())
+    for (const operation of active) {
+      const schema = requests[operation.id]
+      expect(schema.body.safeParse(operation.request).success).toBe(true)
+      const url = new URL(operation.path, 'https://active.example')
+      const query = Object.fromEntries(url.searchParams)
+      for (const key of ['baseVersion', 'profileBaseVersion']) {
+        if (key in query) query[key] = Number(query[key])
+      }
+      expect(schema.query.safeParse(query).success).toBe(true)
+      const pathsWithId = [
+        'progression.logs',
+        'workout.update',
+        'workout.delete',
+        'routine.get',
+        'routine.update',
+        'routine.delete',
+        'record.delete',
+      ]
+      expect(
+        schema.path.safeParse(pathsWithId.includes(operation.id) ? { id: 'fixture-id' } : {})
+          .success
+      ).toBe(true)
+    }
+  })
+
+  it('enforces request boundaries, defaults and detached history preservation', () => {
+    const body = (id, value) => requests[id].body.safeParse(value)
+    expect(body('profile.update', { baseVersion: 1, username: 'a' }).success).toBe(false)
+    expect(body('profile.update', { baseVersion: 1, email: null }).success).toBe(false)
+    expect(body('profile.update', { baseVersion: 1, timezone: 'invalid' }).success).toBe(false)
+    expect(
+      body('profile.update', { baseVersion: 1, measurements: { weightKg: -1, heightCm: null } })
+        .success
+    ).toBe(false)
+    expect(body('profile.update', { baseVersion: 1, registrationCompleted: true }).success).toBe(
+      true
+    )
+    const routine = {
+      name: 'Plan',
+      pattern: [{ dayIndex: 0, dayType: 'REST', workoutId: null }],
+      startDate: '2026-11-01',
+    }
+    expect(body('routine.create', routine).data).toMatchObject({
+      routineType: 'SEQUENTIAL',
+      active: false,
+      description: null,
+    })
+    expect(body('routine.create', { ...routine, active: true }).success).toBe(false)
+    expect(
+      body('routine.create', {
+        ...routine,
+        pattern: [{ dayIndex: 1, dayType: 'WORKOUT', workoutId: null }],
+      }).success
+    ).toBe(false)
+    const detached = byId['record.create'].detachedImport
+    expect(body('record.create', detached.request).success).toBe(true)
+    expect(detached.success.body.workoutRecord.clientRecordId).toBe(detached.request.clientRecordId)
+    expect(detached.success.body.workoutRecord.workoutTitle).toBe(detached.request.workoutTitle)
+    expect(detached.success.body.workoutRecord.exerciseRecords[0].identity).toEqual(
+      detached.request.exerciseRecords[0].identity
+    )
+    expect(detached.success.body.workoutRecord.exerciseRecords[0].exerciseName).toBe(
+      detached.request.exerciseRecords[0].exerciseName
+    )
+    expect(detached.success.body.workoutRecord).toMatchObject({
+      workoutId: null,
+      workoutTitle: 'Old leg day',
+      exerciseRecords: [
+        {
+          exerciseId: null,
+          exerciseName: 'My old squat',
+          identity: { sourceKey: 'missing-squat' },
+          achievedOneRmValue: null,
+        },
+      ],
+    })
+    expect(
+      body('record.create', {
+        ...detached.request,
+        exerciseRecords: [
+          {
+            ...detached.request.exerciseRecords[0],
+            identity: {
+              sourceDatasetVersion: null,
+              sourceKey: null,
+              legacyNamespace: null,
+              legacyId: null,
+            },
+          },
+        ],
+      }).success
+    ).toBe(false)
+    expect(
+      body('record.create', { ...detached.request, completedAt: '2020-01-01T00:00:00Z' }).success
+    ).toBe(false)
+    expect(
+      body('preferences.put', { ...byId['preferences.put'].request, schedule: ['25:00'] }).success
+    ).toBe(false)
+    for (const id of ['workout.create', 'routine.create'])
+      expect(byId[id].success.body.version).toBe(1)
+    expect(byId['record.create'].success.body.workoutRecord.version).toBe(1)
+    expect(byId['snapshot.put'].success.body.version).toBe(1)
+    expect(byId['preferences.put'].success.body.version).toBe(1)
   })
 
   it('runs compatible examples through the actual client parsers', () => {
@@ -98,6 +207,7 @@ describe('Rust release contract fixtures', () => {
     const record = z
       .object({
         id: z.string(),
+        clientRecordId: z.string(),
         workoutId: z.string().nullable(),
         workoutTitle: z.string(),
         notes: z.string().nullable(),
@@ -109,7 +219,15 @@ describe('Rust release contract fixtures', () => {
         exerciseRecords: z.array(
           z
             .object({
-              exerciseId: z.string(),
+              exerciseId: z.string().nullable(),
+              identity: z
+                .object({
+                  sourceDatasetVersion: z.string().nullable(),
+                  sourceKey: z.string().nullable(),
+                  legacyNamespace: z.string().nullable(),
+                  legacyId: z.string().nullable(),
+                })
+                .strict(),
               exerciseName: z.string(),
               reps: z.array(z.number()),
               weight: z.array(z.number()),
@@ -124,6 +242,10 @@ describe('Rust release contract fixtures', () => {
       })
       .strict()
     expect(record.parse(byId['record.list'].success.body[0]).workoutId).toBeNull()
+    expect(
+      record.parse(byId['record.create'].detachedImport.success.body.workoutRecord)
+        .exerciseRecords[0].exerciseId
+    ).toBeNull()
     expect(record.parse(byId['record.create'].success.body.workoutRecord).completedAt).toBe(
       '2026-11-01T12:00:00Z'
     )
