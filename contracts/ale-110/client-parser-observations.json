@@ -1,0 +1,32 @@
+{
+  "catalogItem": {
+    "id": "exercise-1",
+    "sourceKey": "barbell-squat",
+    "retired": false,
+    "name": "Barbell squat",
+    "level": null,
+    "force": "PUSH",
+    "mechanic": "COMPOUND",
+    "equipment": "BARBELL",
+    "primaryMuscles": ["QUADRICEPS"],
+    "secondaryMuscles": [],
+    "instructions": [],
+    "category": "STRENGTH"
+  },
+  "recordWithoutStreak": {
+    "workoutRecord": {
+      "id": "record-1",
+      "workoutId": "workout-1",
+      "workoutTitle": "Legs",
+      "createdAt": "2026-11-01T12:00:00Z",
+      "exerciseRecords": []
+    }
+  },
+  "recordWithDeletedWorkout": {
+    "id": "record-1",
+    "workoutId": null,
+    "workoutTitle": "Legs",
+    "createdAt": "2026-11-01T12:00:00Z",
+    "exerciseRecords": []
+  }
+}
