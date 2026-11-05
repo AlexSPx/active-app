@@ -24,7 +24,7 @@ CI uses the `google_apis` system image. The API 35 `default` AOSP image produced
 Install the pinned Maestro CLI:
 
 ```sh
-maestro_version="$(cat .maestro-version)"
+maestro_version="$(cat apps/client/.maestro-version)"
 curl -fsSL "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-${maestro_version}/maestro.zip" -o /tmp/maestro.zip
 mkdir -p "$HOME/.local/share/active-maestro/$maestro_version"
 unzip -q -o /tmp/maestro.zip -d "$HOME/.local/share/active-maestro/$maestro_version"
@@ -34,6 +34,7 @@ The following build command replaces the generated `android/` directory. Use a c
 
 ```sh
 yarn install --frozen-lockfile
+cd apps/client
 EXPO_OFFLINE=1 EXPO_NO_DOTENV=1 EXPO_NO_CLIENT_ENV_VARS=1 MAESTRO_TEST_BUILD=1 yarn expo prebuild --platform android --no-install --clean
 (cd android && ./gradlew --no-daemon -PreactNativeArchitectures=x86_64 assembleRelease)
 adb install -r android/app/build/outputs/apk/release/app-release.apk

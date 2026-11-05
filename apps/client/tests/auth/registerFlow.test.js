@@ -81,7 +81,7 @@ jest.mock('../../components/feedback/FeedbackProvider', () => ({
 }))
 
 jest.mock('lucide-react-native', () =>
-  jest.requireActual('../../node_modules/lucide-react-native/dist/cjs/lucide-react-native.js')
+  jest.requireActual(require.resolve('lucide-react-native').replace(/dist\/.*$/, 'dist/cjs/lucide-react-native.js'))
 )
 
 jest.mock('react-native-reanimated', () => {

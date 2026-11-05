@@ -47,13 +47,13 @@ A modern workout tracking app built with Expo, React Native, and TanStack Query.
 
 ## Tech Stack
 
-- **Framework**: [Expo](https://expo.dev) SDK 55 with Expo Router
+- **Framework**: [Expo](https://expo.dev) SDK 58 with Expo Router
 - **UI**: React Native primitives with [Uniwind](https://uniwind.dev), Tailwind CSS 4, and DM Sans
 - **Icons**: [Lucide](https://lucide.dev) with Cadence semantic colors
 - **State Management**: [TanStack Query](https://tanstack.com/query) + [Zustand](https://zustand-demo.pmnd.rs/)
 - **Forms**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
 - **Lists**: [@shopify/flash-list](https://shopify.github.io/flash-list/)
-- **Auth**: WorkOS, Google Sign-In
+- **Native launch**: local-first and offline; accounts and sync are disabled
 
 ## Getting Started
 
@@ -61,7 +61,7 @@ See [Android Maestro regression testing](docs/testing/android-maestro.md) for lo
 
 ### Prerequisites
 
-- Node.js 18+
+- Node.js 24.6.0
 - Yarn
 - iOS Simulator / Android Emulator (or physical device)
 
@@ -91,25 +91,11 @@ yarn web
 ## Project Structure
 
 ```
-├── app/                    # Expo Router screens
-│   ├── (tabs)/            # Main tab navigation
-│   ├── workouts/          # Workout CRUD screens
-│   └── legal/             # Legal pages
-├── features/              # Feature modules
-│   ├── workouts/          # Workout templates & management
-│   ├── routines/          # Routine patterns & scheduling
-│   ├── workout-session/   # Active workout tracking
-│   ├── exercises/         # Exercise search & progression
-│   ├── history/           # Workout history
-│   ├── settings/          # User settings
-│   ├── auth/              # Authentication
-│   └── legal/             # Legal content
-├── components/            # Shared UI components
-├── lib/                   # Query keys, schemas, utilities
-├── services/              # API service, notifications
-├── stores/                # Zustand stores
-├── types/                 # TypeScript types
-└── utils/                 # Utility functions
+├── apps/client/           # Expo Android, iOS, and web application
+├── apps/site/             # Static landing site and legal source
+├── tools/promo/           # Remotion video tooling
+├── scripts/               # Shared legal generation and checks
+└── docs/                  # Project documentation
 ```
 
 ## Scripts
@@ -123,6 +109,8 @@ yarn web
 | `yarn web`         | Start web server                                            |
 | `yarn format`      | Format code with Prettier                                   |
 | `yarn test`        | Run Jest tests                                              |
+
+Run `yarn test:once`, `yarn typecheck`, `yarn legal:check`, `yarn site:check`, and `yarn client:export` for checks. Use `yarn promo:studio`, `yarn promo:render`, or `yarn promo:poster` for the video project. Run EAS commands from `apps/client` after installing at the root.
 
 The development server uses two Metro workers to leave resources available for
 the emulator, backend, and desktop. Normal startup preserves the bundler cache;
@@ -146,7 +134,7 @@ Expo Router screens compose feature-owned workflows. Feature modules own data ac
 validation, drafts, and query state. Shared UI components expose typed props and named callbacks;
 they do not reach into feature stores, repositories, queries, or navigation.
 
-`global.css` defines the semantic color, spacing, radius, and typography tokens used by Uniwind.
+`apps/client/global.css` defines the semantic color, spacing, radius, and typography tokens used by Uniwind.
 The persisted appearance preference (`light`, `dark`, or `system`) drives the native navigation
 theme and web color scheme. Native training starts with a local profile and remains available
 offline; the web app retains its account-backed behavior.

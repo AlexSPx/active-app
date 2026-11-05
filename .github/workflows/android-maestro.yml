@@ -74,14 +74,15 @@ jobs:
       - name: Install dependencies
         run: yarn install --frozen-lockfile
       - name: Generate Android project from committed Expo config
+        working-directory: apps/client
         run: MAESTRO_TEST_BUILD=1 yarn expo prebuild --platform android --no-install --clean
       - name: Build standalone release APK
         run: |
-          cd android
+          cd apps/client/android
           ./gradlew --no-daemon -PreactNativeArchitectures=x86_64 assembleRelease
-          cd ..
+          cd ../../..
           mkdir -p build
-          cp android/app/build/outputs/apk/release/app-release.apk build/android-release.apk
+          cp apps/client/android/app/build/outputs/apk/release/app-release.apk build/android-release.apk
       - name: Verify release APK
         run: |
           aapt_path="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
@@ -89,7 +90,7 @@ jobs:
           test "$app_id" = "com.alexspx.activenext"
       - name: Install pinned Maestro CLI
         run: |
-          maestro_version="$(cat .maestro-version)"
+          maestro_version="$(cat apps/client/.maestro-version)"
           curl -fsSL "https://github.com/mobile-dev-inc/Maestro/releases/download/cli-${maestro_version}/maestro.zip" \
             -o "$RUNNER_TEMP/maestro.zip"
           unzip -q "$RUNNER_TEMP/maestro.zip" -d "$RUNNER_TEMP"
@@ -110,7 +111,7 @@ jobs:
           disable-animations: true
           script: |
             adb install -r build/android-release.apk
-            scripts/run-maestro-ci.sh
+            MAESTRO_ARTIFACT_DIR="$PWD/build/maestro-artifacts" apps/client/scripts/run-maestro-ci.sh
       - name: Upload APK, Maestro reports, and failure diagnostics
         if: always()
         uses: actions/upload-artifact@v6

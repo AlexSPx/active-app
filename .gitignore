@@ -90,3 +90,6 @@ skills-lock.json
 # Firebase service account credentials
 *-firebase-adminsdk-*.json
 activenext-*.json
+
+# Preserve the tracked development defaults in the client workspace.
+!apps/client/.env.development

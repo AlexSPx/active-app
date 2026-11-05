@@ -54,4 +54,4 @@ fs.writeFileSync(packageFile, `${JSON.stringify(pkg, null, 2)}\n`)
 NODE
 
 cd "$project_root"
-"$project_root/node_modules/.bin/expo" start --max-workers 2 --dev-client --port "${PORT:-8083}" --lan "$@"
+yarn --cwd "$project_root" expo start --max-workers 2 --dev-client --port "${PORT:-8083}" --lan "$@"
