@@ -93,3 +93,13 @@ activenext-*.json
 
 # Preserve the tracked development defaults in the client workspace.
 !apps/client/.env.development
+
+# Rust build and local API data
+/target/
+/services/api/data/
+*.sqlite
+*.sqlite-*
+*.sqlite3
+*.sqlite3-*
+*.db
+*.db-*

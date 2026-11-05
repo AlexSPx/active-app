@@ -30,7 +30,10 @@
     "promo:studio": "yarn workspace active-cadence-promo studio",
     "promo:render": "yarn workspace active-cadence-promo render",
     "promo:poster": "yarn workspace active-cadence-promo poster",
-    "client:export": "yarn workspace active-next expo export -p web"
+    "client:export": "yarn workspace active-next expo export -p web",
+    "api:run": "cargo run --locked -p active-api",
+    "api:check": "cargo check --workspace --locked",
+    "api:test": "cargo test --workspace --locked"
   },
   "resolutions": {
     "react-native-svg": "15.16.0"
