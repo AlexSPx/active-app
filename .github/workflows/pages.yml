@@ -4,17 +4,17 @@ on:
   push:
     branches: [master]
     paths:
-      - 'landing/**'
-      - 'features/legal/**'
-      - 'public/privacy-policy.html'
+      - 'apps/site/**'
+      - 'apps/client/features/legal/**'
+      - 'apps/client/public/privacy-policy.html'
       - 'scripts/sync-legal.py'
       - 'scripts/test_sync_legal.py'
       - '.github/workflows/pages.yml'
   pull_request:
     paths:
-      - 'landing/**'
-      - 'features/legal/**'
-      - 'public/privacy-policy.html'
+      - 'apps/site/**'
+      - 'apps/client/features/legal/**'
+      - 'apps/client/public/privacy-policy.html'
       - 'scripts/sync-legal.py'
       - 'scripts/test_sync_legal.py'
       - '.github/workflows/pages.yml'
@@ -39,10 +39,10 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir _site
-          cp landing/index.html landing/styles.css landing/script.js _site/
-          cp -R landing/assets landing/legal _site/
+          cp apps/site/index.html apps/site/styles.css apps/site/script.js _site/
+          cp -R apps/site/assets apps/site/legal _site/
       - name: Verify pages and local assets
-        run: python3 landing/verify.py _site
+        run: python3 apps/site/verify.py _site
       - name: Upload Pages artifact
         if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4

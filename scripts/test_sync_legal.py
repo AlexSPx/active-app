@@ -59,7 +59,7 @@ A **bold & *italic*** paragraph with [Expo](https://expo.dev/privacy) and `code`
                 sync.LegalMarkdown().feed('<article>' + html)
 
     def test_every_word_in_published_articles_survives_conversion(self):
-        for path in (sync.ROOT / 'landing/legal').glob('*.html'):
+        for path in (sync.ROOT / 'apps/site/legal').glob('*.html'):
             with self.subTest(path=path):
                 source = path.read_text()
                 plain = ArticleText()

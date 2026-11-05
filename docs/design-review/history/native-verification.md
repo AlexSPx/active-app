@@ -5,7 +5,7 @@ The native preview renders `RecordDetailView` with the mock's 38-minute, six-set
 Start the preview:
 
 ```bash
-PREVIEW_MAIN=components/dev/history-preview/entry.tsx PORT=8083 ./scripts/preview-cadence-native.sh
+PREVIEW_MAIN=components/dev/history-preview/entry.tsx PORT=8083 ./apps/client/scripts/preview-cadence-native.sh
 ```
 
 Open the preview on Android, then capture its visible bounds and pixels:
@@ -16,7 +16,7 @@ agent-device open com.alexspx.activenext 'activenext://expo-development-client/?
 agent-device wait text 'Lower body foundations' 45000
 agent-device snapshot --json > /tmp/history-layout.json
 agent-device screenshot /tmp/history-layout.png
-python3 scripts/verify-history-preview.py /tmp/history-layout.json /tmp/history-layout.png
+python3 apps/client/scripts/verify-history-preview.py /tmp/history-layout.json /tmp/history-layout.png
 ```
 
 The checker requires Python and Pillow. It checks actual Android column alignment, section spacing, and both visible summary dividers. The full mock record must be visible; use the emulator's default text scale. The checker passes on the corrected screen and fails on the earlier native screenshot because its summary dividers are missing.

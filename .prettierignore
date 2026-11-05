@@ -56,6 +56,6 @@ yarn.lock
 # Metro cache
 .metro-health-check*
 
-# Generated from landing/legal by scripts/sync-legal.py
-features/legal/legalContent.json
-public/privacy-policy.html
+# Generated from apps/site/legal by scripts/sync-legal.py
+apps/client/features/legal/legalContent.json
+apps/client/public/privacy-policy.html

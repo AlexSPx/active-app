@@ -1,6 +1,6 @@
 // Jest's native export conditions select Lucide's ESM build; exercise its real CommonJS build.
 jest.mock('lucide-react-native', () =>
-  jest.requireActual('../../node_modules/lucide-react-native/dist/cjs/lucide-react-native.js')
+  jest.requireActual(require.resolve('lucide-react-native').replace(/dist\/.*$/, 'dist/cjs/lucide-react-native.js'))
 )
 jest.mock('uniwind', () => ({ useCSSVariable: jest.fn(() => '#2D2235') }))
 
