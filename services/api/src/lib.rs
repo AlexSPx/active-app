@@ -1,3 +1,4 @@
+pub mod db;
 mod health;
 
 use axum::{Router, routing::get};
