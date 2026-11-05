@@ -1,0 +1,1596 @@
+{
+  "contractVersion": "1",
+  "operations": [
+    {
+      "id": "discovery",
+      "method": "GET",
+      "path": "/.well-known/active",
+      "success": {
+        "status": 200,
+        "body": {
+          "instanceId": "instance-1",
+          "contractVersion": "1",
+          "issuer": "https://identity.example.test",
+          "authorizationEndpoint": "https://identity.example.test/authorize",
+          "tokenEndpoint": "https://identity.example.test/token",
+          "endSessionEndpoint": "https://identity.example.test/logout"
+        }
+      },
+      "error": {
+        "status": 500,
+        "body": {
+          "code": "INTERNAL_ERROR",
+          "message": "Service unavailable",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null
+    },
+    {
+      "id": "profile.get",
+      "method": "GET",
+      "path": "/api/user/me",
+      "success": {
+        "status": 200,
+        "body": {
+          "id": "user-1",
+          "email": "a@example.test",
+          "username": "alex",
+          "firstName": "Alex",
+          "lastName": "A",
+          "createdAt": "2026-11-01T12:00:00Z",
+          "timezone": "Europe/Sofia",
+          "activeRoutineId": "routine-1",
+          "measurements": {
+            "weightKg": 70,
+            "heightCm": 170
+          },
+          "registrationCompleted": true,
+          "profileVersion": 2
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": "userSchema",
+      "queue": null
+    },
+    {
+      "id": "profile.update",
+      "method": "PATCH",
+      "path": "/api/user/me",
+      "success": {
+        "status": 200,
+        "body": {
+          "id": "user-1",
+          "email": "a@example.test",
+          "username": "alex",
+          "firstName": "Alex",
+          "lastName": "A",
+          "createdAt": "2026-11-01T12:00:00Z",
+          "timezone": "Europe/Sofia",
+          "activeRoutineId": "routine-1",
+          "measurements": {
+            "weightKg": 70,
+            "heightCm": 170
+          },
+          "registrationCompleted": true,
+          "profileVersion": 2
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": {
+        "baseVersion": 1,
+        "firstName": "Alex"
+      },
+      "parser": "userSchema",
+      "queue": null,
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      }
+    },
+    {
+      "id": "profile.delete",
+      "method": "DELETE",
+      "path": "/api/user/me?baseVersion=2",
+      "success": {
+        "status": 200,
+        "body": {
+          "deletedUserId": "user-1"
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null,
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      }
+    },
+    {
+      "id": "legal.terms",
+      "method": "GET",
+      "path": "/api/legal/terms-of-service",
+      "success": {
+        "status": 200,
+        "body": {
+          "content": "Terms",
+          "contentType": "text/markdown"
+        }
+      },
+      "error": {
+        "status": 500,
+        "body": {
+          "code": "INTERNAL_ERROR",
+          "message": "Service unavailable",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null
+    },
+    {
+      "id": "legal.privacy",
+      "method": "GET",
+      "path": "/api/legal/privacy-policy",
+      "success": {
+        "status": 200,
+        "body": {
+          "content": "Privacy",
+          "contentType": "text/markdown"
+        }
+      },
+      "error": {
+        "status": 500,
+        "body": {
+          "code": "INTERNAL_ERROR",
+          "message": "Service unavailable",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null
+    },
+    {
+      "id": "catalog.get",
+      "method": "GET",
+      "path": "/api/exercises/catalog",
+      "success": {
+        "status": 200,
+        "body": {
+          "catalogVersion": 1,
+          "sourceDatasetVersion": "2026-01",
+          "mappingComplete": true,
+          "unresolvedSourceKeys": [],
+          "unresolvedLegacyIds": [],
+          "items": [
+            {
+              "id": "exercise-1",
+              "sourceKey": "barbell-squat",
+              "retired": false,
+              "name": "Barbell squat",
+              "level": "BEGINNER",
+              "force": "PUSH",
+              "mechanic": "COMPOUND",
+              "equipment": "BARBELL",
+              "primaryMuscles": [
+                "QUADRICEPS"
+              ],
+              "secondaryMuscles": [],
+              "instructions": [],
+              "category": "STRENGTH"
+            }
+          ]
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null,
+      "incomplete": {
+        "status": 200,
+        "body": {
+          "catalogVersion": 1,
+          "sourceDatasetVersion": "2026-01",
+          "mappingComplete": false,
+          "unresolvedSourceKeys": [
+            "unknown-key"
+          ],
+          "unresolvedLegacyIds": [
+            "legacy-1"
+          ],
+          "items": [
+            {
+              "id": "exercise-1",
+              "sourceKey": "barbell-squat",
+              "retired": false,
+              "name": "Barbell squat",
+              "level": "BEGINNER",
+              "force": "PUSH",
+              "mechanic": "COMPOUND",
+              "equipment": "BARBELL",
+              "primaryMuscles": [
+                "QUADRICEPS"
+              ],
+              "secondaryMuscles": [],
+              "instructions": [],
+              "category": "STRENGTH"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "catalog.search",
+      "method": "GET",
+      "path": "/api/exercises/search?name=squat",
+      "success": {
+        "status": 200,
+        "body": [
+          {
+            "id": "exercise-1",
+            "sourceKey": "barbell-squat",
+            "retired": false,
+            "name": "Barbell squat",
+            "level": "BEGINNER",
+            "force": "PUSH",
+            "mechanic": "COMPOUND",
+            "equipment": "BARBELL",
+            "primaryMuscles": [
+              "QUADRICEPS"
+            ],
+            "secondaryMuscles": [],
+            "instructions": [],
+            "category": "STRENGTH"
+          }
+        ]
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": "exercisesArraySchema",
+      "queue": null
+    },
+    {
+      "id": "progression.logs",
+      "method": "GET",
+      "path": "/api/exercises/exercise-1/logs",
+      "success": {
+        "status": 200,
+        "body": [
+          {
+            "exerciseRecordId": "exercise-record-1",
+            "exerciseId": "exercise-1",
+            "exerciseName": "Barbell squat",
+            "createdAt": "2026-11-01T12:00:00Z",
+            "reps": [
+              5
+            ],
+            "weight": [
+              60
+            ],
+            "durationSeconds": [],
+            "achievedOneRmValue": 70,
+            "achievedOneRmSetIndex": 0,
+            "achievedTotalVolumeValue": 300
+          }
+        ]
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": "exerciseLogsArraySchema",
+      "queue": null
+    },
+    {
+      "id": "workout.list",
+      "method": "GET",
+      "path": "/api/workouts",
+      "success": {
+        "status": 200,
+        "body": [
+          {
+            "id": "workout-1",
+            "title": "Legs",
+            "notes": null,
+            "createdAt": "2026-11-01T12:00:00Z",
+            "updatedAt": "2026-11-01T12:00:00Z",
+            "version": 2,
+            "workoutTemplate": {
+              "id": "template-1",
+              "exercises": [
+                {
+                  "exerciseId": "exercise-1",
+                  "exerciseTitle": "Barbell squat",
+                  "reps": [
+                    5
+                  ],
+                  "weight": [
+                    60
+                  ],
+                  "durationSeconds": [],
+                  "category": "STRENGTH",
+                  "primaryMuscles": [
+                    "QUADRICEPS"
+                  ],
+                  "secondaryMuscles": []
+                }
+              ],
+              "createdAt": "2026-11-01T12:00:00Z",
+              "updatedAt": "2026-11-01T12:00:00Z"
+            }
+          }
+        ]
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": "workoutsArraySchema",
+      "queue": null
+    },
+    {
+      "id": "workout.create",
+      "method": "POST",
+      "path": "/api/workouts",
+      "success": {
+        "status": 201,
+        "body": {
+          "id": "workout-1",
+          "title": "Legs",
+          "notes": null,
+          "createdAt": "2026-11-01T12:00:00Z",
+          "updatedAt": "2026-11-01T12:00:00Z",
+          "version": 1,
+          "workoutTemplate": {
+            "id": "template-1",
+            "exercises": [
+              {
+                "exerciseId": "exercise-1",
+                "exerciseTitle": "Barbell squat",
+                "reps": [
+                  5
+                ],
+                "weight": [
+                  60
+                ],
+                "durationSeconds": [],
+                "category": "STRENGTH",
+                "primaryMuscles": [
+                  "QUADRICEPS"
+                ],
+                "secondaryMuscles": []
+              }
+            ],
+            "createdAt": "2026-11-01T12:00:00Z",
+            "updatedAt": "2026-11-01T12:00:00Z"
+          }
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": {
+        "title": "Legs",
+        "template": {
+          "exercises": [
+            {
+              "exerciseId": "exercise-1",
+              "reps": [
+                5
+              ],
+              "weight": [
+                60
+              ]
+            }
+          ]
+        }
+      },
+      "parser": "workoutSchema",
+      "queue": {
+        "endpoint": "createWorkout",
+        "payload": {
+          "title": "Legs",
+          "template": {
+            "exercises": [
+              {
+                "exerciseId": "exercise-1",
+                "reps": [
+                  5
+                ],
+                "weight": [
+                  60
+                ]
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "id": "workout.update",
+      "method": "PUT",
+      "path": "/api/workouts/workout-1",
+      "success": {
+        "status": 200,
+        "body": {
+          "id": "workout-1",
+          "title": "Legs",
+          "notes": null,
+          "createdAt": "2026-11-01T12:00:00Z",
+          "updatedAt": "2026-11-01T12:00:00Z",
+          "version": 2,
+          "workoutTemplate": {
+            "id": "template-1",
+            "exercises": [
+              {
+                "exerciseId": "exercise-1",
+                "exerciseTitle": "Barbell squat",
+                "reps": [
+                  5
+                ],
+                "weight": [
+                  60
+                ],
+                "durationSeconds": [],
+                "category": "STRENGTH",
+                "primaryMuscles": [
+                  "QUADRICEPS"
+                ],
+                "secondaryMuscles": []
+              }
+            ],
+            "createdAt": "2026-11-01T12:00:00Z",
+            "updatedAt": "2026-11-01T12:00:00Z"
+          }
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": {
+        "baseVersion": 1,
+        "title": "Legs"
+      },
+      "parser": "workoutSchema",
+      "queue": {
+        "endpoint": "updateWorkout",
+        "payload": [
+          "workout-1",
+          {
+            "baseVersion": 1,
+            "title": "Legs"
+          }
+        ]
+      },
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      }
+    },
+    {
+      "id": "workout.delete",
+      "method": "DELETE",
+      "path": "/api/workouts/workout-1?baseVersion=2",
+      "success": {
+        "status": 200,
+        "body": {
+          "deletedWorkoutId": "workout-1",
+          "routineVersions": [
+            {
+              "id": "routine-1",
+              "version": 3
+            },
+            {
+              "id": "routine-2",
+              "version": 5
+            }
+          ]
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": {
+        "endpoint": "deleteWorkout",
+        "payload": {
+          "id": "workout-1",
+          "baseVersion": 2
+        }
+      },
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      },
+      "transformation": {
+        "before": {
+          "profileVersion": 7,
+          "routines": [
+            {
+              "id": "routine-1",
+              "version": 2,
+              "pattern": [
+                {
+                  "dayIndex": 0,
+                  "dayType": "WORKOUT",
+                  "workoutId": "workout-1"
+                }
+              ]
+            },
+            {
+              "id": "routine-2",
+              "version": 4,
+              "pattern": [
+                {
+                  "dayIndex": 0,
+                  "dayType": "WORKOUT",
+                  "workoutId": "workout-1"
+                },
+                {
+                  "dayIndex": 1,
+                  "dayType": "WORKOUT",
+                  "workoutId": "workout-1"
+                },
+                {
+                  "dayIndex": 2,
+                  "dayType": "REST",
+                  "workoutId": null
+                }
+              ]
+            }
+          ]
+        },
+        "after": {
+          "profileVersion": 7,
+          "routines": [
+            {
+              "id": "routine-1",
+              "version": 3,
+              "pattern": [
+                {
+                  "dayIndex": 0,
+                  "dayType": "REST",
+                  "workoutId": null
+                }
+              ]
+            },
+            {
+              "id": "routine-2",
+              "version": 5,
+              "pattern": [
+                {
+                  "dayIndex": 0,
+                  "dayType": "REST",
+                  "workoutId": null
+                },
+                {
+                  "dayIndex": 1,
+                  "dayType": "REST",
+                  "workoutId": null
+                },
+                {
+                  "dayIndex": 2,
+                  "dayType": "REST",
+                  "workoutId": null
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "routine.list",
+      "method": "GET",
+      "path": "/api/routines",
+      "success": {
+        "status": 200,
+        "body": [
+          {
+            "id": "routine-1",
+            "name": "Plan",
+            "description": null,
+            "userId": "user-1",
+            "routineType": "SEQUENTIAL",
+            "pattern": [
+              {
+                "dayIndex": 0,
+                "dayType": "WORKOUT",
+                "workoutId": "workout-1"
+              },
+              {
+                "dayIndex": 1,
+                "dayType": "REST",
+                "workoutId": null
+              }
+            ],
+            "startDate": "2026-11-01",
+            "createdAt": "2026-11-01T12:00:00Z",
+            "updatedAt": "2026-11-01T12:00:00Z",
+            "version": 2,
+            "profileVersion": 2
+          }
+        ]
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": "routinesArraySchema",
+      "queue": null
+    },
+    {
+      "id": "routine.get",
+      "method": "GET",
+      "path": "/api/routines/routine-1",
+      "success": {
+        "status": 200,
+        "body": {
+          "id": "routine-1",
+          "name": "Plan",
+          "description": null,
+          "userId": "user-1",
+          "routineType": "SEQUENTIAL",
+          "pattern": [
+            {
+              "dayIndex": 0,
+              "dayType": "WORKOUT",
+              "workoutId": "workout-1"
+            },
+            {
+              "dayIndex": 1,
+              "dayType": "REST",
+              "workoutId": null
+            }
+          ],
+          "startDate": "2026-11-01",
+          "createdAt": "2026-11-01T12:00:00Z",
+          "updatedAt": "2026-11-01T12:00:00Z",
+          "version": 2,
+          "profileVersion": 2
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": "routineSchema",
+      "queue": null
+    },
+    {
+      "id": "routine.active",
+      "method": "GET",
+      "path": "/api/routines/active",
+      "success": {
+        "status": 200,
+        "body": {
+          "id": "routine-1",
+          "name": "Plan",
+          "description": null,
+          "userId": "user-1",
+          "routineType": "SEQUENTIAL",
+          "pattern": [
+            {
+              "dayIndex": 0,
+              "dayType": "WORKOUT",
+              "workoutId": "workout-1"
+            },
+            {
+              "dayIndex": 1,
+              "dayType": "REST",
+              "workoutId": null
+            }
+          ],
+          "startDate": "2026-11-01",
+          "createdAt": "2026-11-01T12:00:00Z",
+          "updatedAt": "2026-11-01T12:00:00Z",
+          "version": 2,
+          "profileVersion": 2
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": "routineSchema",
+      "queue": null
+    },
+    {
+      "id": "routine.create",
+      "method": "POST",
+      "path": "/api/routines",
+      "success": {
+        "status": 201,
+        "body": {
+          "id": "routine-1",
+          "name": "Plan",
+          "description": null,
+          "userId": "user-1",
+          "routineType": "SEQUENTIAL",
+          "pattern": [
+            {
+              "dayIndex": 0,
+              "dayType": "WORKOUT",
+              "workoutId": "workout-1"
+            },
+            {
+              "dayIndex": 1,
+              "dayType": "REST",
+              "workoutId": null
+            }
+          ],
+          "startDate": "2026-11-01",
+          "createdAt": "2026-11-01T12:00:00Z",
+          "updatedAt": "2026-11-01T12:00:00Z",
+          "version": 1,
+          "profileVersion": 2
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": {
+        "name": "Plan",
+        "routineType": "SEQUENTIAL",
+        "pattern": [
+          {
+            "dayIndex": 0,
+            "dayType": "WORKOUT",
+            "workoutId": "workout-1"
+          },
+          {
+            "dayIndex": 1,
+            "dayType": "REST",
+            "workoutId": null
+          }
+        ],
+        "startDate": "2026-11-01",
+        "active": true,
+        "profileBaseVersion": 1
+      },
+      "parser": "routineSchema",
+      "queue": {
+        "endpoint": "createRoutine",
+        "payload": {
+          "name": "Plan",
+          "routineType": "SEQUENTIAL",
+          "pattern": [
+            {
+              "dayIndex": 0,
+              "dayType": "WORKOUT",
+              "workoutId": "workout-1"
+            },
+            {
+              "dayIndex": 1,
+              "dayType": "REST",
+              "workoutId": null
+            }
+          ],
+          "startDate": "2026-11-01",
+          "active": true,
+          "profileBaseVersion": 1
+        }
+      },
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      }
+    },
+    {
+      "id": "routine.update",
+      "method": "PUT",
+      "path": "/api/routines/routine-1",
+      "success": {
+        "status": 200,
+        "body": {
+          "id": "routine-1",
+          "name": "Plan",
+          "description": null,
+          "userId": "user-1",
+          "routineType": "SEQUENTIAL",
+          "pattern": [
+            {
+              "dayIndex": 0,
+              "dayType": "WORKOUT",
+              "workoutId": "workout-1"
+            },
+            {
+              "dayIndex": 1,
+              "dayType": "REST",
+              "workoutId": null
+            }
+          ],
+          "startDate": "2026-11-01",
+          "createdAt": "2026-11-01T12:00:00Z",
+          "updatedAt": "2026-11-01T12:00:00Z",
+          "version": 2,
+          "profileVersion": 2
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": {
+        "baseVersion": 1,
+        "profileBaseVersion": 1,
+        "name": "Plan",
+        "active": true
+      },
+      "parser": "routineSchema",
+      "queue": {
+        "endpoint": "updateRoutine",
+        "payload": [
+          "routine-1",
+          {
+            "baseVersion": 1,
+            "profileBaseVersion": 1,
+            "name": "Plan",
+            "active": true
+          }
+        ]
+      },
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      }
+    },
+    {
+      "id": "routine.delete",
+      "method": "DELETE",
+      "path": "/api/routines/routine-1?baseVersion=2&profileBaseVersion=2",
+      "success": {
+        "status": 200,
+        "body": {
+          "deletedRoutineId": "routine-1",
+          "profileVersion": 3
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": {
+        "endpoint": "deleteRoutine",
+        "payload": {
+          "id": "routine-1",
+          "baseVersion": 2,
+          "profileBaseVersion": 2
+        }
+      },
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      }
+    },
+    {
+      "id": "history.revision",
+      "method": "GET",
+      "path": "/api/history/revision",
+      "success": {
+        "status": 200,
+        "body": {
+          "historyRevision": 4
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null
+    },
+    {
+      "id": "record.list",
+      "method": "GET",
+      "path": "/api/workouts/record",
+      "success": {
+        "status": 200,
+        "body": [
+          {
+            "id": "record-1",
+            "workoutId": null,
+            "workoutTitle": "Legs",
+            "notes": null,
+            "createdAt": "2026-11-01T12:00:00Z",
+            "startTime": "2026-11-01T11:00:00Z",
+            "completedAt": "2026-11-01T12:00:00Z",
+            "completionTimezone": "Europe/Sofia",
+            "version": 1,
+            "exerciseRecords": [
+              {
+                "exerciseId": "exercise-1",
+                "exerciseName": "Barbell squat",
+                "reps": [
+                  5
+                ],
+                "weight": [
+                  60
+                ],
+                "durationSeconds": [],
+                "notes": null,
+                "achievedOneRmValue": 70,
+                "achievedOneRmSetIndex": 0,
+                "achievedTotalVolumeValue": 300,
+                "identity": {
+                  "sourceDatasetVersion": "2026-01",
+                  "sourceKey": "barbell-squat",
+                  "legacyNamespace": null,
+                  "legacyId": null
+                }
+              }
+            ],
+            "clientRecordId": "phone-record-1"
+          }
+        ]
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": "workoutRecordsArraySchema",
+      "queue": null
+    },
+    {
+      "id": "record.create",
+      "method": "POST",
+      "path": "/api/workouts/record",
+      "success": {
+        "status": 201,
+        "body": {
+          "workoutRecord": {
+            "id": "record-1",
+            "workoutId": "workout-1",
+            "workoutTitle": "Legs",
+            "notes": null,
+            "createdAt": "2026-11-01T12:00:00Z",
+            "startTime": "2026-11-01T11:00:00Z",
+            "completedAt": "2026-11-01T12:00:00Z",
+            "completionTimezone": "Europe/Sofia",
+            "version": 1,
+            "exerciseRecords": [
+              {
+                "exerciseId": "exercise-1",
+                "exerciseName": "Barbell squat",
+                "reps": [
+                  5
+                ],
+                "weight": [
+                  60
+                ],
+                "durationSeconds": [],
+                "notes": null,
+                "achievedOneRmValue": 70,
+                "achievedOneRmSetIndex": 0,
+                "achievedTotalVolumeValue": 300,
+                "identity": {
+                  "sourceDatasetVersion": "2026-01",
+                  "sourceKey": "barbell-squat",
+                  "legacyNamespace": null,
+                  "legacyId": null
+                }
+              }
+            ],
+            "clientRecordId": "phone-record-1"
+          },
+          "historyRevision": 4
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": {
+        "workoutId": "workout-1",
+        "startTime": "2026-11-01T11:00:00Z",
+        "completedAt": "2026-11-01T12:00:00Z",
+        "completionTimezone": "Europe/Sofia",
+        "exerciseRecords": [
+          {
+            "exerciseId": "exercise-1",
+            "reps": [
+              5
+            ],
+            "weight": [
+              60
+            ],
+            "identity": {
+              "sourceDatasetVersion": "2026-01",
+              "sourceKey": "barbell-squat",
+              "legacyNamespace": null,
+              "legacyId": null
+            },
+            "exerciseName": "Barbell squat"
+          }
+        ],
+        "workoutTitle": "Legs",
+        "clientRecordId": "phone-record-1"
+      },
+      "parser": null,
+      "queue": {
+        "endpoint": "recordWorkout",
+        "payload": {
+          "workoutId": "workout-1",
+          "startTime": "2026-11-01T13:00:00",
+          "exerciseRecords": [
+            {
+              "exerciseId": "exercise-1",
+              "reps": [
+                5
+              ],
+              "weight": [
+                60
+              ]
+            }
+          ]
+        }
+      },
+      "detachedImport": {
+        "request": {
+          "workoutId": null,
+          "startTime": "2026-11-01T11:00:00Z",
+          "completedAt": "2026-11-01T12:00:00Z",
+          "completionTimezone": "Europe/Sofia",
+          "exerciseRecords": [
+            {
+              "exerciseId": null,
+              "reps": [
+                5
+              ],
+              "weight": [
+                60
+              ],
+              "identity": {
+                "sourceDatasetVersion": "old-dataset",
+                "sourceKey": "missing-squat",
+                "legacyNamespace": null,
+                "legacyId": null
+              },
+              "exerciseName": "My old squat"
+            }
+          ],
+          "workoutTitle": "Old leg day",
+          "clientRecordId": "phone-record-deleted"
+        },
+        "success": {
+          "status": 201,
+          "body": {
+            "workoutRecord": {
+              "id": "record-1",
+              "workoutId": null,
+              "workoutTitle": "Old leg day",
+              "notes": null,
+              "createdAt": "2026-11-01T12:00:00Z",
+              "startTime": "2026-11-01T11:00:00Z",
+              "completedAt": "2026-11-01T12:00:00Z",
+              "completionTimezone": "Europe/Sofia",
+              "version": 1,
+              "exerciseRecords": [
+                {
+                  "exerciseId": null,
+                  "exerciseName": "My old squat",
+                  "reps": [
+                    5
+                  ],
+                  "weight": [
+                    60
+                  ],
+                  "durationSeconds": [],
+                  "notes": null,
+                  "achievedOneRmValue": null,
+                  "achievedOneRmSetIndex": null,
+                  "achievedTotalVolumeValue": null,
+                  "identity": {
+                    "sourceDatasetVersion": "old-dataset",
+                    "sourceKey": "missing-squat",
+                    "legacyNamespace": null,
+                    "legacyId": null
+                  }
+                }
+              ],
+              "clientRecordId": "phone-record-deleted"
+            },
+            "historyRevision": 4
+          }
+        }
+      }
+    },
+    {
+      "id": "record.delete",
+      "method": "DELETE",
+      "path": "/api/workouts/record/record-1?baseVersion=1",
+      "success": {
+        "status": 200,
+        "body": {
+          "deletedRecordId": "record-1",
+          "historyRevision": 5
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": {
+        "endpoint": "deleteWorkoutRecord",
+        "payload": [
+          "record-1"
+        ]
+      },
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      },
+      "futureQueue": {
+        "endpoint": "deleteWorkoutRecord",
+        "payload": {
+          "id": "record-1",
+          "baseVersion": 1
+        }
+      }
+    },
+    {
+      "id": "snapshot.get",
+      "method": "GET",
+      "path": "/api/streak-snapshot",
+      "success": {
+        "status": 200,
+        "body": {
+          "version": 1,
+          "historyRevision": 4,
+          "rulesVersion": "1",
+          "currentStreak": 2,
+          "longestStreak": 3,
+          "nextWorkoutId": "workout-1",
+          "nextWorkoutDeadline": "2026-11-08",
+          "streakFreezeCount": 0,
+          "lastWorkoutCountedDate": "2026-11-01",
+          "weeklyCompletedWorkoutIds": [
+            "workout-1"
+          ],
+          "currentWeekStart": "2026-10-26"
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null,
+      "absent": {
+        "status": 404,
+        "body": {
+          "code": "NOT_FOUND",
+          "message": "Resource not found",
+          "currentVersion": null
+        }
+      }
+    },
+    {
+      "id": "snapshot.put",
+      "method": "PUT",
+      "path": "/api/streak-snapshot",
+      "success": {
+        "status": 200,
+        "body": {
+          "version": 1,
+          "historyRevision": 4,
+          "rulesVersion": "1",
+          "currentStreak": 2,
+          "longestStreak": 3,
+          "nextWorkoutId": "workout-1",
+          "nextWorkoutDeadline": "2026-11-08",
+          "streakFreezeCount": 0,
+          "lastWorkoutCountedDate": "2026-11-01",
+          "weeklyCompletedWorkoutIds": [
+            "workout-1"
+          ],
+          "currentWeekStart": "2026-10-26"
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": {
+        "baseVersion": 0,
+        "historyRevision": 4,
+        "rulesVersion": "1",
+        "currentStreak": 2,
+        "longestStreak": 3,
+        "nextWorkoutId": "workout-1",
+        "nextWorkoutDeadline": "2026-11-08",
+        "streakFreezeCount": 0,
+        "lastWorkoutCountedDate": "2026-11-01",
+        "weeklyCompletedWorkoutIds": [
+          "workout-1"
+        ],
+        "currentWeekStart": "2026-10-26"
+      },
+      "parser": null,
+      "queue": null,
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      },
+      "historyConflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_HISTORY",
+          "message": "History revision is stale",
+          "currentVersion": null
+        }
+      }
+    },
+    {
+      "id": "preferences.get",
+      "method": "GET",
+      "path": "/api/reminder-preferences",
+      "success": {
+        "status": 200,
+        "body": {
+          "version": 1,
+          "enabled": true,
+          "schedule": [
+            "09:00"
+          ],
+          "timezone": "Europe/Sofia"
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null,
+      "absent": {
+        "status": 404,
+        "body": {
+          "code": "NOT_FOUND",
+          "message": "Resource not found",
+          "currentVersion": null
+        }
+      }
+    },
+    {
+      "id": "preferences.put",
+      "method": "PUT",
+      "path": "/api/reminder-preferences",
+      "success": {
+        "status": 200,
+        "body": {
+          "version": 1,
+          "enabled": true,
+          "schedule": [
+            "09:00"
+          ],
+          "timezone": "Europe/Sofia"
+        }
+      },
+      "error": {
+        "status": 401,
+        "body": {
+          "code": "UNAUTHENTICATED",
+          "message": "Authentication required",
+          "currentVersion": null
+        }
+      },
+      "request": {
+        "baseVersion": 0,
+        "enabled": true,
+        "schedule": [
+          "09:00"
+        ],
+        "timezone": "Europe/Sofia"
+      },
+      "parser": null,
+      "queue": null,
+      "conflict": {
+        "status": 409,
+        "body": {
+          "code": "STALE_VERSION",
+          "message": "Version is stale",
+          "currentVersion": 2
+        }
+      }
+    },
+    {
+      "id": "auth.authorize",
+      "method": "GET",
+      "path": "<issuer>/authorize",
+      "success": {
+        "status": 302,
+        "headers": {
+          "Location": "https://app.example.test/callback?code=example&state=example"
+        },
+        "body": null
+      },
+      "error": {
+        "status": 400,
+        "body": {
+          "error": "invalid_request",
+          "error_description": "Invalid request"
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null
+    },
+    {
+      "id": "auth.token",
+      "method": "POST",
+      "path": "<issuer>/token",
+      "success": {
+        "status": 200,
+        "body": {
+          "access_token": "example",
+          "token_type": "Bearer",
+          "expires_in": 300,
+          "refresh_token": "example"
+        }
+      },
+      "error": {
+        "status": 400,
+        "body": {
+          "error": "invalid_request",
+          "error_description": "Invalid request"
+        }
+      },
+      "request": {
+        "grant_type": "authorization_code",
+        "code": "example",
+        "code_verifier": "example",
+        "redirect_uri": "active://callback",
+        "client_id": "active-native"
+      },
+      "parser": null,
+      "queue": null
+    },
+    {
+      "id": "auth.refresh",
+      "method": "POST",
+      "path": "<issuer>/token",
+      "success": {
+        "status": 200,
+        "body": {
+          "access_token": "example-2",
+          "token_type": "Bearer",
+          "expires_in": 300,
+          "refresh_token": "example-2"
+        }
+      },
+      "error": {
+        "status": 400,
+        "body": {
+          "error": "invalid_request",
+          "error_description": "Invalid request"
+        }
+      },
+      "request": {
+        "grant_type": "refresh_token",
+        "refresh_token": "example",
+        "client_id": "active-native"
+      },
+      "parser": null,
+      "queue": null
+    },
+    {
+      "id": "auth.logout",
+      "method": "GET",
+      "path": "<issuer>/logout",
+      "success": {
+        "status": 302,
+        "headers": {
+          "Location": "https://app.example.test/"
+        },
+        "body": null
+      },
+      "error": {
+        "status": 400,
+        "body": {
+          "error": "invalid_request",
+          "error_description": "Invalid request"
+        }
+      },
+      "request": null,
+      "parser": null,
+      "queue": null
+    }
+  ],
+  "authenticationExamples": [
+    {
+      "credential": "valid Active API access token",
+      "status": 200,
+      "identity": [
+        "https://identity.example.test",
+        "subject-1"
+      ]
+    },
+    {
+      "credential": "expired access token",
+      "status": 401,
+      "code": "UNAUTHENTICATED"
+    },
+    {
+      "credential": "wrong issuer or audience",
+      "status": 401,
+      "code": "UNAUTHENTICATED"
+    },
+    {
+      "credential": "OIDC ID token",
+      "status": 401,
+      "code": "UNAUTHENTICATED"
+    },
+    {
+      "credential": "valid token, non-owned resource",
+      "status": 404,
+      "code": "NOT_FOUND"
+    }
+  ]
+}
