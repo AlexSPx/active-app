@@ -135,6 +135,48 @@ describe('Rust release contract fixtures', () => {
     expect(byId['preferences.put'].success.body.version).toBe(1)
   })
 
+  it('freezes deletion transformations, singleton bootstrap and authentication examples', () => {
+    const deletion = byId['workout.delete']
+    const { before, after } = deletion.transformation
+    expect(after.profileVersion).toBe(before.profileVersion)
+    for (const [index, routine] of before.routines.entries()) {
+      const changed = after.routines[index]
+      expect(changed.version).toBe(routine.version + 1)
+      expect(changed.pattern).toEqual(
+        routine.pattern.map((day) =>
+          day.workoutId === deletion.success.body.deletedWorkoutId
+            ? { ...day, dayType: 'REST', workoutId: null }
+            : day
+        )
+      )
+      expect(
+        requests['routine.create'].body.safeParse({
+          name: 'Plan',
+          startDate: '2026-11-01',
+          pattern: changed.pattern,
+        }).success
+      ).toBe(true)
+    }
+    expect(deletion.success.body.routineVersions).toEqual(
+      after.routines.map(({ id, version }) => ({ id, version }))
+    )
+    for (const resource of ['snapshot', 'preferences']) {
+      expect(byId[`${resource}.get`].absent).toMatchObject({
+        status: 404,
+        body: { code: 'NOT_FOUND', currentVersion: null },
+      })
+      expect(byId[`${resource}.put`].request.baseVersion).toBe(0)
+    }
+    const {
+      authenticationExamples,
+    } = require('../../../../contracts/ale-110/release-operations.json')
+    expect(authenticationExamples.map(({ status }) => status)).toEqual([200, 401, 401, 401, 404])
+    expect(authenticationExamples[0].identity).toEqual([
+      'https://identity.example.test',
+      'subject-1',
+    ])
+  })
+
   it('runs compatible examples through the actual client parsers', () => {
     for (const operation of operations.filter((item) => item.parser)) {
       const parsed = schemas[operation.parser].safeParse(operation.success.body)

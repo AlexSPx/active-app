@@ -552,6 +552,10 @@
             {
               "id": "routine-1",
               "version": 3
+            },
+            {
+              "id": "routine-2",
+              "version": 5
             }
           ]
         }
@@ -579,6 +583,82 @@
           "code": "STALE_VERSION",
           "message": "Version is stale",
           "currentVersion": 2
+        }
+      },
+      "transformation": {
+        "before": {
+          "profileVersion": 7,
+          "routines": [
+            {
+              "id": "routine-1",
+              "version": 2,
+              "pattern": [
+                {
+                  "dayIndex": 0,
+                  "dayType": "WORKOUT",
+                  "workoutId": "workout-1"
+                }
+              ]
+            },
+            {
+              "id": "routine-2",
+              "version": 4,
+              "pattern": [
+                {
+                  "dayIndex": 0,
+                  "dayType": "WORKOUT",
+                  "workoutId": "workout-1"
+                },
+                {
+                  "dayIndex": 1,
+                  "dayType": "WORKOUT",
+                  "workoutId": "workout-1"
+                },
+                {
+                  "dayIndex": 2,
+                  "dayType": "REST",
+                  "workoutId": null
+                }
+              ]
+            }
+          ]
+        },
+        "after": {
+          "profileVersion": 7,
+          "routines": [
+            {
+              "id": "routine-1",
+              "version": 3,
+              "pattern": [
+                {
+                  "dayIndex": 0,
+                  "dayType": "REST",
+                  "workoutId": null
+                }
+              ]
+            },
+            {
+              "id": "routine-2",
+              "version": 5,
+              "pattern": [
+                {
+                  "dayIndex": 0,
+                  "dayType": "REST",
+                  "workoutId": null
+                },
+                {
+                  "dayIndex": 1,
+                  "dayType": "REST",
+                  "workoutId": null
+                },
+                {
+                  "dayIndex": 2,
+                  "dayType": "REST",
+                  "workoutId": null
+                }
+              ]
+            }
+          ]
         }
       }
     },
@@ -1229,7 +1309,15 @@
       },
       "request": null,
       "parser": null,
-      "queue": null
+      "queue": null,
+      "absent": {
+        "status": 404,
+        "body": {
+          "code": "NOT_FOUND",
+          "message": "Resource not found",
+          "currentVersion": null
+        }
+      }
     },
     {
       "id": "snapshot.put",
@@ -1320,7 +1408,15 @@
       },
       "request": null,
       "parser": null,
-      "queue": null
+      "queue": null,
+      "absent": {
+        "status": 404,
+        "body": {
+          "code": "NOT_FOUND",
+          "message": "Resource not found",
+          "currentVersion": null
+        }
+      }
     },
     {
       "id": "preferences.put",
@@ -1465,6 +1561,36 @@
       "request": null,
       "parser": null,
       "queue": null
+    }
+  ],
+  "authenticationExamples": [
+    {
+      "credential": "valid Active API access token",
+      "status": 200,
+      "identity": [
+        "https://identity.example.test",
+        "subject-1"
+      ]
+    },
+    {
+      "credential": "expired access token",
+      "status": 401,
+      "code": "UNAUTHENTICATED"
+    },
+    {
+      "credential": "wrong issuer or audience",
+      "status": 401,
+      "code": "UNAUTHENTICATED"
+    },
+    {
+      "credential": "OIDC ID token",
+      "status": 401,
+      "code": "UNAUTHENTICATED"
+    },
+    {
+      "credential": "valid token, non-owned resource",
+      "status": 404,
+      "code": "NOT_FOUND"
     }
   ]
 }
