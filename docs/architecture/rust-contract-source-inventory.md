@@ -1,6 +1,6 @@
 # Rust contract source inventory
 
-Status: incomplete source inventory for ALE-110. This is not the release wire contract. Do not use it as an implementation specification until the missing decisions and fixtures below are resolved.
+This inventory records the source evidence. The release wire contract and fixtures are in [contracts/ale-110](../../contracts/ale-110/README.md).
 
 ## References
 
@@ -15,16 +15,16 @@ The PR heads are behavior references, not claims of approval or deployment. PR 3
 
 The client routes are in `apps/client/config/api.ts`; transport methods are in `apps/client/services/apiService.ts`. Response parsers are in `apps/client/lib/schemas/api.ts`, request types in `apps/client/types/api.ts` and `apps/client/types/routine.ts`, and queue methods in `apps/client/lib/sync/api.ts` and `SyncEngine.ts`.
 
-| Area | Existing operations | Rust boundary |
-| --- | --- | --- |
-| Profile | `GET`, `PATCH`, `DELETE /api/user/me` | Retain profile and account deletion, with Active-owned data and owner checks. |
-| Legal | `GET /api/legal/terms-of-service`, `GET /api/legal/privacy-policy` | Client also bundles legal content in `features/legal/legalContent.ts`; decide the release source and endpoint behavior. |
-| Catalog and progression | `GET /api/exercises/search?name=...`, `GET /api/exercises/{id}/logs` | Retain search and progression reads; add complete source-key mapping. PR 30 adds `GET /api/exercises/catalog`. |
-| Workouts and templates | `GET`, `POST /api/workouts`; `PUT`, `DELETE /api/workouts/{id}` | Retain ordered templates and owner-scoped mutations. Versioned delete returns affected routine versions. |
-| Routines | `GET`, `POST /api/routines`; `GET`, `PUT`, `DELETE /api/routines/{id}`; `GET /api/routines/active` | Retain patterns and active routine. Versioned deletion returns profile version when affected. |
-| History | `GET`, `POST /api/workouts/record`; `DELETE /api/workouts/record/{id}` | Retain history and personal-best handling. Preserve original completion chronology. Do not calculate streaks on the server. |
-| Authentication | WorkOS callback, refresh and logout on Java; legacy signup, login and Google methods in the client | Replace with selected self-hosted OIDC. Do not migrate credentials or accounts. |
-| Notifications and streaks | Java push-token registration, notification test routes and server streak logic | Remove from the Rust server. Persist versioned client-computed streak snapshots and reminder preferences; scheduling and delivery remain on the device. |
+| Area                      | Existing operations                                                                                | Rust boundary                                                                                                                                           |
+| ------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Profile                   | `GET`, `PATCH`, `DELETE /api/user/me`                                                              | Retain profile and account deletion, with Active-owned data and owner checks.                                                                           |
+| Legal                     | `GET /api/legal/terms-of-service`, `GET /api/legal/privacy-policy`                                 | Client also bundles legal content in `features/legal/legalContent.ts`; decide the release source and endpoint behavior.                                 |
+| Catalog and progression   | `GET /api/exercises/search?name=...`, `GET /api/exercises/{id}/logs`                               | Retain search and progression reads; add complete source-key mapping. PR 30 adds `GET /api/exercises/catalog`.                                          |
+| Workouts and templates    | `GET`, `POST /api/workouts`; `PUT`, `DELETE /api/workouts/{id}`                                    | Retain ordered templates and owner-scoped mutations. Versioned delete returns affected routine versions.                                                |
+| Routines                  | `GET`, `POST /api/routines`; `GET`, `PUT`, `DELETE /api/routines/{id}`; `GET /api/routines/active` | Retain patterns and active routine. Versioned deletion returns profile version when affected.                                                           |
+| History                   | `GET`, `POST /api/workouts/record`; `DELETE /api/workouts/record/{id}`                             | Retain history and personal-best handling. Preserve original completion chronology. Do not calculate streaks on the server.                             |
+| Authentication            | WorkOS callback, refresh and logout on Java; legacy signup, login and Google methods in the client | Replace with selected self-hosted OIDC. Do not migrate credentials or accounts.                                                                         |
+| Notifications and streaks | Java push-token registration, notification test routes and server streak logic                     | Remove from the Rust server. Persist versioned client-computed streak snapshots and reminder preferences; scheduling and delivery remain on the device. |
 
 Fresh server storage has no Java data migration or Flyway history. Existing phone data must remain recoverable during connection. The server enforces ownership on resources and references. Server instance identity and account identity scope credentials, jobs and cached data.
 
@@ -38,6 +38,6 @@ Fresh server storage has no Java data migration or Flyway history. Existing phon
 - The sync queue generates and persists an `Idempotency-Key` per job. `queuePayloadRemap.ts` can replace IDs recursively, and `SyncEngine.ts` can add `baseVersion`. The final contract must define when the immutable request and key are frozen and how remapping or version changes produce a new operation.
 - Current record and exercise schemas disagree with some TypeScript nullability. For example, `WorkoutRecord.workoutId` allows null in the type while `workoutRecordSchema` requires a string. Fixtures must exercise deleted-source history through the actual parser.
 
-## Remaining work before ALE-110 acceptance
+## Release contract
 
-Define the complete endpoint and behavior matrix, wire names, enum values, null and ordering rules, time formats, discovery, compatibility negotiation, native and web authentication, stable errors, idempotency and version semantics. Define snapshot and reminder ownership separately from workout history. Add representative success and error fixtures for every release operation, including versioned deletes and source-key mapping. Execute those fixtures against the actual parsers and queue payloads, and document every intentional client change and Java divergence. This inventory alone does not satisfy ALE-110.
+See [contracts/ale-110](../../contracts/ale-110/README.md) for the operation matrix, fixtures, decisions, and explicit client migration gates.
