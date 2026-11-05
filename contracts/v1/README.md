@@ -20,4 +20,4 @@ From the repository root, run the contract and parser checks:
 yarn workspace active-next jest tests/sync/rustReleaseContract.test.js tests/sync/rustContractObservations.test.js --runInBand
 ```
 
-These checks validate the fixtures and document current parser behavior; they do not establish that the current client can consume every version 1 response. See the [migration boundaries](../../../docs/architecture/rust-contract-boundaries.md) and [source inventory](../../../docs/architecture/rust-contract-source-inventory.md) for context.
+These checks validate the fixtures and document current parser behavior; they do not establish that the current client can consume every version 1 response. See the [migration boundaries](../../docs/architecture/rust-contract-boundaries.md) and [source inventory](../../docs/architecture/rust-contract-source-inventory.md) for context.

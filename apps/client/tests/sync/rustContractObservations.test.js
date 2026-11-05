@@ -3,7 +3,7 @@ const {
   workoutRecordResponseSchema,
   workoutRecordSchema,
 } = require('../../lib/schemas/api')
-const fixtures = require('../../../../contracts/active-api/v1/client-parser-observations.json')
+const fixtures = require('../../../../contracts/v1/client-parser-observations.json')
 
 describe('Rust contract migration observations', () => {
   it('exposes current parser gaps rather than treating proposed payloads as compatible', () => {

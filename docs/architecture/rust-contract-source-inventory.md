@@ -1,6 +1,6 @@
 # Rust contract source inventory
 
-This inventory records the source evidence. The release wire contract and fixtures are in [contracts/active-api/v1](../../contracts/active-api/v1/README.md).
+This inventory records the source evidence. The release wire contract and fixtures are in [contracts/v1](../../contracts/v1/README.md).
 
 ## References
 
@@ -40,4 +40,4 @@ Fresh server storage has no Java data migration or Flyway history. Existing phon
 
 ## Release contract
 
-See the [contract directory](../../contracts/active-api/v1/README.md) for the operation matrix and fixtures, and the [wire contract](../../contracts/active-api/v1/wire-contract.md) for decisions and client migration gates.
+See the [contract directory](../../contracts/v1/README.md) for the operation matrix and fixtures, and the [wire contract](../../contracts/v1/wire-contract.md) for decisions and client migration gates.
