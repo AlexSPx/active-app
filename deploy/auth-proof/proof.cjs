@@ -7,8 +7,8 @@ const issuer = 'http://localhost:1411';
 const redirect = 'http://localhost:1412/callback';
 const resource = 'https://active.example.test/api';
 const client = process.env.POCKET_ID_CLIENT_ID;
-const testCase = process.env.POCKET_ID_PROOF_CASE || 'success';
-if (!['success', 'bad-nonce', 'bad-verifier'].includes(testCase)) throw new Error('Unknown proof case');
+const testCase = process.env.POCKET_ID_PROOF_CASE || 'code-replay';
+if (!['code-replay', 'refresh-logout', 'refresh-reuse', 'bad-nonce', 'bad-verifier'].includes(testCase)) throw new Error('Unknown proof case');
 if (!client) throw new Error('Set POCKET_ID_CLIENT_ID to the public proof client ID');
 const random = () => crypto.randomBytes(32).toString('base64url');
 let pending;
@@ -86,22 +86,46 @@ const server = http.createServer(async (req, res) => {
     assert.equal(access.header.typ, 'at+jwt', 'access token type');
     assert.equal(access.claims.sub, id.claims.sub, 'subject');
     assert.ok(first.body.refresh_token, 'refresh token');
+    if (testCase === 'code-replay') {
+      const replay = await token(exchange);
+      assert.equal(replay.response.status, 400, 'code replay status');
+      assert.equal(replay.body.error, 'invalid_grant', 'code replay error');
+      completed = true;
+      console.log(`Code replay rejected with invalid_grant; email_verified=${String(id.claims.email_verified)}.`);
+      res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' });
+      return res.end('Code replay rejected with invalid_grant.');
+    }
     const refreshed = await token({ grant_type: 'refresh_token', refresh_token: first.body.refresh_token });
     assert.equal(refreshed.response.status, 200, 'refresh');
+    assert.ok(refreshed.body.refresh_token, 'rotated refresh token');
     const refreshedAccess = await verify(refreshed.body.access_token, resource);
     assert.equal(refreshedAccess.claims.sub, id.claims.sub, 'refresh subject');
-    const refreshReplay = await token({ grant_type: 'refresh_token', refresh_token: first.body.refresh_token });
+    if (testCase === 'refresh-reuse') {
+      const immediate = await token({ grant_type: 'refresh_token', refresh_token: first.body.refresh_token });
+      assert.equal(immediate.response.status, 200, 'immediate refresh retry');
+      console.log('Immediate old refresh token retry accepted; waiting 65 seconds for grace expiry.');
+      await new Promise(resolve => setTimeout(resolve, 65_000));
+      const late = await token({ grant_type: 'refresh_token', refresh_token: first.body.refresh_token });
+      assert.equal(late.response.status, 400, 'late refresh replay status');
+      assert.equal(late.body.error, 'invalid_grant', 'late refresh replay error');
+      completed = true;
+      console.log('Old refresh token rejected after grace with invalid_grant.');
+      res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store' });
+      return res.end('Immediate retry accepted; old token rejected after grace with invalid_grant.');
+    }
+    const confirmed = await token({ grant_type: 'refresh_token', refresh_token: refreshed.body.refresh_token });
+    assert.equal(confirmed.response.status, 200, 'rotated refresh token works');
+    assert.ok(confirmed.body.refresh_token, 'second rotated refresh token');
     const logout = await fetch(`${issuer}/api/oidc/end-session`, {
       method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ id_token_hint: first.body.id_token, client_id: client }),
     });
     assert.equal(logout.status, 302, 'end session');
-    const afterLogout = await token({ grant_type: 'refresh_token', refresh_token: refreshed.body.refresh_token });
-    assert.notEqual(afterLogout.response.status, 200, 'refresh after logout');
-    const replay = await token(exchange);
-    assert.notEqual(replay.response.status, 200, 'code replay');
+    const afterLogout = await token({ grant_type: 'refresh_token', refresh_token: confirmed.body.refresh_token });
+    assert.equal(afterLogout.response.status, 400, 'refresh after logout status');
+    assert.equal(afterLogout.body.error, 'invalid_grant', 'refresh after logout error');
     completed = true;
-    const result = `Code + S256, state, signed ID token nonce, API audience and access type, ID-token rejection, code replay rejection, refresh and logout passed.\nEmail verified: ${String(id.claims.email_verified)}. Immediate refresh replay HTTP status: ${refreshReplay.response.status}.\n`;
+    const result = `Code + S256, signed nonce and API audience, rotated refresh token, and logout invalid_grant passed.\nEmail verified: ${String(id.claims.email_verified)}.\n`;
     console.log(result);
     res.writeHead(200, { 'content-type': 'text/plain', 'cache-control': 'no-store', 'referrer-policy': 'no-referrer' });
     res.end(result);
