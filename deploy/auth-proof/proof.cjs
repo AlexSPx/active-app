@@ -99,6 +99,7 @@ const server = http.createServer(async (req, res) => {
     assert.equal(refreshed.response.status, 200, 'refresh');
     assert.ok(refreshed.body.refresh_token, 'rotated refresh token');
     const refreshedAccess = await verify(refreshed.body.access_token, resource);
+    assert.equal(refreshedAccess.header.typ, 'at+jwt', 'refreshed access token type');
     assert.equal(refreshedAccess.claims.sub, id.claims.sub, 'refresh subject');
     if (testCase === 'refresh-reuse') {
       const immediate = await token({ grant_type: 'refresh_token', refresh_token: first.body.refresh_token });
@@ -116,6 +117,9 @@ const server = http.createServer(async (req, res) => {
     const confirmed = await token({ grant_type: 'refresh_token', refresh_token: refreshed.body.refresh_token });
     assert.equal(confirmed.response.status, 200, 'rotated refresh token works');
     assert.ok(confirmed.body.refresh_token, 'second rotated refresh token');
+    const confirmedAccess = await verify(confirmed.body.access_token, resource);
+    assert.equal(confirmedAccess.header.typ, 'at+jwt', 'second refreshed access token type');
+    assert.equal(confirmedAccess.claims.sub, id.claims.sub, 'second refresh subject');
     const logout = await fetch(`${issuer}/api/oidc/end-session`, {
       method: 'POST', redirect: 'manual', headers: { 'content-type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ id_token_hint: first.body.id_token, client_id: client }),
