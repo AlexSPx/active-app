@@ -1,15 +1,25 @@
-# Rust API bootstrap
+# Rust API operations
 
-Install [Rust via rustup](https://rustup.rs/). From the repository root, run:
+Configure the following environment variables before starting `yarn api:run` (or the release binary). The database parent directory must already exist on a local persistent disk, outside the source and build trees.
 
-```sh
-yarn api:run
-curl http://127.0.0.1:3000/health
-```
+| Variable | Meaning |
+| --- | --- |
+| `ACTIVE_LISTEN` | IP address and port, for example `127.0.0.1:3000` |
+| `ACTIVE_DATABASE_PATH` | Absolute SQLite file path, for example `/var/lib/active/active.sqlite3` |
+| `ACTIVE_EXTERNAL_URL` | Public HTTPS URL of this service |
+| `ACTIVE_TRUSTED_ORIGINS` | Comma-separated HTTPS origins allowed for future web sessions |
+| `ACTIVE_OIDC_ISSUER` | Administrator-selected OIDC issuer URL |
+| `ACTIVE_BODY_LIMIT_BYTES` | Maximum request body, default 1048576; maximum 16777216 |
+| `ACTIVE_REQUEST_TIMEOUT_SECONDS` | Header-read and request-processing deadlines, each default 30 seconds; maximum 300 |
+| `ACTIVE_SHUTDOWN_TIMEOUT_SECONDS` | Drain deadline, default 35; maximum 600 |
 
-The response is `{"status":"ok"}`. This bootstrap requires no Java, PostgreSQL, or Redis. The pinned toolchain and Cargo dependencies are downloaded on the first build. The health route is a liveness check; storage and the versioned API described in `contracts/v1` are not implemented yet.
+URLs cannot contain credentials, query strings or fragments. HTTP is accepted only for localhost development. External URL and trusted origins are validated now for future web-session and proxy integration; they do not enable CORS or authentication. Configure TLS at a trusted reverse proxy in production. No administrative or diagnostic routes are exposed.
 
-`yarn api:check` and `yarn api:test` run the workspace checks and tests. CI also runs:
+The process fails startup on invalid configuration, failed storage initialization or a bind error. `/health` reports liveness; `/ready` reports database, auth bootstrap and draining separately. Issuer discovery retries every ten seconds until the configured issuer's metadata is valid; until then readiness is 503 and `/.well-known/active` returns a safe error. Discovery publishes only the frozen public authentication fields and persistent instance UUID. Authentication itself is future work; readiness indicates metadata bootstrap, not functioning user login. Do not expose unfinished domain endpoints as authenticated services.
+
+Each application response receives a generated `X-Request-Id`; transport-level errors can precede request handling and do not receive one. JSON logs include the request ID, method and status, but no request URL, headers or body. Oversized requests receive 413; requests exceeding the processing deadline receive 408. Incomplete headers are closed on the header-read deadline and may receive a transport-level 408. On SIGTERM or Ctrl-C the server becomes unready, stops accepting connections and drains accepted requests until the shutdown deadline. Set the shutdown deadline long enough for the request deadline and any deployment proxy drain window. The UUID lives in SQLite and survives restart and consistent backup/restore.
+
+Run the checks from the repository root:
 
 ```sh
 cargo fmt --all -- --check
@@ -18,11 +28,9 @@ cargo test --workspace --locked
 cargo build --workspace --release --locked
 ```
 
-For an initial development container, build from the repository root with `docker build -f services/api/Dockerfile -t active-api-dev .` and run `docker run --rm --network host active-api-dev` on Linux. The server currently binds to loopback, so this host-network option is needed to reach it outside the container. Configuration and container-friendly binding are follow-on work.
-
 ## SQLite foundation
 
-The storage library opens an absolute database path whose parent already exists, outside the source/build tree. The caller supplies a path on a local persistent disk; WAL is not supported on a network or shared filesystem, and only one API process may use the database. The current bootstrap binary does not open storage yet; ALE-112 will configure it and initialize the persistent instance ID. Do not create an empty instance ID or regenerate it on restart or restore.
+The storage library opens an absolute database path whose parent already exists, outside the source/build tree. The caller supplies a path on a local persistent disk; WAL is not supported on a network or shared filesystem, and only one API process may use the database. Do not create an empty instance ID or regenerate it on restart or restore.
 
 SQLx runs embedded, ordered migrations before returning a pool. Migration errors fail opening and close the pool. The locked `libsqlite3-sys` 0.30.1 builds bundled SQLite **3.46.0**; do not override it with a system SQLite build. The pool has at most four connections, WAL, foreign keys on every connection, `synchronous=FULL`, and a 500 ms busy timeout. `db::begin_write` acquires `BEGIN IMMEDIATE` before reading versions or receipts and retries busy/locked acquisition at most twice, with a 50 ms delay. On exhaustion, return a retryable service error; retry the entire operation, never only part of a transaction. Commit the mutation and its receipt together, and perform no network calls in a write transaction. A commit is acknowledged only after it succeeds. Keep transactions short; the database does not itself implement HTTP idempotency, version checks, receipt retention, or history reconciliation.
 
