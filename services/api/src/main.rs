@@ -1,4 +1,10 @@
 use active_api::{config::Config, db};
+use hyper::server::conn::http1;
+use hyper_util::{
+    rt::{TokioIo, TokioTimer},
+    server::graceful::GracefulShutdown,
+    service::TowerToHyperService,
+};
 use std::time::Duration;
 use tracing_subscriber::{filter::filter_fn, prelude::*};
 
@@ -52,11 +58,12 @@ async fn run() -> Result<(), String> {
         .map_err(|_| "ACTIVE_LISTEN could not be bound".to_owned())?;
     tracing::info!(address = %listener.local_addr().map_err(|_| "listener address unavailable")?, "API listening");
     let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel::<()>();
-    let server =
-        axum::serve(listener, active_api::app(state.clone())).with_graceful_shutdown(async {
-            let _ = shutdown_rx.await;
-        });
-    let server = std::future::IntoFuture::into_future(server);
+    let server = serve(
+        listener,
+        active_api::app(state.clone()),
+        config.request_timeout,
+        shutdown_rx,
+    );
     tokio::pin!(server);
     tokio::select! {
         result = &mut server => result.map_err(|_| "HTTP server failed".to_owned())?,
@@ -74,6 +81,40 @@ async fn run() -> Result<(), String> {
     Ok(())
 }
 
+async fn serve(
+    listener: tokio::net::TcpListener,
+    app: axum::Router,
+    header_timeout: Duration,
+    mut shutdown: tokio::sync::oneshot::Receiver<()>,
+) -> Result<(), std::io::Error> {
+    let graceful = GracefulShutdown::new();
+    loop {
+        tokio::select! {
+            _ = &mut shutdown => break,
+            accepted = listener.accept() => {
+                let (stream, _) = match accepted {
+                    Ok(connection) => connection,
+                    Err(_) => {
+                        tokio::time::sleep(Duration::from_secs(1)).await;
+                        continue;
+                    }
+                };
+                let service = TowerToHyperService::new(app.clone());
+                let watcher = graceful.watcher();
+                tokio::spawn(async move {
+                    let mut builder = http1::Builder::new();
+                    builder.timer(TokioTimer::new()).header_read_timeout(header_timeout);
+                    let connection = builder.serve_connection(TokioIo::new(stream), service);
+                    let _ = watcher.watch(connection).await;
+                });
+            }
+        }
+    }
+    drop(listener);
+    graceful.shutdown().await;
+    Ok(())
+}
+
 async fn shutdown_signal() {
     #[cfg(unix)]
     {
@@ -84,5 +125,43 @@ async fn shutdown_signal() {
     #[cfg(not(unix))]
     {
         let _ = tokio::signal::ctrl_c().await;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    #[tokio::test]
+    async fn incomplete_headers_time_out_and_server_remains_available() {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let address = listener.local_addr().unwrap();
+        let (shutdown_tx, shutdown_rx) = tokio::sync::oneshot::channel();
+        let app = axum::Router::new().route("/health", axum::routing::get(|| async { "ok" }));
+        let server = tokio::spawn(serve(listener, app, Duration::from_secs(1), shutdown_rx));
+
+        let mut slow = tokio::net::TcpStream::connect(address).await.unwrap();
+        slow.write_all(b"GET /health HTTP/1.1\r\nHost: localhost\r\n")
+            .await
+            .unwrap();
+        let mut response = Vec::new();
+        tokio::time::timeout(Duration::from_secs(3), slow.read_to_end(&mut response))
+            .await
+            .expect("incomplete headers must time out")
+            .unwrap();
+        assert!(!response.starts_with(b"HTTP/1.1 200"));
+        let _ = slow.write_all(b"\r\n").await;
+
+        let mut normal = tokio::net::TcpStream::connect(address).await.unwrap();
+        normal
+            .write_all(b"GET /health HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n")
+            .await
+            .unwrap();
+        let mut response = Vec::new();
+        normal.read_to_end(&mut response).await.unwrap();
+        assert!(response.starts_with(b"HTTP/1.1 200"));
+        shutdown_tx.send(()).unwrap();
+        server.await.unwrap().unwrap();
     }
 }

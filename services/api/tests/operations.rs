@@ -72,6 +72,25 @@ async fn readiness_identity_discovery_and_limits() {
         .await
         .unwrap();
     assert_eq!(response.status(), StatusCode::PAYLOAD_TOO_LARGE);
+    let response = app(state.clone())
+        .oneshot(
+            Request::builder()
+                .method("POST")
+                .uri("/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::METHOD_NOT_ALLOWED);
+    assert_eq!(response.headers()["allow"], "GET,HEAD");
+    assert_eq!(response.headers()["content-type"], "application/json");
+    let json: serde_json::Value =
+        serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+    assert_eq!(
+        json,
+        serde_json::json!({"code": "METHOD_NOT_ALLOWED", "message": "Method not allowed", "currentVersion": null})
+    );
     start_draining(&state);
     let response = app(state.clone())
         .oneshot(

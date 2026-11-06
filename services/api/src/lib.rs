@@ -199,6 +199,13 @@ pub fn app(state: AppState) -> Router {
         .route("/ready", get(health::ready))
         .route("/.well-known/active", get(health::discovery))
         .fallback(|| async { error(StatusCode::NOT_FOUND, "NOT_FOUND", "Not found") })
+        .method_not_allowed_fallback(|| async {
+            error(
+                StatusCode::METHOD_NOT_ALLOWED,
+                "METHOD_NOT_ALLOWED",
+                "Method not allowed",
+            )
+        })
         .layer(middleware::from_fn_with_state(state.clone(), operational))
         .with_state(state)
 }

@@ -10,14 +10,14 @@ Configure the following environment variables before starting `yarn api:run` (or
 | `ACTIVE_TRUSTED_ORIGINS` | Comma-separated HTTPS origins allowed for future web sessions |
 | `ACTIVE_OIDC_ISSUER` | Administrator-selected OIDC issuer URL |
 | `ACTIVE_BODY_LIMIT_BYTES` | Maximum request body, default 1048576; maximum 16777216 |
-| `ACTIVE_REQUEST_TIMEOUT_SECONDS` | Request deadline, default 30; maximum 300 |
+| `ACTIVE_REQUEST_TIMEOUT_SECONDS` | Header-read and request-processing deadlines, each default 30 seconds; maximum 300 |
 | `ACTIVE_SHUTDOWN_TIMEOUT_SECONDS` | Drain deadline, default 35; maximum 600 |
 
 URLs cannot contain credentials, query strings or fragments. HTTP is accepted only for localhost development. External URL and trusted origins are validated now for future web-session and proxy integration; they do not enable CORS or authentication. Configure TLS at a trusted reverse proxy in production. No administrative or diagnostic routes are exposed.
 
 The process fails startup on invalid configuration, failed storage initialization or a bind error. `/health` reports liveness; `/ready` reports database, auth bootstrap and draining separately. Issuer discovery retries every ten seconds until the configured issuer's metadata is valid; until then readiness is 503 and `/.well-known/active` returns a safe error. Discovery publishes only the frozen public authentication fields and persistent instance UUID. Authentication itself is future work; readiness indicates metadata bootstrap, not functioning user login. Do not expose unfinished domain endpoints as authenticated services.
 
-Each response receives a generated `X-Request-Id`. JSON logs include the request ID, method and status, but no request URL, headers or body. Oversized requests receive 413; requests exceeding the deadline receive 408. On SIGTERM or Ctrl-C the server becomes unready, stops accepting connections and drains accepted requests until the shutdown deadline. Set the shutdown deadline long enough for the request deadline and any deployment proxy drain window. The UUID lives in SQLite and survives restart and consistent backup/restore.
+Each application response receives a generated `X-Request-Id`; transport-level errors can precede request handling and do not receive one. JSON logs include the request ID, method and status, but no request URL, headers or body. Oversized requests receive 413; requests exceeding the processing deadline receive 408. Incomplete headers are closed on the header-read deadline and may receive a transport-level 408. On SIGTERM or Ctrl-C the server becomes unready, stops accepting connections and drains accepted requests until the shutdown deadline. Set the shutdown deadline long enough for the request deadline and any deployment proxy drain window. The UUID lives in SQLite and survives restart and consistent backup/restore.
 
 Run the checks from the repository root:
 
