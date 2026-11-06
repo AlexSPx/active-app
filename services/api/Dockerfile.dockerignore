@@ -7,3 +7,5 @@
 !services/api/Cargo.toml
 !services/api/src/
 !services/api/src/**
+!services/api/migrations/
+!services/api/migrations/**
