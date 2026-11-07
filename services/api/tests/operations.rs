@@ -57,6 +57,13 @@ async fn readiness_identity_discovery_and_limits() {
         .unwrap();
     let json: serde_json::Value =
         serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+    if let Ok(dir) = std::env::var("ACTIVE_CONTRACT_FIXTURES") {
+        std::fs::write(
+            format!("{dir}/discovery.json"),
+            serde_json::to_vec(&json).unwrap(),
+        )
+        .unwrap();
+    }
     assert_eq!(json["issuer"], issuer);
     assert_eq!(json["contractVersion"], "1");
     let id = json["instanceId"].as_str().unwrap().to_owned();
@@ -74,6 +81,13 @@ async fn readiness_identity_discovery_and_limits() {
         assert!(response.headers().contains_key("x-request-id"));
         let json: serde_json::Value =
             serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+        if let Ok(dir) = std::env::var("ACTIVE_CONTRACT_FIXTURES") {
+            std::fs::write(
+                format!("{dir}/error.json"),
+                serde_json::to_vec(&json).unwrap(),
+            )
+            .unwrap();
+        }
         assert_eq!(
             json,
             serde_json::json!({"code":"INCOMPATIBLE_VERSION", "message":"Unsupported contract version", "currentVersion":null})
