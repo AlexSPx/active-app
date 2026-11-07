@@ -19,6 +19,8 @@ The process fails startup on invalid configuration, failed storage initializatio
 
 Each application response receives a generated `X-Request-Id`; transport-level errors can precede request handling and do not receive one. JSON logs include the request ID, method and status, but no request URL, headers or body. Oversized requests receive 413; requests exceeding the processing deadline receive 408. Incomplete headers are closed on the header-read deadline and may receive a transport-level 408. On SIGTERM or Ctrl-C the server becomes unready, stops accepting connections and drains accepted requests until the shutdown deadline. Set the shutdown deadline long enough for the request deadline and any deployment proxy drain window. The UUID lives in SQLite and survives restart and consistent backup/restore.
 
+Requests under `/api` must carry exactly one `X-Active-Contract-Version: 1` header. Missing, duplicate, or unsupported versions receive a structured 426 response before the router processes the request. Discovery and operational endpoints are exempt. The gate does not implement authentication or any domain route.
+
 Run the checks from the repository root:
 
 ```sh

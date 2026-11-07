@@ -9,6 +9,11 @@ on:
       - 'rust-toolchain.toml'
       - 'package.json'
       - 'services/api/**'
+      - 'contracts/**'
+      - 'packages/api-client/**'
+      - 'scripts/*contract*'
+      - 'scripts/test-api-client.cjs'
+      - 'yarn.lock'
       - '.github/workflows/rust.yml'
   pull_request:
     paths: *rust-paths
@@ -22,6 +27,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: yarn
+      - run: corepack enable && yarn install --frozen-lockfile
+      - name: Contract generation and Rust fixtures
+        run: yarn contract:check
+      - name: Client typecheck
+        run: yarn contract:typecheck
       - name: Format
         run: cargo fmt --all -- --check
       - name: Clippy

@@ -43,6 +43,38 @@ async fn readiness_identity_discovery_and_limits() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
     assert!(response.headers().contains_key("x-request-id"));
+    for (origin, expected) in [
+        ("http://localhost", StatusCode::NO_CONTENT),
+        ("https://evil.example", StatusCode::FORBIDDEN),
+    ] {
+        let response = app(state.clone())
+            .oneshot(
+                Request::builder()
+                    .method("OPTIONS")
+                    .uri("/api/routines")
+                    .header("origin", origin)
+                    .header("access-control-request-method", "POST")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), expected);
+        assert_eq!(
+            response
+                .headers()
+                .get("access-control-allow-origin")
+                .is_some(),
+            expected == StatusCode::NO_CONTENT
+        );
+        assert!(
+            response
+                .headers()
+                .get("access-control-allow-credentials")
+                .is_none()
+        );
+        assert!(response.headers().contains_key("x-request-id"));
+    }
     bootstrap_auth(&state, &config.issuer, &reqwest::Client::new())
         .await
         .unwrap();
@@ -57,10 +89,65 @@ async fn readiness_identity_discovery_and_limits() {
         .unwrap();
     let json: serde_json::Value =
         serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+    if let Ok(dir) = std::env::var("ACTIVE_CONTRACT_FIXTURES") {
+        std::fs::write(
+            format!("{dir}/discovery.json"),
+            serde_json::to_vec(&json).unwrap(),
+        )
+        .unwrap();
+    }
     assert_eq!(json["issuer"], issuer);
     assert_eq!(json["contractVersion"], "1");
     let id = json["instanceId"].as_str().unwrap().to_owned();
     assert!(uuid::Uuid::parse_str(&id).is_ok());
+    for version in [None, Some("2"), Some("invalid")] {
+        let mut request = Request::builder().uri("/api/history/revision");
+        if let Some(version) = version {
+            request = request.header("x-active-contract-version", version);
+        }
+        let response = app(state.clone())
+            .oneshot(request.body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::UPGRADE_REQUIRED);
+        assert!(response.headers().contains_key("x-request-id"));
+        let json: serde_json::Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+        if let Ok(dir) = std::env::var("ACTIVE_CONTRACT_FIXTURES") {
+            std::fs::write(
+                format!("{dir}/error.json"),
+                serde_json::to_vec(&json).unwrap(),
+            )
+            .unwrap();
+        }
+        assert_eq!(
+            json,
+            serde_json::json!({"code":"INCOMPATIBLE_VERSION", "message":"Unsupported contract version", "currentVersion":null})
+        );
+    }
+    let response = app(state.clone())
+        .oneshot(
+            Request::builder()
+                .uri("/api/history/revision")
+                .header("x-active-contract-version", "1")
+                .header("x-active-contract-version", "1")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UPGRADE_REQUIRED);
+    let response = app(state.clone())
+        .oneshot(
+            Request::builder()
+                .uri("/api/history/revision")
+                .header("x-active-contract-version", "1")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
     let response = app(state.clone())
         .oneshot(
             Request::builder()

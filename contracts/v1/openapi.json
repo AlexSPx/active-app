@@ -1,0 +1,5380 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Active API",
+    "version": "1"
+  },
+  "paths": {
+    "/.well-known/active": {
+      "get": {
+        "operationId": "discovery",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/discovery_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/me": {
+      "get": {
+        "operationId": "profile.get",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/profile_get_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      },
+      "patch": {
+        "operationId": "profile.update",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/profile_update_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/profile_update_body"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "profile.delete",
+        "parameters": [
+          {
+            "name": "baseVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/profile_delete_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      }
+    },
+    "/api/legal/terms-of-service": {
+      "get": {
+        "operationId": "legal.terms",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "$ref": "#/components/schemas/legal_terms_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/legal/privacy-policy": {
+      "get": {
+        "operationId": "legal.privacy",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "text/markdown": {
+                "schema": {
+                  "$ref": "#/components/schemas/legal_privacy_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/exercises/catalog": {
+      "get": {
+        "operationId": "catalog.get",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/catalog_get_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      }
+    },
+    "/api/exercises/search": {
+      "get": {
+        "operationId": "catalog.search",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/catalog_search_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      }
+    },
+    "/api/exercises/{id}/logs": {
+      "get": {
+        "operationId": "progression.logs",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/progression_logs_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      }
+    },
+    "/api/workouts": {
+      "get": {
+        "operationId": "workout.list",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/workout_list_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      },
+      "post": {
+        "operationId": "workout.create",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/workout_create_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/workout_create_body"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workouts/{id}": {
+      "put": {
+        "operationId": "workout.update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/workout_update_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/workout_update_body"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "workout.delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          {
+            "name": "baseVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/workout_delete_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      }
+    },
+    "/api/routines": {
+      "get": {
+        "operationId": "routine.list",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/routine_list_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      },
+      "post": {
+        "operationId": "routine.create",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/routine_create_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/routine_create_body"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/routines/{id}": {
+      "get": {
+        "operationId": "routine.get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/routine_get_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      },
+      "put": {
+        "operationId": "routine.update",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/routine_update_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/routine_update_body"
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "routine.delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          {
+            "name": "baseVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "profileBaseVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/routine_delete_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      }
+    },
+    "/api/routines/active": {
+      "get": {
+        "operationId": "routine.active",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/routine_active_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      }
+    },
+    "/api/history/revision": {
+      "get": {
+        "operationId": "history.revision",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/history_revision_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      }
+    },
+    "/api/workouts/record": {
+      "get": {
+        "operationId": "record.list",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/record_list_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      },
+      "post": {
+        "operationId": "record.create",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/record_create_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/record_create_body"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/workouts/record/{id}": {
+      "delete": {
+        "operationId": "record.delete",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          {
+            "name": "baseVersion",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/record_delete_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      }
+    },
+    "/api/streak-snapshot": {
+      "get": {
+        "operationId": "snapshot.get",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/snapshot_get_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      },
+      "put": {
+        "operationId": "snapshot.put",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/snapshot_put_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/snapshot_put_body"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reminder-preferences": {
+      "get": {
+        "operationId": "preferences.get",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/preferences_get_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection."
+      },
+      "put": {
+        "operationId": "preferences.put",
+        "parameters": [
+          {
+            "name": "X-Active-Contract-Version",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "const": "1"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/preferences_put_response"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Active error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "description": "Requires an Active bearer access token or a same-origin web session with CSRF protection.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/preferences_put_body"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Error": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string"
+          },
+          "currentVersion": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "currentVersion"
+        ]
+      },
+      "discovery_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "discovery_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "discovery_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "discovery_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "instanceId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "contractVersion": {
+            "type": "string",
+            "const": "1"
+          },
+          "issuer": {
+            "type": "string",
+            "format": "uri"
+          },
+          "authorizationEndpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "tokenEndpoint": {
+            "type": "string",
+            "format": "uri"
+          },
+          "endSessionEndpoint": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "instanceId",
+          "contractVersion",
+          "issuer",
+          "authorizationEndpoint",
+          "tokenEndpoint",
+          "endSessionEndpoint"
+        ]
+      },
+      "profile_get_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "profile_get_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "profile_get_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "profile_get_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "username": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "activeRoutineId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "measurements": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "weightKg": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "heightCm": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "weightKg",
+                  "heightCm"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registrationCompleted": {
+            "type": "boolean"
+          },
+          "profileVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "username",
+          "firstName",
+          "lastName",
+          "createdAt",
+          "timezone",
+          "activeRoutineId",
+          "measurements",
+          "registrationCompleted",
+          "profileVersion"
+        ]
+      },
+      "profile_update_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "username": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_]{3,30}$"
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 254,
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "firstName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "lastName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "measurements": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "weightKg": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "heightCm": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "weightKg",
+                  "heightCm"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registrationCompleted": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "baseVersion"
+        ],
+        "additionalProperties": false
+      },
+      "profile_update_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "profile_update_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "profile_update_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "username": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "timezone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "activeRoutineId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "measurements": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "weightKg": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "heightCm": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "weightKg",
+                  "heightCm"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "registrationCompleted": {
+            "type": "boolean"
+          },
+          "profileVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "username",
+          "firstName",
+          "lastName",
+          "createdAt",
+          "timezone",
+          "activeRoutineId",
+          "measurements",
+          "registrationCompleted",
+          "profileVersion"
+        ]
+      },
+      "profile_delete_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "profile_delete_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "baseVersion"
+        ],
+        "additionalProperties": false
+      },
+      "profile_delete_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "profile_delete_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deletedUserId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          }
+        },
+        "required": [
+          "deletedUserId"
+        ]
+      },
+      "legal_terms_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "legal_terms_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "legal_terms_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "legal_terms_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string"
+      },
+      "legal_privacy_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "legal_privacy_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "legal_privacy_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "legal_privacy_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "string"
+      },
+      "catalog_get_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "catalog_get_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "catalog_get_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "catalog_get_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "catalogVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "sourceDatasetVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "mappingComplete": {
+            "type": "boolean"
+          },
+          "unresolvedSourceKeys": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          "unresolvedLegacyIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                },
+                "sourceKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                },
+                "retired": {
+                  "type": "boolean"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "level": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "BEGINNER",
+                        "INTERMEDIATE",
+                        "EXPERT"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "force": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "PULL",
+                        "PUSH",
+                        "STATIC"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "mechanic": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "COMPOUND",
+                        "ISOLATION"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "equipment": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "BODY_ONLY",
+                        "MACHINE",
+                        "OTHER",
+                        "FOAM_ROLL",
+                        "KETTLEBELLS",
+                        "DUMBBELL",
+                        "CABLE",
+                        "BARBELL",
+                        "BANDS",
+                        "MEDICINE_BALL",
+                        "EXERCISE_BALL",
+                        "E_Z_CURL_BAR"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "primaryMuscles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "secondaryMuscles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "instructions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "category": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "STRENGTH",
+                        "STRETCHING",
+                        "PLYOMETRICS",
+                        "STRONGMAN",
+                        "POWERLIFTING",
+                        "CARDIO",
+                        "OLYMPIC_WEIGHTLIFTING"
+                      ]
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "sourceKey",
+                "retired",
+                "name",
+                "level",
+                "force",
+                "mechanic",
+                "equipment",
+                "primaryMuscles",
+                "secondaryMuscles",
+                "instructions",
+                "category"
+              ]
+            }
+          }
+        },
+        "required": [
+          "catalogVersion",
+          "sourceDatasetVersion",
+          "mappingComplete",
+          "unresolvedSourceKeys",
+          "unresolvedLegacyIds",
+          "items"
+        ],
+        "description": "Items are ordered by sourceKey ascending."
+      },
+      "catalog_search_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "catalog_search_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "catalog_search_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "catalog_search_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            },
+            "sourceKey": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            },
+            "retired": {
+              "type": "boolean"
+            },
+            "name": {
+              "type": "string"
+            },
+            "level": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "BEGINNER",
+                    "INTERMEDIATE",
+                    "EXPERT"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "force": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "PULL",
+                    "PUSH",
+                    "STATIC"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "mechanic": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "COMPOUND",
+                    "ISOLATION"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "equipment": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "BODY_ONLY",
+                    "MACHINE",
+                    "OTHER",
+                    "FOAM_ROLL",
+                    "KETTLEBELLS",
+                    "DUMBBELL",
+                    "CABLE",
+                    "BARBELL",
+                    "BANDS",
+                    "MEDICINE_BALL",
+                    "EXERCISE_BALL",
+                    "E_Z_CURL_BAR"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "primaryMuscles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "secondaryMuscles": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "instructions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "category": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "STRENGTH",
+                    "STRETCHING",
+                    "PLYOMETRICS",
+                    "STRONGMAN",
+                    "POWERLIFTING",
+                    "CARDIO",
+                    "OLYMPIC_WEIGHTLIFTING"
+                  ]
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "sourceKey",
+            "retired",
+            "name",
+            "level",
+            "force",
+            "mechanic",
+            "equipment",
+            "primaryMuscles",
+            "secondaryMuscles",
+            "instructions",
+            "category"
+          ]
+        },
+        "description": "Items are ordered by sourceKey ascending."
+      },
+      "progression_logs_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "progression_logs_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "progression_logs_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "progression_logs_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "exerciseRecordId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            },
+            "exerciseId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            },
+            "exerciseName": {
+              "type": "string"
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "reps": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "weight": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "durationSeconds": {
+              "type": "array",
+              "items": {
+                "type": "number",
+                "minimum": 0
+              }
+            },
+            "achievedOneRmValue": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "achievedOneRmSetIndex": {
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "achievedTotalVolumeValue": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "exerciseRecordId",
+            "exerciseId",
+            "exerciseName",
+            "createdAt",
+            "reps",
+            "weight",
+            "durationSeconds",
+            "achievedOneRmValue",
+            "achievedOneRmSetIndex",
+            "achievedTotalVolumeValue"
+          ]
+        },
+        "description": "Items are ordered by the parent record (completedAt, id) descending; those keys are not present in this response and cannot be validated by the client."
+      },
+      "workout_list_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "workout_list_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "workout_list_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "workout_list_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            },
+            "title": {
+              "type": "string"
+            },
+            "notes": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "version": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "workoutTemplate": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                },
+                "exercises": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "exerciseId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256,
+                        "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                      },
+                      "exerciseTitle": {
+                        "type": "string"
+                      },
+                      "reps": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "weight": {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      },
+                      "durationSeconds": {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "minimum": 0
+                        }
+                      },
+                      "category": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "STRENGTH",
+                              "STRETCHING",
+                              "PLYOMETRICS",
+                              "STRONGMAN",
+                              "POWERLIFTING",
+                              "CARDIO",
+                              "OLYMPIC_WEIGHTLIFTING"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "primaryMuscles": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      },
+                      "secondaryMuscles": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "required": [
+                      "exerciseId",
+                      "exerciseTitle",
+                      "reps",
+                      "weight",
+                      "durationSeconds",
+                      "category",
+                      "primaryMuscles",
+                      "secondaryMuscles"
+                    ]
+                  }
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                }
+              },
+              "required": [
+                "id",
+                "exercises",
+                "createdAt",
+                "updatedAt"
+              ]
+            }
+          },
+          "required": [
+            "id",
+            "title",
+            "notes",
+            "createdAt",
+            "updatedAt",
+            "version",
+            "workoutTemplate"
+          ]
+        },
+        "description": "Items are ordered by (createdAt, id) ascending."
+      },
+      "workout_create_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "notes": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "template": {
+            "type": "object",
+            "properties": {
+              "exercises": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "exerciseId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    "reps": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "weight": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "durationSeconds": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "notes": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 10000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "exerciseId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "exercises"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "title",
+          "template"
+        ],
+        "additionalProperties": false
+      },
+      "workout_create_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "workout_create_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "workout_create_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "workoutTemplate": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              "exercises": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "exerciseId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    "exerciseTitle": {
+                      "type": "string"
+                    },
+                    "reps": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "weight": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "durationSeconds": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "category": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "STRENGTH",
+                            "STRETCHING",
+                            "PLYOMETRICS",
+                            "STRONGMAN",
+                            "POWERLIFTING",
+                            "CARDIO",
+                            "OLYMPIC_WEIGHTLIFTING"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "primaryMuscles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "secondaryMuscles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "exerciseId",
+                    "exerciseTitle",
+                    "reps",
+                    "weight",
+                    "durationSeconds",
+                    "category",
+                    "primaryMuscles",
+                    "secondaryMuscles"
+                  ]
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "id",
+              "exercises",
+              "createdAt",
+              "updatedAt"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "notes",
+          "createdAt",
+          "updatedAt",
+          "version",
+          "workoutTemplate"
+        ]
+      },
+      "workout_update_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "template": {
+            "type": "object",
+            "properties": {
+              "exercises": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "exerciseId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    "reps": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "weight": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "durationSeconds": {
+                      "default": [],
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "notes": {
+                      "default": null,
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "maxLength": 10000
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "exerciseId"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "exercises"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "baseVersion"
+        ],
+        "additionalProperties": false
+      },
+      "workout_update_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "workout_update_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "workout_update_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "title": {
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "workoutTemplate": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              "exercises": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "exerciseId": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    "exerciseTitle": {
+                      "type": "string"
+                    },
+                    "reps": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "weight": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "durationSeconds": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "category": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "STRENGTH",
+                            "STRETCHING",
+                            "PLYOMETRICS",
+                            "STRONGMAN",
+                            "POWERLIFTING",
+                            "CARDIO",
+                            "OLYMPIC_WEIGHTLIFTING"
+                          ]
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "primaryMuscles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "secondaryMuscles": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "exerciseId",
+                    "exerciseTitle",
+                    "reps",
+                    "weight",
+                    "durationSeconds",
+                    "category",
+                    "primaryMuscles",
+                    "secondaryMuscles"
+                  ]
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "id",
+              "exercises",
+              "createdAt",
+              "updatedAt"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "notes",
+          "createdAt",
+          "updatedAt",
+          "version",
+          "workoutTemplate"
+        ]
+      },
+      "workout_delete_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "workout_delete_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "baseVersion"
+        ],
+        "additionalProperties": false
+      },
+      "workout_delete_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "workout_delete_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deletedWorkoutId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "routineVersions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                },
+                "version": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "id",
+                "version"
+              ]
+            }
+          }
+        },
+        "required": [
+          "deletedWorkoutId",
+          "routineVersions"
+        ],
+        "description": "Routine versions are ordered by the routine (createdAt, id) ascending; createdAt is not present in this response and cannot be validated by the client."
+      },
+      "routine_list_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "routine_list_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "routine_list_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "routine_list_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            },
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "userId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            },
+            "routineType": {
+              "type": "string",
+              "enum": [
+                "SEQUENTIAL",
+                "WEEKLY_COMPLETION"
+              ]
+            },
+            "pattern": {
+              "minItems": 1,
+              "maxItems": 7,
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "dayIndex": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "dayType": {
+                    "type": "string",
+                    "enum": [
+                      "WORKOUT",
+                      "REST"
+                    ]
+                  },
+                  "workoutId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256,
+                        "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "dayIndex",
+                  "dayType",
+                  "workoutId"
+                ]
+              }
+            },
+            "startDate": {
+              "type": "string",
+              "format": "date",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "updatedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "version": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "profileVersion": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "id",
+            "name",
+            "description",
+            "userId",
+            "routineType",
+            "pattern",
+            "startDate",
+            "createdAt",
+            "updatedAt",
+            "version",
+            "profileVersion"
+          ]
+        },
+        "description": "Items are ordered by (createdAt, id) ascending."
+      },
+      "routine_get_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "routine_get_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "routine_get_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "routine_get_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "routineType": {
+            "type": "string",
+            "enum": [
+              "SEQUENTIAL",
+              "WEEKLY_COMPLETION"
+            ]
+          },
+          "pattern": {
+            "minItems": 1,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dayIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "dayType": {
+                  "type": "string",
+                  "enum": [
+                    "WORKOUT",
+                    "REST"
+                  ]
+                },
+                "workoutId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "dayIndex",
+                "dayType",
+                "workoutId"
+              ]
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "profileVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "userId",
+          "routineType",
+          "pattern",
+          "startDate",
+          "createdAt",
+          "updatedAt",
+          "version",
+          "profileVersion"
+        ]
+      },
+      "routine_active_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "routine_active_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "routine_active_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "routine_active_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "routineType": {
+            "type": "string",
+            "enum": [
+              "SEQUENTIAL",
+              "WEEKLY_COMPLETION"
+            ]
+          },
+          "pattern": {
+            "minItems": 1,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dayIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "dayType": {
+                  "type": "string",
+                  "enum": [
+                    "WORKOUT",
+                    "REST"
+                  ]
+                },
+                "workoutId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "dayIndex",
+                "dayType",
+                "workoutId"
+              ]
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "profileVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "userId",
+          "routineType",
+          "pattern",
+          "startDate",
+          "createdAt",
+          "updatedAt",
+          "version",
+          "profileVersion"
+        ]
+      },
+      "routine_create_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "routineType": {
+            "default": "SEQUENTIAL",
+            "type": "string",
+            "enum": [
+              "SEQUENTIAL",
+              "WEEKLY_COMPLETION"
+            ]
+          },
+          "pattern": {
+            "minItems": 1,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dayIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "dayType": {
+                  "type": "string",
+                  "enum": [
+                    "WORKOUT",
+                    "REST"
+                  ]
+                },
+                "workoutId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "dayIndex",
+                "dayType",
+                "workoutId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "active": {
+            "default": false,
+            "type": "boolean"
+          },
+          "profileBaseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "name",
+          "pattern",
+          "startDate"
+        ],
+        "additionalProperties": false
+      },
+      "routine_create_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "routine_create_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "routine_create_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "routineType": {
+            "type": "string",
+            "enum": [
+              "SEQUENTIAL",
+              "WEEKLY_COMPLETION"
+            ]
+          },
+          "pattern": {
+            "minItems": 1,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dayIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "dayType": {
+                  "type": "string",
+                  "enum": [
+                    "WORKOUT",
+                    "REST"
+                  ]
+                },
+                "workoutId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "dayIndex",
+                "dayType",
+                "workoutId"
+              ]
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "profileVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "userId",
+          "routineType",
+          "pattern",
+          "startDate",
+          "createdAt",
+          "updatedAt",
+          "version",
+          "profileVersion"
+        ]
+      },
+      "routine_update_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "profileBaseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "routineType": {
+            "type": "string",
+            "enum": [
+              "SEQUENTIAL",
+              "WEEKLY_COMPLETION"
+            ]
+          },
+          "pattern": {
+            "minItems": 1,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dayIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "dayType": {
+                  "type": "string",
+                  "enum": [
+                    "WORKOUT",
+                    "REST"
+                  ]
+                },
+                "workoutId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "dayIndex",
+                "dayType",
+                "workoutId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "baseVersion"
+        ],
+        "additionalProperties": false
+      },
+      "routine_update_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "routine_update_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "routine_update_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "routineType": {
+            "type": "string",
+            "enum": [
+              "SEQUENTIAL",
+              "WEEKLY_COMPLETION"
+            ]
+          },
+          "pattern": {
+            "minItems": 1,
+            "maxItems": 7,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "dayIndex": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "dayType": {
+                  "type": "string",
+                  "enum": [
+                    "WORKOUT",
+                    "REST"
+                  ]
+                },
+                "workoutId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "dayIndex",
+                "dayType",
+                "workoutId"
+              ]
+            }
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "profileVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "userId",
+          "routineType",
+          "pattern",
+          "startDate",
+          "createdAt",
+          "updatedAt",
+          "version",
+          "profileVersion"
+        ]
+      },
+      "routine_delete_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "routine_delete_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "profileBaseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "baseVersion",
+          "profileBaseVersion"
+        ],
+        "additionalProperties": false
+      },
+      "routine_delete_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "routine_delete_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deletedRoutineId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "profileVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "deletedRoutineId",
+          "profileVersion"
+        ]
+      },
+      "history_revision_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "history_revision_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "history_revision_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "history_revision_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "historyRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "historyRevision"
+        ]
+      },
+      "record_list_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "record_list_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "record_list_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "record_list_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            },
+            "clientRecordId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            },
+            "workoutId": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "workoutTitle": {
+              "type": "string"
+            },
+            "notes": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "startTime": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "completedAt": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            },
+            "completionTimezone": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "maximum": 9007199254740991
+            },
+            "exerciseRecords": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "exerciseId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 256,
+                        "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "exerciseName": {
+                    "type": "string"
+                  },
+                  "reps": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                    }
+                  },
+                  "weight": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "durationSeconds": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": 0
+                    }
+                  },
+                  "notes": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "achievedOneRmValue": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "achievedOneRmSetIndex": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "achievedTotalVolumeValue": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "identity": {
+                    "type": "object",
+                    "properties": {
+                      "sourceDatasetVersion": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "sourceKey": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "legacyNamespace": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "legacyId": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 256,
+                            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "sourceDatasetVersion",
+                      "sourceKey",
+                      "legacyNamespace",
+                      "legacyId"
+                    ]
+                  }
+                },
+                "required": [
+                  "exerciseId",
+                  "exerciseName",
+                  "reps",
+                  "weight",
+                  "durationSeconds",
+                  "notes",
+                  "achievedOneRmValue",
+                  "achievedOneRmSetIndex",
+                  "achievedTotalVolumeValue",
+                  "identity"
+                ]
+              }
+            }
+          },
+          "required": [
+            "id",
+            "clientRecordId",
+            "workoutId",
+            "workoutTitle",
+            "notes",
+            "createdAt",
+            "startTime",
+            "completedAt",
+            "completionTimezone",
+            "version",
+            "exerciseRecords"
+          ]
+        },
+        "description": "Items are ordered by (completedAt, id) descending."
+      },
+      "record_create_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "clientRecordId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "workoutId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "workoutTitle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "notes": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "startTime": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "completedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "completionTimezone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "exerciseRecords": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "exerciseId": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 256,
+                      "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "identity": {
+                  "type": "object",
+                  "properties": {
+                    "sourceDatasetVersion": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sourceKey": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "legacyNamespace": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "legacyId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "sourceDatasetVersion",
+                    "sourceKey",
+                    "legacyNamespace",
+                    "legacyId"
+                  ],
+                  "additionalProperties": false
+                },
+                "exerciseName": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 200
+                },
+                "reps": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "weight": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "durationSeconds": {
+                  "default": [],
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "notes": {
+                  "default": null,
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "maxLength": 10000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "exerciseId",
+                "identity",
+                "exerciseName"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "clientRecordId",
+          "workoutId",
+          "workoutTitle",
+          "startTime",
+          "completedAt",
+          "completionTimezone",
+          "exerciseRecords"
+        ],
+        "additionalProperties": false
+      },
+      "record_create_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "record_create_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "record_create_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "workoutRecord": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              "clientRecordId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              "workoutId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 256,
+                    "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "workoutTitle": {
+                "type": "string"
+              },
+              "notes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "startTime": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "completedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              "completionTimezone": {
+                "type": "string",
+                "minLength": 1
+              },
+              "version": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "exerciseRecords": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "exerciseId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 256,
+                          "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "exerciseName": {
+                      "type": "string"
+                    },
+                    "reps": {
+                      "type": "array",
+                      "items": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "weight": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "durationSeconds": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    },
+                    "notes": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "achievedOneRmValue": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "achievedOneRmSetIndex": {
+                      "anyOf": [
+                        {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "achievedTotalVolumeValue": {
+                      "anyOf": [
+                        {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "identity": {
+                      "type": "object",
+                      "properties": {
+                        "sourceDatasetVersion": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "sourceKey": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "legacyNamespace": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "legacyId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 256,
+                              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "sourceDatasetVersion",
+                        "sourceKey",
+                        "legacyNamespace",
+                        "legacyId"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "exerciseId",
+                    "exerciseName",
+                    "reps",
+                    "weight",
+                    "durationSeconds",
+                    "notes",
+                    "achievedOneRmValue",
+                    "achievedOneRmSetIndex",
+                    "achievedTotalVolumeValue",
+                    "identity"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "clientRecordId",
+              "workoutId",
+              "workoutTitle",
+              "notes",
+              "createdAt",
+              "startTime",
+              "completedAt",
+              "completionTimezone",
+              "version",
+              "exerciseRecords"
+            ]
+          },
+          "historyRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "workoutRecord",
+          "historyRevision"
+        ]
+      },
+      "record_delete_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "record_delete_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "baseVersion"
+        ],
+        "additionalProperties": false
+      },
+      "record_delete_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "record_delete_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "deletedRecordId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "historyRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "deletedRecordId",
+          "historyRevision"
+        ]
+      },
+      "snapshot_get_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "snapshot_get_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "snapshot_get_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "snapshot_get_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "historyRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "rulesVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "currentStreak": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "longestStreak": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "nextWorkoutId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextWorkoutDeadline": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "streakFreezeCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lastWorkoutCountedDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weeklyCompletedWorkoutIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          "currentWeekStart": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "version",
+          "historyRevision",
+          "rulesVersion",
+          "currentStreak",
+          "longestStreak",
+          "nextWorkoutId",
+          "nextWorkoutDeadline",
+          "streakFreezeCount",
+          "lastWorkoutCountedDate",
+          "weeklyCompletedWorkoutIds",
+          "currentWeekStart"
+        ]
+      },
+      "snapshot_put_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "historyRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "rulesVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "currentStreak": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "longestStreak": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "nextWorkoutId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextWorkoutDeadline": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "streakFreezeCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lastWorkoutCountedDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weeklyCompletedWorkoutIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          "currentWeekStart": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "baseVersion",
+          "historyRevision",
+          "rulesVersion",
+          "currentStreak",
+          "longestStreak",
+          "nextWorkoutId",
+          "nextWorkoutDeadline",
+          "streakFreezeCount",
+          "lastWorkoutCountedDate",
+          "weeklyCompletedWorkoutIds",
+          "currentWeekStart"
+        ],
+        "additionalProperties": false
+      },
+      "snapshot_put_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "snapshot_put_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "snapshot_put_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "historyRevision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "rulesVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+          },
+          "currentStreak": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "longestStreak": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "nextWorkoutId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 256,
+                "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextWorkoutDeadline": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "streakFreezeCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "lastWorkoutCountedDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "weeklyCompletedWorkoutIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 256,
+              "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+            }
+          },
+          "currentWeekStart": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "version",
+          "historyRevision",
+          "rulesVersion",
+          "currentStreak",
+          "longestStreak",
+          "nextWorkoutId",
+          "nextWorkoutDeadline",
+          "streakFreezeCount",
+          "lastWorkoutCountedDate",
+          "weeklyCompletedWorkoutIds",
+          "currentWeekStart"
+        ]
+      },
+      "preferences_get_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "null"
+      },
+      "preferences_get_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "preferences_get_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "preferences_get_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            }
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "version",
+          "enabled",
+          "schedule",
+          "timezone"
+        ]
+      },
+      "preferences_put_body": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "baseVersion": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            }
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "baseVersion",
+          "enabled",
+          "schedule",
+          "timezone"
+        ],
+        "additionalProperties": false
+      },
+      "preferences_put_query": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "preferences_put_path": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "preferences_put_response": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "schedule": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+            }
+          },
+          "timezone": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "version",
+          "enabled",
+          "schedule",
+          "timezone"
+        ]
+      }
+    }
+  }
+}

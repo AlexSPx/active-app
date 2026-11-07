@@ -1,0 +1,164 @@
+{
+  "discovery": {
+    "method": "GET",
+    "path": "/.well-known/active",
+    "legal": false,
+    "mutation": false
+  },
+  "profile.get": {
+    "method": "GET",
+    "path": "/api/user/me",
+    "legal": false,
+    "mutation": false
+  },
+  "profile.update": {
+    "method": "PATCH",
+    "path": "/api/user/me",
+    "legal": false,
+    "mutation": true
+  },
+  "profile.delete": {
+    "method": "DELETE",
+    "path": "/api/user/me",
+    "legal": false,
+    "mutation": true
+  },
+  "legal.terms": {
+    "method": "GET",
+    "path": "/api/legal/terms-of-service",
+    "legal": true,
+    "mutation": false
+  },
+  "legal.privacy": {
+    "method": "GET",
+    "path": "/api/legal/privacy-policy",
+    "legal": true,
+    "mutation": false
+  },
+  "catalog.get": {
+    "method": "GET",
+    "path": "/api/exercises/catalog",
+    "legal": false,
+    "mutation": false
+  },
+  "catalog.search": {
+    "method": "GET",
+    "path": "/api/exercises/search",
+    "legal": false,
+    "mutation": false
+  },
+  "progression.logs": {
+    "method": "GET",
+    "path": "/api/exercises/{id}/logs",
+    "legal": false,
+    "mutation": false
+  },
+  "workout.list": {
+    "method": "GET",
+    "path": "/api/workouts",
+    "legal": false,
+    "mutation": false
+  },
+  "workout.create": {
+    "method": "POST",
+    "path": "/api/workouts",
+    "legal": false,
+    "mutation": true
+  },
+  "workout.update": {
+    "method": "PUT",
+    "path": "/api/workouts/{id}",
+    "legal": false,
+    "mutation": true
+  },
+  "workout.delete": {
+    "method": "DELETE",
+    "path": "/api/workouts/{id}",
+    "legal": false,
+    "mutation": true
+  },
+  "routine.list": {
+    "method": "GET",
+    "path": "/api/routines",
+    "legal": false,
+    "mutation": false
+  },
+  "routine.get": {
+    "method": "GET",
+    "path": "/api/routines/{id}",
+    "legal": false,
+    "mutation": false
+  },
+  "routine.active": {
+    "method": "GET",
+    "path": "/api/routines/active",
+    "legal": false,
+    "mutation": false
+  },
+  "routine.create": {
+    "method": "POST",
+    "path": "/api/routines",
+    "legal": false,
+    "mutation": true
+  },
+  "routine.update": {
+    "method": "PUT",
+    "path": "/api/routines/{id}",
+    "legal": false,
+    "mutation": true
+  },
+  "routine.delete": {
+    "method": "DELETE",
+    "path": "/api/routines/{id}",
+    "legal": false,
+    "mutation": true
+  },
+  "history.revision": {
+    "method": "GET",
+    "path": "/api/history/revision",
+    "legal": false,
+    "mutation": false
+  },
+  "record.list": {
+    "method": "GET",
+    "path": "/api/workouts/record",
+    "legal": false,
+    "mutation": false
+  },
+  "record.create": {
+    "method": "POST",
+    "path": "/api/workouts/record",
+    "legal": false,
+    "mutation": true
+  },
+  "record.delete": {
+    "method": "DELETE",
+    "path": "/api/workouts/record/{id}",
+    "legal": false,
+    "mutation": true
+  },
+  "snapshot.get": {
+    "method": "GET",
+    "path": "/api/streak-snapshot",
+    "legal": false,
+    "mutation": false
+  },
+  "snapshot.put": {
+    "method": "PUT",
+    "path": "/api/streak-snapshot",
+    "legal": false,
+    "mutation": true
+  },
+  "preferences.get": {
+    "method": "GET",
+    "path": "/api/reminder-preferences",
+    "legal": false,
+    "mutation": false
+  },
+  "preferences.put": {
+    "method": "PUT",
+    "path": "/api/reminder-preferences",
+    "legal": false,
+    "mutation": true
+  }
+}
