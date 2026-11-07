@@ -1,0 +1,15 @@
+# Disposable localhost proof only. Do not expose this HTTP listener.
+services:
+  pocket-id:
+    image: ghcr.io/pocket-id/pocket-id:v2.19.2
+    ports:
+      - "127.0.0.1:1411:1411"
+    environment:
+      APP_URL: http://localhost:1411
+      ENCRYPTION_KEY: ${POCKET_ID_PROOF_KEY:?Set a disposable random key of at least 16 bytes}
+      ANALYTICS_DISABLED: "true"
+      VERSION_CHECK_DISABLED: "true"
+    volumes:
+      - pocket-id-proof:/app/data
+volumes:
+  pocket-id-proof:

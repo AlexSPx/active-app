@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "Active OIDC Proof",
+    "slug": "active-oidc-proof",
+    "scheme": "activenext",
+    "ios": { "bundleIdentifier": "com.alexspx.oidcproof" },
+    "android": { "package": "com.alexspx.oidcproof" }
+  }
+}
