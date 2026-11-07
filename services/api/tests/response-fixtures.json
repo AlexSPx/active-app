@@ -55,6 +55,22 @@
         "secondaryMuscles": [],
         "instructions": [],
         "category": "STRENGTH"
+      },
+      {
+        "id": "exercise-2",
+        "sourceKey": "z-last",
+        "retired": false,
+        "name": "Barbell squat",
+        "level": "BEGINNER",
+        "force": "PUSH",
+        "mechanic": "COMPOUND",
+        "equipment": "BARBELL",
+        "primaryMuscles": [
+          "QUADRICEPS"
+        ],
+        "secondaryMuscles": [],
+        "instructions": [],
+        "category": "STRENGTH"
       }
     ]
   },
@@ -62,6 +78,22 @@
     {
       "id": "exercise-1",
       "sourceKey": "barbell-squat",
+      "retired": false,
+      "name": "Barbell squat",
+      "level": null,
+      "force": "PUSH",
+      "mechanic": "COMPOUND",
+      "equipment": "E_Z_CURL_BAR",
+      "primaryMuscles": [
+        "QUADRICEPS"
+      ],
+      "secondaryMuscles": [],
+      "instructions": [],
+      "category": "STRENGTH"
+    },
+    {
+      "id": "exercise-2",
+      "sourceKey": "z-last",
       "retired": false,
       "name": "Barbell squat",
       "level": null,
@@ -100,6 +132,37 @@
       "title": "Legs",
       "notes": null,
       "createdAt": "2026-11-01T12:00:00Z",
+      "updatedAt": "2026-11-01T12:00:00Z",
+      "version": 2,
+      "workoutTemplate": {
+        "id": "template-1",
+        "exercises": [
+          {
+            "exerciseId": "exercise-1",
+            "exerciseTitle": "Barbell squat",
+            "reps": [
+              5
+            ],
+            "weight": [
+              60
+            ],
+            "durationSeconds": [],
+            "category": "STRENGTH",
+            "primaryMuscles": [
+              "QUADRICEPS"
+            ],
+            "secondaryMuscles": []
+          }
+        ],
+        "createdAt": "2026-11-01T12:00:00Z",
+        "updatedAt": "2026-11-01T12:00:00Z"
+      }
+    },
+    {
+      "id": "workout-1-2",
+      "title": "Legs",
+      "notes": null,
+      "createdAt": "2026-11-02T12:00:00Z",
       "updatedAt": "2026-11-01T12:00:00Z",
       "version": 2,
       "workoutTemplate": {
@@ -226,6 +289,30 @@
       "updatedAt": "2026-11-01T12:00:00Z",
       "version": 2,
       "profileVersion": 2
+    },
+    {
+      "id": "routine-1-2",
+      "name": "Plan",
+      "description": null,
+      "userId": "user-1",
+      "routineType": "SEQUENTIAL",
+      "pattern": [
+        {
+          "dayIndex": 0,
+          "dayType": "WORKOUT",
+          "workoutId": "workout-1"
+        },
+        {
+          "dayIndex": 1,
+          "dayType": "REST",
+          "workoutId": null
+        }
+      ],
+      "startDate": "2026-11-01",
+      "createdAt": "2026-11-02T12:00:00Z",
+      "updatedAt": "2026-11-01T12:00:00Z",
+      "version": 2,
+      "profileVersion": 2
     }
   ],
   "routine.get": {
@@ -340,6 +427,41 @@
       "createdAt": "2026-11-01T12:00:00Z",
       "startTime": "2026-11-01T11:00:00Z",
       "completedAt": "2026-11-01T12:00:00Z",
+      "completionTimezone": "Europe/Sofia",
+      "version": 1,
+      "exerciseRecords": [
+        {
+          "exerciseId": null,
+          "exerciseName": "Barbell squat",
+          "reps": [
+            5
+          ],
+          "weight": [
+            60
+          ],
+          "durationSeconds": [],
+          "notes": null,
+          "achievedOneRmValue": null,
+          "achievedOneRmSetIndex": null,
+          "achievedTotalVolumeValue": null,
+          "identity": {
+            "sourceDatasetVersion": "2026-01",
+            "sourceKey": "barbell-squat",
+            "legacyNamespace": null,
+            "legacyId": null
+          }
+        }
+      ],
+      "clientRecordId": "phone-record-1"
+    },
+    {
+      "id": "record-0",
+      "workoutId": null,
+      "workoutTitle": "Legs",
+      "notes": null,
+      "createdAt": "2026-11-01T12:00:00Z",
+      "startTime": "2026-11-01T11:00:00Z",
+      "completedAt": "2026-11-01T11:30:00Z",
       "completionTimezone": "Europe/Sofia",
       "version": 1,
       "exerciseRecords": [

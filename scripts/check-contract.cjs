@@ -49,6 +49,29 @@ try {
   corrupt('record.list', v => { v[0].exerciseRecords[0].weight = [] })
   corrupt('snapshot.get', v => { v.nextWorkoutDeadline = '2023-02-29' })
   corrupt('preferences.get', v => { v.schedule = ['24:00'] })
+  for (const id of ['catalog.get', 'catalog.search', 'workout.list', 'routine.list', 'record.list']) {
+    const value = structuredClone(responseFixtures[id])
+    const items = id === 'catalog.get' ? value.items : value
+    assert.ok(items.length >= 2, `Rust DTO fixture needs multiple items for ${id}`)
+    responses[id].parse(value)
+    items.reverse()
+    assert.equal(responses[id].safeParse(value).success, false, `wrong Rust DTO order accepted for ${id}`)
+  }
+  for (const [id, field, direction] of [['workout.list', 'createdAt', 1], ['routine.list', 'createdAt', 1], ['record.list', 'completedAt', -1]]) {
+    const items = structuredClone(responseFixtures[id])
+    items[0][field] = '2026-11-01T12:00:00.1000Z'
+    items[1][field] = '2026-11-01T12:00:00.1Z'
+    items[0].id = direction === 1 ? 'a' : 'z'
+    items[1].id = direction === 1 ? 'z' : 'a'
+    responses[id].parse(items)
+    items.reverse()
+    assert.equal(responses[id].safeParse(items).success, false, `wrong equal-time ID order accepted for ${id}`)
+    items.reverse()
+    items[1][field] = direction === 1 ? '2026-11-01T12:00:00.1001Z' : '2026-11-01T12:00:00.0999Z'
+    responses[id].parse(items)
+    items.reverse()
+    assert.equal(responses[id].safeParse(items).success, false, `wrong fractional-time order accepted for ${id}`)
+  }
   const requestFixtures = JSON.parse(fs.readFileSync(path.join(dir, 'requests.json')))
   for (const [id, request] of Object.entries(requests)) {
     for (const part of ['body', 'query', 'path']) {

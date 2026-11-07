@@ -13,6 +13,16 @@ for (const operation of operations.filter(o => requests[o.id])) {
   const request = requests[operation.id]
   for (const part of ['body', 'query', 'path']) schemas[`${key}_${part}`] = schema(request[part])
   schemas[`${key}_response`] = schema(responses[operation.id])
+  const ordering = {
+    'catalog.get': 'Items are ordered by sourceKey ascending.',
+    'catalog.search': 'Items are ordered by sourceKey ascending.',
+    'workout.list': 'Items are ordered by (createdAt, id) ascending.',
+    'routine.list': 'Items are ordered by (createdAt, id) ascending.',
+    'record.list': 'Items are ordered by (completedAt, id) descending.',
+    'progression.logs': 'Items are ordered by the parent record (completedAt, id) descending; those keys are not present in this response and cannot be validated by the client.',
+    'workout.delete': 'Routine versions are ordered by the routine (createdAt, id) ascending; createdAt is not present in this response and cannot be validated by the client.',
+  }
+  if (ordering[operation.id]) schemas[`${key}_response`].description = ordering[operation.id]
   let path = operation.path.split('?')[0]
   if (Object.keys(request.path.shape).length) {
     path = operation.id === 'progression.logs' ? '/api/exercises/{id}/logs' : path.replace(/\/[^/]+$/, '/{id}')

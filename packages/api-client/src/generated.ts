@@ -400,6 +400,7 @@ export interface components {
         catalog_get_body: null;
         catalog_get_query: Record<string, never>;
         catalog_get_path: Record<string, never>;
+        /** @description Items are ordered by sourceKey ascending. */
         catalog_get_response: {
             catalogVersion: number;
             sourceDatasetVersion: string;
@@ -426,6 +427,7 @@ export interface components {
             name: string;
         };
         catalog_search_path: Record<string, never>;
+        /** @description Items are ordered by sourceKey ascending. */
         catalog_search_response: {
             id: string;
             sourceKey: string;
@@ -445,6 +447,7 @@ export interface components {
         progression_logs_path: {
             id: string;
         };
+        /** @description Items are ordered by the parent record (completedAt, id) descending; those keys are not present in this response and cannot be validated by the client. */
         progression_logs_response: {
             exerciseRecordId: string;
             exerciseId: string;
@@ -461,6 +464,7 @@ export interface components {
         workout_list_body: null;
         workout_list_query: Record<string, never>;
         workout_list_path: Record<string, never>;
+        /** @description Items are ordered by (createdAt, id) ascending. */
         workout_list_response: {
             id: string;
             title: string;
@@ -591,6 +595,7 @@ export interface components {
         workout_delete_path: {
             id: string;
         };
+        /** @description Routine versions are ordered by the routine (createdAt, id) ascending; createdAt is not present in this response and cannot be validated by the client. */
         workout_delete_response: {
             deletedWorkoutId: string;
             routineVersions: {
@@ -601,6 +606,7 @@ export interface components {
         routine_list_body: null;
         routine_list_query: Record<string, never>;
         routine_list_path: Record<string, never>;
+        /** @description Items are ordered by (createdAt, id) ascending. */
         routine_list_response: {
             id: string;
             name: string;
@@ -784,6 +790,7 @@ export interface components {
         record_list_body: null;
         record_list_query: Record<string, never>;
         record_list_path: Record<string, never>;
+        /** @description Items are ordered by (completedAt, id) descending. */
         record_list_response: {
             id: string;
             clientRecordId: string;

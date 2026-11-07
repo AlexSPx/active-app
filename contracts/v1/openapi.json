@@ -2072,7 +2072,8 @@
           "unresolvedSourceKeys",
           "unresolvedLegacyIds",
           "items"
-        ]
+        ],
+        "description": "Items are ordered by sourceKey ascending."
       },
       "catalog_search_body": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -2243,7 +2244,8 @@
             "instructions",
             "category"
           ]
-        }
+        },
+        "description": "Items are ordered by sourceKey ascending."
       },
       "progression_logs_body": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -2366,7 +2368,8 @@
             "achievedOneRmSetIndex",
             "achievedTotalVolumeValue"
           ]
-        }
+        },
+        "description": "Items are ordered by the parent record (completedAt, id) descending; those keys are not present in this response and cannot be validated by the client."
       },
       "workout_list_body": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -2541,7 +2544,8 @@
             "version",
             "workoutTemplate"
           ]
-        }
+        },
+        "description": "Items are ordered by (createdAt, id) ascending."
       },
       "workout_create_body": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -3148,7 +3152,8 @@
         "required": [
           "deletedWorkoutId",
           "routineVersions"
-        ]
+        ],
+        "description": "Routine versions are ordered by the routine (createdAt, id) ascending; createdAt is not present in this response and cannot be validated by the client."
       },
       "routine_list_body": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -3283,7 +3288,8 @@
             "version",
             "profileVersion"
           ]
-        }
+        },
+        "description": "Items are ordered by (createdAt, id) ascending."
       },
       "routine_get_body": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -4364,7 +4370,8 @@
             "version",
             "exerciseRecords"
           ]
-        }
+        },
+        "description": "Items are ordered by (completedAt, id) descending."
       },
       "record_create_body": {
         "$schema": "https://json-schema.org/draft/2020-12/schema",

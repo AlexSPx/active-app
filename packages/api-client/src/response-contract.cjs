@@ -4,6 +4,19 @@ const identity = z.object({ sourceDatasetVersion: id.nullable(), sourceKey: id.n
 const version = z.number().int().nonnegative()
 const positiveVersion = version.positive()
 const instant = z.iso.datetime()
+const compare = (a, b) => {
+  const left = Array.from(a, c => c.codePointAt(0))
+  const right = Array.from(b, c => c.codePointAt(0))
+  for (let i = 0; i < Math.min(left.length, right.length); i++) if (left[i] !== right[i]) return left[i] < right[i] ? -1 : 1
+  return Math.sign(left.length - right.length)
+}
+const compareInstant = (a, b) => {
+  const [aSeconds, aFraction = ''] = a.slice(0, -1).split('.')
+  const [bSeconds, bFraction = ''] = b.slice(0, -1).split('.')
+  return compare(aSeconds, bSeconds) || compare(aFraction.padEnd(Math.max(aFraction.length, bFraction.length), '0'), bFraction.padEnd(Math.max(aFraction.length, bFraction.length), '0'))
+}
+const ordered = (schema, compareItems) => z.array(schema).refine(items => items.every((item, i) => i === 0 || compareItems(items[i - 1], item) <= 0), 'Items are out of contract order')
+const byTimeAndId = (field, direction) => (a, b) => direction * (compareInstant(a[field], b[field]) || compare(a.id, b.id))
 const date = z.iso.date()
 const zone = z.string().min(1).refine(value => {
   try { new Intl.DateTimeFormat('en', { timeZone: value }); return value.includes('/') || value === 'UTC' } catch { return false }
@@ -28,11 +41,11 @@ const error = z.object({ code: z.string().min(1), message: z.string(), currentVe
 const responses = {
   discovery, 'profile.get': profile, 'profile.update': profile, 'profile.delete': z.object({ deletedUserId: id }),
   'legal.terms': z.string(), 'legal.privacy': z.string(),
-  'catalog.get': z.object({ catalogVersion: version, sourceDatasetVersion: id, mappingComplete: z.boolean(), unresolvedSourceKeys: z.array(id), unresolvedLegacyIds: z.array(id), items: z.array(exercise) }), 'catalog.search': z.array(exercise),
+  'catalog.get': z.object({ catalogVersion: version, sourceDatasetVersion: id, mappingComplete: z.boolean(), unresolvedSourceKeys: z.array(id), unresolvedLegacyIds: z.array(id), items: ordered(exercise, (a, b) => compare(a.sourceKey, b.sourceKey)) }), 'catalog.search': ordered(exercise, (a, b) => compare(a.sourceKey, b.sourceKey)),
   'progression.logs': z.array(z.object({ exerciseRecordId: id, exerciseId: id, exerciseName: z.string(), createdAt: instant, ...sets, ...achievement })),
-  'workout.list': z.array(workout), 'workout.create': workout, 'workout.update': workout, 'workout.delete': z.object({ deletedWorkoutId: id, routineVersions: z.array(z.object({ id, version: positiveVersion })) }),
-  'routine.list': z.array(routine), 'routine.get': routine, 'routine.active': routine, 'routine.create': routine, 'routine.update': routine, 'routine.delete': z.object({ deletedRoutineId: id, profileVersion: positiveVersion }),
-  'history.revision': z.object({ historyRevision: version }), 'record.list': z.array(record), 'record.create': z.object({ workoutRecord: record, historyRevision: version }), 'record.delete': z.object({ deletedRecordId: id, historyRevision: version }),
+  'workout.list': ordered(workout, byTimeAndId('createdAt', 1)), 'workout.create': workout, 'workout.update': workout, 'workout.delete': z.object({ deletedWorkoutId: id, routineVersions: z.array(z.object({ id, version: positiveVersion })) }),
+  'routine.list': ordered(routine, byTimeAndId('createdAt', 1)), 'routine.get': routine, 'routine.active': routine, 'routine.create': routine, 'routine.update': routine, 'routine.delete': z.object({ deletedRoutineId: id, profileVersion: positiveVersion }),
+  'history.revision': z.object({ historyRevision: version }), 'record.list': ordered(record, byTimeAndId('completedAt', -1)), 'record.create': z.object({ workoutRecord: record, historyRevision: version }), 'record.delete': z.object({ deletedRecordId: id, historyRevision: version }),
   'snapshot.get': snapshot, 'snapshot.put': snapshot, 'preferences.get': preferences, 'preferences.put': preferences,
 }
 module.exports = { responses, error }
