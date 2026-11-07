@@ -308,6 +308,7 @@ export interface components {
             code: string;
             message: string;
             currentVersion: number | null;
+            field?: string;
         };
         discovery_body: null;
         discovery_query: Record<string, never>;

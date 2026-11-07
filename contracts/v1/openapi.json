@@ -1368,6 +1368,10 @@
                 "type": "null"
               }
             ]
+          },
+          "field": {
+            "type": "string",
+            "minLength": 1
           }
         },
         "required": [

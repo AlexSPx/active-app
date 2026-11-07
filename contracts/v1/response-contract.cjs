@@ -24,7 +24,7 @@ const snapshot = z.object({ version: positiveVersion, historyRevision: version, 
 const preferences = z.object({ version: positiveVersion, enabled: z.boolean(), schedule: z.array(z.string().regex(/^([01][0-9]|2[0-3]):[0-5][0-9]$/)), timezone: zone })
 const profile = z.object({ id, email: z.email(), username: z.string(), firstName: z.string(), lastName: z.string(), createdAt: instant, timezone: zone.nullable(), activeRoutineId: id.nullable(), measurements: z.object({ weightKg: z.number().positive().nullable(), heightCm: z.number().positive().nullable() }).nullable(), registrationCompleted: z.boolean(), profileVersion: positiveVersion })
 const discovery = z.object({ instanceId: id, contractVersion: z.literal('1'), issuer: z.url(), authorizationEndpoint: z.url(), tokenEndpoint: z.url(), endSessionEndpoint: z.url() })
-const error = z.object({ code: z.string().min(1), message: z.string(), currentVersion: version.nullable() })
+const error = z.object({ code: z.string().min(1), message: z.string(), currentVersion: version.nullable(), field: z.string().min(1).optional() })
 const responses = {
   discovery, 'profile.get': profile, 'profile.update': profile, 'profile.delete': z.object({ deletedUserId: id }),
   'legal.terms': z.string(), 'legal.privacy': z.string(),

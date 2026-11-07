@@ -43,6 +43,38 @@ async fn readiness_identity_discovery_and_limits() {
         .unwrap();
     assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
     assert!(response.headers().contains_key("x-request-id"));
+    for (origin, expected) in [
+        ("http://localhost", StatusCode::NO_CONTENT),
+        ("https://evil.example", StatusCode::FORBIDDEN),
+    ] {
+        let response = app(state.clone())
+            .oneshot(
+                Request::builder()
+                    .method("OPTIONS")
+                    .uri("/api/routines")
+                    .header("origin", origin)
+                    .header("access-control-request-method", "POST")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), expected);
+        assert_eq!(
+            response
+                .headers()
+                .get("access-control-allow-origin")
+                .is_some(),
+            expected == StatusCode::NO_CONTENT
+        );
+        assert!(
+            response
+                .headers()
+                .get("access-control-allow-credentials")
+                .is_none()
+        );
+        assert!(response.headers().contains_key("x-request-id"));
+    }
     bootstrap_auth(&state, &config.issuer, &reqwest::Client::new())
         .await
         .unwrap();

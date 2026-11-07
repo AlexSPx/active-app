@@ -19,6 +19,17 @@ const empty = { path: {}, query: {}, body: null }
   await assert.rejects(() => call('record.delete', { path: { id: 'a/b' }, query: { baseVersion: 1 }, body: null }), /Idempotency-Key/)
   const fail = createClient('https://active.example', { kind: 'none' }, async () => new Response(JSON.stringify({ code: 'INCOMPATIBLE_VERSION', message: 'Unsupported', currentVersion: null }), { status: 426, headers: { 'x-request-id': 'request-1' } }))
   await assert.rejects(() => fail('history.revision', empty), e => e instanceof ApiError && e.status === 426 && e.body.code === 'INCOMPATIBLE_VERSION' && e.requestId === 'request-1')
+  assert.throws(() => createClient('https://active.example', { kind: 'session', csrfToken: 'csrf' }), /same-origin/)
+  global.location = new URL('https://active.example/app')
+  const session = createClient('https://active.example', { kind: 'session', csrfToken: 'csrf' }, async (url, init) => {
+    assert.equal(init.credentials, 'same-origin')
+    assert.equal(init.headers['X-CSRF-Token'], 'csrf')
+    return new Response(JSON.stringify({ historyRevision: 1 }), { status: 200 })
+  })
+  await session('history.revision', empty)
+  assert.throws(() => createClient('https://other.example', { kind: 'session', csrfToken: 'csrf' }), /same-origin/)
+  assert.throws(() => createClient('https://active.example', { kind: 'session', csrfToken: '' }), /same-origin/)
+  delete global.location
   const invalid = createClient('https://active.example', { kind: 'none' }, async () => new Response(JSON.stringify({ historyRevision: -1 }), { status: 200 }))
   await assert.rejects(() => invalid('history.revision', empty))
   console.log('Client request, compatibility error and invalid response checks passed.')

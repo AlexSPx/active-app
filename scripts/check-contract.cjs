@@ -19,6 +19,12 @@ for (const op of operations.filter(o => requests[o.id])) {
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'active-contract-'))
 try {
   execFileSync('cargo', ['test', '--locked', '-p', 'active-api', '--test', 'operations', 'readiness_identity_discovery_and_limits'], { stdio: 'inherit', env: { ...process.env, ACTIVE_CONTRACT_FIXTURES: dir } })
+  execFileSync('cargo', ['test', '--locked', '-p', 'active-api', '--test', 'boundary'], { stdio: 'inherit', env: { ...process.env, ACTIVE_CONTRACT_FIXTURES: dir } })
+  for (const code of ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN', 'NOT_FOUND', 'STALE_VERSION']) {
+    const fixture = JSON.parse(fs.readFileSync(path.join(dir, `${code}.json`)))
+    error.parse(fixture)
+    assert.equal(fixture.code, code)
+  }
   const discovery = JSON.parse(fs.readFileSync(path.join(dir, 'discovery.json')))
   const failure = JSON.parse(fs.readFileSync(path.join(dir, 'error.json')))
   responses.discovery.parse(discovery)

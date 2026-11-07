@@ -15,6 +15,9 @@ export class ApiError extends Error {
 type Args<K extends keyof Operations> = { path: Operations[K]['path']; query: Operations[K]['query']; body: Operations[K]['body']; idempotencyKey?: string }
 type Auth = { kind: 'bearer'; token: string } | { kind: 'session'; csrfToken: string } | { kind: 'none' }
 export function createClient(baseUrl: string, auth: Auth, transport: typeof fetch = fetch) {
+  if (auth.kind === 'session' && (!auth.csrfToken || typeof location === 'undefined' || new URL(baseUrl, location.href).origin !== location.origin)) {
+    throw new Error('Web sessions require a same-origin server')
+  }
   return async function call<K extends keyof Operations>(operation: K, args: Args<K>): Promise<Operations[K]['response']> {
     const spec = operations[operation]
     if (spec.mutation && !args.idempotencyKey) throw new Error('Idempotency-Key is required for mutations')

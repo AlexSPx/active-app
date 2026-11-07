@@ -1,3 +1,4 @@
+pub mod boundary;
 pub mod config;
 pub mod db;
 mod health;
@@ -49,6 +50,7 @@ pub struct AppState {
     pub draining: Arc<AtomicBool>,
     pub body_limit: usize,
     pub request_timeout: Duration,
+    pub origins: Vec<String>,
 }
 
 pub async fn initialize(
@@ -72,6 +74,11 @@ pub async fn initialize(
         draining: Arc::new(AtomicBool::new(false)),
         body_limit: config.body_limit,
         request_timeout: config.request_timeout,
+        origins: config
+            .origins
+            .iter()
+            .map(|url| url.origin().ascii_serialization())
+            .collect(),
     })
 }
 
@@ -136,27 +143,27 @@ pub async fn bootstrap_auth(
     Ok(())
 }
 
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct ErrorBody {
-    code: &'static str,
-    message: &'static str,
-    current_version: Option<u64>,
-}
 fn error(status: StatusCode, code: &'static str, message: &'static str) -> Response {
-    (
-        status,
-        axum::Json(ErrorBody {
-            code,
-            message,
-            current_version: None,
-        }),
-    )
-        .into_response()
+    boundary::ApiError::new(status, code, message).into_response()
 }
 
 async fn operational(State(state): State<AppState>, request: Request, next: Next) -> Response {
     let id = Uuid::new_v4().to_string();
+    let origin = request.headers().get_all("origin");
+    let allowed_origin = if origin.iter().count() == 1 {
+        origin
+            .iter()
+            .next()
+            .and_then(|value| value.to_str().ok())
+            .filter(|value| state.origins.iter().any(|allowed| allowed == *value))
+            .map(str::to_owned)
+    } else {
+        None
+    };
+    let preflight = request.method() == axum::http::Method::OPTIONS
+        && request
+            .headers()
+            .contains_key("access-control-request-method");
     let method = match *request.method() {
         axum::http::Method::GET => "GET",
         axum::http::Method::POST => "POST",
@@ -168,7 +175,8 @@ async fn operational(State(state): State<AppState>, request: Request, next: Next
     // Never record a path, query, headers or body: they may contain private data.
     let result = tokio::time::timeout(state.request_timeout, async {
         let (parts, body) = request.into_parts();
-        if (parts.uri.path() == "/api" || parts.uri.path().starts_with("/api/"))
+        if !preflight
+            && (parts.uri.path() == "/api" || parts.uri.path().starts_with("/api/"))
             && (parts
                 .headers
                 .get_all("x-active-contract-version")
@@ -183,6 +191,13 @@ async fn operational(State(state): State<AppState>, request: Request, next: Next
                 "INCOMPATIBLE_VERSION",
                 "Unsupported contract version",
             );
+        }
+        if preflight {
+            return if allowed_origin.is_some() {
+                StatusCode::NO_CONTENT.into_response()
+            } else {
+                error(StatusCode::FORBIDDEN, "FORBIDDEN", "Origin not allowed")
+            };
         }
         match to_bytes(body, state.body_limit).await {
             Ok(body) => next.run(Request::from_parts(parts, Body::from(body))).await,
@@ -201,6 +216,32 @@ async fn operational(State(state): State<AppState>, request: Request, next: Next
             "Request timed out",
         )
     });
+    response
+        .headers_mut()
+        .insert("vary", HeaderValue::from_static("Origin"));
+    if let Some(origin) = allowed_origin {
+        let headers = response.headers_mut();
+        headers.insert(
+            "access-control-allow-origin",
+            HeaderValue::from_str(&origin).expect("validated origin"),
+        );
+        headers.insert(
+            "access-control-expose-headers",
+            HeaderValue::from_static("x-request-id"),
+        );
+        if preflight {
+            headers.insert(
+                "access-control-allow-methods",
+                HeaderValue::from_static("GET, POST, PUT, PATCH, DELETE"),
+            );
+            headers.insert(
+                "access-control-allow-headers",
+                HeaderValue::from_static(
+                    "authorization, content-type, idempotency-key, x-active-contract-version",
+                ),
+            );
+        }
+    }
     response.headers_mut().insert(
         "x-request-id",
         HeaderValue::from_str(&id).expect("UUID is a valid header"),
