@@ -1,7 +1,7 @@
 //! Reusable HTTP boundary types. Domain routes must validate ownership after extraction.
 use axum::{
     Json,
-    extract::{FromRequest, Request},
+    extract::{FromRequest, FromRequestParts, Query, Request},
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -73,6 +73,25 @@ where
     }
 }
 
+pub struct ValidatedQuery<T>(pub T);
+impl<S, T> FromRequestParts<S> for ValidatedQuery<T>
+where
+    S: Send + Sync,
+    T: DeserializeOwned + Validate,
+{
+    type Rejection = ApiError;
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let Query(value) = Query::<T>::from_request_parts(parts, state)
+            .await
+            .map_err(|_| ApiError::validation("query"))?;
+        value.validate()?;
+        Ok(Self(value))
+    }
+}
+
 macro_rules! identifier {
     ($name:ident) => {
         #[derive(Clone, Debug, PartialEq, Eq, Serialize)]
@@ -86,7 +105,7 @@ macro_rules! identifier {
         }
         impl $name {
             pub fn parse(value: String) -> Result<Self, ApiError> {
-                if value.is_empty() || value.chars().count() > 256 {
+                if value.is_empty() || value.encode_utf16().count() > 256 {
                     return Err(ApiError::validation("id"));
                 }
                 Ok(Self(value))
@@ -101,6 +120,33 @@ identifier!(AccountId);
 identifier!(WorkoutId);
 identifier!(RoutineId);
 
+pub(crate) fn valid_text(s: &str) -> bool {
+    let blank = |c: char| matches!(c, '\u{0009}'..='\u{000D}' | '\u{0020}' | '\u{00A0}' | '\u{1680}' | '\u{2000}'..='\u{200A}' | '\u{2028}' | '\u{2029}' | '\u{202F}' | '\u{205F}' | '\u{3000}' | '\u{FEFF}');
+    !s.trim_matches(blank).is_empty() && s.encode_utf16().count() <= 200
+}
+pub(crate) fn integer<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u64, D::Error> {
+    let n = serde_json::Number::deserialize(d)?;
+    let f = n
+        .as_f64()
+        .ok_or_else(|| serde::de::Error::custom("invalid integer"))?;
+    if !(0.0..=9_007_199_254_740_991.0).contains(&f) || f.fract() != 0.0 {
+        return Err(serde::de::Error::custom("invalid integer"));
+    }
+    Ok(f as u64)
+}
+pub(crate) fn optional_integer<'de, D: serde::Deserializer<'de>>(
+    d: D,
+) -> Result<Option<u64>, D::Error> {
+    integer(d).map(Some)
+}
+pub(crate) fn integers<'de, D: serde::Deserializer<'de>>(d: D) -> Result<Vec<u64>, D::Error> {
+    #[derive(Deserialize)]
+    struct Item(#[serde(deserialize_with = "integer")] u64);
+    Vec::<Item>::deserialize(d).map(|v| v.into_iter().map(|i| i.0).collect())
+}
+fn day_index<'de, D: serde::Deserializer<'de>>(d: D) -> Result<u8, D::Error> {
+    u8::try_from(integer(d)?).map_err(serde::de::Error::custom)
+}
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum DayType {
@@ -110,17 +156,13 @@ pub enum DayType {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct PatternItem {
+    #[serde(deserialize_with = "day_index")]
     pub day_index: u8,
     pub day_type: DayType,
     #[serde(deserialize_with = "required_nullable")]
     pub workout_id: Option<WorkoutId>,
 }
-fn present<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
-    deserializer: D,
-) -> Result<Option<T>, D::Error> {
-    T::deserialize(deserializer).map(Some)
-}
-fn required_nullable<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
+pub(crate) fn required_nullable<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
     deserializer: D,
 ) -> Result<Option<T>, D::Error> {
     Option::<T>::deserialize(deserializer)
@@ -148,20 +190,20 @@ pub struct CreateRoutine {
     pub active: bool,
     #[serde(
         default,
-        deserialize_with = "present",
+        deserialize_with = "optional_integer",
         skip_serializing_if = "Option::is_none"
     )]
     pub profile_base_version: Option<u64>,
 }
 impl Validate for CreateRoutine {
     fn validate(&self) -> Result<(), ApiError> {
-        if self.name.trim().is_empty() || self.name.chars().count() > 200 {
+        if !valid_text(&self.name) {
             return Err(ApiError::validation("name"));
         }
         if self
             .description
             .as_ref()
-            .is_some_and(|v| v.chars().count() > 10000)
+            .is_some_and(|v| v.encode_utf16().count() > 10000)
         {
             return Err(ApiError::validation("description"));
         }
@@ -181,7 +223,9 @@ impl Validate for CreateRoutine {
         if !valid_date(&self.start_date) {
             return Err(ApiError::validation("startDate"));
         }
-        if self.profile_base_version == Some(0)
+        if self
+            .profile_base_version
+            .is_some_and(|v| v == 0 || v > 9_007_199_254_740_991)
             || (self.active && self.profile_base_version.is_none())
         {
             return Err(ApiError::validation("profileBaseVersion"));
@@ -189,7 +233,7 @@ impl Validate for CreateRoutine {
         Ok(())
     }
 }
-fn valid_date(s: &str) -> bool {
+pub(crate) fn valid_date(s: &str) -> bool {
     let b = s.as_bytes();
     if b.len() != 10
         || b[4] != b'-'

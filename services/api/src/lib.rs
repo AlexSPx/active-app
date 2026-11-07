@@ -2,6 +2,7 @@ pub mod boundary;
 pub mod config;
 pub mod db;
 mod health;
+pub mod requests;
 
 use axum::{
     Router,

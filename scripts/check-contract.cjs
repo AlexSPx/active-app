@@ -20,6 +20,18 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'active-contract-'))
 try {
   execFileSync('cargo', ['test', '--locked', '-p', 'active-api', '--test', 'operations', 'readiness_identity_discovery_and_limits'], { stdio: 'inherit', env: { ...process.env, ACTIVE_CONTRACT_FIXTURES: dir } })
   execFileSync('cargo', ['test', '--locked', '-p', 'active-api', '--test', 'boundary'], { stdio: 'inherit', env: { ...process.env, ACTIVE_CONTRACT_FIXTURES: dir } })
+  execFileSync('cargo', ['test', '--locked', '-p', 'active-api', '--test', 'request_dtos'], { stdio: 'inherit', env: { ...process.env, ACTIVE_CONTRACT_FIXTURES: dir } })
+  const requestFixtures = JSON.parse(fs.readFileSync(path.join(dir, 'requests.json')))
+  for (const [id, request] of Object.entries(requests)) {
+    for (const part of ['body', 'query', 'path']) {
+      const key = part === 'body' ? id : part === 'path' ? (request.path.safeParse({ id: 'x' }).success ? 'path' : 'empty') : ({ 'profile.delete': 'version', 'workout.delete': 'version', 'record.delete': 'version', 'routine.delete': 'routine.delete', 'catalog.search': 'catalog.search' }[id] || 'empty')
+      if (part === 'body' && request.body.safeParse(null).success) continue
+      const fixture = requestFixtures[key]
+      assert.ok(fixture, `missing Rust fixture for ${id} ${part}`)
+      request[part].parse(fixture.valid)
+      assert.equal(request[part].safeParse(fixture.invalid).success, false, `invalid Rust fixture accepted for ${id} ${part}`)
+    }
+  }
   for (const code of ['VALIDATION_ERROR', 'UNAUTHENTICATED', 'FORBIDDEN', 'NOT_FOUND', 'STALE_VERSION']) {
     const fixture = JSON.parse(fs.readFileSync(path.join(dir, `${code}.json`)))
     error.parse(fixture)
