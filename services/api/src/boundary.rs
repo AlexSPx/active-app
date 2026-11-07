@@ -105,7 +105,7 @@ macro_rules! identifier {
         }
         impl $name {
             pub fn parse(value: String) -> Result<Self, ApiError> {
-                if value.is_empty() || value.encode_utf16().count() > 256 {
+                if !valid_id(&value) {
                     return Err(ApiError::validation("id"));
                 }
                 Ok(Self(value))
@@ -120,6 +120,9 @@ identifier!(AccountId);
 identifier!(WorkoutId);
 identifier!(RoutineId);
 
+pub(crate) fn valid_id(s: &str) -> bool {
+    !s.is_empty() && s != "." && s != ".." && s.encode_utf16().count() <= 256
+}
 pub(crate) fn valid_text(s: &str) -> bool {
     let blank = |c: char| matches!(c, '\u{0009}'..='\u{000D}' | '\u{0020}' | '\u{00A0}' | '\u{1680}' | '\u{2000}'..='\u{200A}' | '\u{2028}' | '\u{2029}' | '\u{202F}' | '\u{205F}' | '\u{3000}' | '\u{FEFF}');
     !s.trim_matches(blank).is_empty() && s.encode_utf16().count() <= 200

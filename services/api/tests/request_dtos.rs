@@ -147,6 +147,20 @@ async fn request_families_round_trip_and_reject_invalid_fields() {
 #[tokio::test]
 async fn edge_cases_cover_nested_rules_nulls_and_numeric_forms() {
     let cases = [
+        ("path", json!({"id":"."})),
+        ("path", json!({"id":".."})),
+        (
+            "workout.create",
+            json!({"title":"A","template":{"exercises":[{"exerciseId":".."}]}}),
+        ),
+        (
+            "routine.update",
+            json!({"baseVersion":1,"pattern":[{"dayIndex":0,"dayType":"WORKOUT","workoutId":"."}]}),
+        ),
+        (
+            "snapshot.put",
+            json!({"baseVersion":0,"historyRevision":0,"rulesVersion":"v","currentStreak":0,"longestStreak":0,"nextWorkoutId":null,"nextWorkoutDeadline":null,"streakFreezeCount":0,"lastWorkoutCountedDate":null,"weeklyCompletedWorkoutIds":[".."],"currentWeekStart":null}),
+        ),
         (
             "profile.update",
             json!({"baseVersion":1,"username":"no","timezone":"UTC"}),

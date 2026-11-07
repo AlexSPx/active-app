@@ -3,6 +3,7 @@ pub mod config;
 pub mod db;
 mod health;
 pub mod requests;
+pub mod responses;
 
 use axum::{
     Router,

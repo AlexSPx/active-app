@@ -1,6 +1,6 @@
 const { z } = require('zod')
-const identity = z.object({ sourceDatasetVersion: z.string().min(1).max(256).nullable(), sourceKey: z.string().min(1).max(256).nullable(), legacyNamespace: z.string().min(1).max(256).nullable(), legacyId: z.string().min(1).max(256).nullable() }).refine(v => (v.sourceDatasetVersion !== null) === (v.sourceKey !== null) && (v.legacyNamespace !== null) === (v.legacyId !== null) && (v.sourceKey !== null || v.legacyId !== null))
-const id = z.string().min(1).max(256)
+const id = z.string().min(1).max(256).regex(/^(?!\.{1,2}(?![\s\S]))[\s\S]*$/)
+const identity = z.object({ sourceDatasetVersion: id.nullable(), sourceKey: id.nullable(), legacyNamespace: id.nullable(), legacyId: id.nullable() }).refine(v => (v.sourceDatasetVersion !== null) === (v.sourceKey !== null) && (v.legacyNamespace !== null) === (v.legacyId !== null) && (v.sourceKey !== null || v.legacyId !== null))
 const version = z.number().int().nonnegative()
 const positiveVersion = version.positive()
 const instant = z.iso.datetime()

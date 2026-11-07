@@ -17,6 +17,16 @@ const empty = { path: {}, query: {}, body: null }
   assert.equal(sent.init.headers.Authorization, 'Bearer token')
   assert.equal(sent.init.headers['X-Active-Contract-Version'], '1')
   await assert.rejects(() => call('record.delete', { path: { id: 'a/b' }, query: { baseVersion: 1 }, body: null }), /Idempotency-Key/)
+  for (const id of ['.', '..']) {
+    await assert.rejects(() => call('routine.get', { path: { id }, query: {}, body: null }))
+  }
+  let addressed
+  const address = createClient('https://active.example', { kind: 'none' }, async url => {
+    addressed = url
+    return new Response('{}', { status: 200 })
+  })
+  await assert.rejects(() => address('routine.get', { path: { id: 'a/b' }, query: {}, body: null }))
+  assert.equal(addressed, 'https://active.example/api/routines/a%2Fb')
   const fail = createClient('https://active.example', { kind: 'none' }, async () => new Response(JSON.stringify({ code: 'INCOMPATIBLE_VERSION', message: 'Unsupported', currentVersion: null }), { status: 426, headers: { 'x-request-id': 'request-1' } }))
   await assert.rejects(() => fail('history.revision', empty), e => e instanceof ApiError && e.status === 426 && e.body.code === 'INCOMPATIBLE_VERSION' && e.requestId === 'request-1')
   assert.throws(() => createClient('https://active.example', { kind: 'session', csrfToken: 'csrf' }), /same-origin/)

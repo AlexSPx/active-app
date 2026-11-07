@@ -1,0 +1,457 @@
+{
+  "profile.get": {
+    "id": "user-1",
+    "email": "a@example.test",
+    "username": "alex",
+    "firstName": "Alex",
+    "lastName": "A",
+    "createdAt": "2026-11-01T12:00:00Z",
+    "timezone": "Europe/Sofia",
+    "activeRoutineId": "routine-1",
+    "measurements": {
+      "weightKg": 70,
+      "heightCm": 170
+    },
+    "registrationCompleted": true,
+    "profileVersion": 2
+  },
+  "profile.update": {
+    "id": "user-1",
+    "email": "a@example.test",
+    "username": "alex",
+    "firstName": "Alex",
+    "lastName": "A",
+    "createdAt": "2026-11-01T12:00:00Z",
+    "timezone": null,
+    "activeRoutineId": null,
+    "measurements": null,
+    "registrationCompleted": true,
+    "profileVersion": 2
+  },
+  "profile.delete": {
+    "deletedUserId": "user-1"
+  },
+  "legal.terms": "Terms",
+  "legal.privacy": "Privacy",
+  "catalog.get": {
+    "catalogVersion": 1,
+    "sourceDatasetVersion": "2026-01",
+    "mappingComplete": true,
+    "unresolvedSourceKeys": [],
+    "unresolvedLegacyIds": [],
+    "items": [
+      {
+        "id": "exercise-1",
+        "sourceKey": "barbell-squat",
+        "retired": false,
+        "name": "Barbell squat",
+        "level": "BEGINNER",
+        "force": "PUSH",
+        "mechanic": "COMPOUND",
+        "equipment": "BARBELL",
+        "primaryMuscles": [
+          "QUADRICEPS"
+        ],
+        "secondaryMuscles": [],
+        "instructions": [],
+        "category": "STRENGTH"
+      }
+    ]
+  },
+  "catalog.search": [
+    {
+      "id": "exercise-1",
+      "sourceKey": "barbell-squat",
+      "retired": false,
+      "name": "Barbell squat",
+      "level": null,
+      "force": "PUSH",
+      "mechanic": "COMPOUND",
+      "equipment": "E_Z_CURL_BAR",
+      "primaryMuscles": [
+        "QUADRICEPS"
+      ],
+      "secondaryMuscles": [],
+      "instructions": [],
+      "category": "STRENGTH"
+    }
+  ],
+  "progression.logs": [
+    {
+      "exerciseRecordId": "exercise-record-1",
+      "exerciseId": "exercise-1",
+      "exerciseName": "Barbell squat",
+      "createdAt": "2026-11-01T12:00:00Z",
+      "reps": [
+        5
+      ],
+      "weight": [
+        60
+      ],
+      "durationSeconds": [],
+      "achievedOneRmValue": 70,
+      "achievedOneRmSetIndex": 0,
+      "achievedTotalVolumeValue": 300
+    }
+  ],
+  "workout.list": [
+    {
+      "id": "workout-1",
+      "title": "Legs",
+      "notes": null,
+      "createdAt": "2026-11-01T12:00:00Z",
+      "updatedAt": "2026-11-01T12:00:00Z",
+      "version": 2,
+      "workoutTemplate": {
+        "id": "template-1",
+        "exercises": [
+          {
+            "exerciseId": "exercise-1",
+            "exerciseTitle": "Barbell squat",
+            "reps": [
+              5
+            ],
+            "weight": [
+              60
+            ],
+            "durationSeconds": [],
+            "category": "STRENGTH",
+            "primaryMuscles": [
+              "QUADRICEPS"
+            ],
+            "secondaryMuscles": []
+          }
+        ],
+        "createdAt": "2026-11-01T12:00:00Z",
+        "updatedAt": "2026-11-01T12:00:00Z"
+      }
+    }
+  ],
+  "workout.create": {
+    "id": "workout-1",
+    "title": "Legs",
+    "notes": null,
+    "createdAt": "2026-11-01T12:00:00Z",
+    "updatedAt": "2026-11-01T12:00:00Z",
+    "version": 1,
+    "workoutTemplate": {
+      "id": "template-1",
+      "exercises": [
+        {
+          "exerciseId": "exercise-1",
+          "exerciseTitle": "Barbell squat",
+          "reps": [
+            5
+          ],
+          "weight": [
+            60
+          ],
+          "durationSeconds": [],
+          "category": "STRENGTH",
+          "primaryMuscles": [
+            "QUADRICEPS"
+          ],
+          "secondaryMuscles": []
+        }
+      ],
+      "createdAt": "2026-11-01T12:00:00Z",
+      "updatedAt": "2026-11-01T12:00:00Z"
+    }
+  },
+  "workout.update": {
+    "id": "workout-1",
+    "title": "Legs",
+    "notes": null,
+    "createdAt": "2026-11-01T12:00:00Z",
+    "updatedAt": "2026-11-01T12:00:00Z",
+    "version": 2,
+    "workoutTemplate": {
+      "id": "template-1",
+      "exercises": [
+        {
+          "exerciseId": "exercise-1",
+          "exerciseTitle": "Barbell squat",
+          "reps": [
+            5
+          ],
+          "weight": [
+            60
+          ],
+          "durationSeconds": [],
+          "category": "STRENGTH",
+          "primaryMuscles": [
+            "QUADRICEPS"
+          ],
+          "secondaryMuscles": []
+        }
+      ],
+      "createdAt": "2026-11-01T12:00:00Z",
+      "updatedAt": "2026-11-01T12:00:00Z"
+    }
+  },
+  "workout.delete": {
+    "deletedWorkoutId": "workout-1",
+    "routineVersions": [
+      {
+        "id": "routine-1",
+        "version": 3
+      },
+      {
+        "id": "routine-2",
+        "version": 5
+      }
+    ]
+  },
+  "routine.list": [
+    {
+      "id": "routine-1",
+      "name": "Plan",
+      "description": null,
+      "userId": "user-1",
+      "routineType": "SEQUENTIAL",
+      "pattern": [
+        {
+          "dayIndex": 0,
+          "dayType": "WORKOUT",
+          "workoutId": "workout-1"
+        },
+        {
+          "dayIndex": 1,
+          "dayType": "REST",
+          "workoutId": null
+        }
+      ],
+      "startDate": "2026-11-01",
+      "createdAt": "2026-11-01T12:00:00Z",
+      "updatedAt": "2026-11-01T12:00:00Z",
+      "version": 2,
+      "profileVersion": 2
+    }
+  ],
+  "routine.get": {
+    "id": "routine-1",
+    "name": "Plan",
+    "description": null,
+    "userId": "user-1",
+    "routineType": "SEQUENTIAL",
+    "pattern": [
+      {
+        "dayIndex": 0,
+        "dayType": "WORKOUT",
+        "workoutId": "workout-1"
+      },
+      {
+        "dayIndex": 1,
+        "dayType": "REST",
+        "workoutId": null
+      }
+    ],
+    "startDate": "2026-11-01",
+    "createdAt": "2026-11-01T12:00:00Z",
+    "updatedAt": "2026-11-01T12:00:00Z",
+    "version": 2,
+    "profileVersion": 2
+  },
+  "routine.active": {
+    "id": "routine-1",
+    "name": "Plan",
+    "description": null,
+    "userId": "user-1",
+    "routineType": "SEQUENTIAL",
+    "pattern": [
+      {
+        "dayIndex": 0,
+        "dayType": "WORKOUT",
+        "workoutId": "workout-1"
+      },
+      {
+        "dayIndex": 1,
+        "dayType": "REST",
+        "workoutId": null
+      }
+    ],
+    "startDate": "2026-11-01",
+    "createdAt": "2026-11-01T12:00:00Z",
+    "updatedAt": "2026-11-01T12:00:00Z",
+    "version": 2,
+    "profileVersion": 2
+  },
+  "routine.create": {
+    "id": "routine-1",
+    "name": "Plan",
+    "description": null,
+    "userId": "user-1",
+    "routineType": "SEQUENTIAL",
+    "pattern": [
+      {
+        "dayIndex": 0,
+        "dayType": "WORKOUT",
+        "workoutId": "workout-1"
+      },
+      {
+        "dayIndex": 1,
+        "dayType": "REST",
+        "workoutId": null
+      }
+    ],
+    "startDate": "2026-11-01",
+    "createdAt": "2026-11-01T12:00:00Z",
+    "updatedAt": "2026-11-01T12:00:00Z",
+    "version": 1,
+    "profileVersion": 2
+  },
+  "routine.update": {
+    "id": "routine-1",
+    "name": "Plan",
+    "description": null,
+    "userId": "user-1",
+    "routineType": "SEQUENTIAL",
+    "pattern": [
+      {
+        "dayIndex": 0,
+        "dayType": "WORKOUT",
+        "workoutId": "workout-1"
+      },
+      {
+        "dayIndex": 1,
+        "dayType": "REST",
+        "workoutId": null
+      }
+    ],
+    "startDate": "2026-11-01",
+    "createdAt": "2026-11-01T12:00:00Z",
+    "updatedAt": "2026-11-01T12:00:00Z",
+    "version": 2,
+    "profileVersion": 2
+  },
+  "routine.delete": {
+    "deletedRoutineId": "routine-1",
+    "profileVersion": 3
+  },
+  "history.revision": {
+    "historyRevision": 4
+  },
+  "record.list": [
+    {
+      "id": "record-1",
+      "workoutId": null,
+      "workoutTitle": "Legs",
+      "notes": null,
+      "createdAt": "2026-11-01T12:00:00Z",
+      "startTime": "2026-11-01T11:00:00Z",
+      "completedAt": "2026-11-01T12:00:00Z",
+      "completionTimezone": "Europe/Sofia",
+      "version": 1,
+      "exerciseRecords": [
+        {
+          "exerciseId": null,
+          "exerciseName": "Barbell squat",
+          "reps": [
+            5
+          ],
+          "weight": [
+            60
+          ],
+          "durationSeconds": [],
+          "notes": null,
+          "achievedOneRmValue": null,
+          "achievedOneRmSetIndex": null,
+          "achievedTotalVolumeValue": null,
+          "identity": {
+            "sourceDatasetVersion": "2026-01",
+            "sourceKey": "barbell-squat",
+            "legacyNamespace": null,
+            "legacyId": null
+          }
+        }
+      ],
+      "clientRecordId": "phone-record-1"
+    }
+  ],
+  "record.create": {
+    "workoutRecord": {
+      "id": "record-1",
+      "workoutId": "workout-1",
+      "workoutTitle": "Legs",
+      "notes": null,
+      "createdAt": "2026-11-01T12:00:00Z",
+      "startTime": "2026-11-01T11:00:00Z",
+      "completedAt": "2026-11-01T12:00:00Z",
+      "completionTimezone": "Europe/Sofia",
+      "version": 1,
+      "exerciseRecords": [
+        {
+          "exerciseId": "exercise-1",
+          "exerciseName": "Barbell squat",
+          "reps": [
+            5
+          ],
+          "weight": [
+            60
+          ],
+          "durationSeconds": [],
+          "notes": null,
+          "achievedOneRmValue": 70,
+          "achievedOneRmSetIndex": 0,
+          "achievedTotalVolumeValue": 300,
+          "identity": {
+            "sourceDatasetVersion": "2026-01",
+            "sourceKey": "barbell-squat",
+            "legacyNamespace": null,
+            "legacyId": null
+          }
+        }
+      ],
+      "clientRecordId": "phone-record-1"
+    },
+    "historyRevision": 4
+  },
+  "record.delete": {
+    "deletedRecordId": "record-1",
+    "historyRevision": 5
+  },
+  "snapshot.get": {
+    "version": 1,
+    "historyRevision": 4,
+    "rulesVersion": "1",
+    "currentStreak": 2,
+    "longestStreak": 3,
+    "nextWorkoutId": "workout-1",
+    "nextWorkoutDeadline": "2026-11-08",
+    "streakFreezeCount": 0,
+    "lastWorkoutCountedDate": "2026-11-01",
+    "weeklyCompletedWorkoutIds": [
+      "workout-1"
+    ],
+    "currentWeekStart": "2026-10-26"
+  },
+  "snapshot.put": {
+    "version": 1,
+    "historyRevision": 4,
+    "rulesVersion": "1",
+    "currentStreak": 2,
+    "longestStreak": 3,
+    "nextWorkoutId": null,
+    "nextWorkoutDeadline": null,
+    "streakFreezeCount": 0,
+    "lastWorkoutCountedDate": null,
+    "weeklyCompletedWorkoutIds": [],
+    "currentWeekStart": null
+  },
+  "preferences.get": {
+    "version": 1,
+    "enabled": true,
+    "schedule": [
+      "09:00"
+    ],
+    "timezone": "Europe/Sofia"
+  },
+  "preferences.put": {
+    "version": 1,
+    "enabled": true,
+    "schedule": [
+      "09:00"
+    ],
+    "timezone": "Europe/Sofia"
+  }
+}

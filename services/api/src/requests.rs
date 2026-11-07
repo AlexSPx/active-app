@@ -8,7 +8,7 @@ fn len(s: &str) -> usize {
     s.encode_utf16().count()
 }
 fn id(s: &str) -> bool {
-    !s.is_empty() && len(s) <= 256
+    super::boundary::valid_id(s)
 }
 fn text(s: &str) -> bool {
     super::boundary::valid_text(s)
