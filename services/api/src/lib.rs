@@ -168,6 +168,22 @@ async fn operational(State(state): State<AppState>, request: Request, next: Next
     // Never record a path, query, headers or body: they may contain private data.
     let result = tokio::time::timeout(state.request_timeout, async {
         let (parts, body) = request.into_parts();
+        if (parts.uri.path() == "/api" || parts.uri.path().starts_with("/api/"))
+            && (parts
+                .headers
+                .get_all("x-active-contract-version")
+                .iter()
+                .count()
+                != 1
+                || parts.headers.get("x-active-contract-version")
+                    != Some(&HeaderValue::from_static("1")))
+        {
+            return error(
+                StatusCode::UPGRADE_REQUIRED,
+                "INCOMPATIBLE_VERSION",
+                "Unsupported contract version",
+            );
+        }
         match to_bytes(body, state.body_limit).await {
             Ok(body) => next.run(Request::from_parts(parts, Body::from(body))).await,
             Err(_) => error(

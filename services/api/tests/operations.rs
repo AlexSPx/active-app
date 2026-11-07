@@ -61,6 +61,47 @@ async fn readiness_identity_discovery_and_limits() {
     assert_eq!(json["contractVersion"], "1");
     let id = json["instanceId"].as_str().unwrap().to_owned();
     assert!(uuid::Uuid::parse_str(&id).is_ok());
+    for version in [None, Some("2"), Some("invalid")] {
+        let mut request = Request::builder().uri("/api/history/revision");
+        if let Some(version) = version {
+            request = request.header("x-active-contract-version", version);
+        }
+        let response = app(state.clone())
+            .oneshot(request.body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::UPGRADE_REQUIRED);
+        assert!(response.headers().contains_key("x-request-id"));
+        let json: serde_json::Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 4096).await.unwrap()).unwrap();
+        assert_eq!(
+            json,
+            serde_json::json!({"code":"INCOMPATIBLE_VERSION", "message":"Unsupported contract version", "currentVersion":null})
+        );
+    }
+    let response = app(state.clone())
+        .oneshot(
+            Request::builder()
+                .uri("/api/history/revision")
+                .header("x-active-contract-version", "1")
+                .header("x-active-contract-version", "1")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::UPGRADE_REQUIRED);
+    let response = app(state.clone())
+        .oneshot(
+            Request::builder()
+                .uri("/api/history/revision")
+                .header("x-active-contract-version", "1")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
     let response = app(state.clone())
         .oneshot(
             Request::builder()
