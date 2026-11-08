@@ -415,6 +415,7 @@ async fn production_routes_reject_untrusted_identity_headers() {
         .await
         .unwrap();
     let state = AppState {
+        auth: Default::default(),
         pool: pool.clone(),
         discovery: Arc::new(RwLock::new(None)),
         draining: Arc::new(AtomicBool::new(false)),
@@ -448,11 +449,35 @@ async fn production_routes_reject_untrusted_identity_headers() {
                 .unwrap();
             assert_eq!(
                 response.status(),
-                StatusCode::UNAUTHORIZED,
+                if headers {
+                    StatusCode::SERVICE_UNAVAILABLE
+                } else {
+                    StatusCode::UNAUTHORIZED
+                },
                 "{method} {path}"
             );
         }
     }
     assert_eq!(profile::get(&pool, &id).await.unwrap().profile_version, 1);
     assert!(profile::get_preferences(&pool, &id).await.is_err());
+}
+
+#[tokio::test]
+async fn deleted_identity_cannot_be_provisioned_again() {
+    let dir = TempDir::new().unwrap();
+    let pool = db::open(&dir.path().join("db.sqlite")).await.unwrap();
+    let p = principal("deleted");
+    let owner = profile::provision(&pool, &p).await.unwrap();
+    profile::delete(&pool, &owner, 1).await.unwrap();
+    assert_eq!(
+        profile::provision(&pool, &p).await.unwrap_err().code,
+        "FORBIDDEN"
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT count(*) FROM users")
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+        0
+    );
 }

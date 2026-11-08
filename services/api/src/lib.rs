@@ -1,10 +1,13 @@
+pub mod auth;
 pub mod boundary;
 pub mod config;
 pub mod db;
 mod health;
 pub mod profile;
+pub mod profile_http;
 pub mod requests;
 pub mod responses;
+pub mod web_auth;
 
 use axum::{
     Router,
@@ -49,6 +52,7 @@ struct Provider {
 #[derive(Clone)]
 pub struct AppState {
     pub pool: SqlitePool,
+    pub auth: auth::AuthState,
     pub discovery: Arc<RwLock<Option<Discovery>>>,
     pub draining: Arc<AtomicBool>,
     pub body_limit: usize,
@@ -73,6 +77,7 @@ pub async fn initialize(
     }
     Ok(AppState {
         pool,
+        auth: auth::AuthState::default(),
         discovery: Arc::new(RwLock::new(None)),
         draining: Arc::new(AtomicBool::new(false)),
         body_limit: config.body_limit,
@@ -131,7 +136,7 @@ pub async fn bootstrap_auth(
         &provider.end_session_endpoint,
     ]
     .iter()
-    .all(|s| config::endpoint(s))
+    .all(|s| config::endpoint(s) && url::Url::parse(s).is_ok_and(|u| u.origin() == issuer.origin()))
     {
         return Err("invalid issuer endpoints");
     }
@@ -249,21 +254,25 @@ async fn operational(State(state): State<AppState>, request: Request, next: Next
         "x-request-id",
         HeaderValue::from_str(&id).expect("UUID is a valid header"),
     );
+    response
+        .headers_mut()
+        .insert("cache-control", HeaderValue::from_static("no-store"));
     tracing::info!(request_id = %id, method = %method, status = response.status().as_u16(), "request completed");
     response
 }
 
 pub fn app(state: AppState) -> Router {
     Router::new()
+        .merge(profile_http::routes())
+        .route("/auth/login", get(web_auth::login))
+        .route("/auth/callback", get(web_auth::callback))
+        .route("/auth/session", get(web_auth::session))
+        .route("/auth/logout", axum::routing::post(web_auth::logout))
+        .route("/auth/native/identity", get(auth::native_identity))
+        .route("/auth/config", get(auth::native_config))
         .route(
-            "/api/user/me",
-            get(profile_unavailable)
-                .patch(profile_unavailable)
-                .delete(profile_unavailable),
-        )
-        .route(
-            "/api/reminder-preferences",
-            get(profile_unavailable).put(profile_unavailable),
+            "/auth/native/verify",
+            axum::routing::post(auth::native_verify),
         )
         .route("/health", get(health::live))
         .route("/ready", get(health::ready))
@@ -282,12 +291,4 @@ pub fn app(state: AppState) -> Router {
 
 pub fn start_draining(state: &AppState) {
     state.draining.store(true, Ordering::SeqCst);
-}
-
-async fn profile_unavailable() -> Response {
-    error(
-        StatusCode::UNAUTHORIZED,
-        "UNAUTHENTICATED",
-        "Authentication required",
-    )
 }

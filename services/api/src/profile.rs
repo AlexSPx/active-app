@@ -40,6 +40,7 @@ pub async fn provision(
         ));
     }
     let mut tx = db::begin_write(pool).await.map_err(internal)?;
+    ensure_not_deleted(&mut tx, principal).await?;
     if let Some(id) = sqlx::query_scalar::<_, String>(
         "SELECT user_id FROM identities WHERE issuer=? AND subject=?",
     )
@@ -138,7 +139,18 @@ pub async fn update(
 ) -> Result<Profile, ApiError> {
     patch.validate()?;
     let mut tx = db::begin_write(pool).await.map_err(internal)?;
-    let mut profile = read(&mut tx, owner).await?;
+    let result = update_tx(&mut tx, owner, patch).await?;
+    tx.commit().await.map_err(internal)?;
+    Ok(result)
+}
+
+pub(crate) async fn update_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    owner: &str,
+    patch: UpdateProfile,
+) -> Result<Profile, ApiError> {
+    patch.validate()?;
+    let mut profile = read(tx, owner).await?;
     if profile.profile_version != patch.base_version {
         return Err(ApiError::stale(profile.profile_version));
     }
@@ -175,7 +187,7 @@ pub async fn update(
         let result = sqlx::query("UPDATE users SET username=?,email=?,first_name=?,last_name=?,timezone=?,measurements_present=?,weight_kg=?,height_cm=?,registration_completed=?,version=version+1 WHERE id=?")
             .bind(&profile.username).bind(&profile.email).bind(&profile.first_name).bind(&profile.last_name).bind(&profile.timezone)
             .bind(profile.measurements.is_some()).bind(profile.measurements.as_ref().and_then(|m| m.weight_kg)).bind(profile.measurements.as_ref().and_then(|m| m.height_cm))
-            .bind(profile.registration_completed).bind(owner).execute(&mut *tx).await;
+            .bind(profile.registration_completed).bind(owner).execute(&mut **tx).await;
         if let Err(e) = result {
             if e.as_database_error()
                 .is_some_and(|e| e.is_unique_violation())
@@ -190,7 +202,6 @@ pub async fn update(
         }
         profile.profile_version += 1;
     }
-    tx.commit().await.map_err(internal)?;
     Ok(profile)
 }
 
@@ -202,16 +213,39 @@ pub async fn delete(
 ) -> Result<DeletedProfile, ApiError> {
     crate::requests::VersionQuery { base_version }.validate()?;
     let mut tx = db::begin_write(pool).await.map_err(internal)?;
-    let profile = read(&mut tx, owner).await?;
+    let result = delete_tx(&mut tx, owner, base_version).await?;
+    tx.commit().await.map_err(internal)?;
+    Ok(result)
+}
+
+pub(crate) async fn delete_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    owner: &str,
+    base_version: u64,
+) -> Result<DeletedProfile, ApiError> {
+    crate::requests::VersionQuery { base_version }.validate()?;
+    let profile = read(tx, owner).await?;
     if profile.profile_version != base_version {
         return Err(ApiError::stale(profile.profile_version));
     }
-    sqlx::query("DELETE FROM users WHERE id=?")
+    let identities = sqlx::query("SELECT issuer, subject FROM identities WHERE user_id=?")
         .bind(owner)
-        .execute(&mut *tx)
+        .fetch_all(&mut **tx)
         .await
         .map_err(internal)?;
-    tx.commit().await.map_err(internal)?;
+    for row in identities {
+        let digest = identity_digest(row.get("issuer"), row.get("subject"));
+        sqlx::query("INSERT OR IGNORE INTO deleted_identities(identity_digest) VALUES(?)")
+            .bind(digest)
+            .execute(&mut **tx)
+            .await
+            .map_err(internal)?;
+    }
+    sqlx::query("DELETE FROM users WHERE id=?")
+        .bind(owner)
+        .execute(&mut **tx)
+        .await
+        .map_err(internal)?;
     Ok(DeletedProfile {
         deleted_user_id: owner.to_owned(),
     })
@@ -262,8 +296,19 @@ pub async fn put_preferences(
 ) -> Result<crate::responses::Preferences, ApiError> {
     input.validate()?;
     let mut tx = db::begin_write(pool).await.map_err(internal)?;
-    read(&mut tx, owner).await?;
-    let existing = read_preferences(&mut tx, owner).await?;
+    let result = put_preferences_tx(&mut tx, owner, input).await?;
+    tx.commit().await.map_err(internal)?;
+    Ok(result)
+}
+
+pub(crate) async fn put_preferences_tx(
+    tx: &mut Transaction<'_, Sqlite>,
+    owner: &str,
+    input: crate::requests::PutPreferences,
+) -> Result<crate::responses::Preferences, ApiError> {
+    input.validate()?;
+    read(tx, owner).await?;
+    let existing = read_preferences(tx, owner).await?;
     let current = existing.as_ref().map_or(0, |p| p.version);
     if current != input.base_version {
         return Err(ApiError::stale(current));
@@ -287,10 +332,10 @@ pub async fn put_preferences(
     };
     if changed {
         sqlx::query("INSERT INTO reminder_preferences(owner_id,version,enabled,timezone) VALUES(?,?,?,?) ON CONFLICT(owner_id) DO UPDATE SET version=excluded.version,enabled=excluded.enabled,timezone=excluded.timezone")
-            .bind(owner).bind(version as i64).bind(input.enabled).bind(&input.timezone).execute(&mut *tx).await.map_err(internal)?;
+            .bind(owner).bind(version as i64).bind(input.enabled).bind(&input.timezone).execute(&mut **tx).await.map_err(internal)?;
         sqlx::query("DELETE FROM reminder_times WHERE owner_id=?")
             .bind(owner)
-            .execute(&mut *tx)
+            .execute(&mut **tx)
             .await
             .map_err(internal)?;
         for (i, time) in input.schedule.iter().enumerate() {
@@ -298,16 +343,64 @@ pub async fn put_preferences(
                 .bind(owner)
                 .bind(i as i64)
                 .bind(time)
-                .execute(&mut *tx)
+                .execute(&mut **tx)
                 .await
                 .map_err(internal)?;
         }
     }
-    tx.commit().await.map_err(internal)?;
     Ok(crate::responses::Preferences {
         version,
         enabled: input.enabled,
         schedule: input.schedule,
         timezone: input.timezone,
     })
+}
+
+/// A deleted identity is permanently fenced; a fresh account requires a new provider identity.
+pub(crate) async fn ensure_not_deleted(
+    tx: &mut Transaction<'_, Sqlite>,
+    principal: &VerifiedPrincipal,
+) -> Result<(), ApiError> {
+    let found: bool = sqlx::query_scalar(
+        "SELECT EXISTS(SELECT 1 FROM deleted_identities WHERE identity_digest=?)",
+    )
+    .bind(identity_digest(&principal.issuer, &principal.subject))
+    .fetch_one(&mut **tx)
+    .await
+    .map_err(internal)?;
+    if found {
+        return Err(ApiError::new(
+            StatusCode::FORBIDDEN,
+            "FORBIDDEN",
+            "Account deleted",
+        ));
+    }
+    Ok(())
+}
+
+pub(crate) fn identity_digest(issuer: &str, subject: &str) -> Vec<u8> {
+    let mut input = (issuer.len() as u64).to_be_bytes().to_vec();
+    input.extend_from_slice(issuer.as_bytes());
+    input.extend_from_slice(subject.as_bytes());
+    sha256(&input).to_vec()
+}
+
+pub(crate) fn sha256(data: &[u8]) -> [u8; 32] {
+    use sha2::{Digest, Sha256};
+    Sha256::digest(data).into()
+}
+
+#[cfg(test)]
+mod digest_tests {
+    #[test]
+    fn sha256_known_vector() {
+        assert_eq!(
+            super::sha256(b"abc"),
+            [
+                0xba, 0x78, 0x16, 0xbf, 0x8f, 0x01, 0xcf, 0xea, 0x41, 0x41, 0x40, 0xde, 0x5d, 0xae,
+                0x22, 0x23, 0xb0, 0x03, 0x61, 0xa3, 0x96, 0x17, 0x7a, 0x9c, 0xb4, 0x10, 0xff, 0x61,
+                0xf2, 0x00, 0x15, 0xad
+            ]
+        );
+    }
 }
