@@ -7,19 +7,28 @@ Configure the following environment variables before starting `yarn api:run` (or
 | `ACTIVE_LISTEN` | IP address and port, for example `127.0.0.1:3000` |
 | `ACTIVE_DATABASE_PATH` | Absolute SQLite file path, for example `/var/lib/active/active.sqlite3` |
 | `ACTIVE_EXTERNAL_URL` | Public HTTPS URL of this service |
-| `ACTIVE_TRUSTED_ORIGINS` | Comma-separated HTTPS origins allowed for future web sessions |
+| `ACTIVE_TRUSTED_ORIGINS` | Comma-separated HTTPS origins allowed for non-credentialed CORS |
 | `ACTIVE_OIDC_ISSUER` | Administrator-selected OIDC issuer URL |
+| `ACTIVE_OIDC_CLIENT_ID` | Pocket ID public native client ID |
+| `ACTIVE_OIDC_RESOURCE` | Registered API resource URL and access-token audience |
+| `ACTIVE_OIDC_NATIVE_REDIRECT_URI` | Exact callback: `activenext://auth/callback` |
+| `ACTIVE_OIDC_WEB_CLIENT_ID` | Optional separate confidential web client ID; requires its secret |
+| `ACTIVE_OIDC_WEB_CLIENT_SECRET` | Confidential web client secret, supplied only on the server |
 | `ACTIVE_BODY_LIMIT_BYTES` | Maximum request body, default 1048576; maximum 16777216 |
 | `ACTIVE_REQUEST_TIMEOUT_SECONDS` | Header-read and request-processing deadlines, each default 30 seconds; maximum 300 |
 | `ACTIVE_SHUTDOWN_TIMEOUT_SECONDS` | Drain deadline, default 35; maximum 600 |
 
-URLs cannot contain credentials, query strings or fragments. HTTP is accepted only for localhost development. External URL and trusted origins are validated now for future web-session and proxy integration; they do not enable CORS or authentication. Configure TLS at a trusted reverse proxy in production. No administrative or diagnostic routes are exposed.
+URLs cannot contain credentials, query strings or fragments. HTTP is accepted only for localhost development. Configure TLS at a trusted reverse proxy in production. Serve the web app and API on the same public origin; forward `/auth/*`, `/api/*` and `/.well-known/active` to the API and preserve the external origin. The web callback is exactly the public origin plus `/auth/callback`. Register exact native and web callbacks in Pocket ID, grant both clients user-delegated access to the API resource, and configure enrollment/recovery as described in [the provider proof](../../deploy/auth-proof/README.md). Keep the confidential secret out of the client bundle, logs and source control.
 
-The process fails startup on invalid configuration, failed storage initialization or a bind error. `/health` reports liveness; `/ready` reports database, auth bootstrap and draining separately. Issuer discovery retries every ten seconds until the configured issuer's metadata is valid; until then readiness is 503 and `/.well-known/active` returns a safe error. Discovery publishes only the frozen public authentication fields and persistent instance UUID. Authentication itself is future work; readiness indicates metadata bootstrap, not functioning user login. Do not expose unfinished domain endpoints as authenticated services.
+The process fails startup on invalid configuration, failed storage initialization or a bind error. `/health` reports liveness; `/ready` reports database, auth metadata bootstrap and draining separately. Issuer discovery retries every ten seconds until valid; until then readiness is 503 and `/.well-known/active` returns a safe error. Discovery publishes public authentication fields and the persistent instance UUID. Native bearer validation checks RS256 signatures, issuer, API audience, token type, expiry and not-before against bounded cached JWKS; provider outages return retryable 503 responses. Readiness is not an interactive-login test.
 
 Each application response receives a generated `X-Request-Id`; transport-level errors can precede request handling and do not receive one. JSON logs include the request ID, method and status, but no request URL, headers or body. Oversized requests receive 413; requests exceeding the processing deadline receive 408. Incomplete headers are closed on the header-read deadline and may receive a transport-level 408. On SIGTERM or Ctrl-C the server becomes unready, stops accepting connections and drains accepted requests until the shutdown deadline. Set the shutdown deadline long enough for the request deadline and any deployment proxy drain window. The UUID lives in SQLite and survives restart and consistent backup/restore.
 
-Requests under `/api` must carry exactly one `X-Active-Contract-Version: 1` header. Missing, duplicate, or unsupported versions receive a structured 426 response before the router processes the request. Discovery and operational endpoints are exempt. The gate does not implement authentication or any domain route.
+Requests under `/api` must carry exactly one `X-Active-Contract-Version: 1` header. Missing, duplicate, or unsupported versions receive a structured 426 response before routing. Discovery, auth and operational endpoints are exempt. Profile and reminder-preference routes require a valid bearer or same-origin session; mutations require the applicable version and `Idempotency-Key`. See [profile integration](PROFILE-INTEGRATION.md) for transaction and deletion rules.
+
+Settings → Self-hosted account connects the client, reads the remote profile, explicitly copies the device profile to a fresh account, resumes interrupted writes and deletes only server data. Existing workouts, profile ownership and local notification delivery remain on the device. Full workout import and ongoing synchronization are separate delivery issues.
+
+Web login uses `/auth/login` and `/auth/callback` with PKCE, state, nonce and a short-lived one-time flow cookie. Provider tokens are not persisted. The opaque HttpOnly, SameSite=Lax session cookie is Secure on HTTPS and expires after one hour; login creates a new session identifier. `/auth/session` returns account identity and its CSRF token. Mutations and `/auth/logout` require that token and the exact configured Origin. Browser sessions cannot be used cross-origin. Native credentials and pending plans use SecureStore; web stores only nonsecret connection/plan metadata and CSRF in tab session storage. Native disconnect erases credentials and attempts provider logout; during an outage it still disconnects locally. Neither logout nor account deletion deletes the upstream provider identity.
 
 Run the checks from the repository root:
 
