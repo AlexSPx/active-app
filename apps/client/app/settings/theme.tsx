@@ -1,9 +1,9 @@
 import { View } from 'react-native'
-import { Check, Play } from '../../../components/ui/icons'
-import { SettingsPage } from '../../../components/settings/SettingsPage'
-import { Button, Surface, UiText } from '../../../components/ui/Controls'
-import { useCadenceColors } from '../../../components/ui/useCadenceColors'
-import { useSettingsStore } from '../../../features/settings'
+import { Check, Play } from '../../components/ui/icons'
+import { SettingsPage } from '../../components/settings/SettingsPage'
+import { Button, Surface, UiText } from '../../components/ui/Controls'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
+import { useSettingsStore } from '../../features/settings'
 
 export default function ThemeSettingsScreen() {
   const theme = useSettingsStore((s) => s.theme)

@@ -1,26 +1,21 @@
-import { Stack, usePathname } from 'expo-router'
+import { Stack } from 'expo-router'
 import { useResolveClassNames } from 'uniwind'
-import { useCadenceColors } from '../../../components/ui/useCadenceColors'
-import { BackHeaderButton } from '../../../navigation/BackHeaderButton'
-import { TabHeader } from '../../../navigation/TabHeader'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
+import { BackHeaderButton } from '../../navigation/BackHeaderButton'
 
 export default function SettingsStackLayout() {
-  const pathname = usePathname()
   const colors = useCadenceColors()
   const titleStyles = useResolveClassNames('text-header font-dm-semibold')
-  const isSettingsMenu = pathname.replace(/\/$/, '').endsWith('/settings')
   return (
     <Stack
       screenOptions={{
-        title: isSettingsMenu ? 'Settings' : '',
-        header: isSettingsMenu ? () => <TabHeader title="Settings" /> : undefined,
+        title: '',
         headerBackTitle: 'Settings',
         headerTitleAlign: 'left',
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.accent,
         headerBackVisible: false,
-        headerLeft: () =>
-          isSettingsMenu ? null : <BackHeaderButton label="Settings" fallback="/settings" />,
+        headerLeft: () => <BackHeaderButton label="Settings" fallback="/settings" />,
         headerTitleStyle: {
           ...titleStyles,
           color: colors.foreground,
@@ -28,6 +23,14 @@ export default function SettingsStackLayout() {
         headerShadowVisible: false,
         contentStyle: { backgroundColor: colors.background },
       }}
-    />
+    >
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Settings',
+          headerLeft: () => <BackHeaderButton label="Back" fallback="/(tabs)" />,
+        }}
+      />
+    </Stack>
   )
 }

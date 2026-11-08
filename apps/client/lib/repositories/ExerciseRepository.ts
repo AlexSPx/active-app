@@ -1,19 +1,17 @@
 import { z } from 'zod'
 import { launchFacade } from '../../features/launch/launchFacade'
-import exerciseCatalogArtifact from '../data/exercise-catalog.json'
+import { exerciseCatalog as localExercises } from '../data/exercises'
 import { apiService } from '../../services/apiService'
 import { getDatabase } from '../db/connection'
 import {
   exerciseCategorySchema,
   exerciseLogsArraySchema,
   exercisesArraySchema,
-  exerciseSchema,
 } from '../schemas/api'
 import type { ApiExercise, ExerciseLogResponse } from '../../types/api'
 
 const LOCAL_EXERCISE_ID_PREFIX = 'local:exercise:'
 
-const localExerciseSchema = exerciseSchema.extend({ sourceKey: z.string() })
 const cachedWorkoutExerciseSchema = z.object({
   exerciseId: z.string(),
   exerciseTitle: z.string().nullable().optional(),
@@ -29,16 +27,6 @@ type CachedWorkoutExercise = z.infer<typeof cachedWorkoutExerciseSchema> & { nam
 interface WorkoutTemplateRow {
   workout_template: string | null
 }
-
-const localExercises: ApiExercise[] = z
-  .array(localExerciseSchema)
-  .parse(exerciseCatalogArtifact)
-  .map(({ sourceKey, ...exercise }) => {
-    if (exercise.id !== `${LOCAL_EXERCISE_ID_PREFIX}${sourceKey}`) {
-      throw new Error(`Exercise catalog ID does not match its source key: ${sourceKey}`)
-    }
-    return exercise
-  })
 
 const localExercisesByName = new Map(
   localExercises.map((exercise) => [normalizeName(exercise.name), exercise])

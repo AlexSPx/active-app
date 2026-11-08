@@ -20,6 +20,7 @@ import {
   Globe2 as Globe2Icon,
   History as HistoryIcon,
   Home as HomeIcon,
+  Library as LibraryIcon,
   Lock as LockIcon,
   LogOut as LogOutIcon,
   MoreHorizontal as MoreHorizontalIcon,
@@ -72,6 +73,7 @@ export const Edit3 = cadenceIcon(Edit3Icon)
 export const Globe2 = cadenceIcon(Globe2Icon)
 export const History = cadenceIcon(HistoryIcon)
 export const Home = cadenceIcon(HomeIcon)
+export const Library = cadenceIcon(LibraryIcon)
 export const Lock = cadenceIcon(LockIcon)
 export const LogOut = cadenceIcon(LogOutIcon)
 export const MoreHorizontal = cadenceIcon(MoreHorizontalIcon)

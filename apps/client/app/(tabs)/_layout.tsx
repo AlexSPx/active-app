@@ -3,7 +3,7 @@ import { PlatformPressable } from 'expo-router/react-navigation'
 import { Tabs, useFocusEffect } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
 import { Keyboard, Platform, View, useWindowDimensions } from 'react-native'
-import { Dumbbell, History, Home, Settings as SettingsIcon } from '../../components/ui/icons'
+import { Dumbbell, History, Home, Library } from '../../components/ui/icons'
 import { RunningWorkoutStrip } from '../../features/workout-session'
 import { useRunningWorkoutStore } from '../../features/workout-session/stores/runningWorkoutStore'
 import { AnimatedTabBar } from '../../navigation/AnimatedTabBar'
@@ -35,7 +35,7 @@ export default function TabLayout() {
   const workoutRunning = useRunningWorkoutStore((state) => !!state.runningWorkout)
   const [keyboardVisible, setKeyboardVisible] = useState(false)
   const [runningStripHeight, setRunningStripHeight] = useState(RUNNING_STRIP_ESTIMATED_HEIGHT)
-  const tabBarHeight = Math.max(64, 64 + (fontScale - 1) * 18)
+  const tabBarHeight = Math.max(72, 72 + (fontScale - 1) * 18)
   const contentBottomClearance = keyboardVisible
     ? 0
     : workoutRunning
@@ -134,12 +134,11 @@ export default function TabLayout() {
             }}
           />
           <Tabs.Screen
-            name="settings"
+            name="exercises"
             options={{
-              title: 'Settings',
-              headerShown: false,
-              tabBarAccessibilityLabel: 'Settings',
-              tabBarIcon: ({ color }) => <SettingsIcon color={color} size={24} />,
+              title: 'Exercises',
+              tabBarAccessibilityLabel: 'Exercises',
+              tabBarIcon: ({ color }) => <Library color={color} size={24} />,
             }}
           />
         </Tabs>

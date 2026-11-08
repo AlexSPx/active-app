@@ -1,5 +1,5 @@
 import type { ScrollViewInstance } from 'react-native'
-import { useTabContentInset } from '../../../navigation/TabContentInset'
+import { useTabContentInset } from '../../navigation/TabContentInset'
 import { useCallback, useRef } from 'react'
 import { Alert, ScrollView, View } from 'react-native'
 import { Link, useFocusEffect } from 'expo-router'
@@ -15,22 +15,16 @@ import {
   ScrollText,
   ShieldCheck,
   UserRound,
-} from '../../../components/ui/icons'
+} from '../../components/ui/icons'
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
-import { useAuth } from '../../../contexts/AuthContext'
-import { useSettingsStore } from '../../../features/settings'
-import { measurementText } from '../../../features/settings/inputs'
-import NotificationPermissions from '../../../components/NotificationPermissions'
-import { launchFacade } from '../../../features/launch/launchFacade'
-import {
-  Button,
-  Divider,
-  SettingsGroup,
-  SettingsRow,
-  UiText,
-} from '../../../components/ui/Controls'
-import { useCadenceColors } from '../../../components/ui/useCadenceColors'
+import { useAuth } from '../../contexts/AuthContext'
+import { useSettingsStore } from '../../features/settings'
+import { measurementText } from '../../features/settings/inputs'
+import NotificationPermissions from '../../components/NotificationPermissions'
+import { launchFacade } from '../../features/launch/launchFacade'
+import { Button, Divider, SettingsGroup, SettingsRow, UiText } from '../../components/ui/Controls'
+import { useCadenceColors } from '../../components/ui/useCadenceColors'
 
 export default function SettingsMenuScreen() {
   const bottomInset = useTabContentInset()

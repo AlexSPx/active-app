@@ -16,6 +16,20 @@ beforeEach(() => {
   })
 })
 
+it('routes root Settings account and sync links correctly in offline mode', () => {
+  const route = {
+    isAuthenticated: true,
+    user: { ...localUser, registrationCompleted: true },
+    profileOwnerId: 'local:device',
+    firstSegment: 'settings',
+  }
+  expect(launchFacade.auth.resolveDestination({ ...route, secondSegment: 'account' })).toBe(
+    '/settings/profile'
+  )
+  expect(launchFacade.auth.resolveDestination({ ...route, secondSegment: 'sync' })).toBe('/(tabs)')
+  expect(launchFacade.auth.resolveDestination({ ...route, secondSegment: 'body' })).toBeNull()
+})
+
 it('resolves local and connected auth destinations while preserving legal routes', () => {
   const localRoute = {
     isAuthenticated: true,

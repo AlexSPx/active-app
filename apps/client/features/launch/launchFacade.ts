@@ -68,10 +68,14 @@ function resolveAuthDestination(input: {
         : input.user?.registrationCompleted === false
 
     if (input.firstSegment === 'auth') return needsOnboarding ? '/welcome' : '/(tabs)'
-    if (input.firstSegment === '(tabs)' && input.secondSegment === 'settings') {
-      if (input.thirdSegment === 'account') return '/settings/profile'
-      if (input.thirdSegment === 'sync') return '/(tabs)'
-    }
+    const settingsScreen =
+      input.firstSegment === 'settings'
+        ? input.secondSegment
+        : input.firstSegment === '(tabs)' && input.secondSegment === 'settings'
+          ? input.thirdSegment
+          : undefined
+    if (settingsScreen === 'account') return '/settings/profile'
+    if (settingsScreen === 'sync') return '/(tabs)'
     if (needsOnboarding && !inWelcomeGroup && !inLegalGroup) return '/welcome'
     if (!needsOnboarding && inWelcomeGroup) return '/(tabs)'
     return null

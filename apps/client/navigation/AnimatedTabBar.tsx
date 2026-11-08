@@ -9,13 +9,15 @@ import Animated, {
 } from 'react-native-reanimated'
 import { useResolveClassNames } from 'uniwind'
 
+const TAB_BAR_INSET = 8
+
 export function AnimatedTabBar(props: BottomTabBarProps) {
-  const [width, setWidth] = useState(0)
+  const [layout, setLayout] = useState({ width: 0, height: 72 })
   const surfaceStyles = useResolveClassNames('bg-navigation')
   const selectedStyles = useResolveClassNames('bg-featured')
   const selectedIndex = useSharedValue(props.state.index)
   const routeCount = props.state.routes.length
-  const tabWidth = width / routeCount
+  const tabWidth = (layout.width - TAB_BAR_INSET * 2) / routeCount
   const isRTL = I18nManager.isRTL
 
   useEffect(() => {
@@ -35,21 +37,26 @@ export function AnimatedTabBar(props: BottomTabBarProps) {
 
   return (
     <View
-      onLayout={(event) => setWidth(event.nativeEvent.layout.width)}
-      style={{ borderRadius: 32, ...surfaceStyles, overflow: 'hidden' }}
+      onLayout={(event) => setLayout(event.nativeEvent.layout)}
+      style={{
+        borderRadius: layout.height / 2,
+        paddingHorizontal: TAB_BAR_INSET,
+        ...surfaceStyles,
+        overflow: 'hidden',
+      }}
     >
-      {width > 0 && (
+      {layout.width > 0 && (
         <Animated.View
           pointerEvents="none"
           accessible={false}
           style={[
             {
               position: 'absolute',
-              start: 4,
-              top: 4,
-              bottom: 4,
-              width: tabWidth - 8,
-              borderRadius: 28,
+              start: TAB_BAR_INSET,
+              top: TAB_BAR_INSET,
+              bottom: TAB_BAR_INSET,
+              width: tabWidth,
+              borderRadius: Math.max(0, layout.height / 2 - TAB_BAR_INSET),
             },
             selectedStyles,
             highlightStyle,

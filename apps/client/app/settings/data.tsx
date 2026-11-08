@@ -1,8 +1,8 @@
 import { Alert, View } from 'react-native'
-import { SettingsPage } from '../../../components/settings/SettingsPage'
-import { Button, UiText } from '../../../components/ui/Controls'
-import { launchFacade } from '../../../features/launch/launchFacade'
-import { useAuthStore } from '../../../stores/authStore'
+import { SettingsPage } from '../../components/settings/SettingsPage'
+import { Button, UiText } from '../../components/ui/Controls'
+import { launchFacade } from '../../features/launch/launchFacade'
+import { useAuthStore } from '../../stores/authStore'
 
 export default function DeviceDataSettingsScreen() {
   const eraseDeviceData = useAuthStore((state) => state.eraseDeviceData)

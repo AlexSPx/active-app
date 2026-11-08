@@ -47,6 +47,11 @@ export function RootLayoutNav() {
           />
 
           <Stack.Screen
+            name="settings"
+            options={{ headerShown: false, animation: 'slide_from_right' }}
+          />
+
+          <Stack.Screen
             name="+not-found"
             options={{
               title: 'Page Not Found',

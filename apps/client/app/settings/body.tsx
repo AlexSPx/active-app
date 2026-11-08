@@ -1,15 +1,15 @@
 import { useState } from 'react'
 import { View } from 'react-native'
-import { SettingsPage } from '../../../components/settings/SettingsPage'
+import { SettingsPage } from '../../components/settings/SettingsPage'
 import {
   Button,
   Surface,
   SegmentedSelection,
   TextField,
   UiText,
-} from '../../../components/ui/Controls'
-import { useSettingsStore, useUpdateUser } from '../../../features/settings'
-import { measurementText, parseMeasurement } from '../../../features/settings/inputs'
+} from '../../components/ui/Controls'
+import { useSettingsStore, useUpdateUser } from '../../features/settings'
+import { measurementText, parseMeasurement } from '../../features/settings/inputs'
 
 export default function BodySettingsScreen() {
   const settings = useSettingsStore()
