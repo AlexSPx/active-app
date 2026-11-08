@@ -1,6 +1,6 @@
 // Executable request contract; see README for cross-field and protocol semantics.
 const { z } = require('zod')
-const id = z.string().min(1).max(256)
+const id = z.string().min(1).max(256).regex(/^(?!\.{1,2}(?![\s\S]))[\s\S]*$/)
 const text = z
   .string()
   .min(1)

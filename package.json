@@ -5,7 +5,8 @@
   "workspaces": {
     "packages": [
       "apps/client",
-      "tools/promo"
+      "tools/promo",
+      "packages/api-client"
     ],
     "nohoist": [
       "active-cadence-promo",
@@ -33,12 +34,16 @@
     "client:export": "yarn workspace active-next expo export -p web",
     "api:run": "cargo run --locked -p active-api",
     "api:check": "cargo check --workspace --locked",
-    "api:test": "cargo test --workspace --locked"
+    "api:test": "cargo test --workspace --locked",
+    "contract:generate": "node scripts/generate-contract.cjs",
+    "contract:check": "node scripts/check-contract.cjs",
+    "contract:typecheck": "tsc --noEmit --strict --skipLibCheck --resolveJsonModule --esModuleInterop --moduleResolution bundler --module esnext --target es2022 packages/api-client/src/index.ts"
   },
   "resolutions": {
     "react-native-svg": "15.16.0"
   },
   "devDependencies": {
+    "openapi-typescript": "7.10.1",
     "zod": "4.3.6"
   }
 }
