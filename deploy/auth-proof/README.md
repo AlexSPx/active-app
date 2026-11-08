@@ -71,3 +71,18 @@ cd /tmp/active-oidc-restore
 ```
 
 Run only one instance at a time on this port and inspect discovery, accounts, client registrations, signing keys and an actual passkey login after restore. For upgrade rehearsal, download and checksum the target release, stop the restored instance, keep an untouched backup, and start the new binary against **that restored copy** with the same issuer and key. Confirm login, recovery and database integrity. Revert by restoring the untouched old-version backup, not by assuming a migrated database supports downgrade. Never copy this example's locations over real data. Store production backups and encryption keys separately and securely; verify restore and upgrade with real passkeys before relying on them.
+
+## Reproduce virtual-passkey enrollment and recovery
+
+Use a **new, empty** disposable data directory, with the server started there as above and `APP_URL`, `ENCRYPTION_KEY`, and the other original environment variables still set. The script creates the first administrator, destroys the virtual authenticator, uses the provider CLI to create a one-time recovery link, registers a replacement, signs in with it after clearing cookies, and rejects reuse of the link. It must never be run against a real instance. It needs Google Chrome and `playwright-core`; install the latter outside the repository and run the script from the provider's data directory:
+
+```sh
+npm install --prefix /tmp/active-oidc-browser playwright-core smtp-server
+export NODE_PATH=/tmp/active-oidc-browser/node_modules
+export POCKET_ID_PROOF_BINARY=/tmp/active-oidc-proof/pocket-id_linux_amd64
+node /absolute/path/to/active-app/deploy/auth-proof/passkey-proof.cjs
+```
+
+The script prints outcomes, not the recovery link. The provider can log sensitive URLs: protect its logs and erase the disposable database and logs when finished. The virtual authenticator is browser-simulated and is not native-device evidence.
+
+For the email test, start the disposable sink with `node /absolute/path/to/active-app/deploy/auth-proof/smtp-sink.cjs` (using the `NODE_PATH` above). It listens only on port 2525 and prints the path of each message in a newly created private temporary directory. Remove that directory after the test. Start a separate disposable provider with `UI_CONFIG_DISABLED=true`, `ALLOW_USER_SIGNUPS=open`, `REQUIRE_USER_EMAIL=true`, `EMAIL_VERIFICATION=required`, `SMTP_HOST=127.0.0.1`, `SMTP_PORT=2525`, `SMTP_FROM=proof@example.test`, and `SMTP_TLS=none`. Start with an empty data directory; existing UI configuration otherwise takes precedence over these environment settings. Sign up, create a passkey, observe the restricted account, then open the verification URL from the captured message. Treat the sink and links as secrets. This plaintext loopback configuration is a test only; it is not a production mail setup. An invite-only path and a verified claim in an issued OIDC token still require separate proof.
