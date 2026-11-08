@@ -89,7 +89,7 @@ For the email test, start the disposable sink with `node /absolute/path/to/activ
 
 ## Reproduce restored-account upgrade and rollback
 
-Download and checksum both the 2.19.1 and 2.19.2 Linux binaries as above, in separate directories. With Chrome and `playwright-core` available and port 1411 free, run:
+Download and checksum both the 2.19.1 and 2.19.2 Linux binaries as above, in separate directories. With Chrome, `playwright-core`, and `lsof` available and port 1411 free, run:
 
 ```sh
 POCKET_ID_OLD_BINARY=/absolute/path/to/2.19.1/pocket-id_linux_amd64 \
@@ -97,4 +97,4 @@ POCKET_ID_NEW_BINARY=/absolute/path/to/2.19.2/pocket-id_linux_amd64 \
 NODE_PATH=/tmp/active-oidc-browser/node_modules node restore-upgrade-proof.cjs
 ```
 
-The script creates and deletes private temporary databases and a random key. It enrolls a virtual passkey on 2.19.1, stops the provider, copies the whole data directory, signs in to the copy under 2.19.2, and signs in to the untouched backup under 2.19.1. It does not cover imported exports, client registrations, real authenticators, or production backup storage. Never use real provider data or credentials with it.
+The script checks that port 1411 is free and that its own provider process owns the listening socket before browser operations. On SIGINT or SIGTERM it stops the provider, closes the browser, and removes its private temporary databases; it escalates to SIGKILL if the provider does not stop within three seconds. Forced process termination or machine failure can still leave temporary data behind. The script creates and deletes private temporary databases and a random key. It enrolls a virtual passkey on 2.19.1, stops the provider, copies the whole data directory, signs in to the copy under 2.19.2, and signs in to the untouched backup under 2.19.1. It does not cover imported exports, client registrations, real authenticators, or production backup storage. Never use real provider data or credentials with it.
