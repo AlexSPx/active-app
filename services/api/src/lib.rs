@@ -2,6 +2,7 @@ pub mod boundary;
 pub mod config;
 pub mod db;
 mod health;
+pub mod profile;
 pub mod requests;
 pub mod responses;
 
@@ -254,6 +255,16 @@ async fn operational(State(state): State<AppState>, request: Request, next: Next
 
 pub fn app(state: AppState) -> Router {
     Router::new()
+        .route(
+            "/api/user/me",
+            get(profile_unavailable)
+                .patch(profile_unavailable)
+                .delete(profile_unavailable),
+        )
+        .route(
+            "/api/reminder-preferences",
+            get(profile_unavailable).put(profile_unavailable),
+        )
         .route("/health", get(health::live))
         .route("/ready", get(health::ready))
         .route("/.well-known/active", get(health::discovery))
@@ -271,4 +282,12 @@ pub fn app(state: AppState) -> Router {
 
 pub fn start_draining(state: &AppState) {
     state.draining.store(true, Ordering::SeqCst);
+}
+
+async fn profile_unavailable() -> Response {
+    error(
+        StatusCode::UNAUTHORIZED,
+        "UNAUTHENTICATED",
+        "Authentication required",
+    )
 }
