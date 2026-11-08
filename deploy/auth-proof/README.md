@@ -86,3 +86,15 @@ node /absolute/path/to/active-app/deploy/auth-proof/passkey-proof.cjs
 The script prints outcomes, not the recovery link. The provider can log sensitive URLs: protect its logs and erase the disposable database and logs when finished. The virtual authenticator is browser-simulated and is not native-device evidence.
 
 For the email test, start the disposable sink with `node /absolute/path/to/active-app/deploy/auth-proof/smtp-sink.cjs` (using the `NODE_PATH` above). It listens only on port 2525 and prints the path of each message in a newly created private temporary directory. Remove that directory after the test. Start a separate disposable provider with `UI_CONFIG_DISABLED=true`, `ALLOW_USER_SIGNUPS=open`, `REQUIRE_USER_EMAIL=true`, `EMAIL_VERIFICATION=required`, `SMTP_HOST=127.0.0.1`, `SMTP_PORT=2525`, `SMTP_FROM=proof@example.test`, and `SMTP_TLS=none`. Start with an empty data directory; existing UI configuration otherwise takes precedence over these environment settings. Sign up, create a passkey, observe the restricted account, then open the verification URL from the captured message. Treat the sink and links as secrets. This plaintext loopback configuration is a test only; it is not a production mail setup. An invite-only path and a verified claim in an issued OIDC token still require separate proof.
+
+## Reproduce restored-account upgrade and rollback
+
+Download and checksum both the 2.19.1 and 2.19.2 Linux binaries as above, in separate directories. With Chrome and `playwright-core` available and port 1411 free, run:
+
+```sh
+POCKET_ID_OLD_BINARY=/absolute/path/to/2.19.1/pocket-id_linux_amd64 \
+POCKET_ID_NEW_BINARY=/absolute/path/to/2.19.2/pocket-id_linux_amd64 \
+NODE_PATH=/tmp/active-oidc-browser/node_modules node restore-upgrade-proof.cjs
+```
+
+The script creates and deletes private temporary databases and a random key. It enrolls a virtual passkey on 2.19.1, stops the provider, copies the whole data directory, signs in to the copy under 2.19.2, and signs in to the untouched backup under 2.19.1. It does not cover imported exports, client registrations, real authenticators, or production backup storage. Never use real provider data or credentials with it.
