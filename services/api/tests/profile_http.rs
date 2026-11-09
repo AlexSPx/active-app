@@ -57,6 +57,18 @@ async fn call(
     key: Option<&str>,
     body: &str,
 ) -> (StatusCode, Value) {
+    let (status, bytes) = call_raw(state, token, method, path, key, body).await;
+    (status, serde_json::from_slice(&bytes).unwrap())
+}
+
+async fn call_raw(
+    state: &AppState,
+    token: &str,
+    method: &str,
+    path: &str,
+    key: Option<&str>,
+    body: &str,
+) -> (StatusCode, Vec<u8>) {
     let mut req = Request::builder()
         .method(method)
         .uri(path)
@@ -72,7 +84,7 @@ async fn call(
         .unwrap();
     let status = response.status();
     let bytes = to_bytes(response.into_body(), 65536).await.unwrap();
-    (status, serde_json::from_slice(&bytes).unwrap())
+    (status, bytes.to_vec())
 }
 fn token(issuer: &str, sub: &str) -> String {
     let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::RS256);
@@ -334,7 +346,7 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
         .execute(&pool)
         .await
         .unwrap();
-    let updated_pref = call(
+    let updated_pref = call_raw(
         &state,
         &alice,
         "PUT",
@@ -344,11 +356,13 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
     )
     .await;
     assert_eq!(updated_pref.0, StatusCode::OK);
-    let mut reopened = state.clone();
-    reopened.pool = db::open(&path).await.unwrap();
+    pool.close().await;
+    let pool = db::open(&path).await.unwrap();
+    let mut state = state;
+    state.pool = pool.clone();
     assert_eq!(
-        call(
-            &reopened,
+        call_raw(
+            &state,
             &alice,
             "PUT",
             "/api/reminder-preferences",
@@ -358,6 +372,9 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
         .await,
         updated_pref
     );
+    let durable: (i64, i64) = sqlx::query_as("SELECT version, (SELECT count(*) FROM reminder_times WHERE owner_id=reminder_preferences.owner_id) FROM reminder_preferences WHERE owner_id=(SELECT user_id FROM identities WHERE subject='alice')")
+        .fetch_one(&pool).await.unwrap();
+    assert_eq!(durable, (2, 1));
 
     let lock = db::begin_write(&pool).await.unwrap();
     let busy = call(
@@ -379,7 +396,7 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
             "PATCH",
             "/api/user/me",
             Some("locked"),
-            r#"{"baseVersion":3}"#
+            r#"{"baseVersion":3,"firstName":"After lock"}"#
         )
         .await
         .0,
@@ -396,7 +413,7 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
             &state,
             &alice,
             "DELETE",
-            "/api/user/me?baseVersion=3",
+            "/api/user/me?baseVersion=4",
             Some("delete"),
             ""
         )
@@ -412,7 +429,7 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
         &state,
         &alice,
         "DELETE",
-        "/api/user/me?baseVersion=3",
+        "/api/user/me?baseVersion=4",
         Some("delete"),
         "",
     )
@@ -425,7 +442,7 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
             &restarted,
             &alice,
             "DELETE",
-            "/api/user/me?baseVersion=3",
+            "/api/user/me?baseVersion=4",
             Some("delete"),
             ""
         )
