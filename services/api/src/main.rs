@@ -31,9 +31,11 @@ async fn run() -> Result<(), String> {
         "SQLite initialization failed; check ACTIVE_DATABASE_PATH, permissions, and migrations"
             .to_owned()
     })?;
-    let state = active_api::initialize(pool, &config)
+    let mut state = active_api::initialize(pool, &config)
         .await
         .map_err(|_| "SQLite instance identity initialization failed".to_owned())?;
+    state.auth = active_api::auth::AuthState::new(config.auth_config()?);
+    state.auth.set_web_config(config.web_auth_config()?);
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
         .redirect(reqwest::redirect::Policy::none())

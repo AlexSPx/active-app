@@ -184,13 +184,17 @@ async fn contention_is_bounded_and_failed_migration_is_atomic() {
     lock.rollback().await.unwrap();
     let migrations = dir.path().join("migrations");
     std::fs::create_dir(&migrations).unwrap();
+    let next: i64 = sqlx::query_scalar("SELECT COALESCE(MAX(version),0)+1 FROM _sqlx_migrations")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
     std::fs::write(
-        migrations.join("0002_bad.sql"),
+        migrations.join(format!("{next:04}_bad.sql")),
         "CREATE TABLE partial (id INTEGER); INSERT INTO missing_table VALUES (1);",
     )
     .unwrap();
     let migrator = Migrator::new(Path::new(&migrations)).await.unwrap();
-    // Ignore the already applied first migration while exercising the failing forward migration.
+    // Ignore existing migrations while exercising the next failing forward migration.
     let mut migrator = migrator;
     migrator.set_ignore_missing(true);
     assert!(migrator.run(&pool).await.is_err());
@@ -212,7 +216,11 @@ async fn forward_migration_is_repeatable_and_preserves_data() {
     user(&pool, "alice").await;
     let migrations = dir.path().join("upgrade");
     std::fs::create_dir(&migrations).unwrap();
-    std::fs::write(migrations.join("0002_upgrade.sql"), "CREATE TABLE upgrade_example (id INTEGER PRIMARY KEY); INSERT INTO upgrade_example VALUES(7);").unwrap();
+    let next: i64 = sqlx::query_scalar("SELECT COALESCE(MAX(version),0)+1 FROM _sqlx_migrations")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    std::fs::write(migrations.join(format!("{next:04}_upgrade.sql")), "CREATE TABLE upgrade_example (id INTEGER PRIMARY KEY); INSERT INTO upgrade_example VALUES(7);").unwrap();
     let mut migrator = Migrator::new(migrations.as_path()).await.unwrap();
     migrator.set_ignore_missing(true);
     migrator.run(&pool).await.unwrap();

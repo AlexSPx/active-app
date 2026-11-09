@@ -125,6 +125,17 @@ export default function SettingsMenuScreen() {
             </SettingsGroup>
           )}
 
+          <SettingsGroup title="Server">
+            <Link href="./server" relativeToDirectory asChild>
+              <SettingsRow
+                title="Self-hosted account"
+                icon={<Globe2 size={22} color={colors.accent} />}
+                description="Connect a server and manage your account"
+                trailing={<ChevronRight size={20} color={colors.muted} />}
+              />
+            </Link>
+          </SettingsGroup>
+
           <SettingsGroup title="Preferences">
             <Link href="/settings/theme" asChild>
               <SettingsRow

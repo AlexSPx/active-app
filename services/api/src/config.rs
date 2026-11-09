@@ -98,3 +98,52 @@ impl Config {
 pub(crate) fn endpoint(value: &str) -> bool {
     safe_url("endpoint", value, false).is_ok()
 }
+
+impl Config {
+    pub fn auth_config(&self) -> Result<crate::auth::AuthConfig, String> {
+        let client_id = required("ACTIVE_OIDC_CLIENT_ID")?;
+        let resource = required("ACTIVE_OIDC_RESOURCE")?;
+        safe_url("ACTIVE_OIDC_RESOURCE", &resource, false)?;
+        let redirect_uri = required("ACTIVE_OIDC_NATIVE_REDIRECT_URI")?;
+        let redirect = Url::parse(&redirect_uri)
+            .map_err(|_| "ACTIVE_OIDC_NATIVE_REDIRECT_URI must be an absolute URI".to_owned())?;
+        if redirect.as_str() != "activenext://auth/callback"
+            || redirect.fragment().is_some()
+            || !redirect.username().is_empty()
+            || redirect.password().is_some()
+        {
+            return Err(
+                "ACTIVE_OIDC_NATIVE_REDIRECT_URI must be activenext://auth/callback".into(),
+            );
+        }
+        Ok(crate::auth::AuthConfig {
+            issuer: required("ACTIVE_OIDC_ISSUER")?,
+            client_id,
+            resource,
+            redirect_uri,
+        })
+    }
+}
+
+impl Config {
+    pub fn web_auth_config(&self) -> Result<Option<crate::web_auth::WebConfig>, String> {
+        let id = env::var("ACTIVE_OIDC_WEB_CLIENT_ID")
+            .ok()
+            .filter(|s| !s.is_empty());
+        let secret = env::var("ACTIVE_OIDC_WEB_CLIENT_SECRET")
+            .ok()
+            .filter(|s| !s.is_empty());
+        match (id, secret) {
+            (None, None) => Ok(None),
+            (Some(client_id), Some(client_secret)) => Ok(Some(crate::web_auth::WebConfig {
+                client_id,
+                client_secret,
+                external_url: self.external_url.clone(),
+            })),
+            _ => Err(
+                "ACTIVE_OIDC_WEB_CLIENT_ID and ACTIVE_OIDC_WEB_CLIENT_SECRET must both be set"
+                    .into(),
+            ),
+        }
+    }
+}
