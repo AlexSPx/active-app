@@ -1919,6 +1919,37 @@
               "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
             }
           },
+          "sourceMappings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "datasetVersion": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                },
+                "sourceKey": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                },
+                "exerciseId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256,
+                  "pattern": "^(?!\\.{1,2}(?![\\s\\S]))[\\s\\S]*$"
+                }
+              },
+              "required": [
+                "datasetVersion",
+                "sourceKey",
+                "exerciseId"
+              ]
+            }
+          },
           "items": {
             "type": "array",
             "items": {
@@ -2071,6 +2102,7 @@
           "mappingComplete",
           "unresolvedSourceKeys",
           "unresolvedLegacyIds",
+          "sourceMappings",
           "items"
         ],
         "description": "Items are ordered by sourceKey ascending."

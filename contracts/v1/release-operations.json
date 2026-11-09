@@ -214,6 +214,13 @@
               "instructions": [],
               "category": "STRENGTH"
             }
+          ],
+          "sourceMappings": [
+            {
+              "datasetVersion": "2026-01",
+              "sourceKey": "barbell-squat",
+              "exerciseId": "exercise-1"
+            }
           ]
         }
       },
@@ -256,6 +263,13 @@
               "secondaryMuscles": [],
               "instructions": [],
               "category": "STRENGTH"
+            }
+          ],
+          "sourceMappings": [
+            {
+              "datasetVersion": "2026-01",
+              "sourceKey": "barbell-squat",
+              "exerciseId": "exercise-1"
             }
           ]
         }

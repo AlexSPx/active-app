@@ -23,6 +23,20 @@ async fn import_is_atomic_repeatable_and_preserves_retired_identities() {
     .unwrap();
     let upgraded = catalog::snapshot(&pool).await.unwrap();
     assert_eq!(upgraded["items"][0]["id"], first_id);
+    assert!(
+        upgraded["sourceMappings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|mapping| {
+                mapping["datasetVersion"] == catalog::DATASET_VERSION
+                    && mapping["sourceKey"] == source_key
+                    && mapping["exerciseId"] == first_id
+            })
+    );
+    if let Ok(path) = std::env::var("ACTIVE_CATALOG_UPGRADE_FIXTURE") {
+        std::fs::write(path, serde_json::to_vec(&upgraded).unwrap()).unwrap();
+    }
     catalog::seed(&pool).await.unwrap();
     let mut dataset: Vec<Value> = serde_json::from_str(include_str!(
         "../../../apps/client/lib/data/exercise-catalog.json"

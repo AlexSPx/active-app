@@ -240,6 +240,9 @@ describe('Rust release contract fixtures', () => {
         mappingComplete: z.boolean(),
         unresolvedSourceKeys: z.array(z.string()),
         unresolvedLegacyIds: z.array(z.string()),
+        sourceMappings: z.array(
+          z.object({ datasetVersion: z.string(), sourceKey: z.string(), exerciseId: z.string() })
+        ),
         items: z.array(catalogItem),
       })
       .strict()

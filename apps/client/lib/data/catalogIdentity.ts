@@ -9,6 +9,13 @@ const catalogSchema = z.object({
   mappingComplete: z.boolean(),
   unresolvedSourceKeys: z.array(z.string()),
   unresolvedLegacyIds: z.array(z.string()),
+  sourceMappings: z.array(
+    z.object({
+      datasetVersion: z.string().min(1),
+      sourceKey: z.string().min(1),
+      exerciseId: z.string().min(1),
+    })
+  ),
   items: z.array(
     z.object({ id: z.string().min(1), sourceKey: z.string().min(1), retired: z.boolean() })
   ),
@@ -20,19 +27,20 @@ export type ExerciseResolution =
 
 export function resolveExerciseIdentities(snapshot: unknown, ids: string[]): ExerciseResolution[] {
   const catalog = catalogSchema.parse(snapshot)
-  const byKey = new Map<string, { id: string; retired: boolean }>()
-  for (const item of catalog.items) {
-    if (byKey.has(item.sourceKey)) throw new Error('Duplicate catalog source key')
-    byKey.set(item.sourceKey, { id: item.id, retired: item.retired })
+  const byId = new Map(catalog.items.map(({ id, retired }) => [id, { id, retired }]))
+  const byKey = new Map<string, string>()
+  for (const mapping of catalog.sourceMappings) {
+    if (mapping.datasetVersion !== SOURCE_DATASET_VERSION) continue
+    if (byKey.has(mapping.sourceKey)) throw new Error('Duplicate catalog source mapping')
+    byKey.set(mapping.sourceKey, mapping.exerciseId)
   }
   return ids.map((originalId) => {
-    if (
-      catalog.mappingComplete &&
-      catalog.sourceDatasetVersion === SOURCE_DATASET_VERSION &&
-      originalId.startsWith(LOCAL_PREFIX)
-    ) {
+    const exact = byId.get(originalId)
+    if (exact) return { kind: 'resolved', ...exact }
+    if (catalog.mappingComplete && originalId.startsWith(LOCAL_PREFIX)) {
       const key = originalId.slice(LOCAL_PREFIX.length)
-      const item = catalog.unresolvedSourceKeys.includes(key) ? undefined : byKey.get(key)
+      const id = catalog.unresolvedSourceKeys.includes(key) ? undefined : byKey.get(key)
+      const item = id ? byId.get(id) : undefined
       if (item) return { kind: 'resolved', ...item }
     }
     return { kind: 'unresolved', originalId }

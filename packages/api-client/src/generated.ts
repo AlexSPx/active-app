@@ -407,6 +407,11 @@ export interface components {
             mappingComplete: boolean;
             unresolvedSourceKeys: string[];
             unresolvedLegacyIds: string[];
+            sourceMappings: {
+                datasetVersion: string;
+                sourceKey: string;
+                exerciseId: string;
+            }[];
             items: {
                 id: string;
                 sourceKey: string;

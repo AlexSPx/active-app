@@ -153,9 +153,15 @@ pub async fn snapshot(pool: &SqlitePool) -> Result<Value, sqlx::Error> {
         .await?;
         items.push(json!({"id":id,"sourceKey":row.try_get::<String,_>("source_key")?,"retired":row.try_get::<bool,_>("retired")?,"name":row.try_get::<String,_>("name")?,"level":row.try_get::<Option<String>,_>("level")?,"force":row.try_get::<Option<String>,_>("force")?,"mechanic":row.try_get::<Option<String>,_>("mechanic")?,"equipment":row.try_get::<Option<String>,_>("equipment")?,"category":row.try_get::<Option<String>,_>("category")?,"primaryMuscles":primary,"secondaryMuscles":secondary,"instructions":instructions}));
     }
+    let mappings = sqlx::query("SELECT dataset_version,source_key,exercise_id FROM exercise_source_keys ORDER BY dataset_version,source_key")
+        .fetch_all(&mut *tx)
+        .await?
+        .into_iter()
+        .map(|row| Ok(json!({"datasetVersion": row.try_get::<String,_>(0)?, "sourceKey": row.try_get::<String,_>(1)?, "exerciseId": row.try_get::<String,_>(2)?})))
+        .collect::<Result<Vec<_>, sqlx::Error>>()?;
     tx.commit().await?;
     Ok(
-        json!({"catalogVersion":meta.try_get::<i64,_>(1)?,"sourceDatasetVersion":version,"mappingComplete":true,"unresolvedSourceKeys":[],"unresolvedLegacyIds":[],"items":items}),
+        json!({"catalogVersion":meta.try_get::<i64,_>(1)?,"sourceDatasetVersion":version,"mappingComplete":true,"unresolvedSourceKeys":[],"unresolvedLegacyIds":[],"sourceMappings":mappings,"items":items}),
     )
 }
 

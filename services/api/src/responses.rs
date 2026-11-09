@@ -56,7 +56,12 @@ dto!(DeletedProfile {
     deleted_user_id: String
 });
 dto!(Exercise { id: String, source_key: String, retired: bool, name: String, level: Option<Level>, force: Option<Force>, mechanic: Option<Mechanic>, equipment: Option<Equipment>, primary_muscles: Vec<String>, secondary_muscles: Vec<String>, instructions: Vec<String>, category: Option<Category> });
-dto!(Catalog { catalog_version: u64, source_dataset_version: String, mapping_complete: bool, unresolved_source_keys: Vec<String>, unresolved_legacy_ids: Vec<String>, items: Vec<Exercise> });
+dto!(SourceMapping {
+    dataset_version: String,
+    source_key: String,
+    exercise_id: String
+});
+dto!(Catalog { source_mappings: Vec<SourceMapping>, catalog_version: u64, source_dataset_version: String, mapping_complete: bool, unresolved_source_keys: Vec<String>, unresolved_legacy_ids: Vec<String>, items: Vec<Exercise> });
 dto!(ProgressionLog { exercise_record_id: String, exercise_id: String, exercise_name: String, created_at: String, reps: Vec<u64>, weight: Vec<f64>, duration_seconds: Vec<f64>, achieved_one_rm_value: Option<f64>, achieved_one_rm_set_index: Option<u64>, achieved_total_volume_value: Option<f64> });
 dto!(TemplateExercise { exercise_id: String, exercise_title: String, reps: Vec<u64>, weight: Vec<f64>, duration_seconds: Vec<f64>, category: Option<Category>, primary_muscles: Vec<String>, secondary_muscles: Vec<String> });
 dto!(WorkoutTemplate { id: String, exercises: Vec<TemplateExercise>, created_at: String, updated_at: String });
