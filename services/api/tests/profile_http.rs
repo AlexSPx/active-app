@@ -57,6 +57,18 @@ async fn call(
     key: Option<&str>,
     body: &str,
 ) -> (StatusCode, Value) {
+    let (status, bytes) = call_raw(state, token, method, path, key, body).await;
+    (status, serde_json::from_slice(&bytes).unwrap())
+}
+
+async fn call_raw(
+    state: &AppState,
+    token: &str,
+    method: &str,
+    path: &str,
+    key: Option<&str>,
+    body: &str,
+) -> (StatusCode, Vec<u8>) {
     let mut req = Request::builder()
         .method(method)
         .uri(path)
@@ -72,7 +84,7 @@ async fn call(
         .unwrap();
     let status = response.status();
     let bytes = to_bytes(response.into_body(), 65536).await.unwrap();
-    (status, serde_json::from_slice(&bytes).unwrap())
+    (status, bytes.to_vec())
 }
 fn token(issuer: &str, sub: &str) -> String {
     let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::RS256);
@@ -239,6 +251,157 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
             .0,
         StatusCode::NOT_FOUND
     );
+    // Failed attempts do not consume a key; another owner can use the same key.
+    let stale = call(
+        &state,
+        &alice,
+        "PATCH",
+        "/api/user/me",
+        Some("retry-stale"),
+        body,
+    )
+    .await;
+    assert_eq!(stale.1["code"], "STALE_VERSION");
+    let corrected = call(
+        &state,
+        &alice,
+        "PATCH",
+        "/api/user/me",
+        Some("retry-stale"),
+        r#"{"baseVersion":2,"lastName":"Updated"}"#,
+    )
+    .await;
+    assert_eq!(corrected.1["profileVersion"], 3);
+    let bob_result = call(
+        &state,
+        &bob,
+        "PATCH",
+        "/api/user/me",
+        Some("one"),
+        r#"{"baseVersion":1,"firstName":"Bob"}"#,
+    )
+    .await;
+    assert_eq!(bob_result.0, StatusCode::OK);
+
+    assert_eq!(
+        call(
+            &state,
+            &alice,
+            "PUT",
+            "/api/reminder-preferences",
+            Some("one"),
+            pref
+        )
+        .await
+        .1["code"],
+        "IDEMPOTENCY_KEY_REUSED"
+    );
+    let (left, right) = tokio::join!(
+        call(
+            &state,
+            &bob,
+            "PATCH",
+            "/api/user/me",
+            Some("left"),
+            r#"{"baseVersion":2,"lastName":"Left"}"#
+        ),
+        call(
+            &state,
+            &bob,
+            "PATCH",
+            "/api/user/me",
+            Some("right"),
+            r#"{"baseVersion":2,"lastName":"Right"}"#
+        )
+    );
+    assert!(
+        (left.0 == StatusCode::OK && right.1["code"] == "STALE_VERSION")
+            || (right.0 == StatusCode::OK && left.1["code"] == "STALE_VERSION")
+    );
+
+    // Receipt and child rows roll back with the preferences update.
+    sqlx::query("CREATE TRIGGER fail_time BEFORE INSERT ON reminder_times BEGIN SELECT RAISE(ABORT,'failure'); END")
+        .execute(&pool).await.unwrap();
+    let changed_pref = r#"{"baseVersion":1,"enabled":true,"timezone":"UTC","schedule":["10:00"]}"#;
+    assert_eq!(
+        call(
+            &state,
+            &alice,
+            "PUT",
+            "/api/reminder-preferences",
+            Some("rollback"),
+            changed_pref
+        )
+        .await
+        .0,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
+    assert_eq!(
+        call(&state, &alice, "GET", "/api/reminder-preferences", None, "")
+            .await
+            .1,
+        first.1
+    );
+    sqlx::query("DROP TRIGGER fail_time")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let updated_pref = call_raw(
+        &state,
+        &alice,
+        "PUT",
+        "/api/reminder-preferences",
+        Some("rollback"),
+        changed_pref,
+    )
+    .await;
+    assert_eq!(updated_pref.0, StatusCode::OK);
+    pool.close().await;
+    let pool = db::open(&path).await.unwrap();
+    let mut state = state;
+    state.pool = pool.clone();
+    assert_eq!(
+        call_raw(
+            &state,
+            &alice,
+            "PUT",
+            "/api/reminder-preferences",
+            Some("rollback"),
+            changed_pref
+        )
+        .await,
+        updated_pref
+    );
+    let durable: (i64, i64) = sqlx::query_as("SELECT version, (SELECT count(*) FROM reminder_times WHERE owner_id=reminder_preferences.owner_id) FROM reminder_preferences WHERE owner_id=(SELECT user_id FROM identities WHERE subject='alice')")
+        .fetch_one(&pool).await.unwrap();
+    assert_eq!(durable, (2, 1));
+
+    let lock = db::begin_write(&pool).await.unwrap();
+    let busy = call(
+        &state,
+        &alice,
+        "PATCH",
+        "/api/user/me",
+        Some("locked"),
+        r#"{"baseVersion":3,"firstName":"After lock"}"#,
+    )
+    .await;
+    assert_eq!(busy.0, StatusCode::SERVICE_UNAVAILABLE);
+    assert_eq!(busy.1["code"], "DATABASE_BUSY");
+    lock.rollback().await.unwrap();
+    assert_eq!(
+        call(
+            &state,
+            &alice,
+            "PATCH",
+            "/api/user/me",
+            Some("locked"),
+            r#"{"baseVersion":3,"firstName":"After lock"}"#
+        )
+        .await
+        .0,
+        StatusCode::OK
+    );
     sqlx::query(
         "CREATE TRIGGER fail_delete AFTER DELETE ON users BEGIN SELECT RAISE(ABORT,'failure'); END",
     )
@@ -250,7 +413,7 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
             &state,
             &alice,
             "DELETE",
-            "/api/user/me?baseVersion=2",
+            "/api/user/me?baseVersion=4",
             Some("delete"),
             ""
         )
@@ -266,7 +429,7 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
         &state,
         &alice,
         "DELETE",
-        "/api/user/me?baseVersion=2",
+        "/api/user/me?baseVersion=4",
         Some("delete"),
         "",
     )
@@ -279,7 +442,7 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
             &restarted,
             &alice,
             "DELETE",
-            "/api/user/me?baseVersion=2",
+            "/api/user/me?baseVersion=4",
             Some("delete"),
             ""
         )
