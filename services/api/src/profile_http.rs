@@ -1,7 +1,7 @@
 use crate::{
     AppState, auth,
     boundary::{ApiError, Validate},
-    db, profile,
+    db, idempotency, profile,
     requests::{PutPreferences, UpdateProfile, VersionQuery},
 };
 use axum::{
@@ -182,9 +182,10 @@ async fn handle(State(state): State<AppState>, req: Request) -> Result<Response,
             return Err(error);
         }
     };
-    let digest = profile::sha256(&canonical);
     let identity = profile::identity_digest(&principal.issuer, &principal.subject);
-    let mut tx = db::begin_write(&state.pool).await.map_err(|_| internal())?;
+    let mut tx = db::begin_write(&state.pool)
+        .await
+        .map_err(db::write_error)?;
     if let Some(row) = sqlx::query("SELECT operation_key, fingerprint, response_body FROM deleted_identities WHERE identity_digest=?").bind(&identity).fetch_optional(&mut *tx).await.map_err(|_| internal())? {
         let stored_key: Option<String> = row.get(0);
         if stored_key.as_deref() == Some(&operation_key) {
@@ -204,11 +205,20 @@ async fn handle(State(state): State<AppState>, req: Request) -> Result<Response,
             .await
             .map_err(|_| internal())?
             .ok_or_else(ApiError::not_found)?;
-    if let Some(row) = sqlx::query("SELECT method,target,body_hash,response_status,response_body FROM idempotency_receipts WHERE owner_id=? AND operation_key=?").bind(&owner).bind(&operation_key).fetch_optional(&mut *tx).await.map_err(|_| internal())? {
-        if row.get::<String,_>(0) != method || row.get::<String,_>(1) != target || row.get::<Vec<u8>,_>(2) != digest { return Err(reused()); }
-        let status = StatusCode::from_u16(row.get::<i64,_>(3) as u16).map_err(|_| internal())?;
-        let body: Vec<u8> = row.get(4);
-        return Ok((status, [("content-type", "application/json")], body).into_response());
+    let request = idempotency::Request {
+        owner: &owner,
+        key: &operation_key,
+        method,
+        target: &target,
+        canonical_body: &canonical,
+    };
+    if let Some(receipt) = idempotency::claim(&mut tx, &request).await? {
+        return Ok((
+            receipt.status,
+            [("content-type", "application/json")],
+            receipt.body,
+        )
+            .into_response());
     }
     // Capture only the requesting live session's replay proof before its account
     // cascade. The proof is written with the acknowledgement in this transaction.
@@ -256,17 +266,15 @@ async fn handle(State(state): State<AppState>, req: Request) -> Result<Response,
                 .map_err(|_| internal())?;
         }
     } else {
-        sqlx::query("INSERT INTO idempotency_receipts VALUES(?,?,?,?,?,200,?,?)")
-            .bind(owner)
-            .bind(operation_key)
-            .bind(method)
-            .bind(target)
-            .bind(digest.as_slice())
-            .bind(&result)
-            .bind(chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Millis, true))
-            .execute(&mut *tx)
-            .await
-            .map_err(|_| internal())?;
+        idempotency::complete(
+            &mut tx,
+            &request,
+            &idempotency::Receipt {
+                status: StatusCode::OK,
+                body: result.clone(),
+            },
+        )
+        .await?;
     }
     tx.commit().await.map_err(|_| internal())?;
     Ok(([("content-type", "application/json")], Body::from(result)).into_response())

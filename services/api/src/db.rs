@@ -59,3 +59,21 @@ pub async fn begin_write(pool: &SqlitePool) -> Result<Transaction<'static, Sqlit
     }
     unreachable!()
 }
+
+/// Translate writer lock exhaustion into a retryable response.
+pub fn write_error(error: sqlx::Error) -> crate::boundary::ApiError {
+    if matches!(&error, sqlx::Error::Database(e) if matches!(e.code().as_deref(), Some("5" | "6")))
+    {
+        crate::boundary::ApiError::new(
+            axum::http::StatusCode::SERVICE_UNAVAILABLE,
+            "DATABASE_BUSY",
+            "Database temporarily busy",
+        )
+    } else {
+        crate::boundary::ApiError::new(
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            "INTERNAL_ERROR",
+            "Internal error",
+        )
+    }
+}

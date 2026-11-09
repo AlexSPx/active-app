@@ -4,6 +4,7 @@ pub mod catalog;
 pub mod config;
 pub mod db;
 mod health;
+pub mod idempotency;
 pub mod profile;
 pub mod profile_http;
 pub mod requests;
