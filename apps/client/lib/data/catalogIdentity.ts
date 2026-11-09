@@ -28,6 +28,7 @@ export type ExerciseResolution =
 export function resolveExerciseIdentities(snapshot: unknown, ids: string[]): ExerciseResolution[] {
   const catalog = catalogSchema.parse(snapshot)
   const byId = new Map(catalog.items.map(({ id, retired }) => [id, { id, retired }]))
+  if (byId.size !== catalog.items.length) throw new Error('Duplicate catalog exercise ID')
   const byKey = new Map<string, string>()
   for (const mapping of catalog.sourceMappings) {
     if (mapping.datasetVersion !== SOURCE_DATASET_VERSION) continue
@@ -35,6 +36,7 @@ export function resolveExerciseIdentities(snapshot: unknown, ids: string[]): Exe
     byKey.set(mapping.sourceKey, mapping.exerciseId)
   }
   return ids.map((originalId) => {
+    if (catalog.unresolvedLegacyIds.includes(originalId)) return { kind: 'unresolved', originalId }
     const exact = byId.get(originalId)
     if (exact) return { kind: 'resolved', ...exact }
     if (catalog.mappingComplete && originalId.startsWith(LOCAL_PREFIX)) {

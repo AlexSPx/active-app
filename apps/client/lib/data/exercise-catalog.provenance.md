@@ -10,7 +10,7 @@
 - Service source: `active-service-ale71/src/main/resources/catalog/exercises.json`
 - License: Unlicense; the complete license is in [LICENSE.exercise-catalog.md](LICENSE.exercise-catalog.md)
 
-The service checkout documents the pinned source and its stored-field contract in `docs/catalog/exercise-catalog-provenance.md`. The artifact drops the upstream `images` field because search and the workout editor use only exercise identity and metadata.
+The artifact drops the upstream `images` field because search and the workout editor use only exercise identity and metadata. Both the client and Rust service consume this same artifact. Regenerate it with `python3 scripts/generate-exercise-catalog.py`; use `--source /path/to/exercises.json` to work from a local copy or `--check` to compare without writing. The generator verifies the pinned upstream SHA-256 before reading the data. The service embeds the artifact at build time and does not fetch it at startup.
 
 ## IDs and metadata
 

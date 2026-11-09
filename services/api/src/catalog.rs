@@ -56,8 +56,9 @@ pub async fn import(pool: &SqlitePool, data: &str, version: &str) -> Result<(), 
     for item in &items {
         let key = item["sourceKey"].as_str().ok_or_else(invalid)?;
         let matches: Vec<String> = sqlx::query_scalar(
-            "SELECT DISTINCT exercise_id FROM exercise_source_keys WHERE source_key=?",
+            "SELECT exercise_id FROM exercise_source_keys WHERE source_key=? UNION SELECT id FROM exercises WHERE source_key=?",
         )
+        .bind(key)
         .bind(key)
         .fetch_all(&mut *tx)
         .await?;
@@ -159,9 +160,19 @@ pub async fn snapshot(pool: &SqlitePool) -> Result<Value, sqlx::Error> {
         .into_iter()
         .map(|row| Ok(json!({"datasetVersion": row.try_get::<String,_>(0)?, "sourceKey": row.try_get::<String,_>(1)?, "exerciseId": row.try_get::<String,_>(2)?})))
         .collect::<Result<Vec<_>, sqlx::Error>>()?;
+    let unresolved: Vec<String> = sqlx::query_scalar(
+        "SELECT source_key FROM (\
+         SELECT e.source_key FROM exercises e LEFT JOIN exercise_source_keys m \
+           ON m.dataset_version=e.dataset_version AND m.source_key=e.source_key AND m.exercise_id=e.id \
+           WHERE m.exercise_id IS NULL \
+         UNION SELECT source_key FROM exercise_source_keys GROUP BY source_key HAVING count(DISTINCT exercise_id)>1\
+         ) ORDER BY source_key",
+    )
+    .fetch_all(&mut *tx)
+    .await?;
     tx.commit().await?;
     Ok(
-        json!({"catalogVersion":meta.try_get::<i64,_>(1)?,"sourceDatasetVersion":version,"mappingComplete":true,"unresolvedSourceKeys":[],"unresolvedLegacyIds":[],"sourceMappings":mappings,"items":items}),
+        json!({"catalogVersion":meta.try_get::<i64,_>(1)?,"sourceDatasetVersion":version,"mappingComplete":unresolved.is_empty(),"unresolvedSourceKeys":unresolved,"unresolvedLegacyIds":[],"sourceMappings":mappings,"items":items}),
     )
 }
 
