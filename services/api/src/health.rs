@@ -22,10 +22,7 @@ pub async fn ready(State(state): State<AppState>) -> Response {
         .fetch_one(&state.pool)
         .await
         .is_ok();
-    let catalog = sqlx::query_scalar::<_, i64>("SELECT 1 FROM catalog_metadata WHERE singleton=1 AND EXISTS (SELECT 1 FROM exercises WHERE retired=0) AND NOT EXISTS (SELECT 1 FROM exercises e WHERE NOT EXISTS (SELECT 1 FROM exercise_source_keys m WHERE m.dataset_version=e.dataset_version AND m.source_key=e.source_key AND m.exercise_id=e.id)) AND NOT EXISTS (SELECT 1 FROM exercise_source_keys GROUP BY source_key HAVING count(DISTINCT exercise_id)>1)")
-        .fetch_optional(&state.pool)
-        .await
-        .is_ok_and(|value| value.is_some());
+    let catalog = crate::catalog::ready(&state.pool).await.unwrap_or(false);
     let auth = state.discovery.read().await.is_some();
     let draining = state.draining.load(Ordering::SeqCst);
     let status = if database && catalog && auth && !draining {

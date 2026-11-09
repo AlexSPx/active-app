@@ -225,6 +225,68 @@ async fn authenticated_catalog_search_and_mapping_failures() {
         StatusCode::BAD_REQUEST
     );
     let key = items[0]["sourceKey"].as_str().unwrap();
+    let id = items[0]["id"].as_str().unwrap();
+    let data = include_str!("../../../apps/client/lib/data/exercise-catalog.json");
+    catalog::import(&pool, data, "new-dataset-revision")
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM exercise_source_keys WHERE dataset_version=? AND source_key=?")
+        .bind(catalog::DATASET_VERSION)
+        .bind(key)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let (_, incomplete) = call("/api/exercises/catalog", true).await;
+    assert_eq!(incomplete["mappingComplete"], false);
+    assert_eq!(incomplete["unresolvedSourceKeys"], serde_json::json!([key]));
+    assert_eq!(ready(state.clone()).await["catalog"], false);
+    catalog::import(&pool, data, "new-dataset-revision")
+        .await
+        .unwrap();
+    let (_, repaired) = call("/api/exercises/catalog", true).await;
+    assert_eq!(repaired["mappingComplete"], true);
+    assert_eq!(
+        repaired["catalogVersion"].as_i64().unwrap(),
+        incomplete["catalogVersion"].as_i64().unwrap() + 1
+    );
+    assert!(
+        repaired["sourceMappings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|m| m["datasetVersion"] == catalog::DATASET_VERSION
+                && m["sourceKey"] == key
+                && m["exerciseId"] == id)
+    );
+    assert_eq!(ready(state.clone()).await["catalog"], true);
+    catalog::import(&pool, data, "third-revision")
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM exercise_source_keys WHERE dataset_version='new-dataset-revision' AND source_key=?")
+        .bind(key).execute(&pool).await.unwrap();
+    assert_eq!(
+        catalog::snapshot(&pool).await.unwrap()["mappingComplete"],
+        false
+    );
+    catalog::import(&pool, data, "third-revision")
+        .await
+        .unwrap();
+    let repaired_again = catalog::snapshot(&pool).await.unwrap();
+    assert!(
+        repaired_again["sourceMappings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|m| m["datasetVersion"] == "new-dataset-revision"
+                && m["sourceKey"] == key
+                && m["exerciseId"] == id)
+    );
+    catalog::import(&pool, data, "third-revision")
+        .await
+        .unwrap();
+    assert_eq!(catalog::snapshot(&pool).await.unwrap(), repaired_again);
+    catalog::seed(&pool).await.unwrap();
+    let (_, snapshot) = call("/api/exercises/catalog", true).await;
     sqlx::query("DELETE FROM exercise_source_keys WHERE source_key=?")
         .bind(key)
         .execute(&pool)
@@ -234,7 +296,9 @@ async fn authenticated_catalog_search_and_mapping_failures() {
     assert_eq!(incomplete["mappingComplete"], false);
     assert_eq!(incomplete["unresolvedSourceKeys"], serde_json::json!([key]));
     catalog::seed(&pool).await.unwrap();
-    assert_eq!(catalog::snapshot(&pool).await.unwrap(), snapshot);
+    let mut expected = snapshot.clone();
+    expected["catalogVersion"] = (snapshot["catalogVersion"].as_i64().unwrap() + 1).into();
+    assert_eq!(catalog::snapshot(&pool).await.unwrap(), expected);
     sqlx::query("INSERT INTO exercise_source_keys VALUES('conflicting-revision',?,?)")
         .bind(key)
         .bind(items[1]["id"].as_str().unwrap())
@@ -247,4 +311,53 @@ async fn authenticated_catalog_search_and_mapping_failures() {
     assert_eq!(ready(state.clone()).await["catalog"], false);
     assert!(catalog::seed(&pool).await.is_err());
     assert_eq!(catalog::snapshot(&pool).await.unwrap(), ambiguous);
+}
+
+#[tokio::test]
+async fn migration_retains_preexisting_revision_mappings() {
+    use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+    let dir = tempfile::tempdir().unwrap();
+    let migrations = dir.path().join("migrations");
+    std::fs::create_dir(&migrations).unwrap();
+    let original = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("migrations");
+    for entry in std::fs::read_dir(original).unwrap() {
+        let entry = entry.unwrap();
+        if entry.file_name().to_string_lossy().as_ref() < "0006" {
+            std::fs::copy(entry.path(), migrations.join(entry.file_name())).unwrap();
+        }
+    }
+    let path = dir.path().join("old.db");
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new()
+                .filename(&path)
+                .create_if_missing(true)
+                .foreign_keys(true),
+        )
+        .await
+        .unwrap();
+    sqlx::migrate::Migrator::new(migrations.as_path())
+        .await
+        .unwrap()
+        .run(&pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO exercises(id,dataset_version,source_key,name) VALUES('known','new','key','Example')").execute(&pool).await.unwrap();
+    sqlx::query(
+        "INSERT INTO exercise_source_keys VALUES('old','key','known'),('new','key','known')",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    pool.close().await;
+    let pool = db::open(&path).await.unwrap();
+    let expected: Vec<(String, String, String)> = sqlx::query_as("SELECT dataset_version,source_key,exercise_id FROM expected_exercise_source_keys ORDER BY dataset_version").fetch_all(&pool).await.unwrap();
+    assert_eq!(
+        expected,
+        vec![
+            ("new".into(), "key".into(), "known".into()),
+            ("old".into(), "key".into(), "known".into())
+        ]
+    );
 }
