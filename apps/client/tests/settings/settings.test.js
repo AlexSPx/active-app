@@ -53,8 +53,8 @@ const {
   parseMeasurement,
   parseRestDuration,
 } = require('../../features/settings/inputs')
-const BodyScreen = require('../../app/(tabs)/settings/body').default
-const TimerScreen = require('../../app/(tabs)/settings/rest-timer').default
+const BodyScreen = require('../../app/settings/body').default
+const TimerScreen = require('../../app/settings/rest-timer').default
 const { Button: UiButton } = require('../../components/ui/Controls')
 
 let settings, update
@@ -331,7 +331,7 @@ test('native reminder frequency defaults safely and preserves explicit Off', asy
   const { useAuth } = require('../../contexts/AuthContext')
   const { isBackendEnabledForLaunch } = require('../../config/launchPolicy')
   const { Platform } = require('react-native')
-  const PermissionsScreen = require('../../app/(tabs)/settings/permissions').default
+  const PermissionsScreen = require('../../app/settings/permissions').default
   Platform.OS = 'android'
   for (const [user, expected] of [
     [null, '1 / day'],

@@ -65,7 +65,7 @@ jest.mock('../../stores/networkStore', () => ({
 const { Alert } = require('react-native')
 const { syncEngine } = require('../../lib/sync')
 const { useAuthStore } = require('../../stores/authStore')
-const SettingsScreen = require('../../app/(tabs)/settings/sync').default
+const SettingsScreen = require('../../app/settings/sync').default
 
 function buttonLabel(button) {
   return button

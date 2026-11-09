@@ -15,7 +15,7 @@ export function BackHeaderButton({ label, fallback }: BackHeaderButtonProps) {
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`Back to ${label}`}
+      accessibilityLabel={label === 'Back' ? 'Go back' : `Back to ${label}`}
       hitSlop={4}
       onPress={() => {
         if (router.canGoBack()) router.back()

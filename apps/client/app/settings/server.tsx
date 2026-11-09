@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Platform, View } from 'react-native'
-import { SettingsPage } from '../../../components/settings/SettingsPage'
-import { Button, Surface, TextField, UiText } from '../../../components/ui/Controls'
-import { useAuth } from '../../../contexts/AuthContext'
-import { useSettingsStore } from '../../../features/settings'
+import { SettingsPage } from '../../components/settings/SettingsPage'
+import { Button, Surface, TextField, UiText } from '../../components/ui/Controls'
+import { useAuth } from '../../contexts/AuthContext'
+import { useSettingsStore } from '../../features/settings'
 import {
   connectAccount,
   deleteRemoteAccount,
@@ -11,8 +11,8 @@ import {
   initializeFromDevice,
   readAccount,
   type RemoteProfile,
-} from '../../../features/selfHosted/account'
-import { loadConnection, type Connection } from '../../../features/selfHosted/storage'
+} from '../../features/selfHosted/account'
+import { loadConnection, type Connection } from '../../features/selfHosted/storage'
 
 export default function ServerSettingsScreen() {
   const { user } = useAuth()

@@ -1,10 +1,10 @@
 import { Alert, View } from 'react-native'
 import { useEffect, useState } from 'react'
-import { useAuth } from '../../../contexts/AuthContext'
-import { useAuthMutations } from '../../../features/auth'
-import { SettingsPage } from '../../../components/settings/SettingsPage'
-import { Button, Surface, TextField, UiText } from '../../../components/ui/Controls'
-import { launchFacade } from '../../../features/launch/launchFacade'
+import { useAuth } from '../../contexts/AuthContext'
+import { useAuthMutations } from '../../features/auth'
+import { SettingsPage } from '../../components/settings/SettingsPage'
+import { Button, Surface, TextField, UiText } from '../../components/ui/Controls'
+import { launchFacade } from '../../features/launch/launchFacade'
 
 export default function AccountSettingsScreen() {
   const { logout, updateUser, user } = useAuth()

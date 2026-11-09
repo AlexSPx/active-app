@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Switch, View } from 'react-native'
-import { SettingsPage } from '../../../components/settings/SettingsPage'
-import { Button, Surface, TextField, UiText } from '../../../components/ui/Controls'
-import { useSettingsStore } from '../../../features/settings'
-import { parseRestDuration } from '../../../features/settings/inputs'
+import { SettingsPage } from '../../components/settings/SettingsPage'
+import { Button, Surface, TextField, UiText } from '../../components/ui/Controls'
+import { useSettingsStore } from '../../features/settings'
+import { parseRestDuration } from '../../features/settings/inputs'
 
 const presets = [
   { value: 30, label: '30 sec' },
