@@ -1,5 +1,11 @@
-A refreshed look in light and dark themes.
-Browse exercises by muscle group and equipment.
-Plan your training with workout templates and flexible routines.
-Log sets, reps, and weights, then follow your progress and session history.
-Train offline with your data stored on your device.
+Active Next: Initial release
+
+- 876 exercises, muscle diagrams and muscle/equipment filters.
+- Workout templates; repeating and weekly routines.
+- Sets, reps, weights and cardio tracking.
+- Session and rest timers; resume workouts.
+- Calendar history and session details.
+- 1RM, volume and weight charts; training widgets.
+- Reminders, body measurements and unit settings.
+- Light, dark and system themes.
+- Train offline without an account; control your local data.
