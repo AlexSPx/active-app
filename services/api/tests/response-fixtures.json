@@ -72,6 +72,18 @@
         "instructions": [],
         "category": "STRENGTH"
       }
+    ],
+    "sourceMappings": [
+      {
+        "datasetVersion": "2026-01",
+        "sourceKey": "barbell-squat",
+        "exerciseId": "exercise-1"
+      },
+      {
+        "datasetVersion": "2026-01",
+        "sourceKey": "z-last",
+        "exerciseId": "exercise-2"
+      }
     ]
   },
   "catalog.search": [

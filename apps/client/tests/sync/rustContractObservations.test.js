@@ -6,15 +6,15 @@ const {
 const fixtures = require('../../../../contracts/v1/client-parser-observations.json')
 
 describe('Rust contract migration observations', () => {
-  it('exposes current parser gaps rather than treating proposed payloads as compatible', () => {
-    expect(exerciseSchema.safeParse(fixtures.catalogItem).success).toBe(false)
+  it('accepts catalog metadata while retaining other parser gaps', () => {
+    expect(exerciseSchema.safeParse(fixtures.catalogItem).success).toBe(true)
     expect(workoutRecordResponseSchema.safeParse(fixtures.recordWithoutStreak).success).toBe(false)
     expect(workoutRecordSchema.safeParse(fixtures.recordWithDeletedWorkout).success).toBe(false)
   })
 
-  it('demonstrates that the current exercise parser drops source identity', () => {
+  it('preserves catalog source identity', () => {
     const parsed = exerciseSchema.parse({ ...fixtures.catalogItem, level: 'BEGINNER' })
-    expect(parsed).not.toHaveProperty('sourceKey')
-    expect(parsed).not.toHaveProperty('retired')
+    expect(parsed).toHaveProperty('sourceKey', 'barbell-squat')
+    expect(parsed).toHaveProperty('retired', false)
   })
 })

@@ -782,12 +782,20 @@ class ApiService {
     )
   }
 
+  async getExerciseCatalog(): Promise<unknown> {
+    return this.request<unknown>(getApiUrl(config.API_ENDPOINTS.EXERCISES.CATALOG), {
+      method: 'GET',
+      headers: { 'X-Active-Contract-Version': '1' },
+    })
+  }
+
   async searchExercises(query: string): Promise<ApiExercise[]> {
     const url = new URL(getApiUrl(config.API_ENDPOINTS.EXERCISES.SEARCH))
     url.searchParams.append('name', query)
 
     return this.request<ApiExercise[]>(url.toString(), {
       method: 'GET',
+      headers: { 'X-Active-Contract-Version': '1' },
     })
   }
 

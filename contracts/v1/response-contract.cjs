@@ -41,7 +41,7 @@ const error = z.object({ code: z.string().min(1), message: z.string(), currentVe
 const responses = {
   discovery, 'profile.get': profile, 'profile.update': profile, 'profile.delete': z.object({ deletedUserId: id }),
   'legal.terms': z.string(), 'legal.privacy': z.string(),
-  'catalog.get': z.object({ catalogVersion: version, sourceDatasetVersion: id, mappingComplete: z.boolean(), unresolvedSourceKeys: z.array(id), unresolvedLegacyIds: z.array(id), items: ordered(exercise, (a, b) => compare(a.sourceKey, b.sourceKey)) }), 'catalog.search': ordered(exercise, (a, b) => compare(a.sourceKey, b.sourceKey)),
+  'catalog.get': z.object({ catalogVersion: version, sourceDatasetVersion: id, mappingComplete: z.boolean(), unresolvedSourceKeys: z.array(id), unresolvedLegacyIds: z.array(id), sourceMappings: z.array(z.object({ datasetVersion: id, sourceKey: id, exerciseId: id })), items: ordered(exercise, (a, b) => compare(a.sourceKey, b.sourceKey)) }), 'catalog.search': ordered(exercise, (a, b) => compare(a.sourceKey, b.sourceKey)),
   'progression.logs': z.array(z.object({ exerciseRecordId: id, exerciseId: id, exerciseName: z.string(), createdAt: instant, ...sets, ...achievement })),
   'workout.list': ordered(workout, byTimeAndId('createdAt', 1)), 'workout.create': workout, 'workout.update': workout, 'workout.delete': z.object({ deletedWorkoutId: id, routineVersions: z.array(z.object({ id, version: positiveVersion })) }),
   'routine.list': ordered(routine, byTimeAndId('createdAt', 1)), 'routine.get': routine, 'routine.active': routine, 'routine.create': routine, 'routine.update': routine, 'routine.delete': z.object({ deletedRoutineId: id, profileVersion: positiveVersion }),

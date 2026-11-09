@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod boundary;
+pub mod catalog;
 pub mod config;
 pub mod db;
 mod health;
@@ -64,6 +65,7 @@ pub async fn initialize(
     pool: SqlitePool,
     config: &config::Config,
 ) -> Result<AppState, sqlx::Error> {
+    catalog::seed(&pool).await?;
     sqlx::query("INSERT INTO instance_metadata(singleton, instance_id) VALUES(1, ?) ON CONFLICT(singleton) DO NOTHING")
         .bind(Uuid::new_v4().to_string()).execute(&pool).await?;
     let identity: String =
@@ -264,6 +266,7 @@ async fn operational(State(state): State<AppState>, request: Request, next: Next
 pub fn app(state: AppState) -> Router {
     Router::new()
         .merge(profile_http::routes())
+        .merge(catalog::routes())
         .route("/auth/login", get(web_auth::login))
         .route("/auth/callback", get(web_auth::callback))
         .route("/auth/session", get(web_auth::session))

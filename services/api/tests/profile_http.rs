@@ -112,6 +112,52 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
         request_timeout: Duration::from_secs(5),
         origins: vec![],
     };
+    active_api::catalog::seed(&pool).await.unwrap();
+    for (path, expected) in [
+        ("/api/exercises/catalog", 876),
+        ("/api/exercises/search?name=bench", 0),
+    ] {
+        let response = active_api::catalog::routes()
+            .with_state(state.clone())
+            .oneshot(
+                Request::builder()
+                    .uri(path)
+                    .header(
+                        "authorization",
+                        format!("Bearer {}", token(&issuer, "alice")),
+                    )
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let body: Value =
+            serde_json::from_slice(&to_bytes(response.into_body(), 4_000_000).await.unwrap())
+                .unwrap();
+        let items = if path.contains("catalog") {
+            body["items"].as_array().unwrap()
+        } else {
+            body.as_array().unwrap()
+        };
+        if path.contains("catalog") {
+            assert_eq!(items.len(), expected);
+        } else {
+            assert!(!items.is_empty());
+            assert!(items.iter().all(|item| {
+                item["name"]
+                    .as_str()
+                    .unwrap()
+                    .to_lowercase()
+                    .contains("bench")
+            }));
+        }
+        assert!(
+            items
+                .windows(2)
+                .all(|pair| pair[0]["sourceKey"].as_str() < pair[1]["sourceKey"].as_str())
+        );
+    }
     let alice = token(&issuer, "alice");
     let bob = token(&issuer, "bob");
     assert_eq!(

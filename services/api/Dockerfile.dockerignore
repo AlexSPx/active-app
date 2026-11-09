@@ -9,3 +9,9 @@
 !services/api/src/**
 !services/api/migrations/
 !services/api/migrations/**
+
+!apps/
+!apps/client/
+!apps/client/lib/
+!apps/client/lib/data/
+!apps/client/lib/data/exercise-catalog.json
