@@ -1,0 +1,11 @@
+Active Next: Initial release
+
+- 876 exercises, muscle diagrams and muscle/equipment filters.
+- Workout templates; repeating and weekly routines.
+- Sets, reps, weights and cardio tracking.
+- Session and rest timers; resume workouts.
+- Calendar history and session details.
+- 1RM, volume and weight charts; training widgets.
+- Reminders, body measurements and unit settings.
+- Light, dark and system themes.
+- Train offline without an account; control your local data.
