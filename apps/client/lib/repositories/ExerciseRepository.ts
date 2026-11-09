@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { launchFacade } from '../../features/launch/launchFacade'
 import { exerciseCatalog as localExercises } from '../data/exercises'
+import { resolveExerciseIdentities } from '../data/catalogIdentity'
 import { apiService } from '../../services/apiService'
 import { getDatabase } from '../db/connection'
 import {
@@ -28,15 +29,7 @@ interface WorkoutTemplateRow {
   workout_template: string | null
 }
 
-const localExercisesByName = new Map(
-  localExercises.map((exercise) => [normalizeName(exercise.name), exercise])
-)
-
-function normalizeName(name: string): string {
-  return name.trim().toLowerCase()
-}
-
-async function loadCachedWorkoutExercises(): Promise<Map<string, CachedWorkoutExercise>> {
+async function loadCachedWorkoutExercises(): Promise<CachedWorkoutExercise[]> {
   const db = await getDatabase()
   const rows = await db.getAllAsync<WorkoutTemplateRow>(`
     SELECT workout_template
@@ -44,7 +37,7 @@ async function loadCachedWorkoutExercises(): Promise<Map<string, CachedWorkoutEx
     WHERE is_deleted = 0 AND workout_template IS NOT NULL
     ORDER BY COALESCE(updated_at, created_at) DESC, created_at DESC, id DESC
   `)
-  const exercisesByName = new Map<string, CachedWorkoutExercise>()
+  const exercises: CachedWorkoutExercise[] = []
   const seenExerciseIds = new Set<string>()
 
   for (const row of rows) {
@@ -66,16 +59,13 @@ async function loadCachedWorkoutExercises(): Promise<Map<string, CachedWorkoutEx
 
       const name = exercise.exerciseTitle?.trim()
       if (!name) continue
-      const key = normalizeName(name)
-      if (!key) continue
 
       seenExerciseIds.add(exercise.exerciseId)
-      if (exercisesByName.has(key)) continue
-      exercisesByName.set(key, { ...exercise, name })
+      exercises.push({ ...exercise, name })
     }
   }
 
-  return exercisesByName
+  return exercises
 }
 
 function overlayCachedExercise(
@@ -122,26 +112,22 @@ export class ExerciseRepository {
     }
 
     const cachedExercises = await loadCachedWorkoutExercises()
-    const results: ApiExercise[] = []
-    const matchedNames = new Set<string>()
+    const results = localExercises.filter((exercise) =>
+      exercise.name.toLowerCase().includes(normalizedQuery)
+    )
 
-    for (const exercise of localExercises) {
-      if (!exercise.name.toLowerCase().includes(normalizedQuery)) continue
-
-      const name = normalizeName(exercise.name)
-      const cached = cachedExercises.get(name)
-      results.push(cached ? overlayCachedExercise(exercise, cached) : exercise)
-      matchedNames.add(name)
-    }
-
-    for (const [name, cached] of cachedExercises) {
-      if (matchedNames.has(name) || !cached.name.toLowerCase().includes(normalizedQuery)) continue
-
-      results.push(overlayCachedExercise(localExercisesByName.get(name), cached))
-      matchedNames.add(name)
+    for (const cached of cachedExercises) {
+      if (cached.name.toLowerCase().includes(normalizedQuery)) {
+        results.push(overlayCachedExercise(undefined, cached))
+      }
     }
 
     return results
+  }
+
+  async resolveIdentities(ids: string[]) {
+    const snapshot = await apiService.getExerciseCatalog()
+    return resolveExerciseIdentities(snapshot, ids)
   }
 
   async getLogs(exerciseId: string): Promise<ExerciseLogResponse[]> {

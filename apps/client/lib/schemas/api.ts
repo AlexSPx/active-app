@@ -37,15 +37,17 @@ export const exerciseCategorySchema = z.enum([
 
 export const exerciseSchema = z.object({
   id: z.string(),
+  sourceKey: z.string().optional(),
+  retired: z.boolean().optional(),
   name: z.string(),
-  level: exerciseLevelSchema,
+  level: exerciseLevelSchema.nullable(),
   force: exerciseForceSchema.nullable().optional(),
   mechanic: exerciseMechanicSchema.nullable().optional(),
   equipment: exerciseEquipmentSchema.nullable().optional(),
   primaryMuscles: z.array(z.string()),
   secondaryMuscles: z.array(z.string()),
   instructions: z.array(z.string()),
-  category: exerciseCategorySchema,
+  category: exerciseCategorySchema.nullable(),
 })
 
 export const exercisesArraySchema = z.array(exerciseSchema)

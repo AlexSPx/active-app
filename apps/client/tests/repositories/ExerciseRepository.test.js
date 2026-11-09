@@ -35,7 +35,7 @@ describe('ExerciseRepository local search', () => {
     expect(apiService.searchExercises).not.toHaveBeenCalled()
   })
 
-  it('overlays cached UUIDs and exposes exercises found only in saved templates', async () => {
+  it('keeps cached UUIDs separate from equally named catalog entries', async () => {
     const db = {
       getAllAsync: jest.fn(async () => [
         {
@@ -69,6 +69,14 @@ describe('ExerciseRepository local search', () => {
           id: '8bb49c10-479d-4cdc-bbe6-5ac3ce75661b',
           name: 'Barbell Bench Press - Medium Grip',
           primaryMuscles: ['chest'],
+        }),
+      ])
+    )
+
+    expect(exercises).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'local:exercise:Barbell_Bench_Press_-_Medium_Grip',
         }),
       ])
     )

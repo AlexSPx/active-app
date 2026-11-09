@@ -167,9 +167,7 @@ describe('Rust release contract fixtures', () => {
       })
       expect(byId[`${resource}.put`].request.baseVersion).toBe(0)
     }
-    const {
-      authenticationExamples,
-    } = require('../../../../contracts/v1/release-operations.json')
+    const { authenticationExamples } = require('../../../../contracts/v1/release-operations.json')
     expect(authenticationExamples.map(({ status }) => status)).toEqual([200, 401, 401, 401, 404])
     expect(authenticationExamples[0].identity).toEqual([
       'https://identity.example.test',
@@ -191,7 +189,10 @@ describe('Rust release contract fixtures', () => {
     const catalog = byId['catalog.get'].success.body
     expect(catalog.mappingComplete).toBe(true)
     expect(catalog.items[0]).toMatchObject({ sourceKey: 'barbell-squat', retired: false })
-    expect(schemas.exerciseSchema.parse(catalog.items[0])).not.toHaveProperty('sourceKey')
+    expect(schemas.exerciseSchema.parse(catalog.items[0])).toHaveProperty(
+      'sourceKey',
+      'barbell-squat'
+    )
     const record = byId['record.create']
     expect(record.request).toMatchObject({
       completedAt: expect.any(String),

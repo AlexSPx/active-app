@@ -22,14 +22,18 @@ pub async fn ready(State(state): State<AppState>) -> Response {
         .fetch_one(&state.pool)
         .await
         .is_ok();
+    let catalog = sqlx::query_scalar::<_, i64>("SELECT 1 FROM catalog_metadata WHERE singleton=1")
+        .fetch_optional(&state.pool)
+        .await
+        .is_ok_and(|value| value.is_some());
     let auth = state.discovery.read().await.is_some();
     let draining = state.draining.load(Ordering::SeqCst);
-    let status = if database && auth && !draining {
+    let status = if database && catalog && auth && !draining {
         StatusCode::OK
     } else {
         StatusCode::SERVICE_UNAVAILABLE
     };
-    (status, Json(serde_json::json!({"status": if status == StatusCode::OK { "ready" } else { "not_ready" }, "database": database, "auth": auth, "draining": draining}))).into_response()
+    (status, Json(serde_json::json!({"status": if status == StatusCode::OK { "ready" } else { "not_ready" }, "database": database, "catalog": catalog, "auth": auth, "draining": draining}))).into_response()
 }
 
 pub async fn discovery(State(state): State<AppState>) -> Response {

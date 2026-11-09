@@ -20,7 +20,7 @@ export function getRestTimerNextStepText(exercises: Exercise[], activeSetId: str
 }
 
 export function hasSetValues(
-  category: string,
+  category: string | null,
   set: Pick<Set, 'reps' | 'weight' | 'durationSeconds'>
 ) {
   if (category === 'CARDIO') {

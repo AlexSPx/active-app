@@ -12,7 +12,8 @@ export const muscleGroups = [
   { label: 'Core', muscles: ['abdominals'] },
 ]
 
-export function exerciseLabel(value: string) {
+export function exerciseLabel(value: string | null) {
+  if (value === null) return 'Unknown'
   if (value === 'BODY_ONLY') return 'Bodyweight'
   if (value === 'EZ_CURL_BAR' || value === 'E_Z_CURL_BAR') return 'EZ curl bar'
   const words = value.toLowerCase().replace(/_/g, ' ')
