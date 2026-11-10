@@ -36,6 +36,15 @@ test('resolves exact active and retired IDs while retaining unknown UUIDs', () =
   ])
 })
 
+test('does not accept ambiguous legacy IDs or duplicate catalog IDs', () => {
+  expect(
+    resolveExerciseIdentities({ ...catalog, unresolvedLegacyIds: [items[0].id] }, [items[0].id])
+  ).toEqual([{ kind: 'unresolved', originalId: items[0].id }])
+  expect(() => resolveExerciseIdentities({ ...catalog, items: [items[0], items[0]] }, [])).toThrow(
+    'Duplicate catalog exercise ID'
+  )
+})
+
 test('uses only explicit mappings for the pinned revision', () => {
   const ids = ['local:exercise:squat', 'local:exercise:retired', 'local:exercise:missing']
   expect(resolveExerciseIdentities(catalog, ids)).toEqual([

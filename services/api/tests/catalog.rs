@@ -76,3 +76,288 @@ async fn import_is_atomic_repeatable_and_preserves_retired_identities() {
     assert_eq!(item["id"], first_id);
     assert_eq!(item["retired"], false);
 }
+
+#[tokio::test]
+async fn authenticated_catalog_search_and_mapping_failures() {
+    use active_api::{AppState, auth::AuthState, web_auth::WebConfig};
+    use axum::{
+        body::{Body, to_bytes},
+        http::{Request, StatusCode},
+    };
+    use base64::{Engine, engine::general_purpose::URL_SAFE_NO_PAD};
+    use sha2::{Digest, Sha256};
+    use std::{
+        sync::{Arc, atomic::AtomicBool},
+        time::Duration,
+    };
+    use tokio::sync::RwLock;
+    use tower::ServiceExt;
+
+    let dir = tempfile::tempdir().unwrap();
+    let pool = db::open(&dir.path().join("api.db")).await.unwrap();
+    catalog::seed(&pool).await.unwrap();
+    sqlx::query("INSERT INTO users(id,email,username,first_name,last_name,created_at) VALUES('u','a@example.com','user','A','B','2026-01-01T00:00:00Z')").execute(&pool).await.unwrap();
+    sqlx::query("INSERT INTO identities VALUES('issuer','subject','u')")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let cookie = "a".repeat(43);
+    let hash = URL_SAFE_NO_PAD.encode(Sha256::digest(cookie.as_bytes()));
+    sqlx::query("INSERT INTO sessions VALUES(?,'u','2099-01-01T00:00:00Z')")
+        .bind(&hash)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO web_session_metadata VALUES(?,'csrf','issuer','subject')")
+        .bind(&hash)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let mut auth = AuthState::default();
+    auth.set_web_config(Some(WebConfig {
+        client_id: "client".into(),
+        client_secret: "secret".into(),
+        external_url: url::Url::parse("http://localhost").unwrap(),
+    }));
+    let state = AppState {
+        pool: pool.clone(),
+        auth,
+        discovery: Arc::new(RwLock::new(None)),
+        draining: Arc::new(AtomicBool::new(false)),
+        body_limit: 1048576,
+        request_timeout: Duration::from_secs(30),
+        origins: vec![],
+    };
+    let call = |path: &'static str, authenticated: bool| {
+        let state = state.clone();
+        let cookie = cookie.clone();
+        async move {
+            let mut request = Request::builder().uri(path);
+            if authenticated {
+                request = request.header("cookie", format!("active_session={cookie}"));
+            }
+            let response = catalog::routes()
+                .with_state(state)
+                .oneshot(request.body(Body::empty()).unwrap())
+                .await
+                .unwrap();
+            let status = response.status();
+            let body = to_bytes(response.into_body(), 2_000_000).await.unwrap();
+            (status, serde_json::from_slice::<Value>(&body).unwrap())
+        }
+    };
+    let ready = |state: AppState| async move {
+        let response = active_api::app(state)
+            .oneshot(
+                Request::builder()
+                    .uri("/ready")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+        serde_json::from_slice::<Value>(&to_bytes(response.into_body(), 4096).await.unwrap())
+            .unwrap()
+    };
+    assert_eq!(
+        call("/api/exercises/catalog", false).await.0,
+        StatusCode::UNAUTHORIZED
+    );
+    let (status, snapshot) = call("/api/exercises/catalog", true).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(snapshot, catalog::snapshot(&pool).await.unwrap());
+    assert_eq!(ready(state.clone()).await["catalog"], true);
+    let items = snapshot["items"].as_array().unwrap();
+    assert_eq!(items.len(), 876);
+    assert!(
+        items
+            .windows(2)
+            .all(|pair| pair[0]["sourceKey"].as_str() < pair[1]["sourceKey"].as_str())
+    );
+    let bundled: Vec<Value> = serde_json::from_str(include_str!(
+        "../../../apps/client/lib/data/exercise-catalog.json"
+    ))
+    .unwrap();
+    for source in &bundled {
+        let item = items
+            .iter()
+            .find(|item| item["sourceKey"] == source["sourceKey"])
+            .unwrap();
+        for field in [
+            "name",
+            "level",
+            "force",
+            "mechanic",
+            "equipment",
+            "category",
+            "primaryMuscles",
+            "secondaryMuscles",
+            "instructions",
+        ] {
+            assert_eq!(
+                item[field], source[field],
+                "{}: {field}",
+                source["sourceKey"]
+            );
+        }
+        assert!(snapshot["sourceMappings"].as_array().unwrap().iter().any(
+            |mapping| mapping["datasetVersion"] == catalog::DATASET_VERSION
+                && mapping["sourceKey"] == source["sourceKey"]
+                && mapping["exerciseId"] == item["id"]
+        ));
+    }
+    let (status, search) = call("/api/exercises/search?name=SquAt", true).await;
+    assert_eq!(status, StatusCode::OK);
+    let expected: Vec<_> = items
+        .iter()
+        .filter(|item| {
+            item["name"]
+                .as_str()
+                .unwrap()
+                .to_lowercase()
+                .contains("squat")
+        })
+        .cloned()
+        .collect();
+    assert_eq!(search, serde_json::json!(expected));
+    assert_eq!(
+        call("/api/exercises/search?name=", true).await.0,
+        StatusCode::BAD_REQUEST
+    );
+    let key = items[0]["sourceKey"].as_str().unwrap();
+    let id = items[0]["id"].as_str().unwrap();
+    let data = include_str!("../../../apps/client/lib/data/exercise-catalog.json");
+    catalog::import(&pool, data, "new-dataset-revision")
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM exercise_source_keys WHERE dataset_version=? AND source_key=?")
+        .bind(catalog::DATASET_VERSION)
+        .bind(key)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let (_, incomplete) = call("/api/exercises/catalog", true).await;
+    assert_eq!(incomplete["mappingComplete"], false);
+    assert_eq!(incomplete["unresolvedSourceKeys"], serde_json::json!([key]));
+    assert_eq!(ready(state.clone()).await["catalog"], false);
+    catalog::import(&pool, data, "new-dataset-revision")
+        .await
+        .unwrap();
+    let (_, repaired) = call("/api/exercises/catalog", true).await;
+    assert_eq!(repaired["mappingComplete"], true);
+    assert_eq!(
+        repaired["catalogVersion"].as_i64().unwrap(),
+        incomplete["catalogVersion"].as_i64().unwrap() + 1
+    );
+    assert!(
+        repaired["sourceMappings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|m| m["datasetVersion"] == catalog::DATASET_VERSION
+                && m["sourceKey"] == key
+                && m["exerciseId"] == id)
+    );
+    assert_eq!(ready(state.clone()).await["catalog"], true);
+    catalog::import(&pool, data, "third-revision")
+        .await
+        .unwrap();
+    sqlx::query("DELETE FROM exercise_source_keys WHERE dataset_version='new-dataset-revision' AND source_key=?")
+        .bind(key).execute(&pool).await.unwrap();
+    assert_eq!(
+        catalog::snapshot(&pool).await.unwrap()["mappingComplete"],
+        false
+    );
+    catalog::import(&pool, data, "third-revision")
+        .await
+        .unwrap();
+    let repaired_again = catalog::snapshot(&pool).await.unwrap();
+    assert!(
+        repaired_again["sourceMappings"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|m| m["datasetVersion"] == "new-dataset-revision"
+                && m["sourceKey"] == key
+                && m["exerciseId"] == id)
+    );
+    catalog::import(&pool, data, "third-revision")
+        .await
+        .unwrap();
+    assert_eq!(catalog::snapshot(&pool).await.unwrap(), repaired_again);
+    catalog::seed(&pool).await.unwrap();
+    let (_, snapshot) = call("/api/exercises/catalog", true).await;
+    sqlx::query("DELETE FROM exercise_source_keys WHERE source_key=?")
+        .bind(key)
+        .execute(&pool)
+        .await
+        .unwrap();
+    let (_, incomplete) = call("/api/exercises/catalog", true).await;
+    assert_eq!(incomplete["mappingComplete"], false);
+    assert_eq!(incomplete["unresolvedSourceKeys"], serde_json::json!([key]));
+    catalog::seed(&pool).await.unwrap();
+    let mut expected = snapshot.clone();
+    expected["catalogVersion"] = (snapshot["catalogVersion"].as_i64().unwrap() + 1).into();
+    assert_eq!(catalog::snapshot(&pool).await.unwrap(), expected);
+    sqlx::query("INSERT INTO exercise_source_keys VALUES('conflicting-revision',?,?)")
+        .bind(key)
+        .bind(items[1]["id"].as_str().unwrap())
+        .execute(&pool)
+        .await
+        .unwrap();
+    let (_, ambiguous) = call("/api/exercises/catalog", true).await;
+    assert_eq!(ambiguous["mappingComplete"], false);
+    assert_eq!(ambiguous["unresolvedSourceKeys"], serde_json::json!([key]));
+    assert_eq!(ready(state.clone()).await["catalog"], false);
+    assert!(catalog::seed(&pool).await.is_err());
+    assert_eq!(catalog::snapshot(&pool).await.unwrap(), ambiguous);
+}
+
+#[tokio::test]
+async fn migration_retains_preexisting_revision_mappings() {
+    use sqlx::sqlite::{SqliteConnectOptions, SqlitePoolOptions};
+    let dir = tempfile::tempdir().unwrap();
+    let migrations = dir.path().join("migrations");
+    std::fs::create_dir(&migrations).unwrap();
+    let original = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("migrations");
+    for entry in std::fs::read_dir(original).unwrap() {
+        let entry = entry.unwrap();
+        if entry.file_name().to_string_lossy().as_ref() < "0006" {
+            std::fs::copy(entry.path(), migrations.join(entry.file_name())).unwrap();
+        }
+    }
+    let path = dir.path().join("old.db");
+    let pool = SqlitePoolOptions::new()
+        .max_connections(1)
+        .connect_with(
+            SqliteConnectOptions::new()
+                .filename(&path)
+                .create_if_missing(true)
+                .foreign_keys(true),
+        )
+        .await
+        .unwrap();
+    sqlx::migrate::Migrator::new(migrations.as_path())
+        .await
+        .unwrap()
+        .run(&pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO exercises(id,dataset_version,source_key,name) VALUES('known','new','key','Example')").execute(&pool).await.unwrap();
+    sqlx::query(
+        "INSERT INTO exercise_source_keys VALUES('old','key','known'),('new','key','known')",
+    )
+    .execute(&pool)
+    .await
+    .unwrap();
+    pool.close().await;
+    let pool = db::open(&path).await.unwrap();
+    let expected: Vec<(String, String, String)> = sqlx::query_as("SELECT dataset_version,source_key,exercise_id FROM expected_exercise_source_keys ORDER BY dataset_version").fetch_all(&pool).await.unwrap();
+    assert_eq!(
+        expected,
+        vec![
+            ("new".into(), "key".into(), "known".into()),
+            ("old".into(), "key".into(), "known".into())
+        ]
+    );
+}

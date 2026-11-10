@@ -7,7 +7,7 @@ use axum::{
 };
 use serde_json::{Value, json};
 use sha2::{Digest, Sha256};
-use sqlx::{Row, SqlitePool};
+use sqlx::{Row, SqliteConnection, SqlitePool};
 use std::collections::HashSet;
 use uuid::Uuid;
 
@@ -50,14 +50,23 @@ pub async fn import(pool: &SqlitePool, data: &str, version: &str) -> Result<(), 
     }
     let hash = format!("{:x}", Sha256::digest(data.as_bytes()));
     let mut tx = db::begin_write(pool).await?;
+    let ambiguous: bool = sqlx::query_scalar("SELECT EXISTS(SELECT source_key FROM (SELECT source_key,exercise_id FROM exercise_source_keys UNION ALL SELECT source_key,exercise_id FROM expected_exercise_source_keys UNION ALL SELECT source_key,id FROM exercises) GROUP BY source_key HAVING count(DISTINCT exercise_id)>1)")
+        .fetch_one(&mut *tx).await?;
+    if ambiguous {
+        return Err(invalid());
+    }
+    let mut mappings_changed = sqlx::query("INSERT INTO exercise_source_keys(dataset_version,source_key,exercise_id) SELECT dataset_version,source_key,exercise_id FROM expected_exercise_source_keys WHERE true ON CONFLICT(dataset_version,source_key) DO NOTHING")
+        .execute(&mut *tx).await?.rows_affected() > 0;
     sqlx::query("UPDATE exercises SET retired=1")
         .execute(&mut *tx)
         .await?;
     for item in &items {
         let key = item["sourceKey"].as_str().ok_or_else(invalid)?;
         let matches: Vec<String> = sqlx::query_scalar(
-            "SELECT DISTINCT exercise_id FROM exercise_source_keys WHERE source_key=?",
+            "SELECT exercise_id FROM exercise_source_keys WHERE source_key=? UNION SELECT id FROM exercises WHERE source_key=? UNION SELECT exercise_id FROM expected_exercise_source_keys WHERE source_key=?",
         )
+        .bind(key)
+        .bind(key)
         .bind(key)
         .fetch_all(&mut *tx)
         .await?;
@@ -70,7 +79,8 @@ pub async fn import(pool: &SqlitePool, data: &str, version: &str) -> Result<(), 
             .unwrap_or_else(|| Uuid::new_v4().to_string());
         sqlx::query("INSERT INTO exercises(id,dataset_version,source_key,name,level,category,force,mechanic,equipment,retired) VALUES(?,?,?,?,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET dataset_version=excluded.dataset_version,source_key=excluded.source_key,name=excluded.name,level=excluded.level,category=excluded.category,force=excluded.force,mechanic=excluded.mechanic,equipment=excluded.equipment,retired=0")
             .bind(&id).bind(version).bind(key).bind(item["name"].as_str()).bind(item["level"].as_str()).bind(item["category"].as_str()).bind(item["force"].as_str()).bind(item["mechanic"].as_str()).bind(item["equipment"].as_str()).execute(&mut *tx).await?;
-        sqlx::query("INSERT INTO exercise_source_keys(dataset_version,source_key,exercise_id) VALUES(?,?,?) ON CONFLICT(dataset_version,source_key) DO NOTHING").bind(version).bind(key).bind(&id).execute(&mut *tx).await?;
+        mappings_changed |= sqlx::query("INSERT INTO exercise_source_keys(dataset_version,source_key,exercise_id) VALUES(?,?,?) ON CONFLICT(dataset_version,source_key) DO NOTHING").bind(version).bind(key).bind(&id).execute(&mut *tx).await?.rows_affected() > 0;
+        sqlx::query("INSERT INTO expected_exercise_source_keys(dataset_version,source_key,exercise_id) VALUES(?,?,?) ON CONFLICT(dataset_version,source_key) DO NOTHING").bind(version).bind(key).bind(&id).execute(&mut *tx).await?;
         sqlx::query("DELETE FROM exercise_muscles WHERE exercise_id=?")
             .bind(&id)
             .execute(&mut *tx)
@@ -112,7 +122,7 @@ pub async fn import(pool: &SqlitePool, data: &str, version: &str) -> Result<(), 
                 .await?;
         }
     }
-    sqlx::query("INSERT INTO catalog_metadata VALUES(1,?,1,?) ON CONFLICT(singleton) DO UPDATE SET catalog_version=CASE WHEN source_dataset_version != excluded.source_dataset_version OR content_hash != excluded.content_hash THEN catalog_version+1 ELSE catalog_version END, source_dataset_version=excluded.source_dataset_version, content_hash=excluded.content_hash").bind(version).bind(hash).execute(&mut *tx).await?;
+    sqlx::query("INSERT INTO catalog_metadata VALUES(1,?,1,?) ON CONFLICT(singleton) DO UPDATE SET catalog_version=CASE WHEN source_dataset_version != excluded.source_dataset_version OR content_hash != excluded.content_hash OR ? THEN catalog_version+1 ELSE catalog_version END, source_dataset_version=excluded.source_dataset_version, content_hash=excluded.content_hash").bind(version).bind(hash).bind(mappings_changed).execute(&mut *tx).await?;
     tx.commit().await
 }
 
@@ -159,10 +169,39 @@ pub async fn snapshot(pool: &SqlitePool) -> Result<Value, sqlx::Error> {
         .into_iter()
         .map(|row| Ok(json!({"datasetVersion": row.try_get::<String,_>(0)?, "sourceKey": row.try_get::<String,_>(1)?, "exerciseId": row.try_get::<String,_>(2)?})))
         .collect::<Result<Vec<_>, sqlx::Error>>()?;
+    let unresolved = unresolved_source_keys(&mut tx).await?;
     tx.commit().await?;
     Ok(
-        json!({"catalogVersion":meta.try_get::<i64,_>(1)?,"sourceDatasetVersion":version,"mappingComplete":true,"unresolvedSourceKeys":[],"unresolvedLegacyIds":[],"sourceMappings":mappings,"items":items}),
+        json!({"catalogVersion":meta.try_get::<i64,_>(1)?,"sourceDatasetVersion":version,"mappingComplete":unresolved.is_empty(),"unresolvedSourceKeys":unresolved,"unresolvedLegacyIds":[],"sourceMappings":mappings,"items":items}),
     )
+}
+
+async fn unresolved_source_keys(conn: &mut SqliteConnection) -> Result<Vec<String>, sqlx::Error> {
+    sqlx::query_scalar(
+        "SELECT source_key FROM (\
+         SELECT e.source_key FROM exercises e LEFT JOIN exercise_source_keys m \
+           ON m.dataset_version=e.dataset_version AND m.source_key=e.source_key AND m.exercise_id=e.id \
+           WHERE m.exercise_id IS NULL \
+         UNION SELECT e.source_key FROM expected_exercise_source_keys e LEFT JOIN exercise_source_keys m \
+           ON m.dataset_version=e.dataset_version AND m.source_key=e.source_key AND m.exercise_id=e.exercise_id \
+           WHERE m.exercise_id IS NULL \
+         UNION SELECT m.source_key FROM exercise_source_keys m LEFT JOIN expected_exercise_source_keys e \
+           ON m.dataset_version=e.dataset_version AND m.source_key=e.source_key AND m.exercise_id=e.exercise_id \
+           WHERE e.exercise_id IS NULL \
+         UNION SELECT source_key FROM (SELECT source_key,exercise_id FROM exercise_source_keys UNION ALL SELECT source_key,exercise_id FROM expected_exercise_source_keys) GROUP BY source_key HAVING count(DISTINCT exercise_id)>1\
+         ) ORDER BY source_key",
+    )
+    .fetch_all(conn)
+    .await
+}
+
+pub(crate) async fn ready(pool: &SqlitePool) -> Result<bool, sqlx::Error> {
+    let mut tx = pool.begin().await?;
+    let present: bool = sqlx::query_scalar("SELECT EXISTS(SELECT 1 FROM catalog_metadata WHERE singleton=1) AND EXISTS(SELECT 1 FROM exercises WHERE retired=0)")
+        .fetch_one(&mut *tx).await?;
+    let complete = unresolved_source_keys(&mut tx).await?.is_empty();
+    tx.commit().await?;
+    Ok(present && complete)
 }
 
 fn internal(_: sqlx::Error) -> ApiError {
