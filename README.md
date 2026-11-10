@@ -1,6 +1,8 @@
 <div align="center">
   <img src="docs/readme/banner.png" alt="Active Next: make room for the next session" width="100%" />
 
+  <p><img src="apps/site/assets/icon.png" alt="Active Next app icon" width="96" height="96" /></p>
+
 # Active Next
 
 **Plan your training. Log the work. See how far you've come.**
