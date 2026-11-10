@@ -7,15 +7,15 @@
 
 ![Expo SDK 58](https://img.shields.io/badge/Expo-SDK%2058-463457?logo=expo&logoColor=white)
 ![React Native](https://img.shields.io/badge/React%20Native-0.88-463457?logo=react&logoColor=white)
-![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20iOS%20%7C%20Web-796486)
+![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20iOS-796486)
 
 [Get it on Google Play](https://play.google.com/store/apps/details?id=com.alexspx.activenext) · [Roadmap](#roadmap) · [Explore the landing page](https://alexspx.github.io/active-app/) · [Get started](#get-started) · [Project layout](#project-layout)
 
 </div>
 
-Active Next is [available on Google Play](https://play.google.com/store/apps/details?id=com.alexspx.activenext) for Android. iOS and web are supported development targets.
+Active Next is [available on Google Play](https://play.google.com/store/apps/details?id=com.alexspx.activenext) for Android. iOS is a supported development target.
 
-Active Next is built with Expo and React Native for Android, iOS, and the web. The native app starts with a local profile and keeps training data on the device, so a workout does not depend on a connection or an account. The web app uses an account and the API.
+Active Next is built with Expo and React Native for Android and iOS. The native app starts with a local profile and keeps training data on the device, so a workout does not depend on a connection or an account.
 
 [Landing page](https://alexspx.github.io/active-app/) · [Landing page development](apps/site/README.md) · [Promotional video](tools/promo/README.md)
 
@@ -39,6 +39,8 @@ Browse your workout history, see personal records, and follow exercise progressi
 
 ## Roadmap
 
+- **Self-hostable:** run your own backend to manage accounts and training data, with workout import and synchronization planned. Follow the [Rust API development](services/api/README.md).
+- **Web app:** bring workout planning, logging, and progress tracking to the browser.
 - **Exercise icons and GIFs:** make the exercise collection easier to scan and add visual movement demonstrations.
 - **Wearables:** explore watch support for logging sets and following workouts from your wrist.
 - **Potential local AI coach:** investigate on-device coaching informed by training history, with offline use and device performance in mind. This is exploratory work, not a released feature.
@@ -71,13 +73,7 @@ yarn ios       # Build and run on iOS
 
 After installing a development build, start Metro with `yarn start`. Use `yarn start:clear` if you need to clear its cache. Both commands limit Metro to two workers.
 
-To run the web app:
-
-```sh
-yarn web
-```
-
-The web app needs a reachable API for account-backed features. Set `EXPO_PUBLIC_API_BASE_URL` in a local `.env` file to your API address. If unset, the app uses `http://localhost:3000`. The Rust API is being developed in [`services/api`](services/api/README.md), with SQLite persistence, OIDC authentication, profile management and account deletion, an exercise catalog, and versioned, idempotent writes. Full workout import and ongoing synchronization remain in progress. Native accounts, backend access, and sync are currently disabled by the launch policy in [`config/launchPolicy.ts`](apps/client/config/launchPolicy.ts).
+Native accounts, backend access, and sync are currently disabled by the launch policy in [`config/launchPolicy.ts`](apps/client/config/launchPolicy.ts).
 
 ## Stack
 
@@ -91,16 +87,16 @@ The web app needs a reachable API for account-backed features. Set `EXPO_PUBLIC_
 
 ## Project layout
 
-| Path                   | Purpose                                                                           |
-| ---------------------- | --------------------------------------------------------------------------------- |
-| `apps/client/`         | Expo Android, iOS, and web application, including feature workflows and shared UI |
-| `apps/site/`           | Static landing site and legal source                                              |
-| `services/api/`        | Rust API and SQLite storage for self-hosting                                      |
-| `contracts/v1/`        | Versioned API contract                                                            |
-| `packages/api-client/` | Generated TypeScript API client                                                   |
-| `tools/promo/`         | Remotion video tooling                                                            |
-| `scripts/`             | Shared legal generation and checks                                                |
-| `docs/`                | Project documentation                                                             |
+| Path                   | Purpose                                                                     |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `apps/client/`         | Expo Android and iOS application, including feature workflows and shared UI |
+| `apps/site/`           | Static landing site and legal source                                        |
+| `services/api/`        | Rust API and SQLite storage for self-hosting                                |
+| `contracts/v1/`        | Versioned API contract                                                      |
+| `packages/api-client/` | Generated TypeScript API client                                             |
+| `tools/promo/`         | Remotion video tooling                                                      |
+| `scripts/`             | Shared legal generation and checks                                          |
+| `docs/`                | Project documentation                                                       |
 
 Feature modules own their workflows and data access. Router screens compose those workflows, and shared UI components receive data and callbacks through props. `apps/client/global.css` defines the shared design tokens.
 
@@ -111,7 +107,6 @@ Feature modules own their workflows and data access. Router screens compose thos
 | `yarn start`                | Start the Expo development server                          |
 | `yarn start:clear`          | Start Metro with a cleared cache                           |
 | `yarn android` / `yarn ios` | Build and run the native app                               |
-| `yarn web`                  | Start the web app on port 8080                             |
 | `yarn test`                 | Run Jest in watch mode                                     |
 | `yarn test:once`            | Run the Jest suite once                                    |
 | `yarn test:sync`            | Run the sync tests                                         |
@@ -120,7 +115,7 @@ Feature modules own their workflows and data access. Router screens compose thos
 | `yarn legal:sync`           | Generate app legal content from the landing page documents |
 | `yarn legal:check`          | Test the legal content generator and check generated files |
 
-Run `yarn typecheck`, `yarn site:check`, and `yarn client:export` for additional checks. Use `yarn promo:studio`, `yarn promo:render`, or `yarn promo:poster` for the video project. Run EAS commands from `apps/client` after installing at the root.
+Run `yarn typecheck` and `yarn site:check` for additional checks. Use `yarn promo:studio`, `yarn promo:render`, or `yarn promo:poster` for the video project. Run EAS commands from `apps/client` after installing at the root.
 
 The legal documents in `apps/site/legal/` are the source of truth. After editing them, run `yarn legal:sync` and commit the generated files. See the [landing page README](apps/site/README.md) for publishing and verification instructions.
 
