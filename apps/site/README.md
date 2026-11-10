@@ -1,6 +1,6 @@
 # Active Next landing page
 
-Standalone, buildless landing page in the app’s Cadence palette, with bundled DM Sans, an interactive training preview, and the 32-second Cadence Alive promo. No dependencies or external font requests. The Android closed test shows two steps: join the required Google Group, then join the test on Google Play with the same account. Both steps include locally bundled QR codes and direct links; the Play testing link also has a copy button. Public release status is “Coming soon”; project links point to `https://github.com/AlexSPx/active-app`.
+Standalone, buildless landing page in the app’s Cadence palette, with bundled DM Sans, an interactive training preview, and the 32-second Cadence Alive promo. No dependencies or external font requests. The hero and closing call to action link directly to the [Android app on Google Play](https://play.google.com/store/apps/details?id=com.alexspx.activenext). Android is available now; an iOS release is planned. Project links point to `https://github.com/AlexSPx/active-app`.
 
 ## Preview
 
@@ -19,7 +19,7 @@ Open `http://localhost:4173`. Deploy the contents of `apps/site/` to any static 
 - `DESIGN.md`: palette, layout, and design decisions.
 - `legal/privacy-policy.html` and `legal/terms-and-conditions.html`: standalone Cadence-styled legal pages, linked from the landing page. These HTML articles are the single source of truth for legal copy. After editing either article, run `yarn legal:sync` from the repository root. This generates `apps/client/features/legal/legalContent.json` (bundled for both native and web app screens) and the standalone `apps/client/public/privacy-policy.html` used by the app’s static export. Commit those generated files with the source changes. Do not edit generated copies directly. The app uses the bundled documents offline without fetching different terms from the API. `yarn legal:check` and the Pages workflow reject stale generated copies. The converter supports headings, paragraphs, lists, separators, emphasis, code, and absolute links; unsupported tags fail generation.
 
-Video playback is user-controlled and includes music, sound effects, and on-screen text, with no spoken audio. Preview values are illustrative. The page does not collect data or offer a waitlist. Add verified store links when the app is released.
+Video playback is user-controlled and includes music, sound effects, and on-screen text, with no spoken audio. Preview values are illustrative. The page does not collect data or offer a waitlist. The Google Play listing replaces the former beta enrollment flow.
 
 ## Store listing URLs
 
