@@ -1,120 +1,125 @@
+<div align="center">
+  <p><img src="apps/site/assets/icon.png" alt="Active Next app icon" width="96" height="96" /></p>
+
+  <img src="docs/readme/play-store-feature-graphic.png" alt="Active Next: find your training rhythm. Plan, log, get stronger." width="100%" />
+
 # Active Next
 
-A modern workout tracking app built with Expo, React Native, and TanStack Query.
+**Plan your training. Log the work. See how far you've come.**
 
-## App Functionalities
+![Expo SDK 58](https://img.shields.io/badge/Expo-SDK%2058-463457?logo=expo&logoColor=white)
+![React Native](https://img.shields.io/badge/React%20Native-0.88-463457?logo=react&logoColor=white)
+![Platforms](https://img.shields.io/badge/Platforms-Android%20%7C%20iOS-796486)
 
-### 🏋️ Workouts
+[Get it on Google Play](https://play.google.com/store/apps/details?id=com.alexspx.activenext) · [Roadmap](#roadmap) · [Explore the landing page](https://alexspx.github.io/active-app/) · [Get started](#get-started) · [Project layout](#project-layout)
 
-- **Create workout templates** with multiple exercises, sets, reps, and weights
-- **Edit and delete** existing workout templates
-- **Start a workout** from any template to begin tracking
+</div>
 
-### 📅 Routines
+Active Next is [available on Google Play](https://play.google.com/store/apps/details?id=com.alexspx.activenext) for Android. iOS is a supported development target.
 
-- **Define weekly workout patterns** - assign workouts to specific days
-- **Sequential mode** - workouts must be completed in order
-- **Weekly completion mode** - complete workouts in any order within the week
-- **Streak tracking** - maintains current and longest streak records
+Active Next is built with Expo and React Native for Android and iOS. The native app starts with a local profile and keeps training data on the device, so a workout does not depend on a connection or an account.
 
-### ⏱️ Active Workout Session
+[Landing page](https://alexspx.github.io/active-app/) · [Landing page development](apps/site/README.md) · [Promotional video](tools/promo/README.md)
 
-- **Real-time timer** tracking total workout duration
-- **Set-by-set logging** - mark sets complete as you go
-- **Rest timer** with configurable default durations
-- **Swipe to delete** sets during workout
-- **Floating indicator** shows active workout from any screen
+## Your training, in one place
 
-### 📊 Exercise Progression
+### Plan a routine
 
-- **Exercise library** with search functionality
-- **Progression charts** showing 1RM and volume trends over time
-- **Custom widgets** on dashboard for tracking specific exercises
+Build workout templates with exercises, sets, reps, and weights. Group workouts into routines to give your training a repeatable schedule. Choose a sequential routine or complete sessions flexibly within the week, and track current and longest streaks. The home screen brings the day's plan and exercise progress together.
 
-### 📜 Workout History
+### Find the right exercise
 
-- **Calendar view** with workout markers
-- **Timeline list** grouped by week
-- **Personal records** badges for 1RM and volume PRs
+Browse the exercise collection, search the catalog, and filter by muscle group or equipment. Explore muscles with the muscle atlas and open exercise details before choosing movements for your workouts.
 
-### ⚙️ Settings
+### Focus on the session
 
-- **Theme selection** (light/dark/system)
-- **Rest timer defaults** customization
-- **Body measurements** tracking (weight, height)
-- **Timezone** configuration
-- **Notification** preferences
+Start a workout, check off sets as you complete them, and keep track of elapsed time. A configurable rest timer helps you move between sets without watching the clock.
 
-## Tech Stack
+### Look back and move forward
 
-- **Framework**: [Expo](https://expo.dev) SDK 58 with Expo Router
-- **UI**: React Native primitives with [Uniwind](https://uniwind.dev), Tailwind CSS 4, and DM Sans
-- **Icons**: [Lucide](https://lucide.dev) with Cadence semantic colors
-- **State Management**: [TanStack Query](https://tanstack.com/query) + [Zustand](https://zustand-demo.pmnd.rs/)
-- **Forms**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
-- **Lists**: [@shopify/flash-list](https://shopify.github.io/flash-list/)
-- **Native launch**: local-first and offline; accounts and sync are disabled
+Browse your workout history, see personal records, and follow exercise progression over time. Customize the app with theme, body measurement, time zone, and notification settings. Android and iOS home-screen widgets show today's plan. Settings are available from the header.
 
-## Getting Started
+## Roadmap
+
+- **Self-hostable:** run your own backend to manage accounts and training data, with workout import and synchronization planned. Follow the [Rust API development](services/api/README.md).
+- **Web app:** bring workout planning, logging, and progress tracking to the browser.
+- **Exercise icons and GIFs:** make the exercise collection easier to scan and add visual movement demonstrations.
+- **Wearables:** explore watch support for logging sets and following workouts from your wrist.
+- **Potential local AI coach:** investigate on-device coaching informed by training history, with offline use and device performance in mind. This is exploratory work, not a released feature.
+
+These are planned directions; scope and release dates are still open.
+
+## A look inside
+
+<div align="center">
+  <img src="apps/site/assets/home.png" alt="Illustrative home screen with a training plan and progress chart" width="27%" />
+  <img src="docs/readme/workout-editor.png" alt="Workout editor with exercises and sets" width="27%" />
+  <img src="docs/readme/exercise-picker.png" alt="Exercise picker filtered to cardio" width="27%" />
+</div>
+
+<p align="center"><em>Home screen design preview · Workout editor · Exercise search</em></p>
+
+The home screen is an illustrative design preview with sample data. The other images are Android emulator captures.
+
+## Get started
 
 See [Android Maestro regression testing](docs/testing/android-maestro.md) for local and CI commands.
 
-### Prerequisites
+You need Node.js 24.6.0, Yarn, and the platform tools for your target device. Android development requires Android Studio and an emulator or device; iOS development requires macOS and Xcode. Native builds use an Expo development client and include custom native modules.
 
-- Node.js 24.6.0
-- Yarn
-- iOS Simulator / Android Emulator (or physical device)
-
-### Installation
-
-```bash
-# Install dependencies
+```sh
 yarn install
-
-# Start development server
-yarn start
+yarn android   # Build and run on Android
+yarn ios       # Build and run on iOS
 ```
 
-### Running
+After installing a development build, start Metro with `yarn start`. Use `yarn start:clear` if you need to clear its cache. Both commands limit Metro to two workers.
 
-```bash
-# iOS
-yarn ios
+Native accounts, backend access, and sync are currently disabled by the launch policy in [`config/launchPolicy.ts`](apps/client/config/launchPolicy.ts).
 
-# Android
-yarn android
+## Stack
 
-# Web
-yarn web
-```
+| Area                 | Technology                               |
+| -------------------- | ---------------------------------------- |
+| App and routing      | Expo SDK 58, React Native, Expo Router   |
+| UI                   | Uniwind, Tailwind CSS 4, Lucide, DM Sans |
+| State and data       | TanStack Query, Zustand, SQLite          |
+| Forms and validation | React Hook Form, Zod                     |
+| Tests                | Jest, jest-expo                          |
 
-## Project Structure
+## Project layout
 
-```
-├── apps/client/           # Expo Android, iOS, and web application
-├── apps/site/             # Static landing site and legal source
-├── tools/promo/           # Remotion video tooling
-├── scripts/               # Shared legal generation and checks
-└── docs/                  # Project documentation
-```
+| Path                   | Purpose                                                                     |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `apps/client/`         | Expo Android and iOS application, including feature workflows and shared UI |
+| `apps/site/`           | Static landing site and legal source                                        |
+| `services/api/`        | Rust API and SQLite storage for self-hosting                                |
+| `contracts/v1/`        | Versioned API contract                                                      |
+| `packages/api-client/` | Generated TypeScript API client                                             |
+| `tools/promo/`         | Remotion video tooling                                                      |
+| `scripts/`             | Shared legal generation and checks                                          |
+| `docs/`                | Project documentation                                                       |
 
-## Scripts
+Feature modules own their workflows and data access. Router screens compose those workflows, and shared UI components receive data and callbacks through props. `apps/client/global.css` defines the shared design tokens.
 
-| Command            | Description                                                 |
-| ------------------ | ----------------------------------------------------------- |
-| `yarn start`       | Start Expo dev server                                       |
-| `yarn start:clear` | Start Expo with a cleared bundler cache for troubleshooting |
-| `yarn ios`         | Run on iOS simulator                                        |
-| `yarn android`     | Run on Android emulator                                     |
-| `yarn web`         | Start web server                                            |
-| `yarn format`      | Format code with Prettier                                   |
-| `yarn test`        | Run Jest tests                                              |
+## Commands
 
-Run `yarn test:once`, `yarn typecheck`, `yarn legal:check`, `yarn site:check`, and `yarn client:export` for checks. Use `yarn promo:studio`, `yarn promo:render`, or `yarn promo:poster` for the video project. Run EAS commands from `apps/client` after installing at the root.
+| Command                     | Purpose                                                    |
+| --------------------------- | ---------------------------------------------------------- |
+| `yarn start`                | Start the Expo development server                          |
+| `yarn start:clear`          | Start Metro with a cleared cache                           |
+| `yarn android` / `yarn ios` | Build and run the native app                               |
+| `yarn test`                 | Run Jest in watch mode                                     |
+| `yarn test:once`            | Run the Jest suite once                                    |
+| `yarn test:sync`            | Run the sync tests                                         |
+| `yarn format:check`         | Check formatting with Prettier                             |
+| `yarn format`               | Format the repository with Prettier                        |
+| `yarn legal:sync`           | Generate app legal content from the landing page documents |
+| `yarn legal:check`          | Test the legal content generator and check generated files |
 
-The development server uses two Metro workers to leave resources available for
-the emulator, backend, and desktop. Normal startup preserves the bundler cache;
-use `yarn start:clear` only when troubleshooting stale bundles.
+Run `yarn typecheck` and `yarn site:check` for additional checks. Use `yarn promo:studio`, `yarn promo:render`, or `yarn promo:poster` for the video project. Run EAS commands from `apps/client` after installing at the root.
+
+The legal documents in `apps/site/legal/` are the source of truth. After editing them, run `yarn legal:sync` and commit the generated files. See the [landing page README](apps/site/README.md) for publishing and verification instructions.
 
 ## Android releases
 
@@ -127,31 +132,3 @@ The workflow uses the repository's `EXPO_TOKEN` Actions secret. Android signing 
 Google Play submission credentials must already be configured in EAS for non-interactive use.
 The current `eas.json` submits a draft to the internal testing track; publish the release from
 Google Play Console to distribute it to testers. Build numbers increment automatically.
-
-## Architecture
-
-Expo Router screens compose feature-owned workflows. Feature modules own data access, mutations,
-validation, drafts, and query state. Shared UI components expose typed props and named callbacks;
-they do not reach into feature stores, repositories, queries, or navigation.
-
-`apps/client/global.css` defines the semantic color, spacing, radius, and typography tokens used by Uniwind.
-The persisted appearance preference (`light`, `dark`, or `system`) drives the native navigation
-theme and web color scheme. Native training starts with a local profile and remains available
-offline; the web app retains its account-backed behavior.
-
-### Data Fetching
-
-All API data fetching uses TanStack Query with centralized query keys and Zod validation.
-
-### Mutations
-
-All mutations use `useMutation` with automatic cache invalidation.
-
-### Feature Modules
-
-Each feature exports via barrel files (`index.ts`) for clean imports:
-
-```typescript
-import { useWorkouts, useWorkoutMutations } from '../features/workouts'
-import { useRoutines, useActiveRoutine } from '../features/routines'
-```

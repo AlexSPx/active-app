@@ -1,6 +1,6 @@
 # Active Next landing page
 
-An introduction to the upcoming strength-training app, using the existing Cadence identity. The page's job is to explain the workout loop, show the video, and clearly communicate that release is coming soon.
+An introduction to the strength-training app, using the existing Cadence identity. The page's job is to explain the workout loop, show the video, and link directly to the Android app on Google Play.
 
 ## Tokens
 
@@ -14,7 +14,7 @@ An introduction to the upcoming strength-training app, using the existing Cadenc
 
 ## Layout
 
-One large, rounded lilac opening stage presents the real home screen beside a generous headline. A weekly training rhythm stretches across its base. Below it, an interactive three-part preview shows planning, logging, and progression; a contrasting plum section gives the vertical video its own quiet stage. Offline training details and concise FAQs lead into a coming-soon close.
+One large, rounded lilac opening stage presents the real home screen beside a generous headline. A weekly training rhythm stretches across its base. Below it, an interactive three-part preview shows planning, logging, and progression; a contrasting plum section gives the vertical video its own quiet stage. Offline training details and concise FAQs lead into a Google Play download invitation.
 
 ```text
   brand                 preview / video / GitHub
@@ -30,7 +30,7 @@ One large, rounded lilac opening stage presents the real home screen beside a ge
  │ video introduction       portrait video   │
  └───────────────────────────────────────────┘
   Offline details               useful FAQs
-             Coming soon / GitHub
+             Google Play / GitHub
 ```
 
 ## Review against the brief

@@ -37,18 +37,3 @@ for (const button of setButtons) {
         : `${complete} of 3 sets complete. Tap a set to update it.`
   })
 }
-
-const copyTestingLink = document.querySelector('.copy-testing-link')
-const testingLink = document.getElementById('testing-link')
-const copyFeedback = document.querySelector('.copy-feedback')
-
-copyTestingLink.hidden = false
-copyTestingLink.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(testingLink.href)
-    copyFeedback.textContent = 'Testing link copied.'
-  } catch {
-    copyFeedback.textContent =
-      'Couldn’t copy automatically. Touch and hold or right-click the testing link to copy it.'
-  }
-})
