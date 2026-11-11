@@ -1,4 +1,7 @@
-jest.mock('expo-router', () => ({ useRouter: jest.fn() }))
+jest.mock('expo-router', () => ({
+  useRouter: jest.fn(),
+  Link: ({ children }) => children,
+}))
 jest.mock('../../components/ui/Controls', () => {
   const React = require('react')
   return {
@@ -66,6 +69,7 @@ jest.mock('../../components/ui/CadenceOverlay', () => {
   }
 })
 jest.mock('../../stores/widgetStore', () => ({ useWidgetStore: jest.fn() }))
+jest.mock('../../features/coach/availability', () => ({ isCoachAvailable: jest.fn() }))
 
 const React = require('react')
 const { act, create } = require('react-test-renderer')
@@ -75,6 +79,7 @@ const { useWorkoutManagement, useWorkouts, useWorkoutRecords } = require('../../
 const { useWidgetStore } = require('../../stores/widgetStore')
 const { TodayView } = require('../../components/TodayView')
 const HomeScreen = require('../../app/(tabs)/index').default
+const { isCoachAvailable } = require('../../features/coach/availability')
 
 const mockPush = jest.fn()
 
@@ -178,10 +183,22 @@ function workout(id = 'workout-1', title = 'Upper body') {
 
 beforeEach(() => {
   jest.clearAllMocks()
+  isCoachAvailable.mockReturnValue(false)
   useRouter.mockReturnValue({ push: mockPush })
 })
 
 describe('Home setup states', () => {
+  it('shows the coach entry only when available', () => {
+    setHomeData()
+    const disabled = renderHome()
+    expect(visibleText(disabled)).not.toContain('Open local coach')
+    act(() => disabled.unmount())
+
+    isCoachAvailable.mockReturnValue(true)
+    const enabled = renderHome()
+    expect(visibleText(enabled)).toContain('Open local coach')
+  })
+
   it('shows a first-workout state and a disabled week, then opens workout creation', () => {
     setHomeData()
     const renderer = renderHome()

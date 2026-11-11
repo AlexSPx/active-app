@@ -1,6 +1,7 @@
 const mockStorage = new Map()
 const mockCredentials = new Map()
 const mockFiles = new Set()
+const mockDatabasePaths = new Map()
 const mockSchedules = new Set()
 const mockEvents = []
 let mockFailure = null
@@ -49,7 +50,10 @@ jest.mock('expo-sqlite', () => ({
     expect(directory).toBe('/SQLite')
     mockEvents.push(`delete:${name}`)
     if (mockFailure === 'database') throw new Error('database removal failed')
-    mockFiles.delete(decodeURIComponent(name))
+    const decoded = decodeURIComponent(name)
+    mockFiles.delete(decoded)
+    const path = mockDatabasePaths.get(decoded)
+    if (path) require('node:fs').rmSync(path, { force: true })
   }),
 }))
 jest.mock('expo-file-system/legacy', () => ({
@@ -193,6 +197,7 @@ beforeEach(() => {
   mockStorage.clear()
   mockCredentials.clear()
   mockFiles.clear()
+  mockDatabasePaths.clear()
   mockSchedules.clear()
   mockEvents.length = 0
   mockFailure = null
@@ -282,4 +287,30 @@ test('restart removes orphan database sidecars left by an interrupted native del
   const app = boot()
   await app.initializeAuth()
   expectCleanDevice(app)
+})
+
+
+test('device erasure deletes profile databases containing conversations and review bookkeeping', async () => {
+  const fs = require('node:fs')
+  const os = require('node:os')
+  const path = require('node:path')
+  const { DatabaseSync } = require('node:sqlite')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'coach-erase-'))
+  const name = 'profile-account:alice.db'
+  const file = path.join(directory, 'profile.db')
+  try {
+    const db = new DatabaseSync(file)
+    db.exec(`CREATE TABLE coach_conversations (id TEXT, items_json TEXT); CREATE TABLE coach_draft_saves (revision TEXT, draft_json TEXT, result_json TEXT); INSERT INTO coach_conversations VALUES ('conversation', 'private message'); INSERT INTO coach_draft_saves VALUES ('revision', 'private draft', '{}');`)
+    db.close()
+    mockDatabasePaths.set(name, file)
+    const app = boot()
+    await app.initializeAuth()
+    await app.useAuthStore.getState().eraseDeviceData()
+    expect(fs.existsSync(file)).toBe(false)
+    const fresh = new DatabaseSync(file)
+    expect(fresh.prepare("SELECT name FROM sqlite_master WHERE name LIKE 'coach_%'").all()).toEqual([])
+    fresh.close()
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
 })

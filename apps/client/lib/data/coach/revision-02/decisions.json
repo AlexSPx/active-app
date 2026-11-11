@@ -1,0 +1,51 @@
+{
+  "version": "revision-02",
+  "rows": [
+    {
+      "id": "card-017",
+      "prior_revision_sha256": "891ab74d062f59727e0d920dff3d15e8f659446281e3726de64d02a2a6f21c3b",
+      "revision": {
+        "id": "card-017",
+        "title": "Keep load unspecified",
+        "claim": "When ability or equipment is unknown, ask for the missing information before considering an exercise; appropriateness remains to be established.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": [
+          "original-author"
+        ],
+        "reviewStatus": "pending_review",
+        "aliases": [
+          "unknown",
+          "weight",
+          "load",
+          "selection"
+        ]
+      },
+      "revision_sha256": "a8aa20505212c95cb4e57a2ec189d924daf7ecd9f7832de6f25313a89c431a20",
+      "review_status": "pending_independent_re_review",
+      "limitations": "Draft only; factual, rights and qualified human review pending."
+    },
+    {
+      "id": "card-034",
+      "prior_revision_sha256": "0e9aaea3dcec24f207d91fab124acdf6905af01f2ef0a6284bb611f0a188f200",
+      "revision": {
+        "id": "card-034",
+        "title": "Take symptoms seriously",
+        "claim": "For current chest pain, fainting or severe breathing difficulty, stop exercising and call the local emergency number now; do not drive yourself. Seek urgent medical help.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": [
+          "original-author"
+        ],
+        "reviewStatus": "pending_review",
+        "aliases": [
+          "pain",
+          "symptoms",
+          "injury",
+          "stop"
+        ]
+      },
+      "revision_sha256": "26e62375d761abfc7df1e845fb3de519f0822e3e7b4c2c4e9749086e3126bedf",
+      "review_status": "pending_independent_re_review",
+      "limitations": "Draft only; factual, rights and qualified human review pending."
+    }
+  ]
+}

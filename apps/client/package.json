@@ -10,19 +10,25 @@
     "ios": "expo run:ios",
     "web": "expo start --web --no-dev --port 8080",
     "test": "jest --watchAll",
-    "test:once": "jest --runInBand",
+    "test:once": "jest --runInBand && yarn coach:gate:test",
     "typecheck": "tsc --noEmit",
     "test:sync": "jest tests/sync --runInBand",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "lint:fix": "prettier --write . && echo 'Code formatted successfully!'"
+    "lint:fix": "prettier --write . && echo 'Code formatted successfully!'",
+    "coach:integrity": "node scripts/coach/gate.mjs development",
+    "coach:release:check": "node scripts/coach/gate.mjs release",
+    "coach:training:check": "node scripts/coach/gate.mjs training",
+    "coach:gate:test": "node --test tests/coach/gate.test.cjs"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "testPathIgnorePatterns": ["/node_modules/", "<rootDir>/tests/coach/gate.test.cjs"]
   },
   "dependencies": {
     "@expo/ui": "~58.0.23",
     "@hookform/resolvers": "^5.2.2",
+    "@noble/hashes": "1.8.0",
     "@react-buoy/core": "^0.1.12",
     "@react-buoy/network": "^0.1.12",
     "@react-native-async-storage/async-storage": "2.2.0",
@@ -35,6 +41,7 @@
     "burnt": "^0.12.2",
     "expo": "^58.0.0",
     "expo-auth-session": "~58.0.14",
+    "expo-build-properties": "~58.0.12",
     "expo-constants": "~58.0.13",
     "expo-crypto": "~58.0.7",
     "expo-dev-client": "~58.0.15",
@@ -57,6 +64,7 @@
     "expo-updates": "~58.0.18",
     "expo-web-browser": "~58.0.6",
     "expo-widgets": "~58.0.23",
+    "llama.rn": "0.13.0-rc.9",
     "lucide-react-native": "1.59.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",

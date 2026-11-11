@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import type { ApiExercise } from '../../../types/api'
+import type { ApiExercise, CoachPrescription } from '../../../types/api'
 import type {
   WorkoutRecordRequest,
   ExerciseRecord,
@@ -19,6 +19,7 @@ let recordingAttempt = 0
 
 export interface RunningWorkoutExercise extends ApiExercise {
   sessionId: string
+  coachPrescription?: CoachPrescription
   sets: number
   reps: number
   sessionSets: Array<{
@@ -77,13 +78,19 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
         // Convert exercises to include session sets
         const exercisesWithSets = workout.exercises.map((exercise) => ({
           ...exercise,
-          sessionSets: Array.from({ length: exercise.sets }, (_, index) => ({
-            id: `${exercise.sessionId}-set-${index + 1}`,
-            reps: null,
-            weight: null,
-            durationSeconds: exercise.category === 'CARDIO' ? 0 : undefined,
-            completed: false,
-          })),
+          sessionSets: exercise.coachPrescription
+            ? exercise.sessionSets
+            : Array.from({ length: exercise.sets }, (_, index) => ({
+                id: `${exercise.sessionId}-set-${index + 1}`,
+                reps: null,
+                weight: null,
+                durationSeconds:
+                  exercise.category === 'CARDIO' ||
+                  exercise.coachPrescription?.sets[0]?.kind === 'timed'
+                    ? 0
+                    : undefined,
+                completed: false,
+              })),
         }))
 
         set({
@@ -112,7 +119,9 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
           // Convert running workout to workout record format (strength + cardio)
           const rawRecords = runningWorkout.exercises.map((exercise) => {
             const completedSets = exercise.sessionSets.filter((set) => set.completed)
-            const isCardio = exercise.category === 'CARDIO'
+            const isCardio =
+              exercise.category === 'CARDIO' ||
+              exercise.coachPrescription?.sets[0]?.kind === 'timed'
             if (isCardio) {
               const durations = completedSets
                 .map((s) => (typeof s.durationSeconds === 'number' ? s.durationSeconds : null))
@@ -262,7 +271,13 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
                     }
                     return {
                       ...updatedSet,
-                      completed: set.completed && hasSetValues(exercise.category, updatedSet),
+                      completed:
+                        set.completed &&
+                        hasSetValues(
+                          exercise.category,
+                          updatedSet,
+                          exercise.coachPrescription?.sets[0]?.kind === 'timed'
+                        ),
                     }
                   }
                   return set
@@ -290,7 +305,14 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
                 ...exercise,
                 sessionSets: exercise.sessionSets.map((set) => {
                   if (set.id === setId) {
-                    if (!set.completed && !hasSetValues(exercise.category, set)) {
+                    if (
+                      !set.completed &&
+                      !hasSetValues(
+                        exercise.category,
+                        set,
+                        exercise.coachPrescription?.sets[0]?.kind === 'timed'
+                      )
+                    ) {
                       haptics.error()
                       return set
                     }
@@ -351,7 +373,11 @@ export const useRunningWorkoutStore = create<RunningWorkoutStore>()(
                     id: `${exercise.sessionId}-set-${newSetIndex}`,
                     reps: null,
                     weight: null,
-                    durationSeconds: exercise.category === 'CARDIO' ? 0 : undefined,
+                    durationSeconds:
+                      exercise.category === 'CARDIO' ||
+                      exercise.coachPrescription?.sets[0]?.kind === 'timed'
+                        ? 0
+                        : undefined,
                     completed: false,
                   },
                 ],

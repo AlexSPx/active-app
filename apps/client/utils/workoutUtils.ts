@@ -12,7 +12,7 @@ export function summarizeWorkoutExercises(exercises: ApiWorkoutExercise[], restS
   let intervals = 0
   let cardioSeconds = 0
   for (const exercise of exercises) {
-    if (exercise.category === 'CARDIO') {
+    if (exercise.category === 'CARDIO' || exercise.coachPrescription?.sets[0]?.kind === 'timed') {
       intervals += exercise.durationSeconds?.length ?? 0
       cardioSeconds += exercise.durationSeconds?.reduce((sum, seconds) => sum + seconds, 0) ?? 0
     } else strengthSets += exercise.reps?.length ?? 0
@@ -90,7 +90,7 @@ export const formatSeconds = (secs?: number): string => {
  * Converts internal WorkoutExercise format to server TemplateExercise format
  */
 export const convertToTemplateExercise = (exercise: CreateWorkoutExercise): TemplateExercise => {
-  if (exercise.category === 'CARDIO') {
+  if (exercise.category === 'CARDIO' || exercise.coachPrescription?.sets[0]?.kind === 'timed') {
     // For cardio, send durationSeconds (per-interval values). If multiple, server may accept array via TemplateExercise type.
     // Our Api type defines durationSeconds?: number[] for TemplateExercise; build from per-set durationSeconds.
     const durations = exercise.sets
@@ -166,16 +166,25 @@ export const apiWorkoutToEditableExercises = (workout: ApiWorkout): CreateWorkou
     secondaryMuscles: ex.secondaryMuscles || [],
     instructions: [],
     category: ex.category,
+    coachPrescription: ex.coachPrescription,
     sets:
-      ex.category === 'CARDIO'
-        ? ((ex.durationSeconds
-            ? Array.isArray(ex.durationSeconds)
-              ? ex.durationSeconds.map((d) => ({ reps: null, weight: null, durationSeconds: d }))
-              : [{ reps: null, weight: null, durationSeconds: ex.durationSeconds as any }]
-            : [{ reps: null, weight: null, durationSeconds: 0 }]) as any)
-        : ((ex.reps && ex.weight
-            ? ex.reps.map((r, i) => ({ reps: r, weight: ex.weight[i] ?? 0 }))
-            : [{ reps: null, weight: null }]) as any),
+      ex.category === 'CARDIO' || ex.coachPrescription?.sets[0]?.kind === 'timed'
+        ? (typeof ex.durationSeconds === 'number'
+            ? [ex.durationSeconds]
+            : (ex.durationSeconds ?? [0])
+          ).map((durationSeconds) => ({
+            reps: null,
+            weight: null,
+            durationSeconds,
+          }))
+        : (ex.reps ?? []).map((reps, i) => ({
+            reps,
+            weight: ex.weight?.[i] ?? null,
+            ...(ex.coachPrescription?.sets[i]?.kind === 'strength' &&
+            ex.coachPrescription.sets[i].load.kind === 'bodyweight'
+              ? { coachBodyweight: true }
+              : {}),
+          })),
   })) as unknown as CreateWorkoutExercise[]
 }
 
@@ -202,7 +211,7 @@ export const validateWorkoutData = (
     if (exercise.sets.length === 0) {
       return `Exercise "${exercise.name}" must have at least one set`
     }
-    if (exercise.category === 'CARDIO') {
+    if (exercise.category === 'CARDIO' || exercise.coachPrescription?.sets[0]?.kind === 'timed') {
       for (const set of exercise.sets) {
         if (!Number.isInteger(set.durationSeconds) || (set.durationSeconds ?? 0) <= 0) {
           return `All cardio intervals must have a positive duration in "${exercise.name}"`

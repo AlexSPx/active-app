@@ -42,7 +42,7 @@ export const useEditWorkoutStore = create<EditWorkoutState>((set) => ({
               ...ex,
               sets: [
                 ...ex.sets,
-                ex.category === 'CARDIO'
+                ex.category === 'CARDIO' || ex.coachPrescription?.sets[0]?.kind === 'timed'
                   ? { reps: null, weight: null, durationSeconds: 0 }
                   : { reps: null, weight: null },
               ],

@@ -47,6 +47,13 @@ export const exerciseSchema = z.object({
   primaryMuscles: z.array(z.string()),
   secondaryMuscles: z.array(z.string()),
   instructions: z.array(z.string()),
+  setupRequirements: z.object({
+    anchors: z.array(z.string()),
+    supports: z.array(z.string()),
+    blocks: z.array(z.string()),
+    minimumEquipmentQuantity: z.number().int().positive().optional(),
+    fixedLoadsKg: z.array(z.number().positive()),
+  }).optional(),
   category: exerciseCategorySchema.nullable(),
 })
 
@@ -145,6 +152,11 @@ export const workoutExerciseSchema = z
 export const workoutTemplateSchema = z.object({
   id: z.string(),
   exercises: z.array(workoutExerciseSchema),
+  coachSchedule: z.object({
+    preparation: z.array(z.object({ kind: z.enum(['warmup', 'cooldown']), description: z.string(), durationSeconds: z.number().int().positive() })),
+    estimatedSeconds: z.number().int().nonnegative(),
+    transitionSeconds: z.number().int().nonnegative(),
+  }).optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 })

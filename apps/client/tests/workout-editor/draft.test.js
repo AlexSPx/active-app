@@ -153,3 +153,22 @@ test.each([
   expect(store.getState().selectedExercises[0].sets).toHaveLength(1)
   store.getState().reset()
 })
+
+test.each([
+  [30, [30]],
+  [
+    [30, 60],
+    [30, 60],
+  ],
+])('legacy and current cardio durations survive editing: %p', (durationSeconds, expected) => {
+  const workout = {
+    workoutTemplate: {
+      exercises: [{ exerciseId: 'run', exerciseTitle: 'Run', category: 'CARDIO', durationSeconds }],
+    },
+  }
+  const editable = apiWorkoutToEditableExercises(workout)
+  expect(editable[0].sets.map((set) => set.durationSeconds)).toEqual(expected)
+  expect(
+    convertToCreateWorkoutRequest('Run', editable).template.exercises[0].durationSeconds
+  ).toEqual(expected)
+})

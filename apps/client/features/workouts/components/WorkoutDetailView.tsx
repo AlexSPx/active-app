@@ -24,7 +24,8 @@ function WorkoutExerciseRow({
   const colors = useCadenceColors()
   const exerciseName = exercise.exerciseTitle?.trim() || exercise.exerciseId.replace(/_/g, ' ')
   const durations = exercise.durationSeconds ?? []
-  const timed = exercise.category === 'CARDIO'
+  const timed =
+    exercise.category === 'CARDIO' || exercise.coachPrescription?.sets[0]?.kind === 'timed'
   const setCount = timed
     ? durations.length
     : Math.max(exercise.reps?.length ?? 0, exercise.weight?.length ?? 0)
@@ -69,6 +70,24 @@ function WorkoutExerciseRow({
       </Pressable>
       {expanded && (
         <View className="ml-10">
+          {exercise.coachPrescription?.guidance?.effort && (
+            <UiText textRole="caption">
+              Effort: {exercise.coachPrescription.guidance.effort.value}{' '}
+              {exercise.coachPrescription.guidance.effort.kind === 'rpe'
+                ? 'RPE'
+                : 'reps in reserve'}
+            </UiText>
+          )}
+          {exercise.coachPrescription?.guidance?.restSeconds !== undefined && (
+            <UiText textRole="caption">
+              Rest: {exercise.coachPrescription.guidance.restSeconds} seconds
+            </UiText>
+          )}
+          {exercise.coachPrescription?.guidance?.progression && (
+            <UiText textRole="caption">
+              Progression: {exercise.coachPrescription.guidance.progression}
+            </UiText>
+          )}
           <View className="flex-row gap-field border-b border-divider py-compact">
             <UiText textRole="meta" className="w-8">
               Set
@@ -91,7 +110,12 @@ function WorkoutExerciseRow({
                 {setIndex + 1}
               </UiText>
               <UiText textRole="body" className="flex-1">
-                {timed ? formatSeconds(durations[setIndex]) : (exercise.weight?.[setIndex] ?? '—')}
+                {timed
+                  ? formatSeconds(durations[setIndex])
+                  : exercise.coachPrescription?.sets[setIndex]?.kind === 'strength' &&
+                      exercise.coachPrescription.sets[setIndex].load.kind === 'bodyweight'
+                    ? 'Bodyweight'
+                    : (exercise.weight?.[setIndex] ?? '—')}
               </UiText>
               {!timed && (
                 <UiText textRole="body" className="flex-1">

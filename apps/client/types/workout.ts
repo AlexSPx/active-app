@@ -1,4 +1,4 @@
-import type { ApiExercise } from './api'
+import type { ApiExercise, CoachPrescription } from './api'
 
 // ==========================================
 // Internal App Types for Workout Management
@@ -23,11 +23,13 @@ export interface WorkoutSet {
   durationSeconds?: number | null
   completed?: boolean
   restTime?: number
+  coachBodyweight?: boolean
 }
 
 export interface WorkoutExercise extends Exercise {
   sets: WorkoutSet[]
   notes?: string
+  coachPrescription?: CoachPrescription
 }
 
 // Internal workout type for UI use (converted from API types)

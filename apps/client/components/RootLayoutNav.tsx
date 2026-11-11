@@ -52,6 +52,11 @@ export function RootLayoutNav() {
           />
 
           <Stack.Screen
+            name="coach"
+            options={{ headerShown: false }}
+          />
+
+          <Stack.Screen
             name="+not-found"
             options={{
               title: 'Page Not Found',
