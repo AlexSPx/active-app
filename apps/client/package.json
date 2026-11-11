@@ -10,7 +10,7 @@
     "ios": "expo run:ios",
     "web": "expo start --web --no-dev --port 8080",
     "test": "jest --watchAll",
-    "test:once": "jest --runInBand",
+    "test:once": "jest --runInBand && yarn coach:gate:test",
     "typecheck": "tsc --noEmit",
     "test:sync": "jest tests/sync --runInBand",
     "format": "prettier --write .",
@@ -22,7 +22,8 @@
     "coach:gate:test": "node --test tests/coach/gate.test.cjs"
   },
   "jest": {
-    "preset": "jest-expo"
+    "preset": "jest-expo",
+    "testPathIgnorePatterns": ["/node_modules/", "<rootDir>/tests/coach/gate.test.cjs"]
   },
   "dependencies": {
     "@expo/ui": "~58.0.23",
