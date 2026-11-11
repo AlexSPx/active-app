@@ -1670,6 +1670,11 @@
   resolved "https://registry.yarnpkg.com/@expo/schema-utils/-/schema-utils-58.0.2.tgz#a061fbf4faf2c9f3e4eb49bf775ee43faf596978"
   integrity sha512-w28y8SG+5ZTdDdmH2ZnCQk9wHVwGzI9NqX5V4urJUFEnxbm7I129fJRkb8RIAJmMA1WKU5h3ONmranV473uaXQ==
 
+"@expo/schema-utils@^58.0.3":
+  version "58.0.3"
+  resolved "https://registry.yarnpkg.com/@expo/schema-utils/-/schema-utils-58.0.3.tgz#d2f7c81e617424dffea872062c6f660ae4982f1f"
+  integrity sha512-DwoMEpT3H+r1lU+YUEP10UcUW7sDKmfvgE7oA+zQeuGyi0XxDSDgRZUUZ5nOGp+lymmTicoIUKkoN7rByuI04g==
+
 "@expo/sdk-runtime-versions@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@expo/sdk-runtime-versions/-/sdk-runtime-versions-1.0.1.tgz#292403988e491b444f2a8c7c0921600bcc2ae3da"
@@ -2186,6 +2191,11 @@
   integrity sha512-HshSvXzmBxNzqejd3k/KemgQ3hdREUYFRRrgxOZ+gPljDIsO2SDZrVZMd4Z/HsxudQbE62OVyVFE8z9BCurfjA==
   dependencies:
     "@tybys/wasm-util" "^0.10.3"
+
+"@noble/hashes@1.8.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.8.0.tgz#cee43d801fcef9644b11b8194857695acd5f815a"
+  integrity sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==
 
 "@noxcturnal/noxcturnal-darwin-arm64@0.1.9":
   version "0.1.9"
@@ -4886,6 +4896,15 @@ expo-auth-session@~58.0.14:
     expo-web-browser "~58.0.6"
     invariant "^2.2.4"
 
+expo-build-properties@~58.0.12:
+  version "58.0.12"
+  resolved "https://registry.yarnpkg.com/expo-build-properties/-/expo-build-properties-58.0.12.tgz#f22c76da740fb2246c0272d9d90f2787c885ea16"
+  integrity sha512-Wrs1X1iz0kigrBBDs3qILxvXmANccvbsjpR937KqX0Qq7ON6ISk2uJyfz7Tb7/GFhDuJ6MAfW0jR+oryYdOhcg==
+  dependencies:
+    "@expo/schema-utils" "^58.0.3"
+    resolve-from "^5.0.0"
+    semver "^7.7.4"
+
 expo-constants@~58.0.13:
   version "58.0.13"
   resolved "https://registry.yarnpkg.com/expo-constants/-/expo-constants-58.0.13.tgz#766177f24940be1a57887f8689f0148a8e68cb9f"
@@ -6511,6 +6530,11 @@ lines-and-columns@^1.1.6:
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/lines-and-columns/-/lines-and-columns-1.2.4.tgz#eca284f75d2965079309dc0ad9255abb2ebc1632"
   integrity sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==
+
+llama.rn@0.13.0-rc.9:
+  version "0.13.0-rc.9"
+  resolved "https://registry.yarnpkg.com/llama.rn/-/llama.rn-0.13.0-rc.9.tgz#ae107a6f742b8ac61c726975cdcf7e4e59ac35d3"
+  integrity sha512-8Cix1aJ/ntDhLEvtHRKBl5ZY1pdjK8LbiseMG7vxGZCd3q3rXWls6wVtWVLdykq8shtfe52emqzHKGXpjPiYBA==
 
 loader-runner@^4.3.1:
   version "4.3.2"

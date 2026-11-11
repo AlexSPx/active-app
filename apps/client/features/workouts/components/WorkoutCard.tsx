@@ -42,7 +42,7 @@ export const WorkoutCard = memo(function WorkoutCard({
     let totalSets = 0
 
     for (const exercise of workout.workoutTemplate.exercises) {
-      if (exercise.category === 'CARDIO') {
+      if (exercise.category === 'CARDIO' || exercise.coachPrescription?.sets[0]?.kind === 'timed') {
         totalSets += Array.isArray(exercise.durationSeconds) ? exercise.durationSeconds.length : 0
         continue
       }
@@ -109,11 +109,13 @@ export const WorkoutCard = memo(function WorkoutCard({
               .map((exercise, index) => {
                 const reps = exercise.reps ?? []
                 const count =
-                  exercise.category === 'CARDIO'
+                  exercise.category === 'CARDIO' ||
+                  exercise.coachPrescription?.sets[0]?.kind === 'timed'
                     ? (exercise.durationSeconds?.length ?? 0)
                     : reps.length
                 const target =
-                  exercise.category === 'CARDIO'
+                  exercise.category === 'CARDIO' ||
+                  exercise.coachPrescription?.sets[0]?.kind === 'timed'
                     ? `${count} ${count === 1 ? 'interval' : 'intervals'}`
                     : reps.length > 0 && reps.every((rep) => rep === reps[0])
                       ? `${count} × ${reps[0]}`

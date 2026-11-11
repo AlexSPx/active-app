@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import * as SQLite from 'expo-sqlite'
 import type { SQLiteDatabase } from 'expo-sqlite'
 import {
@@ -8,6 +8,19 @@ import {
 } from './connection'
 
 const DatabaseContext = createContext<SQLiteDatabase | null>(null)
+const CleanupContext = createContext<Set<() => Promise<void>> | null>(null)
+
+export function useProfileDatabaseCleanup(cleanup: () => Promise<void>) {
+  const callbacks = useContext(CleanupContext)
+  useEffect(() => {
+    if (!callbacks) throw new Error('The profile database provider is not ready.')
+    callbacks.add(cleanup)
+    return () => {
+      const pending = cleanup()
+      void pending.finally(() => callbacks.delete(cleanup))
+    }
+  }, [callbacks, cleanup])
+}
 
 export function useProfileDatabase(): SQLiteDatabase {
   const database = useContext(DatabaseContext)
@@ -27,6 +40,7 @@ export function ProfileSQLiteProvider({
   children: ReactNode
 }) {
   const [database, setDatabase] = useState<SQLiteDatabase | null>(null)
+  const cleanups = useRef(new Set<() => Promise<void>>()).current
 
   useEffect(() => {
     let active = true
@@ -43,6 +57,7 @@ export function ProfileSQLiteProvider({
           return
         }
         try {
+          await Promise.all([...cleanups].map((cleanup) => cleanup()))
           await db.closeAsync()
           markSharedDatabaseDetached(db, providerToken)
         } catch (cause) {
@@ -74,11 +89,13 @@ export function ProfileSQLiteProvider({
       // Migrations may own a legacy handle: let initialization finish before closing.
       void initialization.then(close)
     }
-  }, [databaseName, onError, onInit])
+  }, [databaseName, onError, onInit, cleanups])
 
   return (
-    <DatabaseContext.Provider value={database}>
-      {database ? children : null}
-    </DatabaseContext.Provider>
+    <CleanupContext.Provider value={cleanups}>
+      <DatabaseContext.Provider value={database}>
+        {database ? children : null}
+      </DatabaseContext.Provider>
+    </CleanupContext.Provider>
   )
 }

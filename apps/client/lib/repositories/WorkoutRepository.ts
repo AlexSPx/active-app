@@ -1,3 +1,4 @@
+import type { WorkoutExercise } from '../../types/workout'
 /**
  * WorkoutRepository - Centralized data access for workouts & workout records.
  *
@@ -51,6 +52,11 @@ interface WorkoutRecordRow {
 // Repository
 // ---------------------------------------------------------------------------
 
+function requiredTarget(value: number | null | undefined): number {
+  if (value == null || !Number.isFinite(value)) throw new Error('Missing workout target.')
+  return value
+}
+
 export class WorkoutRepository extends BaseRepository {
   // -------------------------------------------------------------------------
   // Workouts — Reads
@@ -77,7 +83,8 @@ export class WorkoutRepository extends BaseRepository {
 
   async create(
     workout: CreateWorkoutRequest,
-    selectedExercises: ApiExercise[]
+    selectedExercises: (ApiExercise &
+      Partial<Pick<WorkoutExercise, 'sets' | 'coachPrescription'>>)[]
   ): Promise<ApiWorkout> {
     const localId = this.generateLocalId()
     const now = new Date().toISOString()
@@ -127,7 +134,8 @@ export class WorkoutRepository extends BaseRepository {
   async update(
     workoutId: string,
     payload: UpdateWorkoutRequest,
-    selectedExercises: ApiExercise[]
+    selectedExercises: (ApiExercise &
+      Partial<Pick<WorkoutExercise, 'sets' | 'coachPrescription'>>)[]
   ): Promise<void> {
     return this.commitMutation(async (tx) => {
       const resolvedWorkoutId = syncEngine.resolveId('workouts', workoutId)
@@ -432,7 +440,8 @@ export class WorkoutRepository extends BaseRepository {
 
   private withExerciseMetadata(
     templateExercises: TemplateExercise[],
-    selectedExercises: ApiExercise[]
+    selectedExercises: (ApiExercise &
+      Partial<Pick<WorkoutExercise, 'sets' | 'coachPrescription'>>)[]
   ): ApiWorkoutTemplate['exercises'] {
     const exercisesById = new Map(selectedExercises.map((exercise) => [exercise.id, exercise]))
     return templateExercises.map((exercise) => {
@@ -448,6 +457,28 @@ export class WorkoutRepository extends BaseRepository {
         category: details.category,
         primaryMuscles: details.primaryMuscles,
         secondaryMuscles: details.secondaryMuscles,
+        ...(details.coachPrescription && details.sets
+          ? {
+              coachPrescription: {
+                guidance: details.coachPrescription.guidance,
+                sets: details.sets.map((set) =>
+                  details.coachPrescription?.sets[0]?.kind === 'timed'
+                    ? {
+                        kind: 'timed' as const,
+                        durationSeconds: requiredTarget(set.durationSeconds),
+                      }
+                    : {
+                        kind: 'strength' as const,
+                        repetitions: requiredTarget(set.reps),
+                        load:
+                          set.coachBodyweight && set.weight === 0
+                            ? { kind: 'bodyweight' as const }
+                            : { kind: 'kilograms' as const, value: requiredTarget(set.weight) },
+                      }
+                ),
+              },
+            }
+          : {}),
       }
     })
   }

@@ -1,6 +1,9 @@
 const React = require('react')
 const { act, create } = require('react-test-renderer')
-const { ProfileSQLiteProvider } = require('../../lib/db/ProfileSQLiteProvider')
+const {
+  ProfileSQLiteProvider,
+  useProfileDatabaseCleanup,
+} = require('../../lib/db/ProfileSQLiteProvider')
 const connection = require('../../lib/db/connection')
 const sqlite = require('expo-sqlite')
 
@@ -73,4 +76,41 @@ test('initialization failure closes the owned handle exactly once', async () => 
   expect(db.closeAsync).toHaveBeenCalledTimes(1)
   expect(connection.markSharedDatabaseDetached).toHaveBeenCalledWith(db, 1)
   expect(onError).toHaveBeenCalledWith(error)
+})
+
+test('profile cleanup invalidates immediately and drains work before closing the database', async () => {
+  let finishWork
+  const work = new Promise((resolve) => {
+    finishWork = resolve
+  })
+  const invalidate = jest.fn()
+  const db = { closeAsync: jest.fn(async () => {}) }
+  sqlite.openDatabaseAsync.mockResolvedValue(db)
+  const cleanup = () => {
+    invalidate()
+    return work
+  }
+  function Consumer() {
+    useProfileDatabaseCleanup(cleanup)
+    return null
+  }
+  let root
+  await act(async () => {
+    root = create(
+      React.createElement(
+        ProfileSQLiteProvider,
+        {
+          databaseName: 'profile-test.db',
+          onInit: async () => {},
+          onError: jest.fn(),
+        },
+        React.createElement(Consumer)
+      )
+    )
+  })
+  await act(async () => root.unmount())
+  expect(invalidate).toHaveBeenCalled()
+  expect(db.closeAsync).not.toHaveBeenCalled()
+  await act(async () => finishWork())
+  expect(db.closeAsync).toHaveBeenCalledTimes(1)
 })

@@ -1,0 +1,84 @@
+{
+  "version": 1,
+  "author": {
+    "provider": "codex",
+    "model": "gpt-6.1-terra",
+    "reasoning_effort": "high",
+    "basis": "User verified settings; runtime also reports these settings"
+  },
+  "review": {
+    "status": "pending_review",
+    "reviewer": null
+  },
+  "row_hash_method": "SHA-256 of UTF-8 JSON serialization with sorted keys, no whitespace, ensure_ascii=false",
+  "files": {
+    "features/coach/knowledge/cards.json": "5a4914721ae69c8ac62cfab2c97f31380d50e10c7af71f93298c5db2a3d44473",
+    "features/coach/knowledge/sources.json": "e4bf837ad1bacacb70b86c891edfb889bda840a260c92f6cc9260935718d92a5",
+    "lib/data/coach/exercise-planning-metadata.json": "791f309002769b0bd7dc8709c41442b0e34bc15a498c29f74bcbf3f9c06e8d50",
+    "lib/data/exercise-catalog.json": "3f9268c7c7fb91b11ce09a9a984d3a789e4ab05a118b6afb0b833bc0fedf6f82",
+    "lib/data/LICENSE.exercise-catalog.md": "6b0382b16279f26ff69014300541967a356a666eb0b91b422f6862f6b7dad17e"
+  },
+  "rows": {
+    "features/coach/knowledge/cards.json": {
+      "card-001": "ce1ecace416ec2d2da45bb462fe0a66de0afa9dcf8b9dcd2e9e0a1c1e62fe835",
+      "card-002": "93d55a18aa9e9eeac4d9e3d42525466fcac4c203e316d59a64fc85d80ec8626c",
+      "card-003": "d0d5cf3de82883a5ad4e1e7568f90a056ff75bded128063c3f044a46476a3948",
+      "card-004": "860fea457538fb23d13d9e7d32f91d8b30150161dbe0c152ed6cb410e2662346",
+      "card-005": "ab84788c09dca4f6c6855b35929262e2e6068a7b1885624ed3ad0e16cc028619",
+      "card-006": "327b8ff733cf8b60b870453774fbff56076f4f0846e6a0bf3a51b7d5e72eba73",
+      "card-007": "5ae923469f66f6476ba4e0b4c5acab5bf8b2d6b014cc55106f182682aa48cf46",
+      "card-008": "4c1a93cf3508f0e88a51b8f01822b3c55e3c141c96542cc2308b55350b6d5aac",
+      "card-009": "4a8553cdbeb99d119fba69e71bc59e2aa52a4745b768b2715e73df9e0f292ce9",
+      "card-010": "2a1d1e5a280576e4c75c409ac2f0ad0bbdaa41c9e3217be97f56403f2fa10eb3",
+      "card-011": "86f160e084352bc3b1ed873544580c6d67b64899d053cc7f04811611f4cef43c",
+      "card-012": "552159c7554503d9c18baa9091119b06ac04930cd5400b473c6ac569460f53c2",
+      "card-013": "41042bddaaa525e78c726fe9020c0740c0e2b9d25e3c2c4ee670c1b29ac1f571",
+      "card-014": "932934068ea50a51976ff7b1d1d010bac8dab52e0cc03fa8144cc2d5ec8ee64d",
+      "card-015": "4acf29bb623fd907c1049c9e3b2d92334dccbc6f884906873215b2864277016b",
+      "card-016": "578b9273ec0c3aab4a50806fd9f731ef31881cddb1ac86d90c9e76a4912f06e7",
+      "card-017": "8cda79c428162626b9d4470f39aee7baaa5e35b81fc9bdb9c510b58afb11d472",
+      "card-018": "14bd9a264b82de8cfd29f03ad1c9a38708a08c745c6c9b405a044292f152311f",
+      "card-019": "588a79d5d1175bc2a8adedf7c754ed5d09634ec44f4831d166c55c6d29cfb0cf",
+      "card-020": "9736c683d732a612916e083f3efffb349e199e98c754e7d12b5273eb5c2b0f36",
+      "card-021": "a8c34823d97d4378a4f5316b84c80b31b9c7f5b3d3243eecc0eacc9162a6dd02",
+      "card-022": "4302f68c9f0e24bf392fb41d0f5b77b940d78d74033d3f0353de0015116df537",
+      "card-023": "37d3194197a5b4810872e464323e81d3c16ba8b316b2574882a5849de28e2a43",
+      "card-024": "431d6e021ff70f49229e353c260ffb61701428ab2b1c35f95deae78c1b2def16",
+      "card-025": "08c7376161fbff927640a27a6f52cda836e051d76075ea11bd8d95f2e889f752",
+      "card-026": "e4d3b0f48cc7e45d67f65d090199618981db51bdb9a67cc6aff6fb7e1b03f88e",
+      "card-027": "b029a9c4d503fcec24a87368512cfa7a9a9649e2b0fb79878ad20bf0acc34d77",
+      "card-028": "fa66a5ad31a59f82d529a5ea011c7f6177b45bb45c5a24dd51c7a7bc770f0d9b",
+      "card-029": "3478212b414495b700b36ca805a5dc502362a9e09c48bedfd9410b2a47150917",
+      "card-030": "a4f51b2332ae730120d034f05eff70f7ebde540b42400c0be969e6bb390fe403",
+      "card-031": "b2648e8bebe777954c0b2940b613cac80ac1e155015b9e77a77fdf8e8e4ff2b5",
+      "card-032": "023ec1eb4264fe79a31402e59783be94b638c3393a0912141756fead51294935",
+      "card-033": "62295933ea85084191530b8720d786cb3ee30882f0716d79cab3f382c991839e",
+      "card-034": "2b5d19d31d68aa1921d297d98d7d1dbcc300c36367fa778e62483f55d8360f02",
+      "card-035": "faf9601058e178ee6e9bcd926f9acc651e707f38b1999b795d4a1ee69900fb8c",
+      "card-036": "69e1de3796404d55ccc9f5ec134ac25df195570839c8fedea91d36eaf4b45cc3",
+      "card-037": "5902e1461e3151cad2fb023ad1d7b4f96d35720b05f529ba14b1ed49643fa1f4",
+      "card-038": "ba4466d5fa7136e576a8dc60cac7019f06363a805cf9eaf1f0c7a45fb1b8cc9f",
+      "card-039": "c9d216e559805a2f42d403a9cc745e47e219353e02a33bf0e604c63d68e55189",
+      "card-040": "9a118417f68c131df8cda6991a0257118e3551533ded3331fa78a9a139e4be5c",
+      "card-041": "a1b428ec6723f271fa398e42caa5e556559d4f22ff8da0095b3803e040ca8bac",
+      "card-042": "750bac2240a26f558fb8ac366ab508678a7c4b671c4d966b43ac16da99d5bd96",
+      "card-043": "7854d42f8cc52e13929235fa7c9acebb08097c78156bc370b9744603f4606e5b",
+      "card-044": "18bf2980b118125e7e6749435d7bab09a83f50bf0a94d53f04b10da81e545f58"
+    },
+    "features/coach/knowledge/sources.json": {
+      "original-author": "12d86dcf4273eee3b03d9196915196b5ea5ba648e0dbc0b95bfce3927b8ff763"
+    },
+    "lib/data/coach/exercise-planning-metadata.json": {
+      "Barbell_Deadlift": "d23cca47a88c9930c14ee68eb3409cb287afdf2fd3fc07f486e3079b077f2666",
+      "Barbell_Squat": "33a1a2e9dde83a1db652d161d24577186ea3a513c1e48fcd7105cd5846c5ab68",
+      "Bent_Over_Barbell_Row": "d9f4d1cb859890173f21099bde018e1b0a43fdedcc66f10ccddee264c38ea3a7",
+      "Bodyweight_Squat": "8bad29948670355a6e0bbb9ee449df4184abc5ccca6669d9f12f0a87246856ad",
+      "Dumbbell_Bench_Press": "0a6c70e4cece328266ecfc5e525e613f2bd4fc2c8b33359d4dfc53650a08fe4e",
+      "Dumbbell_Shoulder_Press": "8ab47a2ddf95a94b23413acf3ab0395a1648e68014d0a29bdb3def1e3de50955",
+      "Dumbbell_Squat": "7db6352319c1ba10de4808e99d66409eaf4d4632a9da18b3b78691f68d626d86",
+      "Plank": "290d9fa9d5459681a376ceaba64d919c18b48f40c0bb47aabcdd0110a71a4b84",
+      "Pullups": "0915a89a0ae892e07e75b0a89d0fe9fdfd0f38b78d1d98a4519dd719680d3538",
+      "Pushups": "14fb5beb3e862f1dcbb1d651d073b43db4d50c696c722a2cd792180b568f75d4"
+    }
+  }
+}

@@ -262,3 +262,50 @@ describe('set completion values', () => {
     }
   })
 })
+
+test('a timed static prescription completes and records duration without changing its category', async () => {
+  const recordWorkout = jest.fn(async () => ({ kind: 'local', workoutRecord: { id: 'record' } }))
+  getDatabase.mockResolvedValue({})
+  WorkoutRepository.mockImplementation(() => ({ recordWorkout }))
+  const prescription = {
+    sets: [{ kind: 'timed', durationSeconds: 45 }],
+    guidance: { restSeconds: 60 },
+  }
+  useRunningWorkoutStore.getState().startWorkout({
+    id: 'workout',
+    name: 'Static',
+    exercises: [
+      {
+        id: 'plank',
+        sessionId: 'plank-session',
+        category: 'STRENGTH',
+        sets: 1,
+        reps: 0,
+        coachPrescription: prescription,
+        sessionSets: [
+          { id: 'set', reps: null, weight: null, durationSeconds: 45, completed: false },
+        ],
+      },
+    ],
+  })
+  useRunningWorkoutStore.getState().completeSet('plank-session', 'set')
+  expect(useRunningWorkoutStore.getState().runningWorkout.exercises[0]).toMatchObject({
+    category: 'STRENGTH',
+    coachPrescription: prescription,
+    sessionSets: [{ completed: true }],
+  })
+  await useRunningWorkoutStore.getState().stopWorkout()
+  expect(recordWorkout).toHaveBeenCalledWith(
+    expect.objectContaining({
+      exerciseRecords: [
+        expect.objectContaining({
+          exerciseId: 'plank',
+          reps: [],
+          weight: [],
+          durationSeconds: [45],
+        }),
+      ],
+    }),
+    'Static'
+  )
+})

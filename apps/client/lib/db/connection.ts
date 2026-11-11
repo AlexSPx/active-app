@@ -49,6 +49,8 @@ export async function clearDatabase(): Promise<void> {
     await syncEngine.withIdRemapLock(async () => {
       await db.withTransactionAsync(async () => {
         await db.execAsync(`
+          DELETE FROM coach_conversations;
+          DELETE FROM coach_draft_saves;
           DELETE FROM sync_queue;
           DELETE FROM workout_records;
           DELETE FROM workouts;

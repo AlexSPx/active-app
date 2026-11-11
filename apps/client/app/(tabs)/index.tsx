@@ -1,3 +1,4 @@
+import { Link } from 'expo-router'
 import { useTabContentInset } from '../../navigation/TabContentInset'
 import { ScrollView, View } from 'react-native'
 import { Button, UiText } from '../../components/ui/Controls'
@@ -10,6 +11,7 @@ import { FlexibleRoutineView } from '../../features/training/components/Flexible
 import { WeeklyView } from '../../components/WeeklyView'
 import { TrainingWidgets } from '../../features/training/components/TrainingWidgets'
 import { useTrainingHomeController } from '../../features/training/hooks/useTrainingHomeController'
+import { isCoachAvailable } from '../../features/coach/availability'
 
 export default function HomeScreen() {
   const bottomInset = useTabContentInset()
@@ -89,6 +91,11 @@ export default function HomeScreen() {
           </View>
         )}
 
+        {isCoachAvailable() && (
+          <Link href="/coach" asChild>
+            <Button variant="secondary">Open local coach</Button>
+          </Link>
+        )}
         <TrainingWidgets />
       </View>
     </ScrollView>

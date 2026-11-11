@@ -1,4 +1,13 @@
 const maestroTestBuild = process.env.MAESTRO_TEST_BUILD === '1'
+const { execFileSync } = require('node:child_process')
+
+const promoteCoach = process.env.EXPO_PUBLIC_COACH_PROMOTE === '1'
+const developCoach = process.env.EXPO_PUBLIC_COACH_DEV === '1'
+execFileSync(
+  process.execPath,
+  [require.resolve('./scripts/coach/gate.mjs'), promoteCoach ? 'release' : 'development'],
+  { stdio: ['ignore', 2, 2] }
+)
 
 export default {
   expo: {
@@ -48,6 +57,8 @@ export default {
     },
     plugins: [
       'expo-sqlite',
+      'expo-build-properties',
+      ['llama.rn', { enableEntitlements: false, enableOpenCLAndHexagon: false }],
       // Dangerous mods run in reverse order; customize the generated widget provider last.
       './plugins/with-today-plan-widget',
       [
@@ -115,6 +126,11 @@ export default {
       reactCompiler: true,
     },
     extra: {
+      coachAvailability: promoteCoach
+        ? 'promoted'
+        : developCoach
+          ? 'development'
+          : 'disabled',
       router: {},
       eas: {
         projectId: '8dee9569-7b46-47df-b72f-21833f59e85c',

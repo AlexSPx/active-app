@@ -1,0 +1,15 @@
+[
+  {
+    "id": "original-author",
+    "title": "Original coaching draft authored for this task",
+    "url": "https://openai.com/policies/terms-of-use/",
+    "version": "2026-11-01",
+    "license": "No separate license asserted; original model output subject to applicable terms",
+    "attribution": "Original draft by Codex, gpt-6.1-terra, high reasoning",
+    "redistributionPermission": "user_authorized_original",
+    "trainingPermission": "user_authorized_original",
+    "permissionBasis": "User requested original authored material for app redistribution and training; applicable provider terms govern output ownership and use. URL points to those terms, not an external coaching source.",
+    "reviewStatus": "pending_review",
+    "reviewer": null
+  }
+]
