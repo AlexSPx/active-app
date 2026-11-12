@@ -401,7 +401,7 @@ describe('Flexible Home', () => {
   }
 
   it.each([2, 5])(
-    'shows %i segments and fresh, partial, and complete states without workouts on Home',
+    'shows progress for %i workouts in fresh, partial, and complete states',
     (count) => {
       for (const done of [0, 1, count]) {
         const tree = setupFlexible(count, done)
@@ -413,7 +413,8 @@ describe('Flexible Home', () => {
           (node) => node.props.accessibilityRole === 'progressbar'
         )[0]
         expect(progress.props.accessibilityValue).toMatchObject({ min: 0, max: count, now: done })
-        expect(progress.props.children).toHaveLength(count)
+        const ring = progress.findAll((node) => node.props.strokeDashoffset !== undefined)[0]
+        expect(ring.props.strokeDashoffset).toBeCloseTo(2 * Math.PI * 26 * (1 - done / count))
         act(() =>
           getButton(tree, done === count ? 'View this week' : 'Choose a workout').props.onPress()
         )

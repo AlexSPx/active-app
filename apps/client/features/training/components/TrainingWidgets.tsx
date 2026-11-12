@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useRouter } from 'expo-router'
 import { View } from 'react-native'
 import { Button, UiText } from '../../../components/ui/Controls'
 import { BarChart2, Plus } from '../../../components/ui/icons'
@@ -8,6 +9,7 @@ import { WidgetManager } from '../../../components/WidgetManager'
 import { useWidgetStore } from '../../../stores/widgetStore'
 
 export function TrainingWidgets() {
+  const router = useRouter()
   const colors = useCadenceColors()
   const { widgets, removeWidget } = useWidgetStore()
   const sortedWidgets = [...widgets].sort((a, b) => a.position - b.position)
@@ -38,6 +40,7 @@ export function TrainingWidgets() {
               <ProgressionWidget
                 key={widget.id}
                 config={widget}
+                onOpen={() => router.push({ pathname: '/progress', params: { id: widget.id } })}
                 onManage={() => setWidgetMode('manage')}
                 onRemove={() => removeWidget(widget.id)}
               />

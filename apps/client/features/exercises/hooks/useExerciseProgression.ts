@@ -9,6 +9,7 @@ export interface ProgressionDataPoint {
   value: number
   label: string
   isPersonalRecord?: boolean
+  workoutRecord?: { id: string; name: string }
 }
 
 export interface ExerciseProgressionData {
@@ -25,7 +26,9 @@ export interface ExerciseProgressionData {
   }
 }
 
-function processExerciseLogs(logs: ExerciseLogResponse[]): ExerciseProgressionData {
+type ProgressionLog = ExerciseLogResponse & { workoutRecord?: { id: string; name: string } }
+
+function processExerciseLogs(logs: ProgressionLog[]): ExerciseProgressionData {
   if (logs.length === 0) {
     throw new Error('No exercise data available')
   }
@@ -91,6 +94,7 @@ function processExerciseLogs(logs: ExerciseLogResponse[]): ExerciseProgressionDa
         value: Math.round(estimatedOneRm * 10) / 10,
         label: `${Math.round(estimatedOneRm * 10) / 10}kg`,
         isPersonalRecord: isOneRmPR,
+        workoutRecord: log.workoutRecord,
       })
     }
 
@@ -100,6 +104,7 @@ function processExerciseLogs(logs: ExerciseLogResponse[]): ExerciseProgressionDa
         value: Math.round(totalVolume),
         label: `${Math.round(totalVolume)}kg`,
         isPersonalRecord: isVolumePR,
+        workoutRecord: log.workoutRecord,
       })
     }
 
@@ -109,6 +114,7 @@ function processExerciseLogs(logs: ExerciseLogResponse[]): ExerciseProgressionDa
         value: sessionMaxWeight,
         label: `${sessionMaxWeight}kg`,
         isPersonalRecord: isMaxWeightPR,
+        workoutRecord: log.workoutRecord,
       })
     }
   })
@@ -132,7 +138,7 @@ function localExerciseLogs(
   records: WorkoutRecord[],
   exerciseId: string,
   exerciseName: string
-): ExerciseLogResponse[] {
+): ProgressionLog[] {
   return records.flatMap((record) =>
     record.exerciseRecords.flatMap((exercise, index) => {
       const wanted = exerciseName.trim().toLowerCase()
@@ -145,6 +151,7 @@ function localExerciseLogs(
       return [
         {
           exerciseRecordId: `${record.id}:${index}`,
+          workoutRecord: record.id ? { id: record.id, name: record.workoutTitle } : undefined,
           exerciseId,
           exerciseName,
           createdAt: record.createdAt,
