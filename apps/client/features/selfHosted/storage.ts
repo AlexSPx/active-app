@@ -129,8 +129,16 @@ export async function saveConnection(connection: Connection): Promise<void> {
   }
   if (valid.kind !== 'native') throw new Error('Web connection requires web platform')
   const scope = scopeSchema.parse(valid)
-  await SecureStore.setItemAsync(scopedKey(scope, 'connection'), JSON.stringify(valid))
-  await SecureStore.setItemAsync(activeKey, JSON.stringify(scope))
+  const key = scopedKey(scope, 'connection')
+  const previous = await SecureStore.getItemAsync(key)
+  try {
+    await SecureStore.setItemAsync(key, JSON.stringify(valid))
+    await SecureStore.setItemAsync(activeKey, JSON.stringify(scope))
+  } catch (error) {
+    if (previous === null) await SecureStore.deleteItemAsync(key)
+    else await SecureStore.setItemAsync(key, previous)
+    throw error
+  }
 }
 
 export async function clearConnection(): Promise<void> {

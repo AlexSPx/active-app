@@ -127,3 +127,15 @@ test('round trips initialization requests and rejects invalid stages', async () 
     storage.savePlan(scope, { ...init, plan: { ...init.plan, stage: 'preferences' } })
   ).rejects.toThrow()
 })
+
+test('failed active scope write preserves the old credentials and removes the incomplete new record', async () => {
+  await storage.saveConnection(connection)
+  secure.setItemAsync
+    .mockImplementationOnce(async (key, value) => mockValues.set(key, value))
+    .mockRejectedValueOnce(new Error('storage failed'))
+  await expect(
+    storage.saveConnection({ ...connection, instanceId: 'server-b', accountId: 'account-b' })
+  ).rejects.toThrow('storage failed')
+  expect(await storage.loadConnection()).toEqual(connection)
+  expect([...mockValues.keys()].filter((key) => key.endsWith('.connection'))).toHaveLength(1)
+})

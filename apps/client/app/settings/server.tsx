@@ -5,27 +5,24 @@ import { Button, Surface, TextField, UiText } from '../../components/ui/Controls
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettingsStore } from '../../features/settings'
 import {
-  connectAccount,
-  cancelAccountOperation,
-  deleteRemoteAccount,
-  disconnectAccount,
   initializeFromDevice,
   readAccount,
   type RemoteProfile,
 } from '../../features/selfHosted/account'
 import {
-  clearConnection,
-  loadConnection,
-  saveConnection,
-  type Connection,
-} from '../../features/selfHosted/storage'
-import { selectSelfHostedProfile } from '../../stores/authStore'
+  cancelConnection,
+  disconnectServer,
+  deleteServerAccount,
+  restoreConnectionLifecycle,
+  signInToServer,
+  useConnectionLifecycle,
+} from '../../features/selfHosted/lifecycle'
 
 export default function ServerSettingsScreen() {
   const { user } = useAuth()
   const settings = useSettingsStore()
   const [url, setUrl] = useState(Platform.OS === 'web' ? location.origin : '')
-  const [connection, setConnection] = useState<Connection | null>(null)
+  const { connection, status } = useConnectionLifecycle()
   const [profile, setProfile] = useState<RemoteProfile | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
@@ -33,11 +30,10 @@ export default function ServerSettingsScreen() {
 
   useEffect(() => {
     let mounted = true
-    void loadConnection()
-      .then((saved) => {
-        if (!mounted) return
-        setConnection(saved)
-        if (saved) setUrl(saved.baseUrl)
+    void restoreConnectionLifecycle()
+      .then(() => {
+        const saved = useConnectionLifecycle.getState().connection
+        if (mounted && saved) setUrl(saved.baseUrl)
       })
       .catch(() => {
         if (mounted) setMessage('Could not restore the server connection. Try again.')
@@ -61,18 +57,8 @@ export default function ServerSettingsScreen() {
   }
 
   async function signIn() {
-    const previous = await loadConnection()
-    const connected = await connectAccount(url)
-    if (!connected) return
-    try {
-      if (Platform.OS !== 'web') await selectSelfHostedProfile(connected)
-      else setProfile(await readAccount())
-      setConnection(connected)
-    } catch (error) {
-      if (previous) await saveConnection(previous)
-      else await clearConnection()
-      throw error
-    }
+    const connected = await signInToServer(url)
+    if (connected) setProfile(null)
   }
 
   return (
@@ -106,7 +92,10 @@ export default function ServerSettingsScreen() {
             </Button>
           ) : (
             <>
-              <UiText textRole="bodyEmphasis">Connected to {connection.baseUrl}</UiText>
+              <UiText textRole="bodyEmphasis">
+                {status === 'auth-paused' ? 'Sign in again to' : 'Connected to'}{' '}
+                {connection.baseUrl}
+              </UiText>
               <Button
                 disabled={busy}
                 onPress={() =>
@@ -169,9 +158,7 @@ export default function ServerSettingsScreen() {
                 disabled={busy}
                 onPress={() =>
                   void run(async () => {
-                    await disconnectAccount()
-                    if (Platform.OS !== 'web') await selectSelfHostedProfile(null)
-                    setConnection(null)
+                    await disconnectServer()
                     setProfile(null)
                     setMessage('Disconnected. Your device data is still available.')
                   })
@@ -183,7 +170,7 @@ export default function ServerSettingsScreen() {
           )}
           {message && <UiText accessibilityRole="alert">{message}</UiText>}
           {busy && (
-            <Button onPress={cancelAccountOperation}>
+            <Button onPress={cancelConnection}>
               <UiText>Cancel</UiText>
             </Button>
           )}
@@ -204,9 +191,7 @@ export default function ServerSettingsScreen() {
                   disabled={busy}
                   onPress={() =>
                     void run(async () => {
-                      await deleteRemoteAccount()
-                      if (Platform.OS !== 'web') await selectSelfHostedProfile(null)
-                      setConnection(null)
+                      await deleteServerAccount()
                       setProfile(null)
                       setConfirmDelete(false)
                       setMessage('Server account deleted. Your device data is still available.')

@@ -39,7 +39,12 @@ import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest }
 import { networkPolicy, resetNetworkPreferenceAfterDeviceErase } from './networkStore'
 import { launchFacade } from '../features/launch/launchFacade'
 import { z } from 'zod'
-import { clearConnection, type ConnectionScope } from '../features/selfHosted/storage'
+import {
+  clearConnection,
+  loadConnection,
+  type ConnectionScope,
+} from '../features/selfHosted/storage'
+import { publishConnection } from '../features/selfHosted/connectionState'
 
 const activeSelfHostedProfileKey = 'selfHosted.profile'
 const connectionScopeSchema = z
@@ -786,6 +791,9 @@ async function initializeAuthState(): Promise<void> {
         }
         secureCredentialsMigrated = true
         authPersistenceReady = true
+        await loadConnection()
+          .then((connection) => publishConnection(connection, !!scope))
+          .catch(() => {})
         return
       }
 

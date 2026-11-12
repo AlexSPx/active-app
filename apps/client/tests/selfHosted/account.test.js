@@ -271,7 +271,7 @@ test.each([
   expect(() => account.serverUrl(value)).toThrow()
 })
 
-test('web reauthentication cannot replace a different account with pending work', async () => {
+test('web reauthentication can select a different account without moving pending work', async () => {
   Platform.OS = 'web'
   const oldLocation = global.location
   global.location = { origin: connection.baseUrl }
@@ -283,10 +283,50 @@ test('web reauthentication cannot replace a different account with pending work'
       url.endsWith('/auth/config') ? metadata : { accountId: 'account-b', csrfToken: 'new-csrf' },
   }))
   try {
-    await expect(account.connectAccount(connection.baseUrl)).rejects.toThrow('previous account')
-    expect(storage.saveConnection).not.toHaveBeenCalled()
+    await expect(account.connectAccount(connection.baseUrl)).resolves.toMatchObject({
+      accountId: 'account-b',
+    })
+    expect(storage.saveConnection).toHaveBeenCalledWith(
+      expect.objectContaining({ accountId: 'account-b' })
+    )
     expect(storage.clearPlan).not.toHaveBeenCalled()
   } finally {
     global.location = oldLocation
   }
+})
+
+test('native sign-in selects a different server and account without touching the prior plan', async () => {
+  auth.AuthRequest.mockImplementation(() => ({
+    state: 'state',
+    codeVerifier: 'verifier',
+    promptAsync: async () => ({
+      type: 'success',
+      params: { state: 'state', iss: metadata.issuer, code: 'code' },
+    }),
+  }))
+  createClient.mockImplementation(() => async (operation) => {
+    if (operation === 'discovery') return { ...metadata, instanceId: 'instance-b' }
+    if (operation === 'profile.get') return { ...profile, id: 'account-b' }
+    throw new Error(operation)
+  })
+  global.fetch = jest.fn(async (url) => ({
+    ok: true,
+    status: 200,
+    json: async () =>
+      url.endsWith('/auth/config')
+        ? metadata
+        : url === metadata.tokenEndpoint
+          ? { access_token: 'new', id_token: 'new-id', expires_in: 600 }
+          : { subject: 'subject-b' },
+  }))
+  await expect(account.connectAccount('https://other.test')).resolves.toMatchObject({
+    instanceId: 'instance-b',
+    accountId: 'account-b',
+    subject: 'subject-b',
+  })
+  expect(storage.saveConnection).toHaveBeenCalledWith(
+    expect.objectContaining({ accountId: 'account-b' })
+  )
+  expect(storage.loadPlan).not.toHaveBeenCalled()
+  expect(storage.clearPlan).not.toHaveBeenCalled()
 })

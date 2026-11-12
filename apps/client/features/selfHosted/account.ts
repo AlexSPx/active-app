@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import { publishConnection, useConnectionLifecycle } from './connectionState'
 import * as AuthSession from 'expo-auth-session'
 import * as WebBrowser from 'expo-web-browser'
 import * as Crypto from 'expo-crypto'
@@ -123,6 +124,18 @@ function serialize<T>(action: () => Promise<T>): Promise<T> {
     currentOperationSignal = controller.signal
     try {
       return await action()
+    } catch (error) {
+      const state = useConnectionLifecycle.getState()
+      if (
+        state.status !== 'connecting' &&
+        state.connection &&
+        ((error instanceof AccountServiceError && error.status === 401) ||
+          (error instanceof ApiError && error.status === 401) ||
+          (state.connection.kind === 'native' && state.connection.expiresAt <= Date.now()))
+      ) {
+        useConnectionLifecycle.setState({ status: 'auth-paused' })
+      }
+      throw error
     } finally {
       controller.abort()
       signal.removeEventListener('abort', cancel)
@@ -236,11 +249,15 @@ async function active(): Promise<Connection> {
       expiresAt: tokens.expiresAt,
     }
     await saveConnection(connection)
+    if (useConnectionLifecycle.getState().status !== 'connecting') publishConnection(connection)
   }
   return connection
 }
 
-export function connectAccount(value: string): Promise<Connection | null> {
+export function connectAccount(
+  value: string,
+  onConnection?: (connection: Connection) => Promise<void>
+): Promise<Connection | null> {
   const generation = operationGeneration
   return serialize(async () => {
     const checkCanceled = () => {
@@ -286,13 +303,6 @@ export function connectAccount(value: string): Promise<Connection | null> {
         location.assign(`${baseUrl}/auth/login`)
         return null
       }
-      if (
-        previous &&
-        (previous.kind !== 'web' ||
-          previous.instanceId !== instance.instanceId ||
-          previous.accountId !== session.accountId)
-      )
-        throw new Error('Disconnect the previous account before connecting a different account')
       const connection: Connection = {
         kind: 'web',
         ...metadata,
@@ -303,6 +313,7 @@ export function connectAccount(value: string): Promise<Connection | null> {
       }
       checkCanceled()
       await saveConnection(connection)
+      await onConnection?.(connection)
       return connection
     }
     if (metadata.redirectUri !== 'activenext://auth/callback')
@@ -354,15 +365,12 @@ export function connectAccount(value: string): Promise<Connection | null> {
         body: JSON.stringify({ idToken: tokens.idToken, accessToken: tokens.accessToken, nonce }),
       })
     )
-    if (
-      previous &&
-      (previous.kind !== 'native' ||
-        previous.instanceId !== instance.instanceId ||
-        previous.subject !== identity.subject)
-    )
-      throw new Error('Disconnect the previous account before connecting a different account')
     // A pending DELETE must go straight to receipt replay, even after reauthentication.
-    const pendingDelete = previous && (await loadPlan(previous, 'delete'))
+    const sameIdentity =
+      previous?.kind === 'native' &&
+      previous.instanceId === instance.instanceId &&
+      previous.subject === identity.subject
+    const pendingDelete = sameIdentity && (await loadPlan(previous, 'delete'))
     const accountId = pendingDelete
       ? previous.accountId
       : (
@@ -372,7 +380,7 @@ export function connectAccount(value: string): Promise<Connection | null> {
             transport
           )('profile.get', { path: {}, query: {}, body: null })
         ).id
-    if (previous && previous.accountId !== accountId)
+    if (sameIdentity && previous.accountId !== accountId)
       throw new Error('The connected account changed')
     const connection: Connection = {
       kind: 'native',
@@ -389,6 +397,7 @@ export function connectAccount(value: string): Promise<Connection | null> {
     await assertInstance(connection)
     checkCanceled()
     await saveConnection(connection)
+    await onConnection?.(connection)
     return connection
   })
 }
@@ -448,7 +457,7 @@ export function initializeFromDevice(device: DeviceProfile, preferences: DeviceP
   })
 }
 
-export function deleteRemoteAccount() {
+export function deleteRemoteAccount(beforeClear?: () => Promise<void>) {
   return serialize(async () => {
     const connection = await active()
     const call = client(connection)
@@ -469,51 +478,61 @@ export function deleteRemoteAccount() {
     if (saved.kind !== 'delete') throw new Error('Invalid deletion plan')
     await executeAccountProfileDeletion({ call, accountId: connection.accountId, plan: saved.plan })
     assertNotCanceled()
+    await beforeClear?.()
+    await clearConnection()
     await clearPlan(connection, 'initialize')
     await clearPlan(connection, 'delete')
-    await clearConnection()
   })
 }
 
-export function disconnectAccount() {
+export function disconnectAccount(
+  beforeClear?: () => Promise<void>,
+  onFailure?: () => Promise<void>
+) {
   cancelAccountOperation()
   return serialize(async () => {
-    const connection = await loadConnection()
-    if (connection && (await loadPlan(connection, 'delete')))
-      throw new Error(
-        'Retry the pending deletion before disconnecting so its acknowledgement can be recovered'
-      )
-    if (connection?.kind === 'web') {
-      await assertInstance(connection)
-      await requestJson(connection.baseUrl, '/auth/logout', {
-        method: 'POST',
-        headers: { 'X-CSRF-Token': connection.csrfToken },
-      })
-    }
-    if (connection?.kind === 'native' && connection.idToken && connection.endSessionEndpoint) {
-      // Request provider logout without deleting the upstream identity.
-      // Local disconnect still succeeds during an outage; tokens are erased below.
-      const abort = new AbortController()
-      const timeout = setTimeout(() => abort.abort(), 10000)
-      try {
-        await transport(connection.endSessionEndpoint, {
+    try {
+      const connection = await loadConnection()
+      if (connection && (await loadPlan(connection, 'delete')))
+        throw new Error(
+          'Retry the pending deletion before disconnecting so its acknowledgement can be recovered'
+        )
+      await beforeClear?.()
+      if (connection?.kind === 'web') {
+        await assertInstance(connection)
+        await requestJson(connection.baseUrl, '/auth/logout', {
           method: 'POST',
-          credentials: 'omit',
-          redirect: 'error',
-          signal: abort.signal,
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({
-            id_token_hint: connection.idToken,
-            client_id: connection.clientId,
-          }).toString(),
+          headers: { 'X-CSRF-Token': connection.csrfToken },
         })
-      } catch {
-        /* Explicit local disconnect must work offline. */
-      } finally {
-        clearTimeout(timeout)
       }
+      await clearConnection()
+      if (connection?.kind === 'native' && connection.idToken && connection.endSessionEndpoint) {
+        // Request provider logout without deleting the upstream identity.
+        // Local disconnect still succeeds during an outage.
+        const abort = new AbortController()
+        const timeout = setTimeout(() => abort.abort(), 10000)
+        try {
+          await transport(connection.endSessionEndpoint, {
+            method: 'POST',
+            credentials: 'omit',
+            redirect: 'error',
+            signal: abort.signal,
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+              id_token_hint: connection.idToken,
+              client_id: connection.clientId,
+            }).toString(),
+          })
+        } catch {
+          /* Explicit local disconnect must work offline. */
+        } finally {
+          clearTimeout(timeout)
+        }
+      }
+    } catch (error) {
+      await onFailure?.()
+      throw error
     }
-    await clearConnection()
   })
 }
 
