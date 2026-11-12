@@ -623,11 +623,14 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
           ) {
             throw new Error('Profile changed while restoring local user')
           }
-          const cachedUser = state.user
+          const cachedUser =
+            state.user && profileOwnerForUser(state.user.id) === profileOwnerId ? state.user : null
           const settings = useSettingsStore.getState()
           const seed: User = {
             ...(cachedUser ?? {}),
-            id: cachedUser?.id ?? LOCAL_USER_ID,
+            id:
+              cachedUser?.id ??
+              (profileOwnerId.startsWith('selfhosted:') ? profileOwnerId : LOCAL_USER_ID),
             email: cachedUser?.email ?? '',
             username: cachedUser?.username ?? '',
             firstName: legacyProfile?.firstName ?? cachedUser?.firstName ?? '',

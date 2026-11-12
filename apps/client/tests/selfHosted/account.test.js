@@ -210,6 +210,29 @@ test('canceling discovery metadata aborts the request and keeps the previous con
   expect(storage.clearConnection).not.toHaveBeenCalled()
 })
 
+test('discarding an account operation rejects a profile response that arrives after cancellation', async () => {
+  let finish
+  let started
+  const pending = new Promise((resolve) => {
+    started = resolve
+  })
+  createClient.mockImplementation(() => async (operation) => {
+    if (operation === 'discovery') return { ...metadata, instanceId: connection.instanceId }
+    if (operation === 'profile.get') {
+      started()
+      return new Promise((resolve) => {
+        finish = resolve
+      })
+    }
+    throw new Error(operation)
+  })
+  const reading = account.readAccount()
+  await pending
+  account.cancelAccountOperation()
+  finish(profile)
+  await expect(reading).rejects.toThrow('canceled')
+})
+
 test.each(['authorizationEndpoint', 'tokenEndpoint', 'endSessionEndpoint'])(
   'rejects an authentication %s that differs from discovery',
   async (field) => {

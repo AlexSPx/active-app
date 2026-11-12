@@ -13,7 +13,13 @@ import {
   readAccount,
   type RemoteProfile,
 } from '../../features/selfHosted/account'
-import { loadConnection, type Connection } from '../../features/selfHosted/storage'
+import {
+  clearConnection,
+  loadConnection,
+  saveConnection,
+  type Connection,
+} from '../../features/selfHosted/storage'
+import { selectSelfHostedProfile } from '../../stores/authStore'
 
 export default function ServerSettingsScreen() {
   const { user } = useAuth()
@@ -54,6 +60,21 @@ export default function ServerSettingsScreen() {
     }
   }
 
+  async function signIn() {
+    const previous = await loadConnection()
+    const connected = await connectAccount(url)
+    if (!connected) return
+    try {
+      if (Platform.OS !== 'web') await selectSelfHostedProfile(connected)
+      else setProfile(await readAccount())
+      setConnection(connected)
+    } catch (error) {
+      if (previous) await saveConnection(previous)
+      else await clearConnection()
+      throw error
+    }
+  }
+
   return (
     <SettingsPage
       title="Self-hosted account"
@@ -69,7 +90,7 @@ export default function ServerSettingsScreen() {
             placeholder="https://active.example.com"
             autoCapitalize="none"
             autoCorrect={false}
-            editable={!busy && !connection}
+            editable={!busy}
             keyboardType="url"
           />
           {!connection ? (
@@ -77,11 +98,7 @@ export default function ServerSettingsScreen() {
               disabled={busy}
               onPress={() =>
                 void run(async () => {
-                  const connected = await connectAccount(url)
-                  if (!connected) return
-                  setConnection(connected)
-                  setProfile(await readAccount())
-                  setMessage('Connected. Your device profile has not been changed.')
+                  await signIn()
                 })
               }
             >
@@ -94,8 +111,7 @@ export default function ServerSettingsScreen() {
                 disabled={busy}
                 onPress={() =>
                   void run(async () => {
-                    const renewed = await connectAccount(connection.baseUrl)
-                    if (renewed) setConnection(renewed)
+                    await signIn()
                   })
                 }
               >
@@ -154,6 +170,7 @@ export default function ServerSettingsScreen() {
                 onPress={() =>
                   void run(async () => {
                     await disconnectAccount()
+                    if (Platform.OS !== 'web') await selectSelfHostedProfile(null)
                     setConnection(null)
                     setProfile(null)
                     setMessage('Disconnected. Your device data is still available.')
@@ -188,6 +205,7 @@ export default function ServerSettingsScreen() {
                   onPress={() =>
                     void run(async () => {
                       await deleteRemoteAccount()
+                      if (Platform.OS !== 'web') await selectSelfHostedProfile(null)
                       setConnection(null)
                       setProfile(null)
                       setConfirmDelete(false)

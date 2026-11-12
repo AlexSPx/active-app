@@ -65,7 +65,7 @@ export function AuthGuard() {
 
   useEffect(() => {
     // Wait until the root navigation is mounted to avoid navigating before mount
-    if (!navigationState?.key || !isStartupReady) return
+    if (!navigationState?.key || !isStartupReady || isProfileTransitioning) return
 
     const destination = launchFacade.auth.resolveDestination({
       isAuthenticated,
@@ -76,7 +76,15 @@ export function AuthGuard() {
       thirdSegment: routeSegments[2],
     })
     if (destination) router.replace(destination as any)
-  }, [isAuthenticated, isStartupReady, segments, navigationState?.key, profileOwnerId, user])
+  }, [
+    isAuthenticated,
+    isStartupReady,
+    isProfileTransitioning,
+    segments,
+    navigationState?.key,
+    profileOwnerId,
+    user,
+  ])
 
   if (isDeviceDataErasing) {
     if (deviceDataEraseError) {

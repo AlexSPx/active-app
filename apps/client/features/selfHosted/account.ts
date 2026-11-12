@@ -372,6 +372,8 @@ export function connectAccount(value: string): Promise<Connection | null> {
             transport
           )('profile.get', { path: {}, query: {}, body: null })
         ).id
+    if (previous && previous.accountId !== accountId)
+      throw new Error('The connected account changed')
     const connection: Connection = {
       kind: 'native',
       ...metadata,
@@ -395,6 +397,7 @@ export function readAccount(): Promise<RemoteProfile> {
   return serialize(async () => {
     const connection = await active()
     const profile = await client(connection)('profile.get', { path: {}, query: {}, body: null })
+    assertNotCanceled()
     if (profile.id !== connection.accountId) throw new Error('The connected account changed')
     return profile
   })

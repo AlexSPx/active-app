@@ -75,7 +75,7 @@ const {
   getCurrentProfileVersion,
   mergeCurrentProfileVersion,
 } = require('../../lib/profileScope')
-const { useAuthStore, initializeAuth } = require('../../stores/authStore')
+const { useAuthStore, initializeAuth, selectSelfHostedProfile } = require('../../stores/authStore')
 
 describe('auth profile refresh', () => {
   beforeEach(async () => {
@@ -83,6 +83,7 @@ describe('auth profile refresh', () => {
     jest.clearAllMocks()
     resetAllStores.mockReset()
     await useAuthStore.persist.clearStorage()
+    await AsyncStorage.removeItem('selfHosted.profile')
     await useAuthStore.persist.rehydrate()
     useAuthStore.setState({
       isStartupReady: false,
@@ -1165,5 +1166,48 @@ describe('auth profile refresh', () => {
       user: cachedUser,
       isAuthenticated: true,
     })
+  })
+  it('restores the selected instance and account offline without claiming the device profile', async () => {
+    mockNativeOfflineLaunch = true
+    await AsyncStorage.setItem(
+      'selfHosted.profile',
+      JSON.stringify({ instanceId: 'server-a', accountId: 'user-a' })
+    )
+    await initializeAuth(true)
+    expect(useAuthStore.getState().profileOwnerId).toBe('selfhosted:server-a:user-a')
+    expect(mockHydrateProfileStores).toHaveBeenCalledWith('selfhosted:server-a:user-a', null)
+    expect(mockGetCurrentUser).not.toHaveBeenCalled()
+  })
+
+  it('switches and persists separate account scopes and returns to the device profile', async () => {
+    mockNativeOfflineLaunch = true
+    await selectSelfHostedProfile({ instanceId: 'server-a', accountId: 'user-a' })
+    expect(useAuthStore.getState().profileOwnerId).toBe('selfhosted:server-a:user-a')
+    await selectSelfHostedProfile({ instanceId: 'server-b', accountId: 'user-a' })
+    expect(useAuthStore.getState().profileOwnerId).toBe('selfhosted:server-b:user-a')
+    expect(JSON.parse(await AsyncStorage.getItem('selfHosted.profile'))).toEqual({
+      instanceId: 'server-b',
+      accountId: 'user-a',
+    })
+    await selectSelfHostedProfile(null)
+    expect(useAuthStore.getState().profileOwnerId).toBe(LOCAL_PROFILE_OWNER)
+    expect(await AsyncStorage.getItem('selfHosted.profile')).toBeNull()
+    expect(mockPauseAndDrain).toHaveBeenCalledTimes(3)
+  })
+
+  it('restores the prior profile if the new profile cannot be hydrated', async () => {
+    const user = { id: 'local:device', registrationCompleted: true }
+    useAuthStore.setState({ user, isAuthenticated: true })
+    mockHydrateProfileStores.mockRejectedValueOnce(new Error('storage unavailable'))
+    await expect(
+      selectSelfHostedProfile({ instanceId: 'server-a', accountId: 'user-a' })
+    ).rejects.toThrow('storage unavailable')
+    expect(getProfileScope().ownerId).toBe(LOCAL_PROFILE_OWNER)
+    expect(useAuthStore.getState()).toMatchObject({
+      profileOwnerId: LOCAL_PROFILE_OWNER,
+      user,
+      isAuthenticated: true,
+    })
+    expect(await AsyncStorage.getItem('selfHosted.profile')).toBeNull()
   })
 })

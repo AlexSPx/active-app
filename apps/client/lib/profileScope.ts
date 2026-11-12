@@ -13,7 +13,15 @@ const profileVersionListeners = new Set<(scope: ProfileScope, version: number) =
 
 export function profileOwnerForUser(userId?: string | null): string {
   if (userId === LOCAL_USER_ID) return LOCAL_PROFILE_OWNER
+  if (userId?.startsWith('selfhosted:')) return userId
   return userId ? `account:${userId}` : LOCAL_PROFILE_OWNER
+}
+
+export function profileOwnerForConnection(scope: {
+  instanceId: string
+  accountId: string
+}): string {
+  return `selfhosted:${encodeURIComponent(scope.instanceId)}:${encodeURIComponent(scope.accountId)}`
 }
 
 export function databaseNameForProfile(ownerId: string): string {
