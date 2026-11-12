@@ -9,6 +9,7 @@ pub mod profile;
 pub mod profile_http;
 pub mod requests;
 pub mod responses;
+pub mod routines;
 pub mod web_auth;
 pub mod workouts;
 
@@ -269,6 +270,7 @@ pub fn app(state: AppState) -> Router {
     Router::new()
         .merge(profile_http::routes())
         .merge(workouts::routes())
+        .merge(routines::routes())
         .merge(catalog::routes())
         .route("/auth/login", get(web_auth::login))
         .route("/auth/callback", get(web_auth::callback))

@@ -842,3 +842,257 @@ async fn first_workout_client_sqlite_http_proof() {
     api_task.abort();
     provider_task.abort();
 }
+
+async fn routine_call(
+    state: &AppState,
+    token: &str,
+    method: &str,
+    path: &str,
+    key: &str,
+    body: &str,
+) -> (StatusCode, Value) {
+    let response = active_api::routines::routes()
+        .with_state(state.clone())
+        .oneshot(
+            Request::builder()
+                .method(method)
+                .uri(path)
+                .header("authorization", format!("Bearer {token}"))
+                .header("content-type", "application/json")
+                .header("idempotency-key", key)
+                .body(Body::from(body.to_owned()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let status = response.status();
+    (
+        status,
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap(),
+    )
+}
+
+#[tokio::test]
+async fn routine_api_versions_ownership_replay_and_workout_deletion() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let issuer = format!("http://{}", listener.local_addr().unwrap());
+    let metadata = json!({"issuer":issuer,"jwks_uri":format!("{issuer}/jwks")});
+    let jwks = json!({"keys":[{"kty":"RSA","kid":"test","alg":"RS256","use":"sig","n":MODULUS,"e":"AQAB"}]});
+    let server = Router::new()
+        .route(
+            "/.well-known/openid-configuration",
+            get(move || async move { Json(metadata.clone()) }),
+        )
+        .route("/jwks", get(move || async move { Json(jwks.clone()) }));
+    let task = tokio::spawn(async move {
+        axum::serve(listener, server).await.unwrap();
+    });
+    let dir = TempDir::new().unwrap();
+    let pool = db::open(&dir.path().join("db.sqlite")).await.unwrap();
+    let state = AppState {
+        pool: pool.clone(),
+        auth: AuthState::new(AuthConfig {
+            issuer: issuer.clone(),
+            client_id: "client".into(),
+            resource: "api".into(),
+            redirect_uri: "active://callback".into(),
+        }),
+        discovery: Arc::new(RwLock::new(None)),
+        draining: Arc::new(AtomicBool::new(false)),
+        body_limit: 4096,
+        request_timeout: Duration::from_secs(5),
+        origins: vec![],
+    };
+    let alice = token(&issuer, "alice");
+    let bob = token(&issuer, "bob");
+    let workout = workout_call(
+        &state,
+        &alice,
+        "POST",
+        "/api/workouts",
+        Some("w"),
+        r#"{"title":"W","template":{"exercises":[]}}"#,
+    )
+    .await;
+    let wid = workout.1["id"].as_str().unwrap();
+    let body = json!({"name":"R","routineType":"WEEKLY_COMPLETION","startDate":"2026-01-01","active":true,"profileBaseVersion":1,"pattern":[{"dayIndex":0,"dayType":"WORKOUT","workoutId":wid},{"dayIndex":1,"dayType":"REST","workoutId":null}]}).to_string();
+    let create = routine_call(&state, &alice, "POST", "/api/routines", "create", &body).await;
+    assert_eq!(create.0, StatusCode::CREATED);
+    assert_eq!(create.1["profileVersion"], 2);
+    assert_eq!(create.1["pattern"][0]["workoutId"], wid);
+    assert_eq!(
+        routine_call(&state, &alice, "POST", "/api/routines", "create", &body).await,
+        create
+    );
+    let id = create.1["id"].as_str().unwrap();
+    let path = format!("/api/routines/{id}");
+    assert_eq!(
+        routine_call(&state, &bob, "GET", &path, "", "").await.0,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        routine_call(&state, &alice, "GET", "/api/routines/active", "", "")
+            .await
+            .1["id"],
+        id
+    );
+    let invalid = json!({"name":"bad","startDate":"2026-01-01","pattern":[]}).to_string();
+    assert_eq!(
+        routine_call(&state, &alice, "POST", "/api/routines", "invalid", &invalid)
+            .await
+            .0,
+        StatusCode::BAD_REQUEST
+    );
+    let missing = json!({"name":"bad","startDate":"2026-01-01","pattern":[{"dayIndex":0,"dayType":"WORKOUT","workoutId":"missing"}]}).to_string();
+    assert_eq!(
+        routine_call(&state, &alice, "POST", "/api/routines", "missing", &missing)
+            .await
+            .0,
+        StatusCode::NOT_FOUND
+    );
+    let malformed = json!({"name":"bad","startDate":"2026-01-01","pattern":[{"dayIndex":1,"dayType":"REST","workoutId":null}]}).to_string();
+    assert_eq!(
+        routine_call(
+            &state,
+            &alice,
+            "POST",
+            "/api/routines",
+            "malformed",
+            &malformed
+        )
+        .await
+        .0,
+        StatusCode::BAD_REQUEST
+    );
+    let foreign = json!({"name":"bad","startDate":"2026-01-01","pattern":[{"dayIndex":0,"dayType":"WORKOUT","workoutId":wid}]}).to_string();
+    assert_eq!(
+        routine_call(&state, &bob, "POST", "/api/routines", "foreign", &foreign)
+            .await
+            .0,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        routine_call(
+            &state,
+            &alice,
+            "PUT",
+            &path,
+            "stale",
+            r#"{"baseVersion":1,"active":false,"profileBaseVersion":1}"#
+        )
+        .await
+        .1["code"],
+        "STALE_VERSION"
+    );
+    let edited = routine_call(
+        &state,
+        &alice,
+        "PUT",
+        &path,
+        "edit",
+        r#"{"baseVersion":1,"routineType":"SEQUENTIAL"}"#,
+    )
+    .await;
+    assert_eq!(edited.1["version"], 2);
+    assert_eq!(edited.1["routineType"], "SEQUENTIAL");
+    let (a, b) = tokio::join!(
+        routine_call(
+            &state,
+            &alice,
+            "PUT",
+            &path,
+            "race-a",
+            r#"{"baseVersion":2,"active":false,"profileBaseVersion":2}"#
+        ),
+        routine_call(
+            &state,
+            &alice,
+            "PUT",
+            &path,
+            "race-b",
+            r#"{"baseVersion":2,"active":false,"profileBaseVersion":2}"#
+        )
+    );
+    assert!(
+        (a.0 == StatusCode::OK && b.0 == StatusCode::CONFLICT)
+            || (b.0 == StatusCode::OK && a.0 == StatusCode::CONFLICT)
+    );
+    let deleted = workout_call(
+        &state,
+        &alice,
+        "DELETE",
+        &format!("/api/workouts/{wid}?baseVersion=1"),
+        Some("delete-w"),
+        "",
+    )
+    .await;
+    assert_eq!(deleted.1["routineVersions"], json!([{"id":id,"version":3}]));
+    assert_eq!(
+        routine_call(
+            &state,
+            &alice,
+            "POST",
+            "/api/routines",
+            "deleted-reference",
+            &foreign
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    let after = routine_call(&state, &alice, "GET", &path, "", "").await;
+    assert_eq!(
+        after.1["pattern"][0],
+        json!({"dayIndex":0,"dayType":"REST","workoutId":null})
+    );
+    assert_eq!(
+        routine_call(
+            &state,
+            &alice,
+            "DELETE",
+            &format!("{path}?baseVersion=2&profileBaseVersion=3"),
+            "stale-delete",
+            ""
+        )
+        .await
+        .0,
+        StatusCode::CONFLICT
+    );
+    let delete_path = format!("{path}?baseVersion=3&profileBaseVersion=3");
+    let deleted = routine_call(&state, &alice, "DELETE", &delete_path, "delete-r", "").await;
+    assert_eq!(deleted.1, json!({"deletedRoutineId":id,"profileVersion":3}));
+    assert_eq!(
+        routine_call(&state, &alice, "DELETE", &delete_path, "delete-r", "").await,
+        deleted
+    );
+    let active_body = json!({"name":"Active", "startDate":"2026-01-01", "active":true, "profileBaseVersion":3, "pattern":[{"dayIndex":0,"dayType":"REST","workoutId":null}]}).to_string();
+    let active = routine_call(
+        &state,
+        &alice,
+        "POST",
+        "/api/routines",
+        "active-create",
+        &active_body,
+    )
+    .await;
+    assert_eq!(active.1["profileVersion"], 4);
+    let active_id = active.1["id"].as_str().unwrap();
+    let active_delete = format!("/api/routines/{active_id}?baseVersion=1&profileBaseVersion=4");
+    let ack = routine_call(
+        &state,
+        &alice,
+        "DELETE",
+        &active_delete,
+        "active-delete",
+        "",
+    )
+    .await;
+    assert_eq!(ack.1["profileVersion"], 5);
+    assert_eq!(
+        routine_call(&state, &alice, "GET", "/api/routines/active", "", "")
+            .await
+            .0,
+        StatusCode::NOT_FOUND
+    );
+    task.abort();
+}

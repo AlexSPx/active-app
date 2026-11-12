@@ -1210,31 +1210,29 @@ export class SyncEngine {
       }
     }
 
+    if (job.endpoint === 'deleteRoutine' && response?.deletedRoutineId !== mutation?.id) {
+      await this.markDeadLetter(
+        db,
+        scope,
+        job,
+        'Successful response did not prove the routine deletion',
+        'STALE_VERSION'
+      )
+      return null
+    }
+
     if (mutation?.changesProfile) {
-      if (typeof response?.profileVersion === 'number') {
+      if (Number.isSafeInteger(response?.profileVersion) && response.profileVersion > 0) {
         profileVersion = response.profileVersion
       } else if (job.endpoint === 'deleteRoutine') {
-        const payload = mutation.payload
-        const request = Array.isArray(payload) ? payload[0] : payload
-        if (
-          request !== null &&
-          typeof request === 'object' &&
-          !Array.isArray(request) &&
-          'profileBaseVersion' in request &&
-          typeof request.profileBaseVersion === 'number'
-        ) {
-          profileVersion = request.profileBaseVersion
-        }
-        if (profileVersion === null) {
-          await this.markDeadLetter(
-            db,
-            scope,
-            job,
-            'Successful response did not prove the profile version',
-            'STALE_VERSION'
-          )
-          return null
-        }
+        await this.markDeadLetter(
+          db,
+          scope,
+          job,
+          'Successful response did not prove the profile version',
+          'STALE_VERSION'
+        )
+        return null
       } else {
         const user = await this.deps.api.getUser()
         if (user.profileVersion !== 0) {
@@ -1353,14 +1351,7 @@ export class SyncEngine {
     if (job.endpoint === 'deleteRoutine') {
       if (Array.isArray(mutation.payload)) return null
       const request = mutation.payload
-      if (
-        request === null ||
-        typeof request !== 'object' ||
-        !('baseVersion' in request) ||
-        typeof request.baseVersion !== 'number'
-      ) {
-        return null
-      }
+      if (request === null || typeof request !== 'object') return null
       return JSON.stringify({ ...request, profileBaseVersion: version })
     }
     return null

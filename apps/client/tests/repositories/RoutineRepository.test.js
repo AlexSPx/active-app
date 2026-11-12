@@ -187,7 +187,7 @@ describe('RoutineRepository', () => {
     expect(db.tables.routines.get(serverId).is_deleted).toBe(1)
     await expect(repo.getById(serverId)).resolves.toBeNull()
     expect(syncEngine.enqueue).toHaveBeenLastCalledWith(
-      { apiMethod: 'deleteRoutine', payload: [serverId] },
+      { apiMethod: 'deleteRoutine', payload: { id: serverId } },
       db,
       { processAfterInsert: false }
     )
@@ -248,15 +248,12 @@ describe('RoutineRepository', () => {
       server_version: 4,
     })
 
-    await repo.update('routine-versioned', { name: 'Updated', active: true })
+    await repo.update('routine-versioned', { active: true })
 
     expect(syncEngine.enqueue).toHaveBeenCalledWith(
       {
         apiMethod: 'updateRoutine',
-        payload: [
-          'routine-versioned',
-          { name: 'Updated', active: true, baseVersion: 4, profileBaseVersion: 9 },
-        ],
+        payload: ['routine-versioned', { active: true, baseVersion: 4, profileBaseVersion: 9 }],
       },
       db,
       { processAfterInsert: false }
@@ -313,7 +310,7 @@ describe('RoutineRepository', () => {
     expect(syncEngine.enqueue).toHaveBeenCalledWith(
       {
         apiMethod: 'deleteRoutine',
-        payload: ['routine_delete'],
+        payload: { id: 'routine_delete' },
       },
       db,
       { processAfterInsert: false }

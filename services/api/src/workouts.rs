@@ -423,7 +423,8 @@ async fn delete(
         if ver >= 9_007_199_254_740_991 {
             return Err(internal(()));
         }
-        sqlx::query("UPDATE routines SET version=version+1 WHERE owner_id=? AND id=?")
+        sqlx::query("UPDATE routines SET version=version+1,updated_at=? WHERE owner_id=? AND id=?")
+            .bind(now())
             .bind(owner)
             .bind(&rid)
             .execute(&mut **tx)
