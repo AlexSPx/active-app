@@ -6,6 +6,7 @@ import { useAuth } from '../../contexts/AuthContext'
 import { useSettingsStore } from '../../features/settings'
 import {
   connectAccount,
+  cancelAccountOperation,
   deleteRemoteAccount,
   disconnectAccount,
   initializeFromDevice,
@@ -164,6 +165,11 @@ export default function ServerSettingsScreen() {
             </>
           )}
           {message && <UiText accessibilityRole="alert">{message}</UiText>}
+          {busy && (
+            <Button onPress={cancelAccountOperation}>
+              <UiText>Cancel</UiText>
+            </Button>
+          )}
         </View>
       </Surface>
       {connection && (

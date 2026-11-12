@@ -1,5 +1,9 @@
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'operation-key') }))
-jest.mock('expo-web-browser', () => ({ maybeCompleteAuthSession: jest.fn() }))
+jest.mock('expo-web-browser', () => ({
+  maybeCompleteAuthSession: jest.fn(),
+  dismissAuthSession: jest.fn(),
+}))
+jest.mock('expo/fetch', () => ({ fetch: (...args) => global.fetch(...args) }))
 jest.mock('expo-auth-session', () => ({
   AuthRequest: jest.fn(),
   ResponseType: { Code: 'code' },
@@ -142,10 +146,66 @@ test('a changed server instance prevents sending credentials or mutation request
   expect(storage.clearConnection).not.toHaveBeenCalled()
 })
 
+test('web logout does not send its CSRF token to a replaced server instance', async () => {
+  Platform.OS = 'web'
+  storage.loadConnection.mockResolvedValue({ ...connection, kind: 'web', csrfToken: 'csrf' })
+  createClient.mockImplementation(() => async () => ({ instanceId: 'different' }))
+  global.fetch = jest.fn()
+  await expect(account.disconnectAccount()).rejects.toThrow('different server')
+  expect(global.fetch).not.toHaveBeenCalled()
+  expect(storage.clearConnection).not.toHaveBeenCalled()
+})
+
 test('canceling authentication preserves the existing connection and pending work', async () => {
   auth.AuthRequest.mockImplementation(() => ({ promptAsync: async () => ({ type: 'cancel' }) }))
   global.fetch = jest.fn(async () => ({ ok: true, status: 200, json: async () => metadata }))
   await expect(account.connectAccount(connection.baseUrl)).resolves.toBeNull()
+  expect(storage.saveConnection).not.toHaveBeenCalled()
+  expect(storage.clearConnection).not.toHaveBeenCalled()
+})
+
+test('canceling an in-flight browser sign-in fences a late successful callback', async () => {
+  let finish
+  let opened
+  const browserOpened = new Promise((resolve) => {
+    opened = resolve
+  })
+  auth.AuthRequest.mockImplementation(() => ({
+    state: 'state',
+    codeVerifier: 'verifier',
+    promptAsync: () => {
+      opened()
+      return new Promise((resolve) => {
+        finish = resolve
+      })
+    },
+  }))
+  global.fetch = jest.fn(async () => ({ ok: true, status: 200, json: async () => metadata }))
+  const connecting = account.connectAccount(connection.baseUrl)
+  await browserOpened
+  account.cancelAccountOperation()
+  finish({ type: 'success', params: { state: 'state', iss: metadata.issuer, code: 'code' } })
+  await expect(connecting).rejects.toThrow('canceled')
+  expect(storage.saveConnection).not.toHaveBeenCalled()
+  expect(global.fetch).toHaveBeenCalledTimes(1)
+})
+
+test('canceling discovery metadata aborts the request and keeps the previous connection', async () => {
+  let started
+  const requestStarted = new Promise((resolve) => {
+    started = resolve
+  })
+  global.fetch = jest.fn(
+    (url, init) =>
+      new Promise((resolve, reject) => {
+        init.signal.addEventListener('abort', () => reject(new Error('aborted')))
+        started()
+      })
+  )
+  const connecting = account.connectAccount(connection.baseUrl)
+  await requestStarted
+  account.cancelAccountOperation()
+  await expect(connecting).rejects.toThrow('aborted')
   expect(storage.saveConnection).not.toHaveBeenCalled()
   expect(storage.clearConnection).not.toHaveBeenCalled()
 })
@@ -166,19 +226,17 @@ test.each(['authorizationEndpoint', 'tokenEndpoint', 'endSessionEndpoint'])(
 
 test('refresh rejects a changed subject without replacing stored credentials', async () => {
   storage.loadConnection.mockResolvedValue({ ...connection, expiresAt: 0 })
-  auth.refreshAsync.mockResolvedValue({
-    accessToken: 'new',
-    refreshToken: 'rotated',
-    issuedAt: 1,
-    expiresIn: 600,
-  })
-  global.fetch = jest.fn(async () => ({
+  global.fetch = jest.fn(async (url) => ({
     ok: true,
     status: 200,
-    json: async () => ({ subject: 'other' }),
+    json: async () =>
+      url === metadata.tokenEndpoint
+        ? { access_token: 'new', refresh_token: 'rotated', expires_in: 600 }
+        : { subject: 'other' },
   }))
   await expect(account.readAccount()).rejects.toThrow('refreshed account changed')
   expect(storage.saveConnection).not.toHaveBeenCalled()
+  expect(global.fetch.mock.calls[0][1]).toMatchObject({ redirect: 'error', credentials: 'omit' })
 })
 
 test.each([
