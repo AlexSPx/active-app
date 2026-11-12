@@ -27,6 +27,7 @@ import {
   LOCAL_PROFILE_OWNER,
   LOCAL_USER_ID,
   profileOwnerForUser,
+  profileOwnerForConnection,
   setActiveProfileOwner,
   getCurrentProfileVersion,
   mergeCurrentProfileVersion,
@@ -37,6 +38,18 @@ import { AuthRepository, UserRepository } from 'lib/repositories'
 import type { User, LoginRequest, ApiError, RegisterRequest, UpdateUserRequest } from '../types/api'
 import { networkPolicy, resetNetworkPreferenceAfterDeviceErase } from './networkStore'
 import { launchFacade } from '../features/launch/launchFacade'
+import { z } from 'zod'
+import {
+  clearConnection,
+  loadConnection,
+  type ConnectionScope,
+} from '../features/selfHosted/storage'
+import { publishConnection } from '../features/selfHosted/connectionState'
+
+const activeSelfHostedProfileKey = 'selfHosted.profile'
+const connectionScopeSchema = z
+  .object({ instanceId: z.string().min(1), accountId: z.string().min(1) })
+  .strict()
 
 const authRepository = new AuthRepository()
 const userRepository = new UserRepository()
@@ -44,6 +57,7 @@ let authPersistenceReady = false
 let secureCredentialsMigrated = false
 let authSessionGeneration = 0
 let authTransitions: Promise<void> = Promise.resolve()
+let selfHostedProfileWrites: Promise<void> = Promise.resolve()
 
 function serializeAuthTransition<T>(operation: () => Promise<T>): Promise<T> {
   const next = authTransitions.then(operation, operation)
@@ -281,6 +295,47 @@ async function switchProfile(
       throw error
     }
   })
+}
+
+export async function selectSelfHostedProfile(scope: ConnectionScope | null): Promise<void> {
+  const generation = ++authSessionGeneration
+  const ownerId = scope ? profileOwnerForConnection(scope) : LOCAL_PROFILE_OWNER
+  const previous = useAuthStore.getState()
+  try {
+    await switchProfile(ownerId, generation, useAuthStore.setState, useAuthStore.getState)
+    const write = selfHostedProfileWrites.then(async () => {
+      if (generation !== authSessionGeneration) return
+      if (scope)
+        await AsyncStorage.setItem(
+          activeSelfHostedProfileKey,
+          JSON.stringify(
+            connectionScopeSchema.parse({
+              instanceId: scope.instanceId,
+              accountId: scope.accountId,
+            })
+          )
+        )
+      else await AsyncStorage.removeItem(activeSelfHostedProfileKey)
+    })
+    selfHostedProfileWrites = write.catch(() => {})
+    await write
+  } catch (error) {
+    if (generation === authSessionGeneration) {
+      try {
+        setActiveProfileOwner(previous.profileOwnerId)
+        await hydrateProfileStores(previous.profileOwnerId, previous.legacyOwnerId)
+        useAuthStore.setState({
+          profileOwnerId: previous.profileOwnerId,
+          user: previous.user,
+          isAuthenticated: previous.isAuthenticated,
+          isProfileTransitioning: false,
+        })
+      } catch {
+        useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
+      }
+    }
+    throw error
+  }
 }
 
 function beginAuthenticatedSession(
@@ -694,10 +749,20 @@ async function initializeAuthState(): Promise<void> {
 
     // The last persisted auth user is the only identity allowed to claim legacy data.
     const cachedState = useAuthStore.getState()
-    const legacyOwnerId = cachedState.user?.id ? profileOwnerForUser(cachedState.user.id) : null
-    const ownerId = legacyOwnerId ?? LOCAL_PROFILE_OWNER
+    const cachedOwnerId = cachedState.user?.id ? profileOwnerForUser(cachedState.user.id) : null
+    const legacyOwnerId = cachedOwnerId?.startsWith('selfhosted:') ? null : cachedOwnerId
+    if (startupPlan.kind === 'local-profile') publishConnection(null)
+    const savedScope =
+      startupPlan.kind === 'local-profile'
+        ? await AsyncStorage.getItem(activeSelfHostedProfileKey)
+        : null
+    const scope = savedScope ? connectionScopeSchema.parse(JSON.parse(savedScope)) : null
+    const ownerId = scope
+      ? profileOwnerForConnection(scope)
+      : (legacyOwnerId ?? LOCAL_PROFILE_OWNER)
+    if (cachedOwnerId !== ownerId) useAuthStore.setState({ user: null })
     setActiveProfileOwner(ownerId)
-    if (cachedState.user?.profileVersion !== undefined) {
+    if (cachedOwnerId === ownerId && cachedState.user?.profileVersion !== undefined) {
       mergeCurrentProfileVersion(getProfileScope(), cachedState.user.profileVersion)
     }
     await hydrateProfileStores(ownerId, legacyOwnerId)
@@ -727,6 +792,16 @@ async function initializeAuthState(): Promise<void> {
         }
         secureCredentialsMigrated = true
         authPersistenceReady = true
+        await loadConnection()
+          .then((connection) =>
+            publishConnection(
+              connection && scope && profileOwnerForConnection(connection) === ownerId
+                ? connection
+                : null,
+              !!scope
+            )
+          )
+          .catch(() => {})
         return
       }
 
@@ -817,6 +892,7 @@ const ERASED_ASYNC_STORAGE_KEYS = new Set([
   'user_refresh_token',
   'user_data',
   'manual-offline-v1',
+  activeSelfHostedProfileKey,
 ])
 const ERASED_ASYNC_STORAGE_PREFIXES = [
   'settings-storage:',
@@ -948,6 +1024,8 @@ async function runDeviceDataErase(options: {
         await resetAllStores()
         await authRepository.removeToken()
         await authRepository.removeRefreshToken()
+        await clearConnection()
+        await selfHostedProfileWrites
         await eraseTrainingDatabases()
         await eraseAppCache()
         await eraseOwnedAsyncStorage()

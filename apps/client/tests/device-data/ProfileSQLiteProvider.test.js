@@ -13,6 +13,24 @@ jest.mock('../../lib/db/connection', () => ({
 
 beforeEach(() => jest.clearAllMocks())
 
+test('an open failure reaches the provider error handler', async () => {
+  const error = new Error('open failed')
+  sqlite.openDatabaseAsync.mockRejectedValueOnce(error)
+  const onError = jest.fn()
+  let root
+  await act(async () => {
+    root = create(
+      React.createElement(ProfileSQLiteProvider, {
+        databaseName: 'profile-test.db',
+        onInit: jest.fn(),
+        onError,
+      })
+    )
+  })
+  expect(onError).toHaveBeenCalledWith(error)
+  await act(async () => root.unmount())
+})
+
 test('unmount waits for migration and native close before permitting file deletion', async () => {
   let finishMigration
   let finishClose

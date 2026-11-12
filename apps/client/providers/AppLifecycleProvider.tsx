@@ -15,6 +15,7 @@ import { syncEngine } from '../lib/sync'
 import { replaceQueuedIdReferences } from '../lib/sync/queuePayloadRemap'
 import { hydrateFromServer } from '../lib/sync/hydrate'
 import { setSharedDatabase } from '../lib/db/connection'
+import { finishProfileDatabase } from '../lib/db/profileDatabaseTransition'
 import { useAuthStore } from '../stores/authStore'
 import { initializeLocalUser, migrateDbIfNeeded } from '../lib/db/migrations'
 import { readLegacyTrainingProfile } from '../lib/legacyTrainingProfile'
@@ -581,10 +582,11 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
   const startupError = useAuthStore((state) => state.startupError)
   const isDeviceDataErasing = useAuthStore((state) => state.isDeviceDataErasing)
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
+  const profileGeneration = getProfileScope().generation
   const legacyOwnerId = useAuthStore((state) => state.legacyOwnerId)
   const onInit = useCallback(
     async (db: SQLiteDatabase) => {
-      const scope = getProfileScope()
+      const scope = { ownerId: profileOwnerId, generation: profileGeneration }
       if (
         scope.ownerId !== profileOwnerId ||
         useAuthStore.getState().profileOwnerId !== profileOwnerId ||
@@ -623,11 +625,14 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
           ) {
             throw new Error('Profile changed while restoring local user')
           }
-          const cachedUser = state.user
+          const cachedUser =
+            state.user && profileOwnerForUser(state.user.id) === profileOwnerId ? state.user : null
           const settings = useSettingsStore.getState()
           const seed: User = {
             ...(cachedUser ?? {}),
-            id: cachedUser?.id ?? LOCAL_USER_ID,
+            id:
+              cachedUser?.id ??
+              (profileOwnerId.startsWith('selfhosted:') ? profileOwnerId : LOCAL_USER_ID),
             email: cachedUser?.email ?? '',
             username: cachedUser?.username ?? '',
             firstName: legacyProfile?.firstName ?? cachedUser?.firstName ?? '',
@@ -677,17 +682,39 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
         if (!isCurrentProfile(scope) || useAuthStore.getState().profileOwnerId !== profileOwnerId) {
           return
         }
-        console.error('[Provider] Could not restore profile database:', error)
+        throw error
+      }
+    },
+    [legacyOwnerId, profileOwnerId, profileGeneration]
+  )
+
+  const onDatabaseError = useCallback(
+    (error: Error) => {
+      if (!isCurrentProfile({ ownerId: profileOwnerId, generation: profileGeneration })) return
+      console.error('[Provider] Could not open or close profile database:', error)
+      if (
+        !finishProfileDatabase(profileOwnerId, error) &&
+        useAuthStore.getState().profileOwnerId === profileOwnerId
+      ) {
         useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
       }
     },
-    [legacyOwnerId, profileOwnerId]
+    [profileOwnerId, profileGeneration]
   )
 
-  const onDatabaseError = useCallback((error: Error) => {
-    console.error('[Provider] Could not open or close profile database:', error)
-    useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
-  }, [])
+  const initializeDatabase = useCallback(
+    async (db: SQLiteDatabase) => {
+      await onInit(db)
+      if (
+        isCurrentProfile({ ownerId: profileOwnerId, generation: profileGeneration }) &&
+        useAuthStore.getState().profileOwnerId === profileOwnerId &&
+        getProfileScope().ownerId === profileOwnerId
+      ) {
+        finishProfileDatabase(profileOwnerId, null)
+      }
+    },
+    [onInit, profileOwnerId, profileGeneration]
+  )
 
   useEffect(() => {
     initNotifications().catch(() => {})
@@ -698,7 +725,7 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
       <ProfileSQLiteProvider
         key={profileOwnerId}
         databaseName={databaseNameForProfile(profileOwnerId)}
-        onInit={onInit}
+        onInit={initializeDatabase}
         onError={onDatabaseError}
       >
         <SyncEngineBootstrap ownerId={profileOwnerId}>
