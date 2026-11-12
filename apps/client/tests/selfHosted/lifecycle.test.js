@@ -3,9 +3,10 @@ jest.mock('../../features/selfHosted/account', () => ({
   disconnectAccount: jest.fn(),
   cancelAccountOperation: jest.fn(),
 }))
+let mockOwner = 'selfhosted:server-a:a'
 jest.mock('../../stores/authStore', () => ({
   selectSelfHostedProfile: jest.fn(),
-  useAuthStore: { getState: () => ({ profileOwnerId: 'local' }) },
+  useAuthStore: { getState: () => ({ profileOwnerId: mockOwner }) },
 }))
 jest.mock('../../features/selfHosted/storage', () => ({
   loadConnection: jest.fn(),
@@ -17,12 +18,16 @@ const account = require('../../features/selfHosted/account')
 const storage = require('../../features/selfHosted/storage')
 const { selectSelfHostedProfile } = require('../../stores/authStore')
 const lifecycle = require('../../features/selfHosted/lifecycle')
+const { finishProfileDatabase } = require('../../lib/db/profileDatabaseTransition')
 const a = { kind: 'native', instanceId: 'server-a', accountId: 'a', expiresAt: Date.now() + 100000 }
 const b = { kind: 'native', instanceId: 'server-b', accountId: 'b', expiresAt: Date.now() + 100000 }
 let saved
+let databaseFailure
 beforeEach(() => {
   jest.clearAllMocks()
   Platform.OS = 'ios'
+  mockOwner = 'selfhosted:server-a:a'
+  databaseFailure = null
   saved = a
   storage.loadConnection.mockImplementation(async () => saved)
   storage.saveConnection.mockImplementation(async (value) => {
@@ -31,7 +36,14 @@ beforeEach(() => {
   storage.clearConnection.mockImplementation(async () => {
     saved = null
   })
-  selectSelfHostedProfile.mockResolvedValue()
+  selectSelfHostedProfile.mockImplementation(async (connection) => {
+    mockOwner = connection
+      ? `selfhosted:${connection.instanceId}:${connection.accountId}`
+      : 'local:device'
+    const error = databaseFailure
+    databaseFailure = null
+    finishProfileDatabase(mockOwner, error)
+  })
   account.connectAccount.mockImplementation(async (_, onConnection) => {
     saved = b
     await onConnection(b)
@@ -55,7 +67,7 @@ test('failed profile hydration restores the old connection and scope', async () 
   selectSelfHostedProfile.mockRejectedValueOnce(new Error('hydrate failed'))
   await expect(lifecycle.signInToServer('https://server-b')).rejects.toThrow('hydrate failed')
   expect(saved).toBe(a)
-  expect(selectSelfHostedProfile).toHaveBeenLastCalledWith(a)
+  expect(mockOwner).toBe('selfhosted:server-a:a')
   expect(lifecycle.useConnectionLifecycle.getState()).toMatchObject({
     connection: a,
     status: 'connected',
@@ -67,6 +79,29 @@ test('disconnect keeps credentials when profile selection fails', async () => {
   expect(saved).toBe(a)
   expect(storage.clearConnection).not.toHaveBeenCalled()
 })
+test.each(['database open', 'migration', 'local user restoration'])(
+  'connect rolls back after %s fails',
+  async (stage) => {
+    databaseFailure = new Error(stage)
+    await expect(lifecycle.signInToServer('https://server-b')).rejects.toThrow(stage)
+    expect(saved).toBe(a)
+    expect(selectSelfHostedProfile).toHaveBeenLastCalledWith(a)
+    expect(lifecycle.useConnectionLifecycle.getState()).toMatchObject({
+      connection: a,
+      status: 'connected',
+    })
+  }
+)
+test.each(['database open', 'migration', 'local user restoration'])(
+  'disconnect rolls back after %s fails',
+  async (stage) => {
+    databaseFailure = new Error(stage)
+    await expect(lifecycle.disconnectServer()).rejects.toThrow(stage)
+    expect(saved).toBe(a)
+    expect(mockOwner).toBe('selfhosted:server-a:a')
+    expect(selectSelfHostedProfile).toHaveBeenLastCalledWith(a)
+  }
+)
 test('disconnect restores profile and credentials after storage failure', async () => {
   account.disconnectAccount.mockImplementation(async (beforeClear, onFailure) => {
     await beforeClear()
@@ -86,7 +121,11 @@ test('cancel during profile hydration restores the prior scope before a newer tr
   selectSelfHostedProfile.mockImplementationOnce(() => {
     started()
     return new Promise((resolve) => {
-      finish = resolve
+      finish = () => {
+        mockOwner = 'selfhosted:server-b:b'
+        finishProfileDatabase(mockOwner, null)
+        resolve()
+      }
     })
   })
   const first = lifecycle.signInToServer('https://server-b')

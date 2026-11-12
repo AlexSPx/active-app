@@ -1,4 +1,7 @@
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'operation-key') }))
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+)
 jest.mock('expo-web-browser', () => ({
   maybeCompleteAuthSession: jest.fn(),
   dismissAuthSession: jest.fn(),
@@ -151,7 +154,7 @@ test('web logout does not send its CSRF token to a replaced server instance', as
   storage.loadConnection.mockResolvedValue({ ...connection, kind: 'web', csrfToken: 'csrf' })
   createClient.mockImplementation(() => async () => ({ instanceId: 'different' }))
   global.fetch = jest.fn()
-  await expect(account.disconnectAccount()).rejects.toThrow('different server')
+  await expect(account.disconnectAccount()).rejects.toThrow('not supported')
   expect(global.fetch).not.toHaveBeenCalled()
   expect(storage.clearConnection).not.toHaveBeenCalled()
 })
@@ -271,8 +274,19 @@ test.each([
   expect(() => account.serverUrl(value)).toThrow()
 })
 
-test('web reauthentication can select a different account without moving pending work', async () => {
+test('web reauthentication rejects a different account before replacing credentials', async () => {
   Platform.OS = 'web'
+  const { queryClient } = require('../../lib/queryClient')
+  const { useSettingsStore } = require('../../features/settings/stores/settingsStore')
+  const {
+    useRunningWorkoutStore,
+  } = require('../../features/workout-session/stores/runningWorkoutStore')
+  queryClient.setQueryData(['account-data'], { owner: 'account-a' })
+  useSettingsStore.getState().setBodyWeight(81)
+  useRunningWorkoutStore
+    .getState()
+    .startWorkout({ id: 'a-workout', name: 'A draft', exercises: [] })
+  const onConnection = jest.fn()
   const oldLocation = global.location
   global.location = { origin: connection.baseUrl }
   storage.loadConnection.mockResolvedValue({ ...connection, kind: 'web', csrfToken: 'old-csrf' })
@@ -283,15 +297,20 @@ test('web reauthentication can select a different account without moving pending
       url.endsWith('/auth/config') ? metadata : { accountId: 'account-b', csrfToken: 'new-csrf' },
   }))
   try {
-    await expect(account.connectAccount(connection.baseUrl)).resolves.toMatchObject({
-      accountId: 'account-b',
-    })
-    expect(storage.saveConnection).toHaveBeenCalledWith(
-      expect.objectContaining({ accountId: 'account-b' })
+    await expect(account.connectAccount(connection.baseUrl, onConnection)).rejects.toThrow(
+      'not supported'
     )
+    expect(storage.saveConnection).not.toHaveBeenCalled()
+    expect(onConnection).not.toHaveBeenCalled()
+    expect(queryClient.getQueryData(['account-data'])).toEqual({ owner: 'account-a' })
+    expect(useSettingsStore.getState().bodyWeight).toBe(81)
+    expect(useRunningWorkoutStore.getState().runningWorkout.id).toBe('a-workout')
     expect(storage.clearPlan).not.toHaveBeenCalled()
   } finally {
     global.location = oldLocation
+    queryClient.clear()
+    useSettingsStore.getState().reset()
+    useRunningWorkoutStore.getState().reset()
   }
 })
 

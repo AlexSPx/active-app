@@ -7,6 +7,8 @@ import {
   disconnectAccount,
 } from './account'
 import { clearConnection, loadConnection, saveConnection, type Connection } from './storage'
+import { LOCAL_PROFILE_OWNER, profileOwnerForConnection } from '../../lib/profileScope'
+import { waitForProfileDatabase } from '../../lib/db/profileDatabaseTransition'
 
 import { publishConnection, useConnectionLifecycle } from './connectionState'
 export { useConnectionLifecycle } from './connectionState'
@@ -19,7 +21,17 @@ function serialize<T>(action: () => Promise<T>): Promise<T> {
   return next
 }
 async function select(connection: Connection | null) {
-  if (Platform.OS !== 'web') await selectSelfHostedProfile(connection)
+  if (Platform.OS === 'web') return
+  const owner = connection ? profileOwnerForConnection(connection) : LOCAL_PROFILE_OWNER
+  if (useAuthStore.getState().profileOwnerId === owner) return
+  const transition = waitForProfileDatabase(owner)
+  try {
+    await selectSelfHostedProfile(connection)
+    const error = await transition.ready
+    if (error) throw error
+  } finally {
+    transition.cancel()
+  }
 }
 async function restore(connection: Connection | null) {
   if (connection) await saveConnection(connection)
@@ -70,8 +82,13 @@ export function disconnectServer() {
     let switched = false
     await disconnectAccount(
       async () => {
-        await select(null)
-        switched = true
+        try {
+          await select(null)
+          switched = true
+        } catch (error) {
+          await restore(previous)
+          throw error
+        }
       },
       async () => {
         if (switched) await restore(previous)
@@ -87,8 +104,13 @@ export function deleteServerAccount() {
     let switched = false
     try {
       await deleteRemoteAccount(async () => {
-        await select(null)
-        switched = true
+        try {
+          await select(null)
+          switched = true
+        } catch (error) {
+          await restore(previous)
+          throw error
+        }
       })
       publishConnection(null)
     } catch (error) {

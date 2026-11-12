@@ -3,6 +3,7 @@ const { act, create } = require('react-test-renderer')
 const mockSQLiteDatabase = { current: null }
 const mockSQLiteProviderLifecycle = { mounts: 0, unmounts: 0 }
 const mockQueryClients = []
+const mockProfileProvider = { props: null }
 
 jest.mock('../../features/training/widgets/TodayPlanWidgetSync', () => ({
   TodayPlanWidgetSync: () => null,
@@ -100,7 +101,9 @@ jest.mock('../../lib/db/ProfileSQLiteProvider', () => {
   const SQLiteContext = React.createContext(null)
   return {
     // Keep the database context stable across appearance changes.
-    ProfileSQLiteProvider: ({ children, databaseName }) => {
+    ProfileSQLiteProvider: (props) => {
+      const { children, databaseName } = props
+      mockProfileProvider.props = props
       React.useEffect(() => {
         mockSQLiteProviderLifecycle.mounts += 1
         return () => {
@@ -257,6 +260,52 @@ const { AppState } = require('react-native')
 const expoNetwork = require('expo-network')
 const { NavigationContext } = require('expo-router/react-navigation')
 const { useProfileDatabase } = require('../../lib/db/ProfileSQLiteProvider')
+const { waitForProfileDatabase } = require('../../lib/db/profileDatabaseTransition')
+const { migrateDbIfNeeded } = require('../../lib/db/migrations')
+const { UserRepository } = require('../../lib/repositories/UserRepository')
+const { launchFacade } = require('../../features/launch/launchFacade')
+
+test.each(['open', 'migration', 'user restoration'])(
+  'reports %s failure to the waiting profile transition',
+  async (stage) => {
+    const owner = 'selfhosted:server-test:account-test'
+    const failure = new Error(`${stage} failed`)
+    setActiveProfileOwner(owner)
+    useAuthStore.setState({
+      isStartupReady: true,
+      startupError: null,
+      profileOwnerId: owner,
+      legacyOwnerId: null,
+    })
+    const action = jest
+      .spyOn(launchFacade.profile, 'databaseBootstrapAction')
+      .mockReturnValue('restore-local-user')
+    const user = jest.spyOn(UserRepository.prototype, 'getCurrentUser').mockRejectedValue(failure)
+    migrateDbIfNeeded.mockImplementation(async () => {
+      if (stage === 'migration') throw failure
+    })
+    const transition = waitForProfileDatabase(owner)
+    let view
+    await act(async () => {
+      view = create(React.createElement(AppLifecycleProvider, {}, null))
+    })
+    if (stage === 'open') {
+      mockProfileProvider.props.onError(failure)
+    } else {
+      await expect(mockProfileProvider.props.onInit({})).rejects.toThrow(failure)
+      mockProfileProvider.props.onError(failure)
+    }
+    await expect(transition.ready).resolves.toBe(failure)
+    expect(useAuthStore.getState().startupError).toBeNull()
+    await act(async () => view.unmount())
+    transition.cancel()
+    action.mockRestore()
+    user.mockRestore()
+    migrateDbIfNeeded.mockReset()
+    setActiveProfileOwner(LOCAL_PROFILE_OWNER)
+    useAuthStore.setState({ profileOwnerId: LOCAL_PROFILE_OWNER })
+  }
+)
 function ThemeProbe() {
   return React.createElement('Probe', {
     navigationDark: React.useContext(NavigationContext).dark,

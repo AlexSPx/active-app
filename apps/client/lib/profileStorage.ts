@@ -73,18 +73,17 @@ async function migrateLegacyStorage(ownerId: string, legacyOwnerId: string | nul
 }
 
 async function hydrate(ownerId: string, legacyOwnerId: string | null): Promise<void> {
+  loadedOwner = null
   setActiveProfileOwner(ownerId)
   await migrateLegacyStorage(ownerId, legacyOwnerId)
 
-  if (loadedOwner != null) {
-    // Clear the prior profile's in-memory values without persisting them into the next profile.
-    useSettingsStore.persist.setOptions({ storage: pausedStorage })
-    useRunningWorkoutStore.persist.setOptions({ storage: pausedStorage })
-    useWidgetStore.persist.setOptions({ storage: pausedStorage })
-    useSettingsStore.getState().reset()
-    useRunningWorkoutStore.getState().reset()
-    useWidgetStore.getState().reset()
-  }
+  // Clear the prior profile's in-memory values without persisting them into the next profile.
+  useSettingsStore.persist.setOptions({ storage: pausedStorage })
+  useRunningWorkoutStore.persist.setOptions({ storage: pausedStorage })
+  useWidgetStore.persist.setOptions({ storage: pausedStorage })
+  useSettingsStore.getState().reset()
+  useRunningWorkoutStore.getState().reset()
+  useWidgetStore.getState().reset()
 
   useSettingsStore.persist.setOptions({
     name: storageKey('settings-storage', ownerId),

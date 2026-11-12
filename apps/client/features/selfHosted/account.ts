@@ -266,6 +266,9 @@ export function connectAccount(
     checkCanceled()
     const previous = await loadConnection()
     const baseUrl = serverUrl(value)
+    // shortcut: web profiles are not fenced, enable switching when ALE-129 provides isolation.
+    if (Platform.OS === 'web' && (previous?.kind !== 'web' || previous.baseUrl !== baseUrl))
+      throw new Error('Switching web accounts is not supported yet')
     const instance = await discovery(baseUrl)
     const metadata = metadataSchema.parse(await requestJson(baseUrl, '/auth/config'))
     checkCanceled()
@@ -311,6 +314,11 @@ export function connectAccount(
         accountId: session.accountId,
         csrfToken: session.csrfToken,
       }
+      if (
+        previous?.instanceId !== connection.instanceId ||
+        previous.accountId !== connection.accountId
+      )
+        throw new Error('Switching web accounts is not supported yet')
       checkCanceled()
       await saveConnection(connection)
       await onConnection?.(connection)
@@ -460,6 +468,7 @@ export function initializeFromDevice(device: DeviceProfile, preferences: DeviceP
 export function deleteRemoteAccount(beforeClear?: () => Promise<void>) {
   return serialize(async () => {
     const connection = await active()
+    if (connection.kind === 'web') throw new Error('Deleting a web account is not supported yet')
     const call = client(connection)
     let saved = await loadPlan(connection, 'delete')
     if (!saved) {
@@ -493,18 +502,13 @@ export function disconnectAccount(
   return serialize(async () => {
     try {
       const connection = await loadConnection()
+      if (connection?.kind === 'web')
+        throw new Error('Disconnecting a web account is not supported yet')
       if (connection && (await loadPlan(connection, 'delete')))
         throw new Error(
           'Retry the pending deletion before disconnecting so its acknowledgement can be recovered'
         )
       await beforeClear?.()
-      if (connection?.kind === 'web') {
-        await assertInstance(connection)
-        await requestJson(connection.baseUrl, '/auth/logout', {
-          method: 'POST',
-          headers: { 'X-CSRF-Token': connection.csrfToken },
-        })
-      }
       await clearConnection()
       if (connection?.kind === 'native' && connection.idToken && connection.endSessionEndpoint) {
         // Request provider logout without deleting the upstream identity.

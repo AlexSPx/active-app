@@ -15,6 +15,7 @@ import { syncEngine } from '../lib/sync'
 import { replaceQueuedIdReferences } from '../lib/sync/queuePayloadRemap'
 import { hydrateFromServer } from '../lib/sync/hydrate'
 import { setSharedDatabase } from '../lib/db/connection'
+import { finishProfileDatabase } from '../lib/db/profileDatabaseTransition'
 import { useAuthStore } from '../stores/authStore'
 import { initializeLocalUser, migrateDbIfNeeded } from '../lib/db/migrations'
 import { readLegacyTrainingProfile } from '../lib/legacyTrainingProfile'
@@ -680,17 +681,37 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
         if (!isCurrentProfile(scope) || useAuthStore.getState().profileOwnerId !== profileOwnerId) {
           return
         }
-        console.error('[Provider] Could not restore profile database:', error)
-        useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
+        throw error
       }
     },
     [legacyOwnerId, profileOwnerId]
   )
 
-  const onDatabaseError = useCallback((error: Error) => {
-    console.error('[Provider] Could not open or close profile database:', error)
-    useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
-  }, [])
+  const onDatabaseError = useCallback(
+    (error: Error) => {
+      console.error('[Provider] Could not open or close profile database:', error)
+      if (
+        !finishProfileDatabase(profileOwnerId, error) &&
+        useAuthStore.getState().profileOwnerId === profileOwnerId
+      ) {
+        useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
+      }
+    },
+    [profileOwnerId]
+  )
+
+  const initializeDatabase = useCallback(
+    async (db: SQLiteDatabase) => {
+      await onInit(db)
+      if (
+        useAuthStore.getState().profileOwnerId === profileOwnerId &&
+        getProfileScope().ownerId === profileOwnerId
+      ) {
+        finishProfileDatabase(profileOwnerId, null)
+      }
+    },
+    [onInit, profileOwnerId]
+  )
 
   useEffect(() => {
     initNotifications().catch(() => {})
@@ -701,7 +722,7 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
       <ProfileSQLiteProvider
         key={profileOwnerId}
         databaseName={databaseNameForProfile(profileOwnerId)}
-        onInit={onInit}
+        onInit={initializeDatabase}
         onError={onDatabaseError}
       >
         <SyncEngineBootstrap ownerId={profileOwnerId}>
