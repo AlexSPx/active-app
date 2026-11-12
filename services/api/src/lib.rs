@@ -10,6 +10,7 @@ pub mod profile_http;
 pub mod requests;
 pub mod responses;
 pub mod web_auth;
+pub mod workouts;
 
 use axum::{
     Router,
@@ -267,6 +268,7 @@ async fn operational(State(state): State<AppState>, request: Request, next: Next
 pub fn app(state: AppState) -> Router {
     Router::new()
         .merge(profile_http::routes())
+        .merge(workouts::routes())
         .merge(catalog::routes())
         .route("/auth/login", get(web_auth::login))
         .route("/auth/callback", get(web_auth::callback))
