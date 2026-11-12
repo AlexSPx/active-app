@@ -53,6 +53,14 @@ function hasDurationLimit(request: string): boolean {
   return /\b(?:only have|at most|maximum|no more than|within|fits?|time (?:for|available)|under)\b/i.test(request) || /\bin\s+\d+\s*-?\s*(?:minutes?|mins?)\b/i.test(request)
 }
 
+const restPattern = /(-?\d+(?:\.\d+)?)\s*(seconds?|secs?|minutes?|mins?)\s+(?:of\s+)?rest\b|\brest\s+(?:for\s+)?(-?\d+(?:\.\d+)?)\s*(seconds?|secs?|minutes?|mins?)\b/i
+
+function requestedRestSeconds(request: string): number | undefined {
+  const match = restPattern.exec(request)
+  if (!match) return undefined
+  return Number(match[1] ?? match[3]) * (/^min/i.test(match[2] ?? match[4]) ? 60 : 1)
+}
+
 function estimatedExerciseSeconds(sets: number, workSeconds: number, restSeconds: number, sides = 1): number {
   const nominalWorkSeconds = sets * 10 * 3 * sides
   const nominalRestSeconds = Math.max(0, sets - 1) * 60
@@ -94,7 +102,7 @@ function hasBench(request: string, context: SuppliedContext | null): boolean {
 
 export type PlannerDiagnostics = { equipment: string[]; candidateCounts: number[]; durationMinutes: number | null; estimatedMinutes: number; sets: number; setsExplicit: boolean; refusalReason: string | null; unmetRequirements: string[] }
 export type WorkoutTrace = PlannerDiagnostics & { session?: { index: number; title: string; focus: WorkoutFocus | 'shared' }; source: 'model' | 'template' | 'defaults'; assumptions: string[]; validationErrors: string[]; timedOut: boolean }
-type Plan = { slots: Exercise[][]; sets: number; reps: number; repetitionsRange?: { min: number; max: number }; includeCues: boolean; assumptions: string[]; partial: boolean; preparation: { kind: 'warmup' | 'cooldown'; description: string; durationSeconds: number }[] }
+type Plan = { slots: Exercise[][]; sets: number; reps: number; restSeconds: number; durationLimitSeconds?: number; repetitionsRange?: { min: number; max: number }; includeCues: boolean; assumptions: string[]; partial: boolean; preparation: { kind: 'warmup' | 'cooldown'; description: string; durationSeconds: number }[] }
 type PlanResult = { kind: 'plan'; plan: Plan; diagnostics: PlannerDiagnostics } | { kind: 'clarification'; question: string; diagnostics: PlannerDiagnostics } | { kind: 'infeasible'; reason: string; diagnostics: PlannerDiagnostics }
 
 function excludedEquipment(text: string): Set<Equipment> {
@@ -174,7 +182,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const countMatch = /\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:(?:beginner|intermediate|advanced|balanced)\s+)?(?:(?:chest|back|legs?|glutes?|quads?|quadriceps|hamstrings?|calves?|arms?|shoulders?|core|biceps|triceps)\s+)?(?:exercises?|movements?)\b/i.exec(message)
   const count = countMatch ? (numberWords.indexOf(countMatch[1].toLowerCase()) + 1 || Number(countMatch[1])) : 3
   const isCap = !!countMatch && /\b(?:up to|at most|maximum|max\.?|no more than|cap(?:ped)? at)\s*$/i.test(message.slice(Math.max(0, countMatch.index - 25), countMatch.index))
-  const durationMatch = /\b(\d+)\s*-?\s*(?:minutes?|mins?)\b/i.exec(message)
+  const durationMatch = /\b(\d+)\s*-?\s*(?:minutes?|mins?)\b/i.exec(message.replace(restPattern, ''))
   const duration = durationMatch ? Number(durationMatch[1]) : null
   const setsMatch = /\b(\d+)\s+sets?\b/i.exec(message)
   const repetitionsRangeMatch = /\b(\d+)\s*(?:-|–|—|to)\s*(\d+)\s*(?:reps?|repetitions?)\b/i.exec(message)
@@ -184,8 +192,9 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const repetitionsRange = repetitionsRangeMatch
     ? { min: Number(repetitionsRangeMatch[1]), max: Number(repetitionsRangeMatch[2]) }
     : requestsRepetitionsRange ? { min: 8, max: 12 } : undefined
-  const sets = setsMatch ? Number(setsMatch[1]) : duration === null ? 3 : Math.min(3, Math.max(1, Math.floor(duration / (count * 2))))
+  let sets = setsMatch ? Number(setsMatch[1]) : duration === null ? 3 : Math.min(3, Math.max(1, Math.floor(duration / (count * 2))))
   const reps = repetitionsRange ? Math.round((repetitionsRange.min + repetitionsRange.max) / 2) : repsMatch ? Number(repsMatch[1]) : 10
+  const restSeconds = requestedRestSeconds(message) ?? 60
   const excluded = excludedEquipment(message)
   const explicitlySpecified = new Set<Equipment>()
   for (const [pattern, equipment] of equipmentTerms) if (pattern.test(message) && !excluded.has(equipment)) explicitlySpecified.add(equipment)
@@ -205,6 +214,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const diagnostics: PlannerDiagnostics = { equipment: uniqueAvailable, candidateCounts: [], durationMinutes: duration, estimatedMinutes: count * sets * 2, sets, setsExplicit: !!setsMatch, refusalReason: null, unmetRequirements: [] }
   const fail = (reason: string): PlanResult => ({ kind: 'infeasible', reason, diagnostics: { ...diagnostics, refusalReason: reason } })
   if (!equipmentSpecified) return { kind: 'clarification', question: 'What equipment can you use: a full gym, specific equipment, or bodyweight only?', diagnostics }
+  if (!Number.isSafeInteger(restSeconds) || restSeconds < 0) return fail('Rest must be a whole number of seconds.')
   if (count < 1 || sets < 1 || sets > 5 || reps < 1 || reps > 30 || (repetitionsRange && (repetitionsRange.min < 1 || repetitionsRange.max > 30 || repetitionsRange.min > repetitionsRange.max))) return fail('The requested exercise, set, or repetition count is outside the supported range.')
   const preparation: Plan['preparation'] = []
   if (/\bwarm[ -]?up\b/i.test(message)) preparation.push({ kind: 'warmup', description: 'Easy movement and rehearsal of the exercises', durationSeconds: 300 })
@@ -260,13 +270,6 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   if (count > 8 && !isCap) diagnostics.unmetRequirements.push(`Requested ${count} exercises; this planner supports up to 8.`)
   const allTargets = [...new Set(targets.flat())]
   const selectedTargets = Array.from({ length: requestedSlots }, (_, i) => targets[i] ?? allTargets)
-  const setMinutes = sets * 2
-  if (durationIsMaximum && duration !== null && setMinutes + preparationMinutes > duration) return fail(`One exercise at the requested set count does not fit within ${duration} minutes, even before transitions.`)
-  let feasibleSlots = requestedSlots
-  if (durationIsMaximum && duration !== null) {
-    feasibleSlots = Math.min(requestedSlots, Math.max(1, Math.floor((duration * 60 - preparationMinutes * 60 + 30) / (setMinutes * 60 + 30))))
-  }
-  diagnostics.estimatedMinutes = feasibleSlots * setMinutes
   const namedEquipmentRequired = /\b(?:using\s+(?:the\s+)?|with\s+(?:the\s+)?only\s+)(?:dumbbells?|barbells?|bands?|kettlebells?|cables?|machines?)\b/i.test(message)
   const catalog = exerciseCatalog.filter(exercise => {
     const equipment = exercise.equipment ?? 'BODY_ONLY'
@@ -280,7 +283,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     const levelAllowed = abilityLevel === 'EXPERT' || (abilityLevel === 'INTERMEDIATE' ? exercise.level !== 'EXPERT' : exercise.level === 'BEGINNER')
     return exercise.setupReviewStatus === 'reviewed' && uniqueAvailable.includes(equipment) && (!namedEquipmentRequired || equipment !== 'BODY_ONLY') && (!bodyweightFallback || equipment === 'BODY_ONLY') && !excluded.has(equipment) && !setupMissing && !equipmentConflict && levelAllowed && exercise.category === 'STRENGTH' && (!includeCues || exercise.instructions.length > 0) && !unsafeNames.test(exercise.name) && !restrictionExcludes(exercise, safetyText) && focusForceAllowed && targetMatch && (!focus || exercise.primaryMuscles.some(muscle => focusTargets[focus].flat().includes(muscle.toLowerCase())))
   })
-  const allCandidates = selectedTargets.slice(0, feasibleSlots).map(target => {
+  const allCandidates = selectedTargets.map(target => {
     return catalog
     .filter(exercise => exercise.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase())) || exercise.secondaryMuscles.some(muscle => target.includes(muscle.toLowerCase())))
     .filter(exercise => {
@@ -290,7 +293,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     .sort((a, b) => Number(!a.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase()))) - Number(!b.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase()))) || Number(!explicitlySpecified.has(a.equipment ?? 'BODY_ONLY')) - Number(!explicitlySpecified.has(b.equipment ?? 'BODY_ONLY')))
   })
   diagnostics.candidateCounts = allCandidates.map(slot => slot.length)
-  const viableTargets = selectedTargets.slice(0, feasibleSlots).filter((_, index) => allCandidates[index].length > 0)
+  const viableTargets = selectedTargets.filter((_, index) => allCandidates[index].length > 0)
   const candidates = allCandidates.filter(slot => slot.length > 0)
   const targetHasPrimary = catalog.some(exercise => viableTargets.some(target => exercise.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase()))))
   if (!candidates.length || !targetHasPrimary) {
@@ -328,16 +331,19 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     const name = item.exercise.name.replace(/[_-]+/g, ' ')
     const unilateral = /\b(?:single|one|alternating)[ -]?(?:arm|leg|side)\b/i.test(name)
     const work = sets * reps * 3 * (unilateral ? 2 : 1)
-    const rest = Math.max(0, sets - 1) * 60
+    const rest = Math.max(0, sets - 1) * restSeconds
     return sum + estimatedExerciseSeconds(sets, work, rest, unilateral ? 2 : 1) + (index > 0 ? 30 : 0)
   }, 0)
+  // Reduce default sets before dropping requested movements.
+  while (durationIsMaximum && duration !== null && !setsMatch && sets > 1 && scheduleSeconds(selectedAssignments) > duration * 60) sets--
+  diagnostics.sets = sets
   while (durationIsMaximum && duration !== null && selectedAssignments.length > 1 && scheduleSeconds(selectedAssignments) > duration * 60) {
     selectedAssignments = selectedAssignments.slice(0, -1)
   }
   if (durationIsMaximum && duration !== null && scheduleSeconds(selectedAssignments) > duration * 60) return fail(`The requested work, rest, transitions, and preparation do not fit within ${duration} minutes.`)
-  if (!isCap && (feasibleSlots < requestedSlots || selectedAssignments.length < filled.length)) diagnostics.unmetRequirements.push(`The time limit restricts the requested exercise count with the estimated work, rest, transitions and preparation.`)
+  if (!isCap && (selectedAssignments.length < filled.length)) diagnostics.unmetRequirements.push(`The time limit restricts the requested exercise count with the estimated work, rest, transitions and preparation.`)
   diagnostics.estimatedMinutes = Math.ceil(scheduleSeconds(selectedAssignments) / 60)
-  if (filled.length < feasibleSlots && !isCap) diagnostics.unmetRequirements.push(`Requested ${count} exercises; found ${filled.length} distinct catalog choices with reviewed setup compatible with the known equipment and restrictions; other catalog setup requirements may be unknown.`)
+  if (filled.length < requestedSlots && !isCap) diagnostics.unmetRequirements.push(`Requested ${count} exercises; found ${filled.length} distinct catalog choices with reviewed setup compatible with the known equipment and restrictions; other catalog setup requirements may be unknown.`)
   if (isCap && count > 1 && filled.length === 1 && /\bbalanced\b/i.test(message)) diagnostics.unmetRequirements.push('Only one distinct movement pattern fits this setup, so this is not a balanced session; add equipment or allow another variation.')
   if (/\barms?\b/i.test(message) && /\bbalanced\b/i.test(message) && !['biceps', 'triceps'].every(muscle => selectedAssignments.some(({ exercise }) => exercise.primaryMuscles.some(item => item.toLowerCase() === muscle)))) diagnostics.unmetRequirements.push('The selected movements do not cover both biceps and triceps, so this is not a balanced arm session.')
   if (explicitTargetCount > count || (fullBody && targets.length > count)) diagnostics.unmetRequirements.push(`The request names ${fullBody ? targets.length : explicitTargetCount} muscle groups but allows at most ${count} exercise${count === 1 ? '' : 's'}; some groups are uncovered.`)
@@ -354,6 +360,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
       : []),
     ...(!countMatch ? ['Assumed 3 exercises.'] : []),
     ...(!setsMatch ? [`Assumed ${sets} sets.`] : []),
+    `${restSeconds} seconds rest between sets${requestedRestSeconds(message) === undefined ? ' (assumed)' : ''}.`,
     ...(repetitionsRange
       ? [`Assumed ${repetitionsRange.min}–${repetitionsRange.max} repetitions per set; ${reps} is the editable starting value.`]
       : !repsMatch ? [`Assumed ${reps} repetitions per set.`] : []),
@@ -375,11 +382,13 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     const next = eligible.sort((a, b) => slots[a].length - slots[b].length)[0]
     if (next !== undefined) slots[next].push(candidate)
   }
-  return { kind: 'plan', plan: { slots, sets, reps, ...(repetitionsRange ? { repetitionsRange } : {}), includeCues, preparation, assumptions, partial: diagnostics.unmetRequirements.length > 0 }, diagnostics }
+  return { kind: 'plan', plan: { slots, sets, reps, restSeconds, ...(durationIsMaximum && duration !== null ? { durationLimitSeconds: duration * 60 } : {}), ...(repetitionsRange ? { repetitionsRange } : {}), includeCues, preparation, assumptions, partial: diagnostics.unmetRequirements.length > 0 }, diagnostics }
 }
 
 export function selectionSchema(plan: Plan) {
-  return { type: 'object', properties: { selections: { type: 'array', minItems: plan.slots.length, maxItems: plan.slots.length, prefixItems: plan.slots.map(slot => ({ type: 'string', enum: slot.map(e => e.name) })), items: { type: 'string' } } }, required: ['selections'], additionalProperties: false }
+  return z.strictObject({ selections: z.strictObject(Object.fromEntries(
+    plan.slots.map((slot, index) => [`slot_${index + 1}`, z.enum(slot.map(exercise => exercise.name))])
+  )) })
 }
 export function validateSelection(plan: Plan, raw: unknown): { names?: string[]; errors: string[] } {
   const parsed = z.strictObject({ selections: z.array(z.string()) }).safeParse(raw)
@@ -394,13 +403,14 @@ export function validateSelection(plan: Plan, raw: unknown): { names?: string[];
   })
   if (new Set(identities).size !== new Set(names).size) errors.push('Interchangeable exercise variants')
   if (names.some((name, i) => !plan.slots[i]?.some(e => e.name === name))) errors.push('Exercise is not eligible for its slot')
+  if (!errors.length && plan.durationLimitSeconds !== undefined && estimateWorkoutSeconds(renderWorkout(plan, names).workout) > plan.durationLimitSeconds) errors.push('Selected exercises exceed the time limit')
   return errors.length ? { errors } : { names, errors }
 }
 export function renderWorkout(plan: Plan, names: string[]): Extract<CoachResponse, { kind: 'workout_draft' }> {
   const exercises = plan.slots.map((slot, i) => {
     const exercise = slot.find(e => e.name === names[i]) ?? slot[0]
     const guidance = {
-      restSeconds: 60,
+      restSeconds: plan.restSeconds,
       ...(plan.repetitionsRange ? { repetitionsRange: plan.repetitionsRange } : {}),
       ...(plan.includeCues ? { cues: Array.from({ length: Math.min(4, exercise.instructions.length) }, (_, index) => exercise.instructions.slice(Math.floor(index * exercise.instructions.length / Math.min(4, exercise.instructions.length)), Math.floor((index + 1) * exercise.instructions.length / Math.min(4, exercise.instructions.length))).join(' ')) } : {}),
     }
@@ -444,12 +454,15 @@ function validateSessionReview(request: string, workout: CoachWorkout, focus?: W
     if (!workout.preparation?.some(item => item.kind === part.kind)) errors.push(`The requested ${part.kind} is missing.`)
   }
   const text = workoutRequestText(request)
-  const duration = /\b(\d+)\s*-?\s*(?:minutes?|mins?)\b/i.exec(text)
+  const duration = /\b(\d+)\s*-?\s*(?:minutes?|mins?)\b/i.exec(text.replace(restPattern, ''))
   if (duration && hasDurationLimit(text) && estimateWorkoutSeconds(workout) > Number(duration[1]) * 60)
     errors.push(`The estimated schedule exceeds ${duration[1]} minutes.`)
   const explicitSets = /\b(\d+)\s+sets?\b/i.exec(text)
   if (explicitSets && workout.exercises.some(exercise => exercise.sets.length !== Number(explicitSets[1])))
     errors.push(`Each exercise must have the requested ${explicitSets[1]} sets.`)
+  const rest = requestedRestSeconds(text)
+  if (rest !== undefined && workout.exercises.some(exercise => (exercise.guidance?.restSeconds ?? 60) !== rest))
+    errors.push(`Each exercise must keep the requested ${rest} seconds rest.`)
   return errors
 }
 

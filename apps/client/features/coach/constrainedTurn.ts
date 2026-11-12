@@ -259,20 +259,20 @@ export async function runConstrainedCoachTurn(input: { message: string; session:
     let timedOut = false
     let selected: string[][] | undefined
     const routineSelections = z.strictObject({ sessions: z.strictObject(Object.fromEntries(
-      plans.map((plan, index) => [`day_${index + 1}`, z.strictObject({ selections: z.strictObject(Object.fromEntries(
-        plan.slots.map((slot, slotIndex) => [`slot_${slotIndex + 1}`, z.enum(slot.map(exercise => exercise.name))])
-      )) })])
+      plans.map((plan, index) => [`day_${index + 1}`, selectionSchema(plan)])
     )) })
-    const schema = sessionCount === 1 ? selectionSchema(plans[0]) : z.toJSONSchema(routineSelections)
+    const singleSelections = selectionSchema(plans[0])
+    const schema = z.toJSONSchema(sessionCount === 1 ? singleSelections : routineSelections)
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        await session.appendUserMessage(`Original request: ${userRequest}\nPlan ${sessionCount} training session(s). Exercise counts, sets, repetitions, and duration apply to each session. Choose one distinct exercise name for each slot, in order, for each session. Prefer complementary movements and angles; multiple exercises from the same movement family are allowed. Never repeat the same exercise within a session. ${sessionCount > 1 ? 'Return a sessions object keyed day_1, day_2, etc. Each day contains a selections object with one allowed exercise per slot. Respect each day’s distinct focus and choices.' : 'Return selections only.'} Session slots: ${JSON.stringify(plans.map((plan, index) => ({ day: `day_${index + 1}`, title: titles[index], slots: plan.slots.map(slot => slot.map(exercise => exercise.name)) })))}. ${errors.length ? `Validation errors: ${errors.join('; ')}` : ''}`)
+        await session.appendUserMessage(`Original request: ${userRequest}\nPlan ${sessionCount} training session(s). Exercise counts, sets, repetitions, and duration apply to each session. Choose one distinct exercise name for each slot, in order, for each session. Prefer complementary movements and angles; multiple exercises from the same movement family are allowed. Never repeat the same exercise within a session. ${sessionCount > 1 ? 'Return a sessions object keyed day_1, day_2, etc. Each day contains a selections object with one allowed exercise per slot. Respect each day’s distinct focus and choices.' : 'Return a selections object keyed slot_1, slot_2, etc., with one allowed exercise name per slot.'} Session slots: ${JSON.stringify(plans.map((plan, index) => ({ day: `day_${index + 1}`, title: titles[index], slots: plan.slots.map(slot => slot.map(exercise => exercise.name)) })))}. ${errors.length ? `Validation errors: ${errors.join('; ')}` : ''}`)
         const generated = await session.generate({ tools: [], finalResponseSchema: schema, maxOutputTokens: input.maxOutputTokens, signal })
         if (generated.kind === 'failure') throw new Error(generated.message)
         const raw = generated.kind === 'final' ? generated.content : undefined
         if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
         const batch = routineSelections.safeParse(raw)
-        const sessions = sessionCount === 1 ? [raw] : batch.success ? plans.map((plan, index) => ({ selections: plan.slots.map((_, slotIndex) => batch.data.sessions[`day_${index + 1}`].selections[`slot_${slotIndex + 1}`]) })) : []
+        const single = singleSelections.safeParse(raw)
+        const sessions = sessionCount === 1 ? single.success ? [{ selections: plans[0].slots.map((_, index) => single.data.selections[`slot_${index + 1}`]) }] : [] : batch.success ? plans.map((plan, index) => ({ selections: plan.slots.map((_, slotIndex) => batch.data.sessions[`day_${index + 1}`].selections[`slot_${slotIndex + 1}`]) })) : []
         if (sessions.length !== sessionCount) { errors.push(`Expected ${sessionCount} workout sessions`); continue }
         const checked = sessions.map((session, index) => validateSelection(plans[index], session))
         errors.push(...checked.flatMap(result => result.errors))
@@ -290,7 +290,7 @@ export async function runConstrainedCoachTurn(input: { message: string; session:
     const source = selected ? 'model' : 'template'
     const response: CoachResponse = schedule.kind === 'weekly'
       ? { version: 1, kind: 'routine_draft', workouts, routine: { type: 'WEEKLY_COMPLETION', title: `${sessionCount}-day workout routine`, workoutRefs: workouts.map(workout => workout.ref) }, assumptions: [...new Set(renderedSessions.flatMap(rendered => rendered.assumptions)), `Planned ${sessionCount} training sessions per week; choose your training and rest days. Exercise counts and durations apply to each session.`, schedule.split === 'ppl' ? 'Push/Pull/Legs split: chest, shoulders and triceps; back and biceps; then legs. Each day has its own eligible exercise choices.' : 'Sessions use the same requested muscle targets; exercises may repeat across days.', ...(selected ? [] : [schedule.split === 'ppl' ? 'Model selection was unavailable; each training day uses its own focus-specific catalog template.' : 'Model selection was unavailable; each training day repeats the catalog template.'])] }
-      : renderedSessions[0]
+      : { ...renderedSessions[0], assumptions: [...renderedSessions[0].assumptions, ...(selected ? [] : ['Model selection was unavailable; this draft uses a validated catalog template.'])] }
     plannedSessions.forEach((planned, index) => {
       try { input.onWorkoutTrace?.({ ...planned.diagnostics, source, assumptions: response.assumptions, validationErrors: errors, timedOut, session: { index: index + 1, title: titles[index], focus: focuses[index] ?? 'shared' } }) } catch { /* Diagnostics cannot alter delivery. */ }
     })

@@ -124,3 +124,28 @@ test('does not write after the captured profile changes', async () => {
   setActiveProfileOwner('local:device')
   db.sql.close()
 })
+
+test('saves generated explicit rest and rejects changing it before any write', async () => {
+  const { planWorkout, renderWorkout, defaultSelection } = require('../../features/coach/workoutPlanner')
+  const request = 'Create 2 chest exercises, full gym, 2 sets of 8 reps, rest 90 seconds.'
+  const planned = planWorkout(request)
+  const draft = renderWorkout(planned.plan, defaultSelection(planned.plan))
+  for (const exercise of draft.workout.exercises) {
+    for (const set of exercise.sets) set.load = { kind: 'kilograms', value: 10 }
+  }
+  const db = createDb()
+  try {
+    const repo = new CoachDraftRepository(db)
+    const input = { revision: 'explicit-rest', draft, request, scope: getProfileScope() }
+    const edited = structuredClone(draft)
+    edited.workout.exercises[0].guidance.restSeconds = 60
+    await expect(repo.save({ ...input, draft: edited })).rejects.toThrow('requested 90 seconds rest')
+    expect(db.sql.prepare('SELECT count(*) AS n FROM workouts').get().n).toBe(0)
+    const saved = await repo.save(input)
+    const row = db.sql.prepare('SELECT workout_template FROM workouts WHERE id = ?').get(saved.workoutIds[0])
+    const template = JSON.parse(row.workout_template)
+    expect(template.exercises.every(exercise => exercise.coachPrescription.guidance.restSeconds === 90)).toBe(true)
+  } finally {
+    db.sql.close()
+  }
+})
