@@ -7,8 +7,13 @@ jest.mock('../../lib/sync', () => ({
   },
 }))
 jest.mock('../../lib/profileScope', () => ({
+  ...jest.requireActual('../../lib/profileScope'),
   getCurrentProfileVersion: jest.fn(() => null),
 }))
+jest.mock('../../services/apiService', () => ({ apiService: {} }))
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+)
 jest.mock('../../config/launchPolicy', () => ({
   ...jest.requireActual('../../config/launchPolicy'),
   isSyncEnabledForLaunch: () => true,
@@ -17,7 +22,7 @@ jest.mock('../../config/launchPolicy', () => ({
 const { syncEngine } = require('../../lib/sync')
 const { getCurrentProfileVersion } = require('../../lib/profileScope')
 const { RoutineRepository } = require('../../lib/repositories/RoutineRepository')
-const { FakeDb } = require('../helpers/syncTestUtils')
+const { FakeDb, createApi, makeJob, runQueue } = require('../helpers/syncTestUtils')
 
 describe('RoutineRepository', () => {
   let db
@@ -187,7 +192,7 @@ describe('RoutineRepository', () => {
     expect(db.tables.routines.get(serverId).is_deleted).toBe(1)
     await expect(repo.getById(serverId)).resolves.toBeNull()
     expect(syncEngine.enqueue).toHaveBeenLastCalledWith(
-      { apiMethod: 'deleteRoutine', payload: [serverId] },
+      { apiMethod: 'deleteRoutine', payload: { id: serverId } },
       db,
       { processAfterInsert: false }
     )
@@ -248,16 +253,63 @@ describe('RoutineRepository', () => {
       server_version: 4,
     })
 
-    await repo.update('routine-versioned', { name: 'Updated', active: true })
+    await repo.update('routine-versioned', { active: true })
 
     expect(syncEngine.enqueue).toHaveBeenCalledWith(
       {
         apiMethod: 'updateRoutine',
-        payload: [
-          'routine-versioned',
-          { name: 'Updated', active: true, baseVersion: 4, profileBaseVersion: 9 },
-        ],
+        payload: ['routine-versioned', { active: true, baseVersion: 4, profileBaseVersion: 9 }],
       },
+      db,
+      { processAfterInsert: false }
+    )
+  })
+
+  it('syncs an offline inactive create followed by activation with both bases', async () => {
+    getCurrentProfileVersion.mockReturnValue(9)
+    const created = await repo.create({ name: 'Offline', pattern: [], active: false })
+    await repo.update(created.id, { active: true })
+
+    const jobs = syncEngine.enqueue.mock.calls.map(([job], index) =>
+      makeJob({
+        id: index === 0 ? 'create' : 'activate',
+        endpoint: job.apiMethod,
+        payload: job.payload,
+        localTable: job.localTable,
+        localId: job.localId,
+      })
+    )
+    const api = createApi({
+      createRoutine: jest.fn(async () => ({ id: 'server-routine', version: 4 })),
+      updateRoutine: jest.fn(async (id, request) => {
+        if (
+          id !== 'server-routine' ||
+          request.baseVersion !== 4 ||
+          request.profileBaseVersion !== 9
+        ) {
+          throw Object.assign(new Error('invalid bases'), { status: 400 })
+        }
+        return { id, version: 5, profileVersion: 10 }
+      }),
+    })
+    const result = await runQueue({ jobs, tables: { routines: [created.id] }, api })
+
+    expect(api.updateRoutine).toHaveBeenCalledWith(
+      'server-routine',
+      { active: true, baseVersion: 4, profileBaseVersion: 9 },
+      'activate-key'
+    )
+    expect(result.db.jobs).toEqual([])
+    result.engine.destroy()
+  })
+
+  it('preserves a known entity base when the profile base is unknown', async () => {
+    db.tables.routines.set('routine', { id: 'routine', pattern: '[]', server_version: 4 })
+
+    await repo.update('routine', { active: true })
+
+    expect(syncEngine.enqueue).toHaveBeenLastCalledWith(
+      { apiMethod: 'updateRoutine', payload: ['routine', { active: true, baseVersion: 4 }] },
       db,
       { processAfterInsert: false }
     )
@@ -313,7 +365,7 @@ describe('RoutineRepository', () => {
     expect(syncEngine.enqueue).toHaveBeenCalledWith(
       {
         apiMethod: 'deleteRoutine',
-        payload: ['routine_delete'],
+        payload: { id: 'routine_delete' },
       },
       db,
       { processAfterInsert: false }

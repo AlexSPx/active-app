@@ -954,6 +954,45 @@ describe('SyncEngine queue remapping', () => {
 })
 
 describe('SyncEngine version acknowledgements', () => {
+  it('advances a newly created routine delete with both versions', async () => {
+    const api = createApi({
+      createRoutine: jest.fn(async () => ({ id: 'server-routine', version: 1, profileVersion: 2 })),
+      deleteRoutine: jest.fn(async () => ({
+        deletedRoutineId: 'server-routine',
+        profileVersion: 3,
+      })),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { routines: ['local-routine'] },
+      configureDb: (database) => {
+        database.tables.routines.get('local-routine').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'create-routine',
+          endpoint: 'createRoutine',
+          payload: { name: 'R', active: true, profileBaseVersion: 1 },
+          localTable: 'routines',
+          localId: 'local-routine',
+          sequence: 1,
+        }),
+        makeJob({
+          id: 'delete-routine',
+          endpoint: 'deleteRoutine',
+          payload: { id: 'local-routine', profileBaseVersion: 1 },
+          sequence: 2,
+        }),
+      ],
+    })
+    expect(api.deleteRoutine).toHaveBeenCalledWith(
+      { id: 'server-routine', baseVersion: 1, profileBaseVersion: 2 },
+      'delete-routine-key'
+    )
+    expect(db.jobs).toEqual([])
+    engine.destroy()
+  })
+
   it('stops rebasing at an attempted immediate successor', async () => {
     const api = createApi({
       updateWorkout: jest.fn(async () => ({ id: 'workout-1', version: 6 })),
@@ -1076,7 +1115,7 @@ describe('SyncEngine version acknowledgements', () => {
         version: id === 'routine-a' ? 4 : 6,
         ...(id === 'routine-a' ? { profileVersion: 11 } : {}),
       })),
-      deleteRoutine: jest.fn(async () => ({ deletedRoutineId: 'routine-b' })),
+      deleteRoutine: jest.fn(async () => ({ deletedRoutineId: 'routine-b', profileVersion: 11 })),
     })
     const { engine } = await runQueue({
       api,
@@ -1128,7 +1167,7 @@ describe('SyncEngine version acknowledgements', () => {
       }),
       deleteRoutine: jest.fn(async () => {
         remoteProfileVersion = 12
-        return { deletedRoutineId: 'routine-b' }
+        return { deletedRoutineId: 'routine-b', profileVersion: 11 }
       }),
     })
     const { db, engine } = await runQueue({
