@@ -35,6 +35,7 @@ const storage = require('../../features/selfHosted/storage')
 const { createClient, ApiError } = require('../../../../packages/api-client/src')
 const auth = require('expo-auth-session')
 const account = require('../../features/selfHosted/account')
+const { setActiveProfileOwner, profileOwnerForConnection } = require('../../lib/profileScope')
 const profile = {
   id: 'account-a',
   email: 'a@example.com',
@@ -76,6 +77,7 @@ let failDelete
 beforeEach(() => {
   jest.clearAllMocks()
   Platform.OS = 'ios'
+  setActiveProfileOwner(profileOwnerForConnection(connection))
   plans = new Map()
   calls = []
   failPreferences = false
@@ -346,6 +348,47 @@ test('native sign-in selects a different server and account without touching the
   expect(storage.saveConnection).toHaveBeenCalledWith(
     expect.objectContaining({ accountId: 'account-b' })
   )
-  expect(storage.loadPlan).not.toHaveBeenCalled()
+  expect(storage.loadPlan).toHaveBeenCalledWith(connection, 'delete')
   expect(storage.clearPlan).not.toHaveBeenCalled()
+})
+
+test('rejects account operations when saved credentials belong to another profile', async () => {
+  setActiveProfileOwner(profileOwnerForConnection({ instanceId: 'instance-a', accountId: 'other' }))
+  await expect(account.readAccount()).rejects.toThrow('selected profile')
+  expect(calls).toEqual([])
+})
+
+test('a pending deletion blocks switching identities but permits reauthentication for recovery', async () => {
+  plans.set('delete', { kind: 'delete', plan: { accountId: connection.accountId } })
+  auth.AuthRequest.mockImplementation(() => ({
+    state: 'state',
+    codeVerifier: 'verifier',
+    promptAsync: async () => ({
+      type: 'success',
+      params: { state: 'state', iss: metadata.issuer, code: 'code' },
+    }),
+  }))
+  let subject = 'subject-b'
+  global.fetch = jest.fn(async (url) => ({
+    ok: true,
+    status: 200,
+    json: async () =>
+      url.endsWith('/auth/config')
+        ? metadata
+        : url === metadata.tokenEndpoint
+          ? { access_token: 'new', id_token: 'new-id', expires_in: 600 }
+          : { subject },
+  }))
+  const onConnection = jest.fn()
+  await expect(account.connectAccount(connection.baseUrl, onConnection)).rejects.toThrow(
+    'pending deletion'
+  )
+  expect(storage.saveConnection).not.toHaveBeenCalled()
+  expect(onConnection).not.toHaveBeenCalled()
+  expect(calls.map(([operation]) => operation)).not.toContain('profile.get')
+  subject = connection.subject
+  await expect(account.connectAccount(connection.baseUrl, onConnection)).resolves.toMatchObject({
+    accountId: connection.accountId,
+  })
+  expect(calls.map(([operation]) => operation)).not.toContain('profile.get')
 })

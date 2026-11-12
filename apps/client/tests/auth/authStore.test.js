@@ -1,6 +1,16 @@
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 )
+const mockSecureValues = new Map()
+jest.mock('expo-secure-store', () => ({
+  getItemAsync: jest.fn(async (key) => mockSecureValues.get(key) ?? null),
+  setItemAsync: jest.fn(async (key, value) => {
+    mockSecureValues.set(key, value)
+  }),
+  deleteItemAsync: jest.fn(async (key) => {
+    mockSecureValues.delete(key)
+  }),
+}))
 jest.mock('../../utils/storeReset', () => ({ resetAllStores: jest.fn() }))
 jest.mock('../../lib/db/connection', () => ({ clearDatabase: jest.fn() }))
 let mockNativeOfflineLaunch = false
@@ -79,6 +89,7 @@ const { useAuthStore, initializeAuth, selectSelfHostedProfile } = require('../..
 
 describe('auth profile refresh', () => {
   beforeEach(async () => {
+    mockSecureValues.clear()
     mockNativeOfflineLaunch = false
     jest.clearAllMocks()
     resetAllStores.mockReset()
@@ -1177,6 +1188,76 @@ describe('auth profile refresh', () => {
     expect(useAuthStore.getState().profileOwnerId).toBe('selfhosted:server-a:user-a')
     expect(mockHydrateProfileStores).toHaveBeenCalledWith('selfhosted:server-a:user-a', null)
     expect(mockGetCurrentUser).not.toHaveBeenCalled()
+  })
+
+  it('reconciles saved credentials and selected profile after each interrupted switch write', async () => {
+    const storage = require('../../features/selfHosted/storage')
+    const { useConnectionLifecycle } = require('../../features/selfHosted/connectionState')
+    const a = {
+      kind: 'native',
+      baseUrl: 'https://a.test',
+      instanceId: 'instance-a',
+      accountId: 'user-a',
+      issuer: 'issuer',
+      clientId: 'client',
+      resource: 'api',
+      authorizationEndpoint: 'auth',
+      tokenEndpoint: 'token',
+      endSessionEndpoint: null,
+      redirectUri: 'callback',
+      subject: 'a',
+      accessToken: 'a',
+      refreshToken: null,
+      idToken: null,
+      expiresAt: Date.now() + 60000,
+    }
+    const b = {
+      ...a,
+      baseUrl: 'https://b.test',
+      instanceId: 'instance-b',
+      accountId: 'user-b',
+      subject: 'b',
+      accessToken: 'b',
+    }
+    const selectedA = JSON.stringify({ instanceId: a.instanceId, accountId: a.accountId })
+    const selectedB = JSON.stringify({ instanceId: b.instanceId, accountId: b.accountId })
+    mockNativeOfflineLaunch = true
+    await storage.saveConnection(a)
+    const afterA = new Map(mockSecureValues)
+    await storage.saveConnection(b)
+    const afterB = new Map(mockSecureValues)
+    const bKey = [...afterB.keys()].find((key) => key.endsWith('.connection') && !afterA.has(key))
+    const afterRecord = new Map(afterA)
+    afterRecord.set(bKey, afterB.get(bKey))
+    const corruptSession = new Map(afterB)
+    corruptSession.set(bKey, '{broken')
+    const corruptPointer = new Map(afterB)
+    corruptPointer.set('selfHosted.active', '{broken')
+    for (const [secure, selection, expectedOwner, expectedConnection, expectedStatus] of [
+      [afterA, selectedA, 'selfhosted:instance-a:user-a', a, 'connected'],
+      [afterRecord, selectedA, 'selfhosted:instance-a:user-a', a, 'connected'],
+      [afterB, selectedA, 'selfhosted:instance-a:user-a', null, 'auth-paused'],
+      [afterB, selectedB, 'selfhosted:instance-b:user-b', b, 'connected'],
+      [afterB, null, 'local:device', null, 'local-only'],
+      [new Map(), selectedA, 'selfhosted:instance-a:user-a', null, 'auth-paused'],
+      [corruptSession, selectedB, 'selfhosted:instance-b:user-b', null, 'auth-paused'],
+      [corruptPointer, selectedA, 'selfhosted:instance-a:user-a', null, 'auth-paused'],
+    ]) {
+      mockSecureValues.clear()
+      for (const [key, value] of secure) mockSecureValues.set(key, value)
+      if (selection) await AsyncStorage.setItem('selfHosted.profile', selection)
+      else await AsyncStorage.removeItem('selfHosted.profile')
+      await initializeAuth(true)
+      expect(useAuthStore.getState().profileOwnerId).toBe(expectedOwner)
+      expect(useConnectionLifecycle.getState()).toMatchObject({
+        connection: expectedConnection,
+        status: expectedStatus,
+      })
+    }
+    await AsyncStorage.setItem('selfHosted.profile', '{broken')
+    await initializeAuth(true)
+    expect(useAuthStore.getState().startupError).toBeTruthy()
+    expect(useConnectionLifecycle.getState().connection).toBeNull()
   })
 
   it('switches and persists separate account scopes and returns to the device profile', async () => {

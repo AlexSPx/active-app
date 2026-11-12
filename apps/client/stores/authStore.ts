@@ -751,6 +751,7 @@ async function initializeAuthState(): Promise<void> {
     const cachedState = useAuthStore.getState()
     const cachedOwnerId = cachedState.user?.id ? profileOwnerForUser(cachedState.user.id) : null
     const legacyOwnerId = cachedOwnerId?.startsWith('selfhosted:') ? null : cachedOwnerId
+    if (startupPlan.kind === 'local-profile') publishConnection(null)
     const savedScope =
       startupPlan.kind === 'local-profile'
         ? await AsyncStorage.getItem(activeSelfHostedProfileKey)
@@ -792,7 +793,14 @@ async function initializeAuthState(): Promise<void> {
         secureCredentialsMigrated = true
         authPersistenceReady = true
         await loadConnection()
-          .then((connection) => publishConnection(connection, !!scope))
+          .then((connection) =>
+            publishConnection(
+              connection && scope && profileOwnerForConnection(connection) === ownerId
+                ? connection
+                : null,
+              !!scope
+            )
+          )
           .catch(() => {})
         return
       }

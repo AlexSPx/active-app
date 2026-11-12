@@ -147,3 +147,40 @@ test('offline startup restores expired identity as auth-paused', async () => {
     status: 'auth-paused',
   })
 })
+
+test('startup does not publish credentials for a different selected profile', async () => {
+  saved = b
+  await lifecycle.restoreConnectionLifecycle()
+  expect(lifecycle.useConnectionLifecycle.getState()).toMatchObject({
+    connection: null,
+    status: 'auth-paused',
+  })
+})
+
+test.each(['cancel', 'timeout'])(
+  '%s releases stalled database readiness and fences late completion',
+  async (reason) => {
+    jest.useFakeTimers()
+    let started
+    const pending = new Promise((resolve) => {
+      started = resolve
+    })
+    selectSelfHostedProfile.mockImplementationOnce(async () => {
+      mockOwner = 'selfhosted:server-b:b'
+      started()
+    })
+    const first = lifecycle.signInToServer('https://server-b')
+    await pending
+    await Promise.resolve()
+    const failure = expect(first).rejects.toThrow(reason === 'cancel' ? 'canceled' : 'Timed out')
+    if (reason === 'cancel') lifecycle.cancelConnection()
+    else await jest.advanceTimersByTimeAsync(15000)
+    await failure
+    expect(saved).toBe(a)
+    expect(mockOwner).toBe('selfhosted:server-a:a')
+    expect(finishProfileDatabase('selfhosted:server-b:b', null)).toBe(false)
+    await lifecycle.disconnectServer()
+    expect(saved).toBeNull()
+    jest.useRealTimers()
+  }
+)

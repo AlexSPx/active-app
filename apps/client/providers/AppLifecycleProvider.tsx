@@ -582,10 +582,11 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
   const startupError = useAuthStore((state) => state.startupError)
   const isDeviceDataErasing = useAuthStore((state) => state.isDeviceDataErasing)
   const profileOwnerId = useAuthStore((state) => state.profileOwnerId)
+  const profileGeneration = getProfileScope().generation
   const legacyOwnerId = useAuthStore((state) => state.legacyOwnerId)
   const onInit = useCallback(
     async (db: SQLiteDatabase) => {
-      const scope = getProfileScope()
+      const scope = { ownerId: profileOwnerId, generation: profileGeneration }
       if (
         scope.ownerId !== profileOwnerId ||
         useAuthStore.getState().profileOwnerId !== profileOwnerId ||
@@ -684,11 +685,12 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
         throw error
       }
     },
-    [legacyOwnerId, profileOwnerId]
+    [legacyOwnerId, profileOwnerId, profileGeneration]
   )
 
   const onDatabaseError = useCallback(
     (error: Error) => {
+      if (!isCurrentProfile({ ownerId: profileOwnerId, generation: profileGeneration })) return
       console.error('[Provider] Could not open or close profile database:', error)
       if (
         !finishProfileDatabase(profileOwnerId, error) &&
@@ -697,20 +699,21 @@ export function AppLifecycleProvider({ children }: { children: React.ReactNode }
         useAuthStore.setState({ startupError: 'We couldn’t restore your local data.' })
       }
     },
-    [profileOwnerId]
+    [profileOwnerId, profileGeneration]
   )
 
   const initializeDatabase = useCallback(
     async (db: SQLiteDatabase) => {
       await onInit(db)
       if (
+        isCurrentProfile({ ownerId: profileOwnerId, generation: profileGeneration }) &&
         useAuthStore.getState().profileOwnerId === profileOwnerId &&
         getProfileScope().ownerId === profileOwnerId
       ) {
         finishProfileDatabase(profileOwnerId, null)
       }
     },
-    [onInit, profileOwnerId]
+    [onInit, profileOwnerId, profileGeneration]
   )
 
   useEffect(() => {

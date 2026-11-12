@@ -1,4 +1,5 @@
 import { Platform } from 'react-native'
+import { getProfileScope, profileOwnerForConnection } from '../../lib/profileScope'
 import { publishConnection, useConnectionLifecycle } from './connectionState'
 import * as AuthSession from 'expo-auth-session'
 import * as WebBrowser from 'expo-web-browser'
@@ -226,6 +227,11 @@ function client(connection: Connection) {
 async function active(): Promise<Connection> {
   let connection = await loadConnection()
   if (!connection) throw new Error('Connect a server first')
+  if (
+    connection.kind === 'native' &&
+    profileOwnerForConnection(connection) !== getProfileScope().ownerId
+  )
+    throw new Error('Sign in again for the selected profile. Device data is safe.')
   await assertInstance(connection)
   if (connection.kind === 'native' && connection.expiresAt <= Date.now() + 30000) {
     if (!connection.refreshToken) throw new Error('Sign in again to continue. Device data is safe.')
@@ -265,6 +271,7 @@ export function connectAccount(
     }
     checkCanceled()
     const previous = await loadConnection()
+    const pendingDelete = previous && (await loadPlan(previous, 'delete'))
     const baseUrl = serverUrl(value)
     // shortcut: web profiles are not fenced, enable switching when ALE-129 provides isolation.
     if (Platform.OS === 'web' && (previous?.kind !== 'web' || previous.baseUrl !== baseUrl))
@@ -378,16 +385,18 @@ export function connectAccount(
       previous?.kind === 'native' &&
       previous.instanceId === instance.instanceId &&
       previous.subject === identity.subject
-    const pendingDelete = sameIdentity && (await loadPlan(previous, 'delete'))
-    const accountId = pendingDelete
-      ? previous.accountId
-      : (
-          await createClient(
-            baseUrl,
-            { kind: 'bearer', token: tokens.accessToken },
-            transport
-          )('profile.get', { path: {}, query: {}, body: null })
-        ).id
+    if (pendingDelete && !sameIdentity)
+      throw new Error('Retry the pending deletion before switching accounts')
+    const accountId =
+      pendingDelete && sameIdentity
+        ? previous.accountId
+        : (
+            await createClient(
+              baseUrl,
+              { kind: 'bearer', token: tokens.accessToken },
+              transport
+            )('profile.get', { path: {}, query: {}, body: null })
+          ).id
     if (sameIdentity && previous.accountId !== accountId)
       throw new Error('The connected account changed')
     const connection: Connection = {
