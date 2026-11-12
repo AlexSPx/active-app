@@ -155,7 +155,13 @@ export function connectAccount(value: string): Promise<Connection | null> {
     const baseUrl = serverUrl(value)
     const instance = await discovery(baseUrl)
     const metadata = metadataSchema.parse(await requestJson(baseUrl, '/auth/config'))
-    if (metadata.issuer !== instance.issuer) throw new Error('Server identity metadata changed')
+    if (
+      metadata.issuer !== instance.issuer ||
+      metadata.authorizationEndpoint !== instance.authorizationEndpoint ||
+      metadata.tokenEndpoint !== instance.tokenEndpoint ||
+      metadata.endSessionEndpoint !== instance.endSessionEndpoint
+    )
+      throw new Error('Server identity metadata changed')
     for (const endpoint of [
       metadata.issuer,
       metadata.authorizationEndpoint,

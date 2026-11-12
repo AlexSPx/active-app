@@ -150,6 +150,20 @@ test('canceling authentication preserves the existing connection and pending wor
   expect(storage.clearConnection).not.toHaveBeenCalled()
 })
 
+test.each(['authorizationEndpoint', 'tokenEndpoint', 'endSessionEndpoint'])(
+  'rejects an authentication %s that differs from discovery',
+  async (field) => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...metadata, [field]: 'https://other.test/endpoint' }),
+    }))
+    await expect(account.connectAccount(connection.baseUrl)).rejects.toThrow('metadata changed')
+    expect(auth.AuthRequest).not.toHaveBeenCalled()
+    expect(storage.saveConnection).not.toHaveBeenCalled()
+  }
+)
+
 test('refresh rejects a changed subject without replacing stored credentials', async () => {
   storage.loadConnection.mockResolvedValue({ ...connection, expiresAt: 0 })
   auth.refreshAsync.mockResolvedValue({
