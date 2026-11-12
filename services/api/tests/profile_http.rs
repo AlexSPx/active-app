@@ -411,7 +411,7 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
         .fetch_one(&pool)
         .await
         .unwrap();
-    let create = json!({"title":"Workout", "notes":"note", "template":{"exercises":[{"exerciseId":exercise,"notes":"private exercise note","reps":[8,4],"weight":[10.0,12.0],"durationSeconds":[30.0,45.0]}]}}).to_string();
+    let create = json!({"title":"Workout", "notes":"note", "template":{"exercises":[{"exerciseId":exercise,"notes":"private exercise note","reps":[8,4],"weight":[10.0,12.0],"durationSeconds":[30.0,45.0]},{"exerciseId":exercise,"notes":"second entry","reps":[],"weight":[],"durationSeconds":[12.0]}]}}).to_string();
     let created = workout_call(
         &state,
         &alice,
@@ -507,10 +507,30 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
             .unwrap(),
         "private exercise note"
     );
+    let listed = workout_call(&state, &alice, "GET", "/api/workouts", None, "").await;
+    let persisted = listed
+        .1
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|w| w["id"] == id)
+        .unwrap();
+    assert_eq!(
+        persisted["workoutTemplate"]["exercises"][0]["notes"],
+        "private exercise note"
+    );
     let entry = &created.1["workoutTemplate"]["exercises"][0];
     assert_eq!(entry["reps"], json!([8, 4]));
     assert_eq!(entry["durationSeconds"], json!([30.0, 45.0]));
-    assert!(entry.get("notes").is_none());
+    assert_eq!(
+        persisted["workoutTemplate"]["exercises"][1]["notes"],
+        "second entry"
+    );
+    assert_eq!(
+        persisted["workoutTemplate"]["exercises"][1]["durationSeconds"],
+        json!([12.0])
+    );
+    assert_eq!(entry["notes"], "private exercise note");
     assert_eq!(
         workout_call(
             &state,

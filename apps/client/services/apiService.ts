@@ -10,6 +10,7 @@ import type {
   ApiExercise,
   ApiWorkout,
   CreateWorkoutRequest,
+  UpdateWorkoutRequest,
   WorkoutRecordRequest,
   WorkoutRecord,
   WorkoutRecordResponse,
@@ -807,7 +808,7 @@ class ApiService {
 
     return this.request<{ id: string; version?: number }>(url, {
       method: 'POST',
-      headers: idempotencyHeaders(idempotencyKey),
+      headers: { ...idempotencyHeaders(idempotencyKey), 'X-Active-Contract-Version': '1' },
       body: JSON.stringify(workoutData),
     })
   }
@@ -817,6 +818,7 @@ class ApiService {
 
     return this.request<ApiWorkout[]>(url, {
       method: 'GET',
+      headers: { 'X-Active-Contract-Version': '1' },
     })
   }
 
@@ -835,11 +837,7 @@ class ApiService {
 
   async updateWorkout(
     workoutId: string,
-    payload: Partial<CreateWorkoutRequest> & {
-      title?: string
-      notes?: string
-      template?: CreateWorkoutRequest['template']
-    },
+    payload: UpdateWorkoutRequest,
     idempotencyKey?: string
   ): Promise<ApiWorkout> {
     const base = config.API_ENDPOINTS.WORKOUTS.UPDATE
@@ -847,7 +845,7 @@ class ApiService {
 
     return this.request<ApiWorkout>(url, {
       method: 'PUT',
-      headers: idempotencyHeaders(idempotencyKey),
+      headers: { ...idempotencyHeaders(idempotencyKey), 'X-Active-Contract-Version': '1' },
       body: JSON.stringify(payload),
     })
   }
@@ -883,7 +881,7 @@ class ApiService {
 
     return this.request<WorkoutDeleteAck | void>(url.toString(), {
       method: 'DELETE',
-      headers: idempotencyHeaders(idempotencyKey),
+      headers: { ...idempotencyHeaders(idempotencyKey), 'X-Active-Contract-Version': '1' },
     })
   }
 

@@ -275,7 +275,7 @@ async fn read(tx: &mut Transaction<'_, Sqlite>, owner: &str, id: &str) -> Result
         .await
         .map_err(internal)?
         .ok_or_else(ApiError::not_found)?;
-    let entries=sqlx::query("SELECT we.position,e.id,e.name,e.category FROM workout_exercises we JOIN exercises e ON e.id=we.exercise_id WHERE we.owner_id=? AND we.workout_id=? ORDER BY we.position").bind(owner).bind(id).fetch_all(&mut **tx).await.map_err(internal)?;
+    let entries=sqlx::query("SELECT we.position,we.notes,e.id,e.name,e.category FROM workout_exercises we JOIN exercises e ON e.id=we.exercise_id WHERE we.owner_id=? AND we.workout_id=? ORDER BY we.position").bind(owner).bind(id).fetch_all(&mut **tx).await.map_err(internal)?;
     let mut exercises = Vec::new();
     for e in entries {
         let exercise_id: String = e.get("id");
@@ -307,7 +307,7 @@ async fn read(tx: &mut Transaction<'_, Sqlite>, owner: &str, id: &str) -> Result
                 secondary.push(m.get::<String, _>("muscle"));
             }
         }
-        exercises.push(json!({"exerciseId":exercise_id,"exerciseTitle":e.get::<String,_>("name"),"category":e.get::<Option<String>,_>("category"),"primaryMuscles":primary,"secondaryMuscles":secondary,"reps":reps,"weight":weights,"durationSeconds":durations}));
+        exercises.push(json!({"exerciseId":exercise_id,"exerciseTitle":e.get::<String,_>("name"),"notes":e.get::<Option<String>,_>("notes"),"category":e.get::<Option<String>,_>("category"),"primaryMuscles":primary,"secondaryMuscles":secondary,"reps":reps,"weight":weights,"durationSeconds":durations}));
     }
     let created: String = row.get("created_at");
     Ok(
@@ -415,7 +415,7 @@ async fn delete(
     if version as u64 != base {
         return Err(ApiError::stale(version as u64));
     }
-    let routines=sqlx::query("SELECT DISTINCT r.id,r.version FROM routines r JOIN routine_pattern p ON p.owner_id=r.owner_id AND p.routine_id=r.id WHERE r.owner_id=? AND p.workout_id=? ORDER BY r.id").bind(owner).bind(id).fetch_all(&mut **tx).await.map_err(internal)?;
+    let routines=sqlx::query("SELECT DISTINCT r.id,r.version FROM routines r JOIN routine_pattern p ON p.owner_id=r.owner_id AND p.routine_id=r.id WHERE r.owner_id=? AND p.workout_id=? ORDER BY unixepoch(substr(r.created_at,1,19)||'Z'), CASE WHEN length(r.created_at)>20 THEN rtrim(substr(r.created_at,21,length(r.created_at)-21),'0') ELSE '' END,r.id").bind(owner).bind(id).fetch_all(&mut **tx).await.map_err(internal)?;
     let mut versions = Vec::new();
     for r in routines {
         let rid: String = r.get("id");

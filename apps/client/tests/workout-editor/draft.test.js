@@ -111,9 +111,11 @@ test('duplicate conversion preserves strength and cardio targets in their origin
         {
           exerciseId: 'squat',
           exerciseTitle: 'Squat',
+          notes: 'Pause at the bottom',
           category: 'STRENGTH',
           reps: [8, 6],
           weight: [60.5, 70],
+          durationSeconds: [30, 45],
           primaryMuscles: ['quads'],
           secondaryMuscles: [],
         },
@@ -132,7 +134,13 @@ test('duplicate conversion preserves strength and cardio targets in their origin
   const duplicate = convertToCreateWorkoutRequest('Upper body copy', editable, original.notes)
   expect(duplicate.title).toBe('Upper body copy')
   expect(duplicate.template.exercises).toEqual([
-    { exerciseId: 'squat', reps: [8, 6], weight: [60.5, 70], notes: undefined },
+    {
+      exerciseId: 'squat',
+      reps: [8, 6],
+      weight: [60.5, 70],
+      durationSeconds: [30, 45],
+      notes: 'Pause at the bottom',
+    },
     { exerciseId: 'run', durationSeconds: [600, 900], notes: undefined },
   ])
 })
@@ -152,4 +160,8 @@ test.each([
   store.getState().removeSetFromExercise('squat', 0)
   expect(store.getState().selectedExercises[0].sets).toHaveLength(1)
   store.getState().reset()
+})
+
+test('clearing workout notes sends an explicit null', () => {
+  expect(buildUpdateWorkoutRequest({ notes: '' })).toEqual({ notes: null })
 })

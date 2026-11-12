@@ -99,6 +99,7 @@ export const convertToTemplateExercise = (exercise: CreateWorkoutExercise): Temp
     return {
       exerciseId: exercise.id,
       durationSeconds: durations,
+      ...exercise.additionalTemplateSets,
       notes: exercise.notes,
     } as unknown as TemplateExercise
   }
@@ -106,6 +107,7 @@ export const convertToTemplateExercise = (exercise: CreateWorkoutExercise): Temp
     exerciseId: exercise.id,
     reps: exercise.sets.map((set) => set.reps).filter((v): v is number => v != null),
     weight: exercise.sets.map((set) => set.weight).filter((v): v is number => v != null),
+    ...exercise.additionalTemplateSets,
     notes: exercise.notes,
   }
 }
@@ -141,7 +143,7 @@ export const buildUpdateWorkoutRequest = (params: {
   if (typeof params.notes !== 'undefined') {
     const trimmed = params.notes?.trim()
     if (trimmed && trimmed.length > 0) payload.notes = trimmed
-    else payload.notes = '' // allow clearing notes by sending empty string
+    else payload.notes = null
   }
   if (params.exercises) {
     payload.template = {
@@ -158,6 +160,15 @@ export const apiWorkoutToEditableExercises = (workout: ApiWorkout): CreateWorkou
     // Use API exerciseTitle when present; fall back to a readable ID.
     id: ex.exerciseId,
     name: ex.exerciseTitle?.trim() || ex.exerciseId.replace(/_/g, ' '),
+    notes: ex.notes ?? undefined,
+    additionalTemplateSets:
+      ex.category === 'CARDIO'
+        ? (ex.reps?.length ?? 0) > 0
+          ? { reps: ex.reps, weight: ex.weight }
+          : undefined
+        : ex.durationSeconds?.length
+          ? { durationSeconds: ex.durationSeconds }
+          : undefined,
     level: 'INTERMEDIATE',
     force: 'PUSH',
     mechanic: 'COMPOUND',

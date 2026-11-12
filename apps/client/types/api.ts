@@ -105,6 +105,7 @@ export type MuscleGroup =
 export interface ApiWorkoutExercise {
   exerciseId: string
   exerciseTitle: string
+  notes?: string | null
   reps: number[]
   weight: number[]
   durationSeconds?: number[] | null
@@ -155,7 +156,7 @@ export interface CreateWorkoutRequest {
 export interface UpdateWorkoutRequest {
   baseVersion?: number
   title?: string
-  notes?: string
+  notes?: string | null
   // If template is provided, it must be complete
   template?: CreateWorkoutTemplateRequest
 }

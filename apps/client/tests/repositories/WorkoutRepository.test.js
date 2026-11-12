@@ -43,6 +43,7 @@ describe('WorkoutRepository', () => {
         exercises: [
           {
             exerciseId: 'exercise_1',
+            notes: 'keep this note',
             reps: [5, 5, 5],
             weight: [100, 100, 100],
           },
@@ -66,6 +67,7 @@ describe('WorkoutRepository', () => {
     expect(created.workoutTemplate.exercises[0]).toMatchObject({
       exerciseId: 'exercise_1',
       exerciseTitle: 'Barbell Bench Press',
+      notes: 'keep this note',
       category: 'POWERLIFTING',
       primaryMuscles: ['chest'],
       secondaryMuscles: ['triceps', 'shoulders'],
@@ -413,6 +415,22 @@ describe('WorkoutRepository', () => {
       { processAfterInsert: false }
     )
     expect(syncEngine.scheduleQueueProcessing).toHaveBeenCalledTimes(1)
+  })
+
+  it('turns routine days into rest when their workout is deleted', async () => {
+    db.tables.workouts.set('workout-1', { id: 'workout-1', server_version: 2 })
+    db.tables.routines.set('routine-1', {
+      id: 'routine-1',
+      pattern: JSON.stringify([
+        { dayIndex: 0, dayType: 'WORKOUT', workoutId: 'workout-1' },
+        { dayIndex: 1, dayType: 'REST', workoutId: null },
+      ]),
+    })
+    await repo.delete('workout-1')
+    expect(JSON.parse(db.tables.routines.get('routine-1').pattern)).toEqual([
+      { dayIndex: 0, dayType: 'REST', workoutId: null },
+      { dayIndex: 1, dayType: 'REST', workoutId: null },
+    ])
   })
 
   it('deletes local workout rows and enqueues delete operations', async () => {

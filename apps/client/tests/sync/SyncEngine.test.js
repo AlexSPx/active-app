@@ -1229,6 +1229,138 @@ describe('SyncEngine version acknowledgements', () => {
     engine.destroy()
   })
 
+  it('freezes catalog mappings before upload and reuses them after a lost response', async () => {
+    const { SyncEngine } = require('../../lib/sync/SyncEngine')
+    const { SOURCE_DATASET_VERSION } = require('../../lib/data/catalogIdentity')
+    const api = createApi({
+      getExerciseCatalog: jest.fn(async () => ({
+        catalogVersion: 1,
+        sourceDatasetVersion: SOURCE_DATASET_VERSION,
+        mappingComplete: true,
+        unresolvedSourceKeys: [],
+        unresolvedLegacyIds: [],
+        sourceMappings: [
+          {
+            datasetVersion: SOURCE_DATASET_VERSION,
+            sourceKey: 'squat',
+            exerciseId: 'server-exercise',
+          },
+        ],
+        items: [{ id: 'server-exercise', sourceKey: 'squat', retired: false }],
+      })),
+      createWorkout: jest
+        .fn()
+        .mockRejectedValueOnce(new Error('lost response'))
+        .mockResolvedValueOnce({ id: 'server-workout', version: 1 }),
+    })
+    const db = new FakeDb({
+      tables: { workouts: ['local-workout'] },
+      jobs: [
+        makeJob({
+          id: 'create',
+          endpoint: 'createWorkout',
+          payload: {
+            title: 'Legs',
+            template: {
+              exercises: [
+                { exerciseId: 'local:exercise:squat', reps: [5], weight: [60], notes: 'slow' },
+              ],
+            },
+          },
+          localTable: 'workouts',
+          localId: 'local-workout',
+        }),
+      ],
+    })
+    const engine = new SyncEngine({
+      api,
+      getNetworkState: async () => ({ isConnected: true, isInternetReachable: true }),
+      addAppStateListener: () => ({ remove() {} }),
+    })
+    await engine.init(db, { processOnInit: false })
+    await engine.processQueue()
+    expect(db.tables.workouts.has('local-workout')).toBe(true)
+    const frozen = JSON.parse(db.getJob('create').request_payload)
+    expect(frozen.template.exercises[0]).toEqual({
+      exerciseId: 'server-exercise',
+      reps: [5],
+      weight: [60],
+      notes: 'slow',
+    })
+    db.getJob('create').next_attempt_at = 0
+    await engine.init(db, { processOnInit: false })
+    await engine.processQueue()
+    expect(api.getExerciseCatalog).toHaveBeenCalledTimes(1)
+    expect(api.createWorkout.mock.calls).toEqual([
+      [frozen, 'create-key'],
+      [frozen, 'create-key'],
+    ])
+    expect(db.tables.workouts.has('server-workout')).toBe(true)
+    engine.destroy()
+  })
+
+  it('persists the acknowledged workout and template IDs without replacing local edits', async () => {
+    const api = createApi({
+      createWorkout: jest.fn(async () => ({
+        id: 'server-workout',
+        version: 1,
+        workoutTemplate: { id: 'server-template' },
+      })),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { workouts: ['local-workout'] },
+      configureDb: (db) => {
+        db.tables.workouts.get('local-workout').workout_template = JSON.stringify({
+          id: 'local-workout',
+          exercises: [{ notes: 'local edit' }],
+        })
+      },
+      jobs: [
+        makeJob({
+          id: 'create',
+          endpoint: 'createWorkout',
+          payload: { title: 'Local' },
+          localTable: 'workouts',
+          localId: 'local-workout',
+        }),
+      ],
+    })
+    expect(db.tables.workouts.has('local-workout')).toBe(false)
+    expect(db.tables.workouts.get('server-workout').server_version).toBe(1)
+    expect(JSON.parse(db.tables.workouts.get('server-workout').workout_template)).toEqual({
+      id: 'server-template',
+      exercises: [{ notes: 'local edit' }],
+    })
+    engine.destroy()
+  })
+
+  it('keeps a deletion tombstone when the acknowledgement names another workout', async () => {
+    const api = createApi({
+      deleteWorkout: jest.fn(async () => ({ deletedWorkoutId: 'other', routineVersions: [] })),
+    })
+    const { db, engine } = await runQueue({
+      api,
+      tables: { workouts: ['workout-1'] },
+      configureDb: (db) => {
+        db.tables.workouts.get('workout-1').is_deleted = 1
+      },
+      jobs: [
+        makeJob({
+          id: 'delete',
+          endpoint: 'deleteWorkout',
+          payload: { id: 'workout-1', baseVersion: 2 },
+        }),
+      ],
+    })
+    expect(db.tables.workouts.get('workout-1').is_deleted).toBe(1)
+    expect(db.getJob('delete')).toMatchObject({
+      status: 'dead_letter',
+      error_code: 'STALE_VERSION',
+    })
+    engine.destroy()
+  })
+
   it('rebases a routine successor from a workout delete acknowledgement', async () => {
     const api = createApi({
       deleteWorkout: jest.fn(async () => ({
