@@ -369,6 +369,7 @@
                 {
                   "exerciseId": "exercise-1",
                   "exerciseTitle": "Barbell squat",
+                  "notes": null,
                   "reps": [
                     5
                   ],
@@ -420,6 +421,7 @@
               {
                 "exerciseId": "exercise-1",
                 "exerciseTitle": "Barbell squat",
+                  "notes": null,
                 "reps": [
                   5
                 ],
@@ -503,6 +505,7 @@
               {
                 "exerciseId": "exercise-1",
                 "exerciseTitle": "Barbell squat",
+                  "notes": null,
                 "reps": [
                   5
                 ],

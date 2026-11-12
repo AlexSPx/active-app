@@ -18,6 +18,7 @@ import { launchFacade } from '../../features/launch/launchFacade'
 import type { WorkoutRecord, EntityVersion } from '../../types/api'
 import { syncApi, type SyncApi } from './api'
 import { replaceQueuedIdReferences } from './queuePayloadRemap'
+import { resolveExerciseIdentities } from '../data/catalogIdentity'
 import {
   getProfileScope,
   isCurrentProfile,
@@ -874,6 +875,41 @@ export class SyncEngine {
     scope: ProfileScope
   ): Promise<boolean> {
     if (!this.isCurrentEngine(db, scope)) return false
+    let mappedPayload: string | null = null
+    if (
+      !job.request_payload &&
+      job.payload.includes('local:exercise:') &&
+      (job.endpoint === 'createWorkout' || job.endpoint === 'updateWorkout')
+    ) {
+      try {
+        const payload = JSON.parse(job.payload)
+        const body = job.endpoint === 'updateWorkout' ? payload[1] : payload
+        const exercises = body?.template?.exercises
+        if (
+          Array.isArray(exercises) &&
+          exercises.some(
+            (item) =>
+              typeof item.exerciseId === 'string' && item.exerciseId.startsWith('local:exercise:')
+          )
+        ) {
+          const ids = exercises.map((item) => item.exerciseId)
+          const resolved = resolveExerciseIdentities(await this.deps.api.getExerciseCatalog(), ids)
+          if (resolved.some((item) => item.kind === 'unresolved')) {
+            throw Object.assign(new Error('Workout contains an unresolved exercise identity'), {
+              status: 400,
+              code: 'UNRESOLVED_EXERCISE',
+            })
+          }
+          body.template.exercises = exercises.map((item, i) => {
+            const identity = resolved[i]
+            return identity.kind === 'resolved' ? { ...item, exerciseId: identity.id } : item
+          })
+          mappedPayload = JSON.stringify(payload)
+        }
+      } catch (error) {
+        return this.handleJobError(db, scope, job, error)
+      }
+    }
     const currentJob = await this.withIdRemapLock(async (): Promise<SyncJob | null> => {
       if (!this.isCurrentEngine(db, scope)) return null
       const latest = await db.getFirstAsync<SyncJob>(
@@ -883,7 +919,12 @@ export class SyncEngine {
       if (!this.isCurrentEngine(db, scope) || !latest) return null
       if (latest.status !== 'pending' && latest.status !== 'failed') return null
       if (!this.uploadsEnabled || this.authenticationPaused || this.paused) return null
-      const requestPayload = latest.request_payload ?? latest.payload
+      if (
+        mappedPayload !== null &&
+        (latest.request_payload !== null || latest.payload !== job.payload)
+      )
+        return null
+      const requestPayload = latest.request_payload ?? mappedPayload ?? latest.payload
       await db.withTransactionAsync(async () => {
         await db.runAsync(
           'UPDATE sync_queue SET status = ?, request_payload = ? WHERE id = ?',
@@ -983,7 +1024,8 @@ export class SyncEngine {
             remap.tableName,
             remap.oldId,
             remap.newId,
-            currentJob.id
+            currentJob.id,
+            currentJob.endpoint === 'createWorkout' ? response?.workoutTemplate?.id : undefined
           )
         }
         for (const entity of acknowledgement.entities) {
@@ -1078,6 +1120,16 @@ export class SyncEngine {
     const mutation = parseQueuedMutation(job)
 
     if (job.endpoint === 'createWorkout' || job.endpoint === 'updateWorkout') {
+      if (job.endpoint === 'createWorkout' && (typeof response?.id !== 'string' || !response.id)) {
+        await this.markDeadLetter(
+          db,
+          scope,
+          job,
+          'Successful response did not identify the workout',
+          'STALE_VERSION'
+        )
+        return null
+      }
       const id =
         remap?.newId ?? mutation?.id ?? (typeof response?.id === 'string' ? response.id : null)
       const version = await this.resolveMissingEntityVersion('workouts', id, response?.version)
@@ -1112,6 +1164,33 @@ export class SyncEngine {
     }
 
     if (job.endpoint === 'deleteWorkout') {
+      const request = mutation?.payload
+      if (
+        request &&
+        !Array.isArray(request) &&
+        typeof request === 'object' &&
+        'baseVersion' in request &&
+        typeof request.baseVersion === 'number' &&
+        request.baseVersion > 0 &&
+        (response?.deletedWorkoutId !== mutation?.id ||
+          !Array.isArray(response?.routineVersions) ||
+          !response.routineVersions.every(
+            (entry: EntityVersion) =>
+              typeof entry?.id === 'string' &&
+              entry.id.length > 0 &&
+              Number.isSafeInteger(entry.version) &&
+              entry.version > 0
+          ))
+      ) {
+        await this.markDeadLetter(
+          db,
+          scope,
+          job,
+          'Successful response did not prove the workout deletion',
+          'STALE_VERSION'
+        )
+        return null
+      }
       if (Array.isArray(response?.routineVersions)) {
         for (const entity of response.routineVersions as EntityVersion[]) {
           entities.push({ table: 'routines', id: entity.id, version: entity.version })
@@ -1180,7 +1259,12 @@ export class SyncEngine {
     id: string | null | undefined,
     responseVersion: unknown
   ): Promise<number | null> {
-    if (typeof responseVersion === 'number') return responseVersion
+    if (
+      typeof responseVersion === 'number' &&
+      Number.isSafeInteger(responseVersion) &&
+      responseVersion >= 0
+    )
+      return responseVersion
     if (!id) return null
     const rows =
       table === 'workouts' ? await this.deps.api.getWorkouts() : await this.deps.api.getRoutines()
@@ -1292,7 +1376,8 @@ export class SyncEngine {
     tableName: string,
     oldId: string,
     newId: string,
-    sourceJobId?: string
+    sourceJobId?: string,
+    templateId?: string
   ): Promise<void> {
     // Allowlist check (defense-in-depth; already validated at enqueue)
     if (!(ALLOWED_TABLES as readonly string[]).includes(tableName)) {
@@ -1332,7 +1417,15 @@ export class SyncEngine {
 
     if (!this.isCurrentEngine(db, scope)) throw new Error('Sync lifecycle changed during ID remap')
     if (tableName === 'workouts') {
-      await this.remapJsonReferences(db, scope, 'workouts', 'workout_template', oldId, newId)
+      await this.remapJsonReferences(
+        db,
+        scope,
+        'workouts',
+        'workout_template',
+        oldId,
+        newId,
+        templateId
+      )
       await this.remapJsonReferences(db, scope, 'routines', 'pattern', oldId, newId)
     }
 
@@ -1372,9 +1465,10 @@ export class SyncEngine {
     tableName: 'workouts' | 'routines',
     columnName: 'workout_template' | 'pattern',
     oldId: string,
-    newId: string
+    newId: string,
+    templateId?: string
   ): Promise<void> {
-    if (!this.isCurrentEngine(db, scope) || oldId === newId) return
+    if (!this.isCurrentEngine(db, scope) || (oldId === newId && !templateId)) return
 
     const where = tableName === 'workouts' ? ' WHERE id = ?' : ''
     // ponytail: scan routine JSON while the table stays small; index workout references if it grows.
@@ -1397,6 +1491,16 @@ export class SyncEngine {
         continue
       }
       const rewritten = replaceQueuedIdReferences(parsed, oldId, newId)
+      if (
+        templateId &&
+        rewritten.value &&
+        typeof rewritten.value === 'object' &&
+        !Array.isArray(rewritten.value) &&
+        'id' in rewritten.value
+      ) {
+        rewritten.value.id = templateId
+        rewritten.changed = true
+      }
       if (rewritten.changed) {
         await db.runAsync(
           `UPDATE "${tableName}" SET "${columnName}" = ? WHERE id = ?`,

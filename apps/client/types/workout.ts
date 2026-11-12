@@ -1,4 +1,4 @@
-import type { ApiExercise } from './api'
+import type { ApiExercise, TemplateExercise } from './api'
 
 // ==========================================
 // Internal App Types for Workout Management
@@ -28,6 +28,7 @@ export interface WorkoutSet {
 export interface WorkoutExercise extends Exercise {
   sets: WorkoutSet[]
   notes?: string
+  additionalTemplateSets?: Pick<TemplateExercise, 'reps' | 'weight' | 'durationSeconds'>
 }
 
 // Internal workout type for UI use (converted from API types)

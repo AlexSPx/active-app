@@ -63,7 +63,7 @@ dto!(SourceMapping {
 });
 dto!(Catalog { source_mappings: Vec<SourceMapping>, catalog_version: u64, source_dataset_version: String, mapping_complete: bool, unresolved_source_keys: Vec<String>, unresolved_legacy_ids: Vec<String>, items: Vec<Exercise> });
 dto!(ProgressionLog { exercise_record_id: String, exercise_id: String, exercise_name: String, created_at: String, reps: Vec<u64>, weight: Vec<f64>, duration_seconds: Vec<f64>, achieved_one_rm_value: Option<f64>, achieved_one_rm_set_index: Option<u64>, achieved_total_volume_value: Option<f64> });
-dto!(TemplateExercise { exercise_id: String, exercise_title: String, reps: Vec<u64>, weight: Vec<f64>, duration_seconds: Vec<f64>, category: Option<Category>, primary_muscles: Vec<String>, secondary_muscles: Vec<String> });
+dto!(TemplateExercise { exercise_id: String, exercise_title: String, notes: Option<String>, reps: Vec<u64>, weight: Vec<f64>, duration_seconds: Vec<f64>, category: Option<Category>, primary_muscles: Vec<String>, secondary_muscles: Vec<String> });
 dto!(WorkoutTemplate { id: String, exercises: Vec<TemplateExercise>, created_at: String, updated_at: String });
 dto!(Workout { id: String, title: String, notes: Option<String>, created_at: String, updated_at: String, version: u64, workout_template: WorkoutTemplate });
 dto!(EntityVersion {
