@@ -4,9 +4,13 @@ import { SettingsPage } from '../../components/settings/SettingsPage'
 import { Button, Surface, TextField, UiText } from '../../components/ui/Controls'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettingsStore } from '../../features/settings'
+import { captureFirstWorkout } from '../../features/selfHosted/firstWorkout'
+import { getDatabase } from '../../lib/db/connection'
+import { getProfileScope, isCurrentProfile, LOCAL_PROFILE_OWNER } from '../../lib/profileScope'
 import {
-  initializeFromDevice,
   readAccount,
+  readServerWorkouts,
+  resumeFirstWorkout,
   type RemoteProfile,
 } from '../../features/selfHosted/account'
 import {
@@ -27,6 +31,7 @@ export default function ServerSettingsScreen() {
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [workouts, setWorkouts] = useState<string[] | null>(null)
 
   useEffect(() => {
     let mounted = true
@@ -56,9 +61,36 @@ export default function ServerSettingsScreen() {
     }
   }
 
-  async function signIn() {
-    const connected = await signInToServer(url)
-    if (connected) setProfile(null)
+  async function signIn(attach = false) {
+    let snapshot
+    if (attach) {
+      const scope = getProfileScope()
+      if (scope.ownerId !== LOCAL_PROFILE_OWNER || !user?.registrationCompleted)
+        throw new Error('Return to your device profile and finish setting it up first')
+      snapshot = await captureFirstWorkout(
+        await getDatabase(),
+        user,
+        {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          timezone: settings.timeZone,
+          measurements: { weightKg: settings.bodyWeight, heightCm: settings.height },
+          registrationCompleted: user.registrationCompleted,
+        },
+        {
+          enabled: user.notificationPreferences?.emailNotificationsEnabled ?? false,
+          schedule: user.notificationPreferences?.schedule ?? [],
+          timezone: settings.timeZone,
+        }
+      )
+      if (!isCurrentProfile(scope)) throw new Error('Device profile changed; try again')
+    }
+    const connected = await signInToServer(url, snapshot)
+    if (connected) {
+      setProfile(null)
+      if (attach)
+        setMessage('Workout saved for this account. Select Resume workout upload to continue.')
+    }
   }
 
   return (
@@ -80,16 +112,22 @@ export default function ServerSettingsScreen() {
             keyboardType="url"
           />
           {!connection ? (
-            <Button
-              disabled={busy}
-              onPress={() =>
-                void run(async () => {
-                  await signIn()
-                })
-              }
-            >
-              <UiText>{busy ? 'Connecting…' : 'Sign in to server'}</UiText>
-            </Button>
+            <>
+              <Button disabled={busy} onPress={() => void run(() => signIn())}>
+                <UiText>{busy ? 'Connecting…' : 'Sign in to server'}</UiText>
+              </Button>
+              {Platform.OS !== 'web' && getProfileScope().ownerId === LOCAL_PROFILE_OWNER && (
+                <>
+                  <UiText textRole="bodyMuted">
+                    Attach your device profile and most recent workout to a new account. Your
+                    original data stays on this device.
+                  </UiText>
+                  <Button disabled={busy || !user} onPress={() => void run(() => signIn(true))}>
+                    <UiText>Sign in and attach one workout</UiText>
+                  </Button>
+                </>
+              )}
+            </>
           ) : (
             <>
               <UiText textRole="bodyEmphasis">
@@ -121,45 +159,47 @@ export default function ServerSettingsScreen() {
               >
                 <UiText>Read server profile</UiText>
               </Button>
-              <UiText textRole="bodyMuted">
-                Copy your device name, measurements, time zone and reminder preferences into a new
-                server profile. Existing server profiles are preserved. Workout upload is a separate
-                step.
-              </UiText>
+              {Platform.OS !== 'web' && (
+                <>
+                  <UiText textRole="bodyMuted">
+                    Resume an attached workout after a connection or upload interruption. Other
+                    workouts and history remain on this device.
+                  </UiText>
+                  <Button
+                    disabled={busy}
+                    onPress={() =>
+                      void run(async () => {
+                        await resumeFirstWorkout()
+                        setMessage(
+                          'Your workout was uploaded. The original remains on this device.'
+                        )
+                      })
+                    }
+                  >
+                    <UiText>Resume workout upload</UiText>
+                  </Button>
+                </>
+              )}
               <Button
-                disabled={busy || !user}
+                disabled={busy}
                 onPress={() =>
                   void run(async () => {
-                    if (!user) throw new Error('Finish setting up your device profile first')
-                    await initializeFromDevice(
-                      {
-                        firstName: user.firstName,
-                        lastName: user.lastName,
-                        timezone: settings.timeZone,
-                        measurements: { weightKg: settings.bodyWeight, heightCm: settings.height },
-                        registrationCompleted: user.registrationCompleted,
-                      },
-                      {
-                        enabled: user.notificationPreferences?.emailNotificationsEnabled ?? false,
-                        schedule: user.notificationPreferences?.schedule ?? [],
-                        timezone: settings.timeZone,
-                      }
-                    )
-                    setProfile(await readAccount())
-                    setMessage(
-                      'Your device profile was copied to the server. Local training data is unchanged.'
-                    )
+                    setWorkouts((await readServerWorkouts()).map((workout) => workout.title))
                   })
                 }
               >
-                <UiText>Copy device profile / resume</UiText>
+                <UiText>Read server workouts</UiText>
               </Button>
+              {workouts && (
+                <UiText>{workouts.length ? workouts.join('\n') : 'No server workouts yet.'}</UiText>
+              )}
               <Button
                 disabled={busy}
                 onPress={() =>
                   void run(async () => {
                     await disconnectServer()
                     setProfile(null)
+                    setWorkouts(null)
                     setMessage('Disconnected. Your device data is still available.')
                   })
                 }

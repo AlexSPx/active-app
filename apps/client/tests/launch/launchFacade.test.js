@@ -159,3 +159,21 @@ it('keeps backend, sync, and account policies independently enforced', () => {
   expect(launchFacade.api.backendMode()).toBe('remote')
   expect(launchFacade.sync.queueMode()).toBe('active')
 })
+
+it('keeps the server connection screen available to a newly selected account', () => {
+  const route = {
+    isAuthenticated: true,
+    user: { id: 'selfhosted:server:account', registrationCompleted: false },
+    profileOwnerId: 'selfhosted:server:account',
+    firstSegment: 'settings',
+    secondSegment: 'server',
+  }
+  expect(launchFacade.auth.resolveDestination(route)).toBeNull()
+  expect(
+    launchFacade.auth.resolveDestination({
+      ...route,
+      firstSegment: '(tabs)',
+      secondSegment: 'index',
+    })
+  ).toBe('/welcome')
+})
