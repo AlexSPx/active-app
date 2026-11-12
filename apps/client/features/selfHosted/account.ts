@@ -1,4 +1,13 @@
 import { Platform } from 'react-native'
+import * as SQLite from 'expo-sqlite'
+import { databaseNameForProfile, LOCAL_PROFILE_OWNER } from '../../lib/profileScope'
+import {
+  readFirstWorkout,
+  sourceSnapshot,
+  markProfileComplete,
+  freezeWorkoutRequest,
+  acknowledgeFirstWorkout,
+} from './firstWorkout'
 import { getProfileScope, profileOwnerForConnection } from '../../lib/profileScope'
 import { publishConnection, useConnectionLifecycle } from './connectionState'
 import * as AuthSession from 'expo-auth-session'
@@ -429,48 +438,106 @@ export function readAccount(): Promise<RemoteProfile> {
   })
 }
 
+async function initializeFromDeviceInternal(
+  device: DeviceProfile,
+  preferences: DevicePreferences,
+  keepPlan: boolean
+) {
+  const connection = await active()
+  const call = client(connection)
+  if (await loadPlan(connection, 'delete')) throw new Error('Resolve the pending deletion first')
+  let saved = await loadPlan(connection, 'initialize')
+  if (!saved) {
+    const profile = await call('profile.get', { path: {}, query: {}, body: null })
+    let absent = false
+    try {
+      await call('preferences.get', { path: {}, query: {}, body: null })
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) absent = true
+      else throw error
+    }
+    saved = {
+      kind: 'initialize',
+      plan: prepareAccountProfileInitialization({
+        accountId: connection.accountId,
+        profile,
+        device,
+        profileKey: Crypto.randomUUID(),
+        preferences: absent
+          ? { kind: 'absent', device: preferences, key: Crypto.randomUUID() }
+          : { kind: 'present' },
+      }),
+    }
+    await savePlan(connection, saved)
+  }
+  if (saved.kind !== 'initialize') throw new Error('Invalid initialization plan')
+  while (saved.plan.stage !== 'complete') {
+    saved = {
+      kind: 'initialize',
+      plan: await executeAccountProfileInitialization({
+        call,
+        accountId: connection.accountId,
+        plan: saved.plan,
+      }),
+    }
+    await savePlan(connection, saved)
+  }
+  if (!keepPlan) await clearPlan(connection, 'initialize')
+}
+
 export function initializeFromDevice(device: DeviceProfile, preferences: DevicePreferences) {
+  return serialize(() => initializeFromDeviceInternal(device, preferences, false))
+}
+
+export function resumeFirstWorkout() {
   return serialize(async () => {
     const connection = await active()
-    const call = client(connection)
-    if (await loadPlan(connection, 'delete')) throw new Error('Resolve the pending deletion first')
-    let saved = await loadPlan(connection, 'initialize')
-    if (!saved) {
-      const profile = await call('profile.get', { path: {}, query: {}, body: null })
-      let absent = false
-      try {
-        await call('preferences.get', { path: {}, query: {}, body: null })
-      } catch (error) {
-        if (error instanceof ApiError && error.status === 404) absent = true
-        else throw error
+    if (connection.kind !== 'native')
+      throw new Error('Workout attachment is available on a device only')
+    const db = await SQLite.openDatabaseAsync(databaseNameForProfile(LOCAL_PROFILE_OWNER), {
+      useNewConnection: true,
+    })
+    try {
+      let row = await readFirstWorkout(db, connection)
+      if (!row) throw new Error('No workout is attached to this account on this device')
+      if (row.remote_id) return { id: row.remote_id, version: row.remote_version }
+      if (!row.profile_complete) {
+        const snapshot = sourceSnapshot(row)
+        await initializeFromDeviceInternal(snapshot.profile, snapshot.preferences, true)
+        assertNotCanceled()
+        await markProfileComplete(db, connection)
+        row = await readFirstWorkout(db, connection)
+        if (!row) throw new Error('Workout attachment is missing')
       }
-      saved = {
-        kind: 'initialize',
-        plan: prepareAccountProfileInitialization({
-          accountId: connection.accountId,
-          profile,
-          device,
-          profileKey: Crypto.randomUUID(),
-          preferences: absent
-            ? { kind: 'absent', device: preferences, key: Crypto.randomUUID() }
-            : { kind: 'present' },
-        }),
-      }
-      await savePlan(connection, saved)
+      const call = client(await active())
+      const body = row.request_payload
+        ? await freezeWorkoutRequest(db, connection, row, null)
+        : await freezeWorkoutRequest(
+            db,
+            connection,
+            row,
+            await call('catalog.get', { path: {}, query: {}, body: null })
+          )
+      assertNotCanceled()
+      const result = await call('workout.create', {
+        path: {},
+        query: {},
+        body,
+        idempotencyKey: row.operation_key,
+      })
+      assertNotCanceled()
+      await acknowledgeFirstWorkout(db, connection, result)
+      return { id: result.id, version: result.version }
+    } finally {
+      await db.closeAsync()
     }
-    if (saved.kind !== 'initialize') throw new Error('Invalid initialization plan')
-    while (saved.plan.stage !== 'complete') {
-      saved = {
-        kind: 'initialize',
-        plan: await executeAccountProfileInitialization({
-          call,
-          accountId: connection.accountId,
-          plan: saved.plan,
-        }),
-      }
-      await savePlan(connection, saved)
-    }
-    await clearPlan(connection, 'initialize')
+  })
+}
+
+export function readServerWorkouts() {
+  return serialize(async () => {
+    const connection = await active()
+    return client(connection)('workout.list', { path: {}, query: {}, body: null })
   })
 }
 

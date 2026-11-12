@@ -15,6 +15,11 @@ import {
 } from './storage'
 import { LOCAL_PROFILE_OWNER, profileOwnerForConnection } from '../../lib/profileScope'
 import { waitForProfileDatabase } from '../../lib/db/profileDatabaseTransition'
+import { getDatabase } from '../../lib/db/connection'
+import { prepareFirstWorkout, seedAttachedProfile, type SourceSnapshot } from './firstWorkout'
+import * as SQLite from 'expo-sqlite'
+import { databaseNameForProfile } from '../../lib/profileScope'
+import * as Crypto from 'expo-crypto'
 
 import { publishConnection, useConnectionLifecycle } from './connectionState'
 export { useConnectionLifecycle } from './connectionState'
@@ -92,7 +97,7 @@ export function cancelConnection() {
   readinessAbort = new AbortController()
   cancelAccountOperation()
 }
-export function signInToServer(url: string) {
+export function signInToServer(url: string, snapshot?: SourceSnapshot) {
   const attempt = generation
   const signal = readinessAbort.signal
   return serialize(async () => {
@@ -104,6 +109,27 @@ export function signInToServer(url: string) {
     try {
       const connection = await connectAccount(url, async (next) => {
         try {
+          if (attempt !== generation) throw new Error('Connection canceled')
+          if (snapshot) {
+            if (useAuthStore.getState().profileOwnerId !== LOCAL_PROFILE_OWNER)
+              throw new Error('Return to your device profile before attaching a workout')
+            const savedSnapshot = await prepareFirstWorkout(
+              await getDatabase(),
+              next,
+              snapshot,
+              Crypto.randomUUID(),
+              Crypto.randomUUID()
+            )
+            const owner = profileOwnerForConnection(next)
+            const target = await SQLite.openDatabaseAsync(databaseNameForProfile(owner), {
+              useNewConnection: true,
+            })
+            try {
+              await seedAttachedProfile(target, owner, savedSnapshot)
+            } finally {
+              await target.closeAsync()
+            }
+          }
           if (attempt !== generation) throw new Error('Connection canceled')
           await select(next, signal)
           if (attempt !== generation) throw new Error('Connection canceled')

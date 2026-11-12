@@ -76,6 +76,7 @@ function resolveAuthDestination(input: {
           : undefined
     if (settingsScreen === 'account') return '/settings/profile'
     if (settingsScreen === 'sync') return '/(tabs)'
+    if (settingsScreen === 'server' && input.profileOwnerId.startsWith('selfhosted:')) return null
     if (needsOnboarding && !inWelcomeGroup && !inLegalGroup) return '/welcome'
     if (!needsOnboarding && inWelcomeGroup) return '/(tabs)'
     return null

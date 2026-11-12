@@ -1,3 +1,10 @@
+jest.mock('expo-sqlite', () => ({ openDatabaseAsync: jest.fn() }))
+jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'stable-id') }))
+jest.mock('../../features/selfHosted/firstWorkout', () => ({
+  prepareFirstWorkout: jest.fn(),
+  seedAttachedProfile: jest.fn(),
+}))
+jest.mock('../../lib/db/connection', () => ({ getDatabase: jest.fn() }))
 jest.mock('../../features/selfHosted/account', () => ({
   connectAccount: jest.fn(),
   disconnectAccount: jest.fn(),
@@ -14,6 +21,9 @@ jest.mock('../../features/selfHosted/storage', () => ({
   clearConnection: jest.fn(),
 }))
 const { Platform } = require('react-native')
+const SQLite = require('expo-sqlite')
+const imports = require('../../features/selfHosted/firstWorkout')
+const { getDatabase } = require('../../lib/db/connection')
 const account = require('../../features/selfHosted/account')
 const storage = require('../../features/selfHosted/storage')
 const { selectSelfHostedProfile } = require('../../stores/authStore')
@@ -27,6 +37,9 @@ beforeEach(() => {
   jest.clearAllMocks()
   Platform.OS = 'ios'
   mockOwner = 'selfhosted:server-a:a'
+  getDatabase.mockResolvedValue({ source: true })
+  imports.prepareFirstWorkout.mockImplementation(async (_db, _scope, snapshot) => snapshot)
+  SQLite.openDatabaseAsync.mockResolvedValue({ closeAsync: jest.fn() })
   databaseFailure = null
   saved = a
   storage.loadConnection.mockImplementation(async () => saved)
@@ -184,3 +197,34 @@ test.each(['cancel', 'timeout'])(
     jest.useRealTimers()
   }
 )
+
+test('persists the selected source and seeds the target before changing profile', async () => {
+  mockOwner = 'local:device'
+  saved = null
+  const snapshot = { workoutId: 'local-workout' }
+  await lifecycle.signInToServer('https://server-b', snapshot)
+  expect(imports.prepareFirstWorkout).toHaveBeenCalledWith(
+    { source: true },
+    b,
+    snapshot,
+    'stable-id',
+    'stable-id'
+  )
+  expect(imports.prepareFirstWorkout.mock.invocationCallOrder[0]).toBeLessThan(
+    selectSelfHostedProfile.mock.invocationCallOrder[0]
+  )
+  expect(imports.seedAttachedProfile.mock.invocationCallOrder[0]).toBeLessThan(
+    selectSelfHostedProfile.mock.invocationCallOrder[0]
+  )
+})
+
+test('failed snapshot persistence restores local selection', async () => {
+  mockOwner = 'local:device'
+  saved = null
+  imports.prepareFirstWorkout.mockRejectedValueOnce(new Error('disk full'))
+  await expect(
+    lifecycle.signInToServer('https://server-b', { workoutId: 'local' })
+  ).rejects.toThrow('disk full')
+  expect(mockOwner).toBe('local:device')
+  expect(imports.seedAttachedProfile).not.toHaveBeenCalled()
+})

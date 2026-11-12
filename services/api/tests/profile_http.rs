@@ -780,3 +780,65 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
     );
     task.abort();
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn first_workout_client_sqlite_http_proof() {
+    if std::env::var_os("ACTIVE_FIRST_WORKOUT_PROOF").is_none() {
+        return;
+    }
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let issuer = format!("http://{}", listener.local_addr().unwrap());
+    let metadata = json!({"issuer":issuer,"jwks_uri":format!("{issuer}/jwks")});
+    let jwks = json!({"keys":[{"kty":"RSA","kid":"test","alg":"RS256","use":"sig","n":MODULUS,"e":"AQAB"}]});
+    let provider = Router::new()
+        .route(
+            "/.well-known/openid-configuration",
+            get(move || async move { Json(metadata.clone()) }),
+        )
+        .route("/jwks", get(move || async move { Json(jwks.clone()) }));
+    let provider_task = tokio::spawn(async move { axum::serve(listener, provider).await.unwrap() });
+    let dir = TempDir::new().unwrap();
+    let pool = db::open(&dir.path().join("server.sqlite")).await.unwrap();
+    active_api::catalog::seed(&pool).await.unwrap();
+    let state = AppState {
+        pool: pool.clone(),
+        auth: AuthState::new(AuthConfig {
+            issuer: issuer.clone(),
+            client_id: "client".into(),
+            resource: "api".into(),
+            redirect_uri: "active://callback".into(),
+        }),
+        discovery: Arc::new(RwLock::new(None)),
+        draining: Arc::new(AtomicBool::new(false)),
+        body_limit: 1048576,
+        request_timeout: Duration::from_secs(30),
+        origins: vec![],
+    };
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    let api_task =
+        tokio::spawn(async move { axum::serve(listener, active_api::app(state)).await.unwrap() });
+    let source = dir.path().join("source.sqlite");
+    let script = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../apps/client/tests/selfHosted/first-workout-proof.cjs"
+    );
+    for phase in ["prepare", "send", "resume"] {
+        let status = std::process::Command::new("node")
+            .arg(script)
+            .arg(phase)
+            .arg(&source)
+            .arg(&base)
+            .env("ACTIVE_PROOF_TOKEN", token(&issuer, "first-workout-proof"))
+            .status()
+            .unwrap();
+        assert!(status.success(), "client proof phase {phase} failed");
+    }
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM workouts")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(count, 1);
+    api_task.abort();
+    provider_task.abort();
+}
