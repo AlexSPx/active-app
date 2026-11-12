@@ -136,16 +136,13 @@ export class RoutineRepository extends BaseRepository {
       )
       const profileBaseVersion = getCurrentProfileVersion()
       const changesProfile = payload.active !== undefined
-      const hasAllBases =
-        rowBeforeMutation?.server_version != null &&
-        (!changesProfile || profileBaseVersion !== null)
       const resolvedPayload: UpdateRoutineRequest = {
         ...payload,
         ...(payload.pattern ? { pattern: this.resolvePatternWorkoutIds(payload.pattern) } : {}),
-        ...(hasAllBases ? { baseVersion: rowBeforeMutation?.server_version ?? undefined } : {}),
-        ...(hasAllBases && changesProfile && profileBaseVersion !== null
-          ? { profileBaseVersion }
+        ...(rowBeforeMutation?.server_version != null
+          ? { baseVersion: rowBeforeMutation.server_version }
           : {}),
+        ...(changesProfile && profileBaseVersion !== null ? { profileBaseVersion } : {}),
       }
       const sets: string[] = []
       const vals: any[] = []
