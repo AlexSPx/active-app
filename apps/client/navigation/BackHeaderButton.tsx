@@ -6,9 +6,10 @@ import { useCadenceColors } from '../components/ui/useCadenceColors'
 type BackHeaderButtonProps = {
   label: string
   fallback: Href
+  showLabel?: boolean
 }
 
-export function BackHeaderButton({ label, fallback }: BackHeaderButtonProps) {
+export function BackHeaderButton({ label, fallback, showLabel = true }: BackHeaderButtonProps) {
   const router = useRouter()
   const colors = useCadenceColors()
 
@@ -32,17 +33,19 @@ export function BackHeaderButton({ label, fallback }: BackHeaderButtonProps) {
       }}
     >
       <ChevronLeft size={20} color={colors.accent} aria-hidden />
-      <Text
-        numberOfLines={1}
-        style={{
-          maxWidth: 112,
-          color: colors.accent,
-          fontFamily: 'DM Sans Medium',
-          fontSize: 14,
-        }}
-      >
-        {label}
-      </Text>
+      {showLabel && (
+        <Text
+          numberOfLines={1}
+          style={{
+            maxWidth: 112,
+            color: colors.accent,
+            fontFamily: 'DM Sans Medium',
+            fontSize: 14,
+          }}
+        >
+          {label}
+        </Text>
+      )}
     </Pressable>
   )
 }
