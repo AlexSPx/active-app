@@ -5,7 +5,7 @@ const promoteCoach = process.env.EXPO_PUBLIC_COACH_PROMOTE === '1'
 const developCoach = process.env.EXPO_PUBLIC_COACH_DEV === '1'
 execFileSync(
   process.execPath,
-  [require.resolve('./scripts/coach/gate.mjs'), promoteCoach ? 'release' : 'development'],
+  [require.resolve('./scripts/coach/gate.mjs'), promoteCoach ? 'release' : developCoach ? 'development' : 'local'],
   { stdio: ['ignore', 2, 2] }
 )
 

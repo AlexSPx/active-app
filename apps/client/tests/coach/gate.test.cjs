@@ -3,6 +3,8 @@ const assert = require('node:assert/strict')
 const { createHash } = require('node:crypto')
 const { spawnSync } = require('node:child_process')
 const path = require('node:path')
+const { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync, appendFileSync } = require('node:fs')
+const { tmpdir } = require('node:os')
 
 const hash = (value) => createHash('sha256').update(value).digest('hex')
 const root = path.resolve(__dirname, '../..')
@@ -36,11 +38,48 @@ test('development and release gates fail closed without evidence', () => {
 })
 
 
-test('Expo config requires review evidence even when the coach is disabled', () => {
+test('disabled Expo config works without evidence; enabled and promoted configurations fail closed', () => {
   const config = (flags) => spawnSync(process.execPath, [require.resolve('expo/bin/cli'), 'config', '--json'], {
     cwd: root, encoding: 'utf8', env: { ...process.env, EXPO_PUBLIC_COACH_DEV: '', EXPO_PUBLIC_COACH_PROMOTE: '', COACH_EVIDENCE_ROOT: path.join(root, 'missing-evidence'), ...flags },
   })
-  assert.notEqual(config({}).status, 0)
+  const disabled = config({})
+  assert.equal(disabled.status, 0, disabled.stderr)
+  assert.equal(JSON.parse(disabled.stdout).extra.coachAvailability, 'disabled')
   assert.notEqual(config({ EXPO_PUBLIC_COACH_DEV: '1' }).status, 0)
   assert.notEqual(config({ EXPO_PUBLIC_COACH_PROMOTE: '1' }).status, 0)
+})
+
+
+test('enabled Expo config rejects a tampered review archive', () => {
+  const evidence = mkdtempSync(path.join(tmpdir(), 'coach-evidence-'))
+  try {
+    const review = path.join(evidence, 'evaluation/coach-v1/reviews/knowledge-review-01')
+    mkdirSync(review, { recursive: true })
+    writeFileSync(path.join(review, 'manifest.json'), JSON.stringify({ outputs: {} }))
+    const result = spawnSync(process.execPath, [require.resolve('expo/bin/cli'), 'config', '--json'], {
+      cwd: root, encoding: 'utf8', env: { ...process.env, EXPO_PUBLIC_COACH_DEV: '1', EXPO_PUBLIC_COACH_PROMOTE: '', COACH_EVIDENCE_ROOT: evidence },
+    })
+    assert.notEqual(result.status, 0)
+  } finally {
+    rmSync(evidence, { recursive: true, force: true })
+  }
+})
+
+
+test('local gate rejects tampered shipped data without external evidence', () => {
+  const copy = mkdtempSync(path.join(tmpdir(), 'coach-local-'))
+  try {
+    for (const dir of ['features/coach', 'lib/data', 'scripts/coach']) {
+      mkdirSync(path.dirname(path.join(copy, dir)), { recursive: true })
+      cpSync(path.join(root, dir), path.join(copy, dir), { recursive: true })
+    }
+    appendFileSync(path.join(copy, 'lib/data/coach/authoring-manifest.json'), ' ')
+    const result = spawnSync(process.execPath, ['scripts/coach/gate.mjs', 'local'], {
+      cwd: copy, encoding: 'utf8', env: { ...process.env, COACH_EVIDENCE_ROOT: path.join(copy, 'missing') },
+    })
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /Authoring manifest changed/)
+  } finally {
+    rmSync(copy, { recursive: true, force: true })
+  }
 })

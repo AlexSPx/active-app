@@ -84,3 +84,20 @@ test('latest recorded sets include their load and repetitions', async () => {
   const result = await run([history, query('latest', 'Split Squat')], async () => ({ kind: 'success', data: { items: [record], nextCursor: null, coverage } }), 'What were my latest recorded Split Squat sets?')
   expect(result.metrics[0]).toMatchObject({ kind: 'latest_recorded_sets', value: [{ weightKg: 20, repetitions: 8, recordId: 'r' }] })
 })
+
+test('ISO-date clarification retains the named exercise and requested relative interval', async () => {
+  const { applyWorkoutFollowUp } = require('../../features/coach/constrainedTurn')
+  const original = 'What was my latest Pull-ups load in 2024-01-01?'
+  const first = await run([history], async () => { throw Error('unexpected read') }, original)
+  expect(first.response.kind).toBe('clarification')
+  const message = applyWorkoutFollowUp('30 days', [{ kind: 'user', text: original }, { kind: 'response', response: first.response, request: original }])
+  const calls = []
+  const record = { id: 'r', workoutId: null, startedAt: null, createdAt: '2026-01-01T00:00:00Z', exercises: [{ exerciseId: 'pull-id', name: 'Pull Up', repetitions: [5], weightsKg: [12], durationSeconds: null }] }
+  await run([history, query('latest', 'Pull-ups', 30)], async call => {
+    calls.push(call)
+    return { kind: 'success', data: { items: [record], nextCursor: null, coverage } }
+  }, message)
+  expect(calls.length).toBeGreaterThan(0)
+  expect(Date.parse(calls[0].arguments.interval.end) - Date.parse(calls[0].arguments.interval.start)).toBe(30 * 86400000)
+  expect(message).toMatch(/Pull-ups.*past 30 days/)
+})

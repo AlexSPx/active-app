@@ -166,6 +166,7 @@ const metric = z.strictObject({
         weightKg: z.number().nonnegative(),
         repetitions: z.number().int().positive(),
         exerciseId: id.nullable().optional(),
+        exerciseName: text.optional(),
         recordId: id.optional(),
       })
     ),

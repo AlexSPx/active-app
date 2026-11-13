@@ -21,6 +21,7 @@ import { createCoachTools } from '../tools/createCoachTools'
 import { coachResponseSchema, type CoachResponse } from '../contracts'
 import {
   CoachConversationRepository,
+  formatCoachMetric,
   type ConversationItem,
   type ConversationSummary,
 } from '../conversations'
@@ -298,6 +299,7 @@ export function useCoachController() {
         const result = await track(
           runConstrainedCoachTurn({
             message: requestMessage,
+            priorUserMessages: items.flatMap(item => item.kind === 'user' ? [item.text] : []),
             session: session.session,
             signal: controller.signal,
             isCurrentProfile: () => isCurrentProfile(scope.current),
@@ -327,6 +329,10 @@ export function useCoachController() {
         clearTimeout(timeout)
         if (id !== epoch.current || !isCurrentProfile(scope.current)) return
         if (result.kind === 'response' && !controller.signal.aborted) {
+          for (const metric of result.metrics ?? []) {
+            const formatted = formatCoachMetric(metric)
+            if (formatted) details.current.metrics.set(formatted.id, formatted.text)
+          }
           for (const exercise of (result.response.kind === 'workout_draft'
             ? [result.response.workout]
             : result.response.kind === 'routine_draft'

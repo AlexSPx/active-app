@@ -1,5 +1,6 @@
 import {
   initLlama,
+  releaseAllLlama,
   type LlamaContext,
   type RNLlamaOAICompatibleMessage,
   type ToolCall,
@@ -14,6 +15,25 @@ import type {
   CoachRuntime,
   CoachRuntimeSession,
 } from './types'
+
+// Platform safety bounds, not measurements of device performance.
+const NATIVE_DEADLINE_MS = 120_000
+const STALL_MESSAGE = 'Local coach timed out. Restart the app before using it again.'
+let contextReleaseFailed = false
+
+function bounded<T>(operation: Promise<T>, onTimeout: () => void): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      contextReleaseFailed = true
+      onTimeout()
+      reject(new Error(STALL_MESSAGE))
+    }, NATIVE_DEADLINE_MS)
+    Promise.resolve(operation).then(
+      (value) => { clearTimeout(timer); resolve(value) },
+      (error) => { clearTimeout(timer); reject(error) }
+    )
+  })
+}
 
 type ChatMessage = RNLlamaOAICompatibleMessage & {
   tool_calls?: ToolCall[]
@@ -45,7 +65,7 @@ export function createLlamaSession(
     if (!pending) return
     stopping = true
     stopRequest ??= context.stopCompletion()
-    await stopRequest
+    await bounded(stopRequest, () => { disposed = true })
   }
 
   return {
@@ -74,6 +94,7 @@ export function createLlamaSession(
         }
       if (request.signal.aborted) return cancelled()
       stopping = false
+      let timedOut = false
       stopRequest = undefined
       const onAbort = () => {
         void cancel().catch(() => {})
@@ -229,25 +250,27 @@ export function createLlamaSession(
             : { kind: 'failure', code: 'runtime_error', message: 'Local inference failed.' }
         } finally {
           request.signal.removeEventListener('abort', onAbort)
-          try { request.onMeasurement?.(measurement) } catch {}
+          if (!timedOut) try { request.onMeasurement?.(measurement) } catch {}
         }
       }
-      pending = run()
+      const running = run()
+      pending = running
+      void running.then(() => { if (pending === running) pending = undefined })
       try {
-        return await pending
-      } finally {
-        pending = undefined
+        return await bounded(running, () => { timedOut = true; stopping = true; disposed = true })
+      } catch {
+        return { kind: 'failure', code: 'runtime_error', message: STALL_MESSAGE }
       }
     },
     cancel,
     dispose() {
       if (disposal) return disposal
       disposed = true
-      disposal = (async () => {
+      const cleanup = (async () => {
         if (pending) {
-          try {
-            await cancel()
-          } catch {}
+          stopping = true
+          stopRequest ??= context.stopCompletion()
+          try { await stopRequest } catch {}
           await pending
         } else if (stopRequest) {
           try { await stopRequest } catch {}
@@ -256,6 +279,7 @@ export function createLlamaSession(
         messages.length = 0
         pendingCalls.clear()
       })()
+      disposal = bounded(cleanup, () => { stopping = true })
       return disposal
     },
   }
@@ -263,13 +287,18 @@ export function createLlamaSession(
 
 let contextAvailable: Promise<void> = Promise.resolve()
 let contextClaims = 0
-
 export function tryClaimDiagnosticContext(): (() => void) | undefined {
-  if (contextClaims) return undefined
+  if (contextClaims || contextReleaseFailed) return undefined
   contextClaims++
   let unlock = () => {}
   contextAvailable = new Promise<void>((resolve) => { unlock = resolve })
-  return () => { contextClaims--; unlock() }
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    contextClaims--
+    unlock()
+  }
 }
 
 export const llamaCoachRuntime: CoachRuntime = {
@@ -291,23 +320,51 @@ export const llamaCoachRuntime: CoachRuntime = {
     contextAvailable = new Promise<void>((resolve) => {
       unlock = () => { contextClaims--; resolve() }
     })
-    await previous
+    let timedOut = false
+    const operation = (async () => {
+      await previous
+      if (contextReleaseFailed || timedOut) {
+        unlock()
+        return { kind: 'failure' as const, code: 'runtime_error' as const, message: STALL_MESSAGE }
+      }
+      try {
+        const context = await initLlama({ model: artifact.path, n_ctx: 4096, n_gpu_layers: 0 })
+        if (timedOut) {
+          try { await context.release() } catch { contextReleaseFailed = true }
+          unlock()
+          return { kind: 'failure' as const, code: 'runtime_error' as const, message: STALL_MESSAGE }
+        }
+        const session = createLlamaSession(context, artifact.sha256)
+        const dispose = session.dispose
+        let disposal: Promise<void> | undefined
+        session.dispose = () => {
+          disposal ??= dispose().catch((error) => {
+            contextReleaseFailed = true
+            throw error
+          }).finally(unlock)
+          return disposal
+        }
+        return { kind: 'ready' as const, session }
+      } catch {
+        try {
+          // All llama contexts must use this shared claim before global cleanup is safe.
+          await releaseAllLlama()
+        } catch {
+          contextReleaseFailed = true
+        } finally {
+          unlock()
+        }
+        return {
+          kind: 'failure' as const,
+          code: 'runtime_error' as const,
+          message: contextReleaseFailed ? STALL_MESSAGE : 'Could not load the model on this device.',
+        }
+      }
+    })()
     try {
-      const context = await initLlama({ model: artifact.path, n_ctx: 4096, n_gpu_layers: 0 })
-      const session = createLlamaSession(context, artifact.sha256)
-      const dispose = session.dispose
-      let disposal: Promise<void> | undefined
-      session.dispose = () => {
-        disposal ??= dispose().then(unlock)
-        return disposal
-      }
-      return { kind: 'ready', session }
+      return await bounded(operation, () => { timedOut = true })
     } catch {
-      return {
-        kind: 'failure',
-        code: 'runtime_error',
-        message: 'Could not load the model on this device.',
-      }
+      return { kind: 'failure', code: 'runtime_error', message: STALL_MESSAGE }
     }
   },
 }

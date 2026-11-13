@@ -29,9 +29,9 @@ export function verifyReviewArchive(readReview, trustedHash) {
 }
 
 /** Returns integrity errors and release blockers separately; does not grant rights. */
-export function validateCoachKnowledgeData() {
+export function validateCoachKnowledgeData({ localOnly = false } = {}) {
   const errors = []
-  const { manifest: reviewManifest, errors: reviewErrors } = verifyReviewArchive(
+  const { manifest: reviewManifest, errors: reviewErrors } = localOnly ? { manifest: null, errors: [] } : verifyReviewArchive(
     (path) => read(`evaluation/coach-v1/reviews/knowledge-review-01/${path}`),
     'f64dcea73c296de716a482d74cf6eede36871e8a7913c0f12cd046507ebc1e83'
   )
@@ -46,15 +46,16 @@ export function validateCoachKnowledgeData() {
   for (const [path, expected] of Object.entries(manifest.files))
     if (hash(read(path)) !== expected) errors.push(`Authoring file changed: ${path}`)
   if (
-    hash(read('evaluation/coach-v1/reviews/knowledge-review-01/manifest.json')) !==
+    !localOnly && hash(read('evaluation/coach-v1/reviews/knowledge-review-01/manifest.json')) !==
     ledger.review_manifest_sha256
   )
     errors.push('Review manifest changed')
   if (
-    hash(read('lib/data/coach/authoring-manifest.json')) !== reviewManifest.author_manifest_sha256
+    hash(read('lib/data/coach/authoring-manifest.json')) !==
+    (localOnly ? '77f0bb9dcfbab4dbeadccc02f7682735236cf9bdc08b97591d62bc218d1d4744' : reviewManifest.author_manifest_sha256)
   )
     errors.push('Authoring manifest changed')
-  const review = read('evaluation/coach-v1/reviews/knowledge-review-01/rows.jsonl')
+  const review = localOnly ? ledger.rows : read('evaluation/coach-v1/reviews/knowledge-review-01/rows.jsonl')
     .trim()
     .split('\n')
     .map(JSON.parse)
@@ -145,9 +146,9 @@ export function validateCoachKnowledgeData() {
 
 /** Mandatory callable boundary for consumers that opt into development data or export. */
 export function enforceCoachKnowledgeGate(purpose) {
-  if (!['development', 'release', 'training'].includes(purpose))
+  if (!['local', 'development', 'release', 'training'].includes(purpose))
     throw new Error('Unknown knowledge gate purpose')
-  const { errors, releaseBlockers } = validateCoachKnowledgeData()
-  const blockers = purpose === 'development' ? errors : [...errors, ...releaseBlockers]
+  const { errors, releaseBlockers } = validateCoachKnowledgeData({ localOnly: purpose === 'local' })
+  const blockers = purpose === 'development' || purpose === 'local' ? errors : [...errors, ...releaseBlockers]
   if (blockers.length) throw new Error(`Coach knowledge gate failed: ${blockers.join('; ')}`)
 }

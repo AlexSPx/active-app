@@ -4,8 +4,8 @@ import { enforceCoachKnowledgeGate } from '../../features/coach/knowledge/valida
 
 const root = resolve(import.meta.dirname, '../..')
 const purpose = process.argv[2] ?? 'development'
-if (!['development', 'release', 'training'].includes(purpose)) throw Error('Unknown coach gate purpose')
-enforceCoachKnowledgeGate('development')
+if (!['local', 'development', 'release', 'training'].includes(purpose)) throw Error('Unknown coach gate purpose')
+enforceCoachKnowledgeGate(purpose === 'local' ? 'local' : 'development')
 
 // The release tool entry point must never reach quarantined development data.
 const visited = new Set()

@@ -149,3 +149,65 @@ test('saves generated explicit rest and rejects changing it before any write', a
     db.sql.close()
   }
 })
+
+test('review saver rejects an edited workout outside the worded count before any persistence', async () => {
+  const { planWorkout, defaultSelection, renderWorkout } = require('../../features/coach/workoutPlanner')
+  const { createReviewSaver } = require('../../features/coach/reviewSave')
+  const request = 'Create at least three exercises and at most four exercises, full gym.'
+  const result = planWorkout(request)
+  expect(result.kind).toBe('plan')
+  const response = renderWorkout(result.plan, defaultSelection(result.plan))
+  response.workout.exercises.splice(2)
+  const db = createDb()
+  const save = createReviewSaver(db, getProfileScope(), () => true)
+  await expect(save(response, 'count-review', request)).rejects.toThrow(/requested exercise count/)
+  expect(db.sql.prepare('SELECT count(*) AS n FROM coach_draft_saves').get().n).toBe(0)
+  expect(db.sql.prepare('SELECT count(*) AS n FROM workouts').get().n).toBe(0)
+  db.sql.close()
+})
+
+test.each([
+  'Create a full gym workout: Pushups and imaginary moon hopper.',
+  'Create exactly 3 chest exercises and exactly 5 exercises, full gym.',
+])('ambiguous request cannot persist a draft: %s', async request => {
+  const { planWorkout, defaultSelection, renderWorkout } = require('../../features/coach/workoutPlanner')
+  const { createReviewSaver } = require('../../features/coach/reviewSave')
+  const valid = planWorkout('Create a workout with full gym.')
+  const db = createDb()
+  await expect(createReviewSaver(db, getProfileScope(), () => true)(renderWorkout(valid.plan, defaultSelection(valid.plan)), 'ambiguous', request)).rejects.toThrow()
+  expect(db.sql.prepare('SELECT count(*) AS n FROM coach_draft_saves').get().n).toBe(0)
+  expect(db.sql.prepare('SELECT count(*) AS n FROM workouts').get().n).toBe(0)
+  db.sql.close()
+})
+
+test.each([
+  ['Create a full gym workout: Pushups and imaginary moon hopper.', 'Replace imaginary moon hopper with Dumbbell Bench Press', ['Pushups', 'Dumbbell Bench Press']],
+  ['Create exactly 3 chest exercises and exactly 5 exercises, full gym.', 'Make it exactly 3 chest exercises', null],
+  ['Create a full gym workout: Pushups and imaginary moon hopper.', 'Swap imaginary moon hopper for Dumbbell Bench Press', ['Pushups', 'Dumbbell Bench Press']],
+  ['Create exactly 3 chest exercises and exactly 5 exercises, full gym.', 'Create exactly 3 chest exercises, full gym.', null],
+])('clarification correction survives review and SQLite save', async (initial, correction, names) => {
+  const { applyWorkoutFollowUp, runConstrainedCoachTurn } = require('../../features/coach/constrainedTurn')
+  const { createReviewSaver } = require('../../features/coach/reviewSave')
+  const db = createDb()
+  const prior = []
+  async function turn(message) {
+    const request = applyWorkoutFollowUp(message, prior)
+    let calls = 0
+    const result = await runConstrainedCoachTurn({ message: request, session: { appendUserMessage: async () => {}, generate: async () => { if (!calls++) return { kind: 'final', content: { intent: 'create_workout' } }; throw Error('template') } }, execute: async () => { throw Error('unexpected read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 500 })
+    prior.push({ kind: 'user', text: message }, { kind: 'response', response: result.response, request })
+    return { request, response: result.response }
+  }
+  try {
+    expect((await turn(initial)).response.kind).toBe('clarification')
+    expect(db.sql.prepare('SELECT count(*) AS n FROM workouts').get().n).toBe(0)
+    const { request, response } = await turn(correction)
+    expect(response.kind).toBe('workout_draft')
+    const edited = structuredClone(response)
+    edited.workout.title = 'Reviewed workout'
+    for (const exercise of edited.workout.exercises) for (const set of exercise.sets) if (set.kind === 'strength') set.load = { kind: 'kilograms', value: 10 }
+    const saved = await createReviewSaver(db, getProfileScope(), () => true)(edited, 'corrected', request)
+    const template = JSON.parse(db.sql.prepare('SELECT workout_template FROM workouts WHERE id = ?').get(saved.workoutIds[0]).workout_template)
+    if (names) expect(template.exercises.map(e => e.exerciseId)).toEqual(expect.arrayContaining(exerciseCatalog.filter(e => names.includes(e.name)).map(e => e.id)))
+    else expect(template.exercises).toHaveLength(3)
+  } finally { db.sql.close() }
+})

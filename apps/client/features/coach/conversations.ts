@@ -2,6 +2,15 @@ import { z } from 'zod'
 import type { SQLiteDatabase } from 'expo-sqlite'
 import { coachResponseSchema } from './contracts'
 import { syncEngine } from '../../lib/sync'
+import { coachToolResults } from './tools/contracts'
+
+export function formatCoachMetric(value: unknown): { id: string; text: string } | null {
+  const parsed = coachToolResults.readTrainingSummary.options[0].shape.data.shape.metrics.element.safeParse(value)
+  if (!parsed.success) return null
+  const metric = parsed.data
+  if (Array.isArray(metric.value)) return { id: metric.id, text: `${metric.value.map(set => `${set.exerciseName ?? 'Exercise'}: ${set.weightKg} kg, ${set.repetitions} reps`).join('; ')}${metric.missingDataCount ? ` (${metric.missingDataCount} missing or invalid)` : ''}.${metric.definition ? ` ${metric.definition}` : ''}` }
+  return { id: metric.id, text: `${metric.kind.replaceAll('_', ' ')}: ${typeof metric.value === 'number' ? metric.value : JSON.stringify(metric.value)}${metric.missingDataCount ? ` (${metric.missingDataCount} missing)` : ''}.${metric.definition ? ` ${metric.definition}` : ''} Records: ${metric.evidenceIds.join(', ') || 'none'}.` }
+}
 
 const detailsSchema = z.object({
   metrics: z.array(z.tuple([z.string(), z.string()])),
