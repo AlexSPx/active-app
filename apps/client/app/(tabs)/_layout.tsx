@@ -15,9 +15,21 @@ const CONTENT_GAP = 16
 const RUNNING_STRIP_ESTIMATED_HEIGHT = 48
 
 function TabBarButton(props: BottomTabBarButtonProps) {
+  const [pressed, setPressed] = useState(false)
+
   return (
     <PlatformPressable
       {...props}
+      pressColor="transparent"
+      pressOpacity={1}
+      onPressIn={(event) => {
+        setPressed(true)
+        props.onPressIn?.(event)
+      }}
+      onPressOut={(event) => {
+        setPressed(false)
+        props.onPressOut?.(event)
+      }}
       style={[
         props.style,
         {
@@ -26,7 +38,25 @@ function TabBarButton(props: BottomTabBarButtonProps) {
           borderRadius: 28,
         },
       ]}
-    />
+    >
+      {pressed && (
+        <View
+          pointerEvents="none"
+          accessible={false}
+          className="bg-featured"
+          style={{
+            position: 'absolute',
+            top: 4,
+            bottom: 4,
+            left: -4,
+            right: -4,
+            borderRadius: 9999,
+            opacity: 0.5,
+          }}
+        />
+      )}
+      {props.children}
+    </PlatformPressable>
   )
 }
 
