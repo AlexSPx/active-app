@@ -1,0 +1,4713 @@
+[
+  {
+    "ecosystem": "JavaScript",
+    "name": "2g",
+    "version": "1.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/2g/v/1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/code-frame",
+    "version": "7.29.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/code-frame/v/7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/code-frame",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/code-frame/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/compat-data",
+    "version": "7.29.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/compat-data/v/7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/compat-data",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/compat-data/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/core",
+    "version": "7.29.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/core/v/7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/generator",
+    "version": "7.29.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/generator/v/7.29.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/generator",
+    "version": "7.29.8",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/generator/v/7.29.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-annotate-as-pure",
+    "version": "7.27.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-annotate-as-pure/v/7.27.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-annotate-as-pure",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-annotate-as-pure/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-compilation-targets",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-compilation-targets/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-compilation-targets",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-compilation-targets/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-create-class-features-plugin",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-create-class-features-plugin/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-create-class-features-plugin",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-create-class-features-plugin/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-create-regexp-features-plugin",
+    "version": "7.28.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-create-regexp-features-plugin/v/7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-create-regexp-features-plugin",
+    "version": "7.29.10",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-create-regexp-features-plugin/v/7.29.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-define-polyfill-provider",
+    "version": "0.6.8",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-define-polyfill-provider/v/0.6.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-globals",
+    "version": "7.28.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-globals/v/7.28.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-globals",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-globals/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-member-expression-to-functions",
+    "version": "7.28.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-member-expression-to-functions/v/7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-member-expression-to-functions",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-member-expression-to-functions/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-module-imports",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-module-imports/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-module-imports",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-module-imports/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-module-transforms",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-module-transforms/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-module-transforms",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-module-transforms/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-optimise-call-expression",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-optimise-call-expression/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-optimise-call-expression",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-optimise-call-expression/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-plugin-utils",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-plugin-utils/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-plugin-utils",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-plugin-utils/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-remap-async-to-generator",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-remap-async-to-generator/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-replace-supers",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-replace-supers/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-replace-supers",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-replace-supers/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-skip-transparent-expression-wrappers",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-skip-transparent-expression-wrappers/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-skip-transparent-expression-wrappers",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-skip-transparent-expression-wrappers/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-string-parser",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-string-parser/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-string-parser",
+    "version": "7.29.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-string-parser/v/7.29.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-validator-identifier",
+    "version": "7.28.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-validator-identifier/v/7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-validator-identifier",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-validator-identifier/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-validator-option",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-validator-option/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-validator-option",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-validator-option/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-wrap-function",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helper-wrap-function/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helpers",
+    "version": "7.29.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/helpers/v/7.29.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/parser",
+    "version": "7.29.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/parser/v/7.29.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/parser",
+    "version": "7.29.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/parser/v/7.29.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-proposal-decorators",
+    "version": "7.29.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-proposal-decorators/v/7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-proposal-export-default-from",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-proposal-export-default-from/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-decorators",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-decorators/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-dynamic-import",
+    "version": "7.8.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-dynamic-import/v/7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-export-default-from",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-export-default-from/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-flow",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-flow/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-jsx",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-jsx/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-jsx",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-jsx/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-nullish-coalescing-operator",
+    "version": "7.8.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-nullish-coalescing-operator/v/7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-optional-chaining",
+    "version": "7.8.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-optional-chaining/v/7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-typescript",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-typescript/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-typescript",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-syntax-typescript/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-arrow-functions",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-arrow-functions/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-async-generator-functions",
+    "version": "7.29.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-async-generator-functions/v/7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-async-to-generator",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-async-to-generator/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-block-scoping",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-block-scoping/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-class-properties",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-class-properties/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-class-properties",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-class-properties/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-class-static-block",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-class-static-block/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-classes",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-classes/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-classes",
+    "version": "7.29.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-classes/v/7.29.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-destructuring",
+    "version": "7.28.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-destructuring/v/7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-export-namespace-from",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-export-namespace-from/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-flow-strip-types",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-flow-strip-types/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-for-of",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-for-of/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-logical-assignment-operators",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-logical-assignment-operators/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-modules-commonjs",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-modules-commonjs/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-modules-commonjs",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-modules-commonjs/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-named-capturing-groups-regex",
+    "version": "7.29.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-named-capturing-groups-regex/v/7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-nullish-coalescing-operator",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-nullish-coalescing-operator/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-nullish-coalescing-operator",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-nullish-coalescing-operator/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-object-rest-spread",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-object-rest-spread/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-optional-catch-binding",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-optional-catch-binding/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-optional-chaining",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-optional-chaining/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-optional-chaining",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-optional-chaining/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-parameters",
+    "version": "7.27.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-parameters/v/7.27.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-private-methods",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-private-methods/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-private-property-in-object",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-private-property-in-object/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-display-name",
+    "version": "7.28.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-react-display-name/v/7.28.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-jsx",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-react-jsx/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-jsx",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-react-jsx/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-jsx-development",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-react-jsx-development/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-pure-annotations",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-react-pure-annotations/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-runtime",
+    "version": "7.29.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-runtime/v/7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-shorthand-properties",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-shorthand-properties/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-template-literals",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-template-literals/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-typescript",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-typescript/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-typescript",
+    "version": "7.29.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-typescript/v/7.29.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-unicode-regex",
+    "version": "7.27.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-unicode-regex/v/7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-unicode-regex",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/plugin-transform-unicode-regex/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/preset-typescript",
+    "version": "7.28.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/preset-typescript/v/7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/preset-typescript",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/preset-typescript/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/runtime",
+    "version": "7.29.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/runtime/v/7.29.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/template",
+    "version": "7.28.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/template/v/7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/template",
+    "version": "7.29.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/template/v/7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/traverse",
+    "version": "7.29.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/traverse/v/7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/traverse",
+    "version": "7.29.10",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/traverse/v/7.29.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/types",
+    "version": "7.29.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/types/v/7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/types",
+    "version": "7.29.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@babel/types/v/7.29.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@emnapi/core",
+    "version": "1.11.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@emnapi/core/v/1.11.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@emnapi/runtime",
+    "version": "1.11.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@emnapi/runtime/v/1.11.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@emnapi/wasi-threads",
+    "version": "1.2.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@emnapi/wasi-threads/v/1.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/cli",
+    "version": "58.1.15",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/cli/v/58.1.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/code-signing-certificates",
+    "version": "0.0.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/code-signing-certificates/v/0.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/config",
+    "version": "58.0.8",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/config/v/58.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/config-plugins",
+    "version": "58.0.10",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/config-plugins/v/58.0.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/config-types",
+    "version": "58.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/config-types/v/58.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/devcert",
+    "version": "1.2.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/devcert/v/1.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/devtools",
+    "version": "58.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/devtools/v/58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/dom-webview",
+    "version": "58.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/dom-webview/v/58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/env",
+    "version": "2.5.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/env/v/2.5.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/fingerprint",
+    "version": "0.21.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/fingerprint/v/0.21.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/image-utils",
+    "version": "0.12.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/image-utils/v/0.12.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/inline-modules",
+    "version": "0.2.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/inline-modules/v/0.2.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/json-file",
+    "version": "11.2.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/json-file/v/11.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/local-build-cache-provider",
+    "version": "58.0.8",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/local-build-cache-provider/v/58.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/log-box",
+    "version": "58.0.13",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/log-box/v/58.0.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/log-box-utils",
+    "version": "58.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/log-box-utils/v/58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/metro",
+    "version": "58.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/metro/v/58.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/metro-config",
+    "version": "58.0.17",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/metro-config/v/58.0.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/metro-file-map",
+    "version": "58.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/metro-file-map/v/58.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/metro-runtime",
+    "version": "58.0.15",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/metro-runtime/v/58.0.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/modules-macros-linux-arm64",
+    "version": "0.22.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/modules-macros-linux-arm64/v/0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/modules-macros-linux-x64",
+    "version": "0.22.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/modules-macros-linux-x64/v/0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/modules-macros-win32-arm64",
+    "version": "0.22.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/modules-macros-win32-arm64/v/0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/modules-macros-win32-x64",
+    "version": "0.22.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/modules-macros-win32-x64/v/0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/osascript",
+    "version": "2.8.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/osascript/v/2.8.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/package-manager",
+    "version": "1.14.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/package-manager/v/1.14.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/platforms",
+    "version": "58.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/platforms/v/58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/plist",
+    "version": "0.10.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/plist/v/0.10.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/prebuild-config",
+    "version": "58.0.16",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/prebuild-config/v/58.0.16"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/require-utils",
+    "version": "58.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/require-utils/v/58.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/router-server",
+    "version": "58.0.17",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/router-server/v/58.0.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/schema-utils",
+    "version": "58.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/schema-utils/v/58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/sdk-runtime-versions",
+    "version": "1.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/sdk-runtime-versions/v/1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/spawn-async",
+    "version": "1.8.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/spawn-async/v/1.8.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/sudo-prompt",
+    "version": "9.3.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/sudo-prompt/v/9.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/ui",
+    "version": "58.0.23",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/ui/v/58.0.23"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/ws-tunnel",
+    "version": "2.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/ws-tunnel/v/2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/xcpretty",
+    "version": "4.4.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/xcpretty/v/4.4.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@hookform/resolvers",
+    "version": "5.2.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@hookform/resolvers/v/5.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@isaacs/ttlcache",
+    "version": "1.4.1",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/@isaacs/ttlcache/v/1.4.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/schemas",
+    "version": "29.6.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@jest/schemas/v/29.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/types",
+    "version": "29.6.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@jest/types/v/29.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/gen-mapping",
+    "version": "0.3.13",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@jridgewell/gen-mapping/v/0.3.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/remapping",
+    "version": "2.3.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@jridgewell/remapping/v/2.3.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/resolve-uri",
+    "version": "3.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@jridgewell/resolve-uri/v/3.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/source-map",
+    "version": "0.3.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@jridgewell/source-map/v/0.3.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/sourcemap-codec",
+    "version": "1.5.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@jridgewell/sourcemap-codec/v/1.5.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/sourcemap-codec",
+    "version": "1.6.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@jridgewell/sourcemap-codec/v/1.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/trace-mapping",
+    "version": "0.3.31",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@jridgewell/trace-mapping/v/0.3.31"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@napi-rs/wasm-runtime",
+    "version": "1.2.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@napi-rs/wasm-runtime/v/1.2.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-darwin-arm64",
+    "version": "0.1.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@noxcturnal/noxcturnal-darwin-arm64/v/0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-darwin-x64",
+    "version": "0.1.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@noxcturnal/noxcturnal-darwin-x64/v/0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-linux-arm64-gnu",
+    "version": "0.1.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@noxcturnal/noxcturnal-linux-arm64-gnu/v/0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-linux-arm64-musl",
+    "version": "0.1.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@noxcturnal/noxcturnal-linux-arm64-musl/v/0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-linux-x64-gnu",
+    "version": "0.1.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@noxcturnal/noxcturnal-linux-x64-gnu/v/0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-linux-x64-musl",
+    "version": "0.1.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@noxcturnal/noxcturnal-linux-x64-musl/v/0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-win32-arm64-msvc",
+    "version": "0.1.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@noxcturnal/noxcturnal-win32-arm64-msvc/v/0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-win32-x64-msvc",
+    "version": "0.1.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@noxcturnal/noxcturnal-win32-x64-msvc/v/0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@oxc-project/types",
+    "version": "0.154.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@oxc-project/types/v/0.154.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/primitive",
+    "version": "1.1.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/primitive/v/1.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-collection",
+    "version": "1.1.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-collection/v/1.1.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-compose-refs",
+    "version": "1.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-compose-refs/v/1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-context",
+    "version": "1.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-context/v/1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-direction",
+    "version": "1.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-direction/v/1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-id",
+    "version": "1.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-id/v/1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-presence",
+    "version": "1.1.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-presence/v/1.1.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-primitive",
+    "version": "2.1.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-primitive/v/2.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-roving-focus",
+    "version": "1.1.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-roving-focus/v/1.1.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-slot",
+    "version": "1.2.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-slot/v/1.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-slot",
+    "version": "1.2.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-slot/v/1.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-tabs",
+    "version": "1.1.13",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-tabs/v/1.1.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-use-callback-ref",
+    "version": "1.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-use-callback-ref/v/1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-use-controllable-state",
+    "version": "1.2.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-use-controllable-state/v/1.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-use-effect-event",
+    "version": "0.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-use-effect-event/v/0.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-use-layout-effect",
+    "version": "1.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@radix-ui/react-use-layout-effect/v/1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-buoy/core",
+    "version": "0.1.34",
+    "license": null,
+    "url": "https://www.npmjs.com/package/@react-buoy/core/v/0.1.34"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-buoy/network",
+    "version": "0.1.34",
+    "license": null,
+    "url": "https://www.npmjs.com/package/@react-buoy/network/v/0.1.34"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-buoy/react-query",
+    "version": "0.1.34",
+    "license": null,
+    "url": "https://www.npmjs.com/package/@react-buoy/react-query/v/0.1.34"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-buoy/shared-ui",
+    "version": "0.1.34",
+    "license": null,
+    "url": "https://www.npmjs.com/package/@react-buoy/shared-ui/v/0.1.34"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-async-storage/async-storage",
+    "version": "2.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native-async-storage/async-storage/v/2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-community/datetimepicker",
+    "version": "9.2.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native-community/datetimepicker/v/9.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-google-signin/google-signin",
+    "version": "16.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native-google-signin/google-signin/v/16.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-masked-view/masked-view",
+    "version": "0.3.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native-masked-view/masked-view/v/0.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-picker/picker",
+    "version": "2.11.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native-picker/picker/v/2.11.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/asset-utils",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/asset-utils/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/babel-plugin-codegen",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/babel-plugin-codegen/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/codegen",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/codegen/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/community-cli-plugin",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/community-cli-plugin/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/debugger-frontend",
+    "version": "0.88.0",
+    "license": "BSD-3-Clause",
+    "url": "https://www.npmjs.com/package/@react-native/debugger-frontend/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/debugger-shell",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/debugger-shell/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/dev-middleware",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/dev-middleware/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/gradle-plugin",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/gradle-plugin/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/js-polyfills",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/js-polyfills/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/normalize-colors",
+    "version": "0.74.89",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/normalize-colors/v/0.74.89"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/normalize-colors",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/normalize-colors/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/virtualized-lists",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@react-native/virtualized-lists/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@shopify/flash-list",
+    "version": "2.3.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@shopify/flash-list/v/2.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@sinclair/typebox",
+    "version": "0.27.10",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@sinclair/typebox/v/0.27.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@standard-schema/utils",
+    "version": "0.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@standard-schema/utils/v/0.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/node",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/node/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-android-arm64",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-android-arm64/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-darwin-arm64",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-darwin-arm64/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-darwin-x64",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-darwin-x64/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-freebsd-x64",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-freebsd-x64/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-arm-gnueabihf",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-linux-arm-gnueabihf/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-arm64-gnu",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-linux-arm64-gnu/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-arm64-musl",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-linux-arm64-musl/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-x64-gnu",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-linux-x64-gnu/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-x64-musl",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-linux-x64-musl/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-wasm32-wasi",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-wasm32-wasi/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-win32-arm64-msvc",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-win32-arm64-msvc/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-win32-x64-msvc",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tailwindcss/oxide-win32-x64-msvc/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tanstack/query-core",
+    "version": "5.100.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tanstack/query-core/v/5.100.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tanstack/react-query",
+    "version": "5.100.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tanstack/react-query/v/5.100.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tybys/wasm-util",
+    "version": "0.10.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@tybys/wasm-util/v/0.10.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/istanbul-lib-coverage",
+    "version": "2.0.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@types/istanbul-lib-coverage/v/2.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/istanbul-lib-report",
+    "version": "3.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@types/istanbul-lib-report/v/3.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/istanbul-reports",
+    "version": "3.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@types/istanbul-reports/v/3.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/node",
+    "version": "25.6.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@types/node/v/25.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/react",
+    "version": "19.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@types/react/v/19.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/react-test-renderer",
+    "version": "19.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@types/react-test-renderer/v/19.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/yargs",
+    "version": "17.0.35",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@types/yargs/v/17.0.35"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/yargs-parser",
+    "version": "21.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@types/yargs-parser/v/21.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@ungap/structured-clone",
+    "version": "1.3.0",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/@ungap/structured-clone/v/1.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@vvo/tzdb",
+    "version": "6.198.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@vvo/tzdb/v/6.198.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@xmldom/xmldom",
+    "version": "0.8.13",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@xmldom/xmldom/v/0.8.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "abort-controller",
+    "version": "3.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/abort-controller/v/3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "accepts",
+    "version": "1.3.8",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/accepts/v/1.3.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "accepts",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/accepts/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "acorn",
+    "version": "8.16.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/acorn/v/8.16.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "agent-base",
+    "version": "7.1.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/agent-base/v/7.1.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "agent-cli-detector",
+    "version": "0.1.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/agent-cli-detector/v/0.1.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "anser",
+    "version": "1.4.10",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/anser/v/1.4.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-escapes",
+    "version": "4.3.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ansi-escapes/v/4.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-regex",
+    "version": "4.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ansi-regex/v/4.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-regex",
+    "version": "5.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ansi-regex/v/5.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-styles",
+    "version": "3.2.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ansi-styles/v/3.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-styles",
+    "version": "4.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ansi-styles/v/4.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-styles",
+    "version": "5.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ansi-styles/v/5.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "arg",
+    "version": "4.1.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/arg/v/4.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "arg",
+    "version": "5.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/arg/v/5.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "argparse",
+    "version": "2.0.1",
+    "license": "Python-2.0",
+    "url": "https://www.npmjs.com/package/argparse/v/2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "asap",
+    "version": "2.0.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/asap/v/2.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "await-lock",
+    "version": "2.2.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/await-lock/v/2.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-polyfill-corejs2",
+    "version": "0.4.17",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/babel-plugin-polyfill-corejs2/v/0.4.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-polyfill-corejs3",
+    "version": "0.13.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/babel-plugin-polyfill-corejs3/v/0.13.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-polyfill-regenerator",
+    "version": "0.6.8",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/babel-plugin-polyfill-regenerator/v/0.6.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-react-compiler",
+    "version": "1.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/babel-plugin-react-compiler/v/1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-react-native-web",
+    "version": "0.21.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/babel-plugin-react-native-web/v/0.21.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-syntax-hermes-parser",
+    "version": "0.36.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/babel-plugin-syntax-hermes-parser/v/0.36.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-transform-flow-enums",
+    "version": "0.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/babel-plugin-transform-flow-enums/v/0.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-preset-expo",
+    "version": "58.0.20",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/babel-preset-expo/v/58.0.20"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "badgin",
+    "version": "1.2.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/badgin/v/1.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "balanced-match",
+    "version": "4.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/balanced-match/v/4.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "base64-js",
+    "version": "1.5.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/base64-js/v/1.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "baseline-browser-mapping",
+    "version": "2.10.21",
+    "license": "Apache-2.0",
+    "url": "https://www.npmjs.com/package/baseline-browser-mapping/v/2.10.21"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "big-integer",
+    "version": "1.6.52",
+    "license": "Unlicense",
+    "url": "https://www.npmjs.com/package/big-integer/v/1.6.52"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "boolbase",
+    "version": "1.0.0",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/boolbase/v/1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bplist-creator",
+    "version": "0.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/bplist-creator/v/0.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bplist-parser",
+    "version": "0.3.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/bplist-parser/v/0.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bplist-parser",
+    "version": "0.3.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/bplist-parser/v/0.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "brace-expansion",
+    "version": "5.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/brace-expansion/v/5.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "braces",
+    "version": "3.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/braces/v/3.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "browserslist",
+    "version": "4.28.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/browserslist/v/4.28.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bser",
+    "version": "2.1.1",
+    "license": "Apache-2.0",
+    "url": "https://www.npmjs.com/package/bser/v/2.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bser",
+    "version": "2.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/bser/v/2.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "buffer-from",
+    "version": "1.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/buffer-from/v/1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "burnt",
+    "version": "0.12.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/burnt/v/0.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bytes",
+    "version": "3.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/bytes/v/3.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "camelcase",
+    "version": "6.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/camelcase/v/6.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "caniuse-lite",
+    "version": "1.0.30001790",
+    "license": "CC-BY-4.0",
+    "url": "https://www.npmjs.com/package/caniuse-lite/v/1.0.30001790"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "chalk",
+    "version": "2.4.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/chalk/v/2.4.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "chalk",
+    "version": "4.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/chalk/v/4.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ci-info",
+    "version": "3.9.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ci-info/v/3.9.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cli-cursor",
+    "version": "2.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/cli-cursor/v/2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cli-spinners",
+    "version": "2.9.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/cli-spinners/v/2.9.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "client-only",
+    "version": "0.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/client-only/v/0.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cliui",
+    "version": "8.0.1",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/cliui/v/8.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "clone",
+    "version": "1.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/clone/v/1.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color",
+    "version": "4.2.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/color/v/4.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-convert",
+    "version": "1.9.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/color-convert/v/1.9.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-convert",
+    "version": "2.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/color-convert/v/2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-name",
+    "version": "1.1.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/color-name/v/1.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-name",
+    "version": "1.1.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/color-name/v/1.1.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-string",
+    "version": "1.9.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/color-string/v/1.9.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "commander",
+    "version": "12.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/commander/v/12.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "commander",
+    "version": "2.20.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/commander/v/2.20.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "commander",
+    "version": "7.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/commander/v/7.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "compressible",
+    "version": "2.0.18",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/compressible/v/2.0.18"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "compression",
+    "version": "1.8.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/compression/v/1.8.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "connect",
+    "version": "3.7.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/connect/v/3.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "convert-source-map",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/convert-source-map/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "core-js-compat",
+    "version": "3.49.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/core-js-compat/v/3.49.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cross-fetch",
+    "version": "3.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/cross-fetch/v/3.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cross-spawn",
+    "version": "7.0.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/cross-spawn/v/7.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "css-in-js-utils",
+    "version": "3.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/css-in-js-utils/v/3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "css-select",
+    "version": "5.2.2",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/css-select/v/5.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "css-tree",
+    "version": "1.1.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/css-tree/v/1.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "css-what",
+    "version": "6.2.2",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/css-what/v/6.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "csstype",
+    "version": "3.2.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/csstype/v/3.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "culori",
+    "version": "4.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/culori/v/4.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "debug",
+    "version": "2.6.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/debug/v/2.6.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "debug",
+    "version": "3.2.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/debug/v/3.2.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "debug",
+    "version": "4.4.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/debug/v/4.4.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "deepmerge",
+    "version": "4.3.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/deepmerge/v/4.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "defaults",
+    "version": "1.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/defaults/v/1.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "define-lazy-prop",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/define-lazy-prop/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "depd",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/depd/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "destroy",
+    "version": "1.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/destroy/v/1.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "detect-libc",
+    "version": "2.1.2",
+    "license": "Apache-2.0",
+    "url": "https://www.npmjs.com/package/detect-libc/v/2.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "dnssd-advertise",
+    "version": "1.1.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/dnssd-advertise/v/1.1.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "dom-serializer",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/dom-serializer/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "domelementtype",
+    "version": "2.3.0",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/domelementtype/v/2.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "domhandler",
+    "version": "5.0.3",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/domhandler/v/5.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "domutils",
+    "version": "3.2.2",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/domutils/v/3.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ee-first",
+    "version": "1.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ee-first/v/1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "electron-to-chromium",
+    "version": "1.5.344",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/electron-to-chromium/v/1.5.344"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "emoji-regex",
+    "version": "8.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/emoji-regex/v/8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "encodeurl",
+    "version": "1.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/encodeurl/v/1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "encodeurl",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/encodeurl/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "enhanced-resolve",
+    "version": "5.26.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/enhanced-resolve/v/5.26.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "entities",
+    "version": "4.5.0",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/entities/v/4.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "error-stack-parser",
+    "version": "2.1.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/error-stack-parser/v/2.1.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "es-errors",
+    "version": "1.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/es-errors/v/1.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "escalade",
+    "version": "3.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/escalade/v/3.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "escape-html",
+    "version": "1.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/escape-html/v/1.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "escape-string-regexp",
+    "version": "1.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/escape-string-regexp/v/1.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "etag",
+    "version": "1.8.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/etag/v/1.8.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "event-target-shim",
+    "version": "5.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/event-target-shim/v/5.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo",
+    "version": "58.0.19",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo/v/58.0.19"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-application",
+    "version": "58.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-application/v/58.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-asset",
+    "version": "58.0.18",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-asset/v/58.0.18"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-auth-session",
+    "version": "58.0.14",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-auth-session/v/58.0.14"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-constants",
+    "version": "58.0.13",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-constants/v/58.0.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-crypto",
+    "version": "58.0.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-crypto/v/58.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-dev-client",
+    "version": "58.0.15",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-dev-client/v/58.0.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-dev-launcher",
+    "version": "58.0.15",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-dev-launcher/v/58.0.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-dev-menu",
+    "version": "58.0.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-dev-menu/v/58.0.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-dev-menu-interface",
+    "version": "58.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-dev-menu-interface/v/58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-device",
+    "version": "58.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-device/v/58.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-eas-client",
+    "version": "58.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-eas-client/v/58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-file-system",
+    "version": "58.0.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-file-system/v/58.0.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-font",
+    "version": "58.0.10",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-font/v/58.0.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-glass-effect",
+    "version": "58.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-glass-effect/v/58.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-haptics",
+    "version": "58.0.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-haptics/v/58.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-image",
+    "version": "58.0.17",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-image/v/58.0.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-json-utils",
+    "version": "58.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-json-utils/v/58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-keep-awake",
+    "version": "58.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-keep-awake/v/58.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-linear-gradient",
+    "version": "58.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-linear-gradient/v/58.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-linking",
+    "version": "58.0.14",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-linking/v/58.0.14"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-localization",
+    "version": "58.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-localization/v/58.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-manifests",
+    "version": "58.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-manifests/v/58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-autolinking",
+    "version": "58.0.15",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-modules-autolinking/v/58.0.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-cli",
+    "version": "0.3.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-modules-cli/v/0.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-core",
+    "version": "58.0.26",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-modules-core/v/58.0.26"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-jsi",
+    "version": "58.0.19",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-modules-jsi/v/58.0.19"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-macros",
+    "version": "0.22.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-modules-macros/v/0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-network",
+    "version": "58.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-network/v/58.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-notifications",
+    "version": "58.1.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-notifications/v/58.1.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-router",
+    "version": "58.0.26",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-router/v/58.0.26"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-secure-store",
+    "version": "58.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-secure-store/v/58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-server",
+    "version": "58.0.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-server/v/58.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-splash-screen",
+    "version": "58.0.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-splash-screen/v/58.0.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-sqlite",
+    "version": "58.0.14",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-sqlite/v/58.0.14"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-status-bar",
+    "version": "58.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-status-bar/v/58.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-structured-headers",
+    "version": "58.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-structured-headers/v/58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-system-ui",
+    "version": "58.0.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-system-ui/v/58.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-updates",
+    "version": "58.0.18",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-updates/v/58.0.18"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-updates-interface",
+    "version": "58.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-updates-interface/v/58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-web-browser",
+    "version": "58.0.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-web-browser/v/58.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-widgets",
+    "version": "58.0.23",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-widgets/v/58.0.23"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "exponential-backoff",
+    "version": "3.1.3",
+    "license": "Apache-2.0",
+    "url": "https://www.npmjs.com/package/exponential-backoff/v/3.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fb-dotslash",
+    "version": "0.5.8",
+    "license": "(MIT OR Apache-2.0)",
+    "url": "https://www.npmjs.com/package/fb-dotslash/v/0.5.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fb-watchman",
+    "version": "2.0.2",
+    "license": "Apache-2.0",
+    "url": "https://www.npmjs.com/package/fb-watchman/v/2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fb-watchman",
+    "version": "2.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/fb-watchman/v/2.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fbjs",
+    "version": "3.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/fbjs/v/3.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fbjs-css-vars",
+    "version": "1.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/fbjs-css-vars/v/1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fdir",
+    "version": "6.5.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/fdir/v/6.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fetch-nodeshim",
+    "version": "0.4.10",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/fetch-nodeshim/v/0.4.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fill-range",
+    "version": "7.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/fill-range/v/7.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "finalhandler",
+    "version": "1.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/finalhandler/v/1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-enums-runtime",
+    "version": "0.0.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/flow-enums-runtime/v/0.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-estree",
+    "version": "0.327.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/flow-estree/v/0.327.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-estree",
+    "version": "0.331.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/flow-estree/v/0.331.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-parser",
+    "version": "0.327.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/flow-parser/v/0.327.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-parser",
+    "version": "0.331.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/flow-parser/v/0.331.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fresh",
+    "version": "0.5.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/fresh/v/0.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "function-bind",
+    "version": "1.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/function-bind/v/1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "gensync",
+    "version": "1.0.0-beta.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/gensync/v/1.0.0-beta.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "get-caller-file",
+    "version": "2.0.5",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/get-caller-file/v/2.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "getenv",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/getenv/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "gifted-charts-core",
+    "version": "0.1.80",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/gifted-charts-core/v/0.1.80"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "glob",
+    "version": "13.0.6",
+    "license": "BlueOak-1.0.0",
+    "url": "https://www.npmjs.com/package/glob/v/13.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "graceful-fs",
+    "version": "4.2.11",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/graceful-fs/v/4.2.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "has-flag",
+    "version": "3.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/has-flag/v/3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "has-flag",
+    "version": "4.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/has-flag/v/4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hasown",
+    "version": "2.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/hasown/v/2.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hermes-compiler",
+    "version": "260318099.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/hermes-compiler/v/260318099.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hermes-estree",
+    "version": "0.36.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/hermes-estree/v/0.36.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hermes-parser",
+    "version": "0.36.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/hermes-parser/v/0.36.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hosted-git-info",
+    "version": "7.0.2",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/hosted-git-info/v/7.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "http-errors",
+    "version": "2.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/http-errors/v/2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "https-proxy-agent",
+    "version": "7.0.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/https-proxy-agent/v/7.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hyphenate-style-name",
+    "version": "1.1.0",
+    "license": "BSD-3-Clause",
+    "url": "https://www.npmjs.com/package/hyphenate-style-name/v/1.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ignore",
+    "version": "5.3.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ignore/v/5.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "inherits",
+    "version": "2.0.4",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/inherits/v/2.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "inline-style-prefixer",
+    "version": "7.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/inline-style-prefixer/v/7.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "invariant",
+    "version": "2.2.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/invariant/v/2.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-arrayish",
+    "version": "0.3.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/is-arrayish/v/0.3.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-core-module",
+    "version": "2.16.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/is-core-module/v/2.16.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-docker",
+    "version": "2.2.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/is-docker/v/2.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-fullwidth-code-point",
+    "version": "3.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/is-fullwidth-code-point/v/3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-number",
+    "version": "7.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/is-number/v/7.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-plain-obj",
+    "version": "2.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/is-plain-obj/v/2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-wsl",
+    "version": "2.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/is-wsl/v/2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "isexe",
+    "version": "2.0.0",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/isexe/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-get-type",
+    "version": "29.6.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/jest-get-type/v/29.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-util",
+    "version": "29.7.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/jest-util/v/29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-validate",
+    "version": "29.7.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/jest-validate/v/29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-worker",
+    "version": "29.7.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/jest-worker/v/29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jimp-compact",
+    "version": "0.16.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/jimp-compact/v/0.16.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jiti",
+    "version": "2.7.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/jiti/v/2.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "js-tokens",
+    "version": "4.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/js-tokens/v/4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "js-yaml",
+    "version": "4.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/js-yaml/v/4.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jsc-safe-url",
+    "version": "0.2.4",
+    "license": "0BSD",
+    "url": "https://www.npmjs.com/package/jsc-safe-url/v/0.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jsesc",
+    "version": "3.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/jsesc/v/3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "json5",
+    "version": "2.2.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/json5/v/2.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "kleur",
+    "version": "3.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/kleur/v/3.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lan-network",
+    "version": "0.2.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/lan-network/v/0.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "leven",
+    "version": "3.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/leven/v/3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-android-arm64",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-android-arm64/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-darwin-arm64",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-darwin-arm64/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-darwin-arm64",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-darwin-arm64/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-darwin-x64",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-darwin-x64/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-darwin-x64",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-darwin-x64/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-freebsd-x64",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-freebsd-x64/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-freebsd-x64",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-freebsd-x64/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm-gnueabihf",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-arm-gnueabihf/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm-gnueabihf",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-arm-gnueabihf/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm64-gnu",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-arm64-gnu/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm64-gnu",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-arm64-gnu/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm64-musl",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-arm64-musl/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm64-musl",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-arm64-musl/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-x64-gnu",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-x64-gnu/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-x64-gnu",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-x64-gnu/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-x64-musl",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-x64-musl/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-x64-musl",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-linux-x64-musl/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-win32-arm64-msvc",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-win32-arm64-msvc/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-win32-arm64-msvc",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-win32-arm64-msvc/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-win32-x64-msvc",
+    "version": "1.30.1",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-win32-x64-msvc/v/1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-win32-x64-msvc",
+    "version": "1.32.0",
+    "license": "MPL-2.0",
+    "url": "https://www.npmjs.com/package/lightningcss-win32-x64-msvc/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lodash.debounce",
+    "version": "4.0.8",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/lodash.debounce/v/4.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lodash.throttle",
+    "version": "4.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/lodash.throttle/v/4.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "log-symbols",
+    "version": "2.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/log-symbols/v/2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "loose-envify",
+    "version": "1.4.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/loose-envify/v/1.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lru-cache",
+    "version": "10.4.3",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/lru-cache/v/10.4.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lru-cache",
+    "version": "11.3.5",
+    "license": "BlueOak-1.0.0",
+    "url": "https://www.npmjs.com/package/lru-cache/v/11.3.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lru-cache",
+    "version": "5.1.1",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/lru-cache/v/5.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lucide-react-native",
+    "version": "1.59.0",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/lucide-react-native/v/1.59.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "magic-string",
+    "version": "0.30.21",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/magic-string/v/0.30.21"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "makeerror",
+    "version": "1.0.12",
+    "license": "BSD-3-Clause",
+    "url": "https://www.npmjs.com/package/makeerror/v/1.0.12"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mdn-data",
+    "version": "2.0.14",
+    "license": "CC0-1.0",
+    "url": "https://www.npmjs.com/package/mdn-data/v/2.0.14"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "memoize-one",
+    "version": "5.2.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/memoize-one/v/5.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "memoize-one",
+    "version": "6.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/memoize-one/v/6.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "merge-options",
+    "version": "3.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/merge-options/v/3.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "merge-stream",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/merge-stream/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-babel-transformer",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-babel-transformer/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-cache",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-cache/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-cache-key",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-cache-key/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-config",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-config/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-core",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-core/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-file-map",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-file-map/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-minify-terser",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-minify-terser/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-resolver",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-resolver/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-runtime",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-runtime/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-source-map",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-source-map/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-symbolicate",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-symbolicate/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-transform-plugins",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-transform-plugins/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-transform-worker",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/metro-transform-worker/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "micromatch",
+    "version": "4.0.8",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/micromatch/v/4.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime",
+    "version": "1.6.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/mime/v/1.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime-db",
+    "version": "1.52.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/mime-db/v/1.52.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime-db",
+    "version": "1.54.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/mime-db/v/1.54.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime-types",
+    "version": "2.1.35",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/mime-types/v/2.1.35"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime-types",
+    "version": "3.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/mime-types/v/3.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mimic-fn",
+    "version": "1.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/mimic-fn/v/1.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "minimatch",
+    "version": "10.2.5",
+    "license": "BlueOak-1.0.0",
+    "url": "https://www.npmjs.com/package/minimatch/v/10.2.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "minipass",
+    "version": "7.1.3",
+    "license": "BlueOak-1.0.0",
+    "url": "https://www.npmjs.com/package/minipass/v/7.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ms",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ms/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ms",
+    "version": "2.1.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ms/v/2.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "multitars",
+    "version": "1.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/multitars/v/1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "nanoid",
+    "version": "3.3.20",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/nanoid/v/3.3.20"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "negotiator",
+    "version": "0.6.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/negotiator/v/0.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "negotiator",
+    "version": "0.6.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/negotiator/v/0.6.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "negotiator",
+    "version": "1.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/negotiator/v/1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "node-fetch",
+    "version": "2.7.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/node-fetch/v/2.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "node-forge",
+    "version": "1.4.0",
+    "license": "(BSD-3-Clause OR GPL-2.0)",
+    "url": "https://www.npmjs.com/package/node-forge/v/1.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "node-int64",
+    "version": "0.4.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/node-int64/v/0.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "node-releases",
+    "version": "2.0.38",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/node-releases/v/2.0.38"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "noxcturnal",
+    "version": "0.1.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/noxcturnal/v/0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "npm-package-arg",
+    "version": "11.0.3",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/npm-package-arg/v/11.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "nth-check",
+    "version": "2.1.1",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/nth-check/v/2.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "nullthrows",
+    "version": "1.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/nullthrows/v/1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ob1",
+    "version": "0.87.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ob1/v/0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "object-assign",
+    "version": "4.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/object-assign/v/4.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "on-finished",
+    "version": "2.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/on-finished/v/2.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "on-finished",
+    "version": "2.4.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/on-finished/v/2.4.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "on-headers",
+    "version": "1.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/on-headers/v/1.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "onetime",
+    "version": "2.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/onetime/v/2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "open",
+    "version": "8.4.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/open/v/8.4.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ora",
+    "version": "3.4.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ora/v/3.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "parse-png",
+    "version": "2.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/parse-png/v/2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "parseurl",
+    "version": "1.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/parseurl/v/1.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-key",
+    "version": "3.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/path-key/v/3.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-parse",
+    "version": "1.0.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/path-parse/v/1.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-scurry",
+    "version": "2.0.2",
+    "license": "BlueOak-1.0.0",
+    "url": "https://www.npmjs.com/package/path-scurry/v/2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "picocolors",
+    "version": "1.1.1",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/picocolors/v/1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "picomatch",
+    "version": "2.3.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/picomatch/v/2.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "picomatch",
+    "version": "4.0.7",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/picomatch/v/4.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "plist",
+    "version": "3.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/plist/v/3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "pngjs",
+    "version": "3.4.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/pngjs/v/3.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss",
+    "version": "8.5.31",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/postcss/v/8.5.31"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss-value-parser",
+    "version": "4.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/postcss-value-parser/v/4.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "pretty-format",
+    "version": "29.7.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/pretty-format/v/29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "proc-log",
+    "version": "4.2.0",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/proc-log/v/4.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "progress",
+    "version": "2.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/progress/v/2.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "promise",
+    "version": "7.3.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/promise/v/7.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "promise",
+    "version": "8.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/promise/v/8.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "prompts",
+    "version": "2.4.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/prompts/v/2.4.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "range-parser",
+    "version": "1.2.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/range-parser/v/1.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react",
+    "version": "19.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react/v/19.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-devtools-core",
+    "version": "6.1.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-devtools-core/v/6.1.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-dom",
+    "version": "19.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-dom/v/19.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-fast-compare",
+    "version": "3.2.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-fast-compare/v/3.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-freeze",
+    "version": "1.0.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-freeze/v/1.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-hook-form",
+    "version": "7.73.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-hook-form/v/7.73.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-is",
+    "version": "18.3.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-is/v/18.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-is",
+    "version": "19.2.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-is/v/19.2.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native",
+    "version": "0.88.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native/v/0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-body-highlighter",
+    "version": "3.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-body-highlighter/v/3.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-drawer-layout",
+    "version": "4.2.12",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-drawer-layout/v/4.2.12"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-gesture-handler",
+    "version": "3.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-gesture-handler/v/3.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-gifted-charts",
+    "version": "1.4.76",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-gifted-charts/v/1.4.76"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-is-edge-to-edge",
+    "version": "1.3.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-is-edge-to-edge/v/1.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-linear-gradient",
+    "version": "2.8.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-linear-gradient/v/2.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-reanimated",
+    "version": "4.7.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-reanimated/v/4.7.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-safe-area-context",
+    "version": "5.10.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-safe-area-context/v/5.10.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-screens",
+    "version": "4.30.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-screens/v/4.30.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-svg",
+    "version": "15.16.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-svg/v/15.16.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-web",
+    "version": "0.21.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-web/v/0.21.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-worklets",
+    "version": "0.13.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-worklets/v/0.13.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-refresh",
+    "version": "0.14.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-refresh/v/0.14.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerate",
+    "version": "1.4.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/regenerate/v/1.4.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerate",
+    "version": "1.5.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/regenerate/v/1.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerate-unicode-properties",
+    "version": "10.2.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/regenerate-unicode-properties/v/10.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerate-unicode-properties",
+    "version": "10.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/regenerate-unicode-properties/v/10.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerator-runtime",
+    "version": "0.13.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/regenerator-runtime/v/0.13.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regexpu-core",
+    "version": "6.4.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/regexpu-core/v/6.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regexpu-core",
+    "version": "6.5.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/regexpu-core/v/6.5.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regjsgen",
+    "version": "0.8.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/regjsgen/v/0.8.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regjsparser",
+    "version": "0.13.1",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/regjsparser/v/0.13.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "require-directory",
+    "version": "2.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/require-directory/v/2.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "resolve",
+    "version": "1.22.12",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/resolve/v/1.22.12"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "resolve-from",
+    "version": "5.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/resolve-from/v/5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "resolve-workspace-root",
+    "version": "2.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/resolve-workspace-root/v/2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "restore-cursor",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/restore-cursor/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "rtl-detect",
+    "version": "1.1.2",
+    "license": "BSD-3-Clause",
+    "url": "https://www.npmjs.com/package/rtl-detect/v/1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "safe-buffer",
+    "version": "5.2.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/safe-buffer/v/5.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sandbox-cli-detector",
+    "version": "0.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/sandbox-cli-detector/v/0.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sax",
+    "version": "1.6.0",
+    "license": "BlueOak-1.0.0",
+    "url": "https://www.npmjs.com/package/sax/v/1.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "scheduler",
+    "version": "0.28.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/scheduler/v/0.28.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "semver",
+    "version": "6.3.1",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/semver/v/6.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "semver",
+    "version": "7.7.4",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/semver/v/7.7.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "semver",
+    "version": "7.8.5",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/semver/v/7.8.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "send",
+    "version": "0.19.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/send/v/0.19.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "serialize-error",
+    "version": "2.1.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/serialize-error/v/2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "serve-static",
+    "version": "1.16.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/serve-static/v/1.16.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "server-only",
+    "version": "0.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/server-only/v/0.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "setimmediate",
+    "version": "1.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/setimmediate/v/1.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "setprototypeof",
+    "version": "1.2.0",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/setprototypeof/v/1.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sf-symbols-typescript",
+    "version": "1.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/sf-symbols-typescript/v/1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sf-symbols-typescript",
+    "version": "2.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/sf-symbols-typescript/v/2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "shebang-command",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/shebang-command/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "shebang-regex",
+    "version": "3.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/shebang-regex/v/3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "shell-quote",
+    "version": "1.8.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/shell-quote/v/1.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "signal-exit",
+    "version": "3.0.7",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/signal-exit/v/3.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "simple-plist",
+    "version": "1.3.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/simple-plist/v/1.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "simple-swizzle",
+    "version": "0.2.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/simple-swizzle/v/0.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sisteransi",
+    "version": "1.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/sisteransi/v/1.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "slugify",
+    "version": "1.6.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/slugify/v/1.6.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sonner",
+    "version": "0.3.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/sonner/v/0.3.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map",
+    "version": "0.5.7",
+    "license": "BSD-3-Clause",
+    "url": "https://www.npmjs.com/package/source-map/v/0.5.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map",
+    "version": "0.6.1",
+    "license": "BSD-3-Clause",
+    "url": "https://www.npmjs.com/package/source-map/v/0.6.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map-js",
+    "version": "1.2.1",
+    "license": "BSD-3-Clause",
+    "url": "https://www.npmjs.com/package/source-map-js/v/1.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map-js",
+    "version": "1.2.2",
+    "license": "BSD-3-Clause",
+    "url": "https://www.npmjs.com/package/source-map-js/v/1.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map-support",
+    "version": "0.5.21",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/source-map-support/v/0.5.21"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stackframe",
+    "version": "1.3.4",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/stackframe/v/1.3.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stacktrace-parser",
+    "version": "0.1.11",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/stacktrace-parser/v/0.1.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "standard-navigation",
+    "version": "0.0.5",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/standard-navigation/v/0.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "statuses",
+    "version": "1.5.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/statuses/v/1.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "statuses",
+    "version": "2.0.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/statuses/v/2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stream-buffers",
+    "version": "2.2.0",
+    "license": "Unlicense",
+    "url": "https://www.npmjs.com/package/stream-buffers/v/2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "string-width",
+    "version": "4.2.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/string-width/v/4.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "strip-ansi",
+    "version": "5.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/strip-ansi/v/5.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "strip-ansi",
+    "version": "6.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/strip-ansi/v/6.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "structured-headers",
+    "version": "0.4.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/structured-headers/v/0.4.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "styleq",
+    "version": "0.1.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/styleq/v/0.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-color",
+    "version": "5.5.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/supports-color/v/5.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-color",
+    "version": "7.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/supports-color/v/7.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-color",
+    "version": "8.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/supports-color/v/8.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-hyperlinks",
+    "version": "2.3.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/supports-hyperlinks/v/2.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-preserve-symlinks-flag",
+    "version": "1.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/supports-preserve-symlinks-flag/v/1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tailwindcss",
+    "version": "4.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/tailwindcss/v/4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tapable",
+    "version": "2.3.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/tapable/v/2.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "terminal-link",
+    "version": "2.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/terminal-link/v/2.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "terser",
+    "version": "5.46.2",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/terser/v/5.46.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "throat",
+    "version": "5.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/throat/v/5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tinyglobby",
+    "version": "0.2.17",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/tinyglobby/v/0.2.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tmpl",
+    "version": "1.0.5",
+    "license": "BSD-3-Clause",
+    "url": "https://www.npmjs.com/package/tmpl/v/1.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "to-regex-range",
+    "version": "5.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/to-regex-range/v/5.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "toidentifier",
+    "version": "1.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/toidentifier/v/1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "toqr",
+    "version": "0.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/toqr/v/0.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tr46",
+    "version": "0.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/tr46/v/0.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tslib",
+    "version": "2.8.1",
+    "license": "0BSD",
+    "url": "https://www.npmjs.com/package/tslib/v/2.8.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "type-fest",
+    "version": "0.21.3",
+    "license": "(MIT OR CC0-1.0)",
+    "url": "https://www.npmjs.com/package/type-fest/v/0.21.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "type-fest",
+    "version": "0.7.1",
+    "license": "(MIT OR CC0-1.0)",
+    "url": "https://www.npmjs.com/package/type-fest/v/0.7.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ua-parser-js",
+    "version": "0.7.41",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ua-parser-js/v/0.7.41"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ua-parser-js",
+    "version": "1.0.41",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ua-parser-js/v/1.0.41"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "undici-types",
+    "version": "7.19.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/undici-types/v/7.19.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unicode-canonical-property-names-ecmascript",
+    "version": "2.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/unicode-canonical-property-names-ecmascript/v/2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unicode-match-property-ecmascript",
+    "version": "2.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/unicode-match-property-ecmascript/v/2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unicode-match-property-value-ecmascript",
+    "version": "2.2.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/unicode-match-property-value-ecmascript/v/2.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unicode-property-aliases-ecmascript",
+    "version": "2.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/unicode-property-aliases-ecmascript/v/2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "uniwind",
+    "version": "1.12.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/uniwind/v/1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unpipe",
+    "version": "1.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/unpipe/v/1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "update-browserslist-db",
+    "version": "1.2.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/update-browserslist-db/v/1.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "use-latest-callback",
+    "version": "0.2.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/use-latest-callback/v/0.2.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "utils-merge",
+    "version": "1.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/utils-merge/v/1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "validate-npm-package-name",
+    "version": "5.0.1",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/validate-npm-package-name/v/5.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "vary",
+    "version": "1.1.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/vary/v/1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "vlq",
+    "version": "1.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/vlq/v/1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "walker",
+    "version": "1.0.8",
+    "license": "Apache-2.0",
+    "url": "https://www.npmjs.com/package/walker/v/1.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "warn-once",
+    "version": "0.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/warn-once/v/0.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "wcwidth",
+    "version": "1.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/wcwidth/v/1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "webidl-conversions",
+    "version": "3.0.1",
+    "license": "BSD-2-Clause",
+    "url": "https://www.npmjs.com/package/webidl-conversions/v/3.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "whatwg-fetch",
+    "version": "3.6.20",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/whatwg-fetch/v/3.6.20"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "whatwg-url",
+    "version": "5.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/whatwg-url/v/5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "whatwg-url-minimum",
+    "version": "0.2.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/whatwg-url-minimum/v/0.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "which",
+    "version": "2.0.2",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/which/v/2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "wrap-ansi",
+    "version": "7.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/wrap-ansi/v/7.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ws",
+    "version": "7.5.10",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ws/v/7.5.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ws",
+    "version": "8.20.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/ws/v/8.20.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xcode",
+    "version": "4.0.0",
+    "license": "Apache-2.0",
+    "url": "https://www.npmjs.com/package/xcode/v/4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xml2js",
+    "version": "0.6.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/xml2js/v/0.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xmlbuilder",
+    "version": "11.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/xmlbuilder/v/11.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xmlbuilder",
+    "version": "15.1.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/xmlbuilder/v/15.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "y18n",
+    "version": "5.0.8",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/y18n/v/5.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yallist",
+    "version": "3.1.1",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/yallist/v/3.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yargs",
+    "version": "17.7.2",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/yargs/v/17.7.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yargs-parser",
+    "version": "21.1.1",
+    "license": "ISC",
+    "url": "https://www.npmjs.com/package/yargs-parser/v/21.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "zod",
+    "version": "3.25.76",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/zod/v/3.25.76"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "zod",
+    "version": "4.3.6",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/zod/v/4.3.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "zustand",
+    "version": "5.0.12",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/zustand/v/5.0.12"
+  }
+]

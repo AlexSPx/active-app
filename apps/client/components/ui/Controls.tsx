@@ -197,18 +197,20 @@ export function SettingsGroup({
   className?: string
 }) {
   return (
-    <View className={`gap-compact ${className}`}>
-      <UiText accessibilityRole="header" textRole="captionEmphasis" className="px-compact">
+    <View className={`gap-field ${className}`}>
+      <UiText accessibilityRole="header" textRole="captionEmphasis" className="px-field">
         {title}
       </UiText>
-      <Surface variant="settings">{children}</Surface>
+      <Surface variant="settings" className="py-compact">
+        {children}
+      </Surface>
     </View>
   )
 }
 
 type SettingsRowProps = Omit<PressableProps, 'children' | 'style'> & {
   title: string
-  description: ReactNode
+  description?: ReactNode
   icon: ReactNode
   trailing?: ReactNode
   className?: string
@@ -222,7 +224,7 @@ export const SettingsRow = forwardRef<ViewInstance, SettingsRowProps>(function S
     <Pressable
       ref={ref}
       {...props}
-      className={`min-h-touch flex-row items-center justify-between gap-field px-field py-compact active:bg-raised focus:border-2 focus:border-accent ${className}`}
+      className={`-my-1 min-h-touch flex-row items-center justify-between gap-field px-2 py-2 hover:bg-raised active:bg-raised focus:border-2 focus:border-accent ${className}`}
       accessibilityRole="button"
       accessibilityLabel={
         accessibilityLabel ??

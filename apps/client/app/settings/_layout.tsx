@@ -15,7 +15,9 @@ export default function SettingsStackLayout() {
         headerStyle: { backgroundColor: colors.background },
         headerTintColor: colors.accent,
         headerBackVisible: false,
-        headerLeft: () => <BackHeaderButton label="Settings" fallback="/settings" />,
+        headerLeft: () => (
+          <BackHeaderButton label="Settings" fallback="/settings" showLabel={false} />
+        ),
         headerTitleStyle: {
           ...titleStyles,
           color: colors.foreground,
@@ -25,10 +27,18 @@ export default function SettingsStackLayout() {
       }}
     >
       <Stack.Screen
+        name="dependencies"
+        options={{
+          headerLeft: () => (
+            <BackHeaderButton label="About" fallback="/settings/about" showLabel={false} />
+          ),
+        }}
+      />
+      <Stack.Screen
         name="index"
         options={{
           title: 'Settings',
-          headerLeft: () => <BackHeaderButton label="Back" fallback="/(tabs)" />,
+          headerLeft: () => <BackHeaderButton label="Back" fallback="/(tabs)" showLabel={false} />,
         }}
       />
     </Stack>
