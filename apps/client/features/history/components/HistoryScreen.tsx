@@ -1,5 +1,4 @@
 import { View } from 'react-native'
-import { Button, UiText } from '../../../components/ui/Controls'
 import { HistoryCalendar } from './HistoryCalendar'
 import HistoryList, { type HistoryListItem } from './HistoryList'
 import type { useHistoryController } from '../hooks/useHistoryController'
@@ -20,35 +19,19 @@ export function HistoryScreen({
   onSelectDate,
   onNavigatePeriod,
   onViewChange,
-  onToday,
   onShowAll,
   onOpenRecord,
 }: ControllerState & { onOpenRecord: (item: HistoryListItem) => void }) {
   const calendarHeader = (
-    <View className="gap-field">
-      <View className="flex-row items-center justify-between gap-field px-page py-compact">
-        <UiText textRole="bodyMuted" className="min-w-0 flex-1">
-          Every session adds up.
-        </UiText>
-        <Button
-          variant="ghost"
-          density="compact"
-          accessibilityLabel="Go to today"
-          onPress={onToday}
-        >
-          Today
-        </Button>
-      </View>
-      <HistoryCalendar
-        monthDate={monthDate}
-        selectedDate={filterDate}
-        view={view}
-        workoutDays={workoutDays}
-        onNavigatePeriod={onNavigatePeriod}
-        onViewChange={onViewChange}
-        onSelectDate={onSelectDate}
-      />
-    </View>
+    <HistoryCalendar
+      monthDate={monthDate}
+      selectedDate={filterDate}
+      view={view}
+      workoutDays={workoutDays}
+      onNavigatePeriod={onNavigatePeriod}
+      onViewChange={onViewChange}
+      onSelectDate={onSelectDate}
+    />
   )
 
   return (

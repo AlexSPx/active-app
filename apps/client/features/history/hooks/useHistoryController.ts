@@ -78,13 +78,6 @@ export function useHistoryController() {
     [monthDate, selectedDate, view]
   )
 
-  const onToday = useCallback(() => {
-    const today = new Date()
-    setSelectedDate(today)
-    setMonthDate(today)
-    setFilterDate(today)
-  }, [])
-
   const onRefresh = useCallback(async () => {
     setRefreshing(true)
     try {
@@ -108,7 +101,6 @@ export function useHistoryController() {
     onSelectDate,
     onNavigatePeriod,
     onViewChange: setView,
-    onToday,
     onShowAll: () => setFilterDate(null),
   }
 }
