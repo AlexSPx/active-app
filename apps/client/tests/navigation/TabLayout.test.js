@@ -113,6 +113,38 @@ test('idle tabs reserve content space and grow for larger text', () => {
   expect(bottomInset()).toBeGreaterThan(normalInset)
 })
 
+test('tab press shows a pill until release and preserves handlers', () => {
+  act(() => {
+    view = create(React.createElement(TabLayout))
+  })
+  const onPress = jest.fn()
+  const onPressIn = jest.fn()
+  const onPressOut = jest.fn()
+  let button
+  act(() => {
+    button = create(options().tabBarButton({ onPress, onPressIn, onPressOut, children: 'Home' }))
+  })
+  const pressable = () => button.root.findByType('PlatformPressable')
+  expect(button.root.findAllByType('View')).toHaveLength(0)
+  act(() => pressable().props.onPressIn('down'))
+  const overlay = button.root.findByType('View')
+  expect(overlay.props.pointerEvents).toBe('none')
+  expect(overlay.props.style).toMatchObject({
+    top: 4,
+    bottom: 4,
+    left: -4,
+    right: -4,
+    borderRadius: 9999,
+  })
+  expect(onPressIn).toHaveBeenCalledWith('down')
+  act(() => pressable().props.onPressOut('up'))
+  expect(button.root.findAllByType('View')).toHaveLength(0)
+  expect(onPressOut).toHaveBeenCalledWith('up')
+  pressable().props.onPress()
+  expect(onPress).toHaveBeenCalled()
+  act(() => button.unmount())
+})
+
 test('a measured running shortcut clears the content, resumes the session, and hides for the keyboard', () => {
   mockStore.runningWorkout = {
     name: 'Morning workout',
