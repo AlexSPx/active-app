@@ -1,0 +1,63 @@
+name: Dependency snapshot
+
+on:
+  pull_request:
+    paths: &dependency_paths
+      - 'apps/client/package.json'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'apps/client/features/about/dependencies.json'
+      - 'scripts/generate-dependencies.py'
+      - 'scripts/test_generate_dependencies.py'
+      - '.github/workflows/dependencies.yml'
+  push:
+    branches: [master]
+    paths: *dependency_paths
+  merge_group:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test generator
+        run: python3 -m unittest scripts/test_generate_dependencies.py
+      - name: Check snapshot
+        id: snapshot
+        continue-on-error: true
+        run: python3 scripts/generate-dependencies.py --check
+      - name: Report result
+        if: always() && steps.snapshot.outcome == 'failure'
+        run: |
+          echo 'Dependency snapshot needs attention. Run `python3 scripts/generate-dependencies.py --fetch` and commit the regenerated file.' | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Update pull request comment
+        if: always() && github.event_name == 'pull_request' && steps.snapshot.outcome != 'skipped'
+        continue-on-error: true
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- dependency-snapshot-check -->';
+            const stale = '${{ steps.snapshot.outcome }}' === 'failure';
+            const body = stale
+              ? `${marker}\nThe client dependency snapshot needs updating. New or changed client dependencies require regenerating it; removals and other snapshot changes also need an update. Run \`python3 scripts/generate-dependencies.py --fetch\` and commit the regenerated file.`
+              : `${marker}\nThe client dependency snapshot is up to date.`;
+            try {
+              const { owner, repo } = context.repo;
+              const issue_number = context.issue.number;
+              const comments = await github.paginate(github.rest.issues.listComments, { owner, repo, issue_number });
+              const existing = comments.find(c => c.user.login === 'github-actions[bot]' && c.body?.includes(marker));
+              if (existing) {
+                await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body });
+              } else if (stale) {
+                await github.rest.issues.createComment({ owner, repo, issue_number, body });
+              }
+            } catch (error) {
+              core.warning(`Could not update the dependency snapshot comment (fork PR tokens may be read-only): ${error.message}`);
+            }
+      - name: Fail if snapshot is stale
+        if: always() && steps.snapshot.outcome == 'failure'
+        run: exit 1

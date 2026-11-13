@@ -92,7 +92,9 @@ def fetch_license(entry):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--fetch', action='store_true', help='fetch missing exact-version metadata from npm')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--fetch', action='store_true', help='fetch missing exact-version metadata from npm')
+    mode.add_argument('--check', action='store_true', help='check without writing; regenerate with python3 scripts/generate-dependencies.py --fetch')
     args = parser.parse_args()
     client = json.loads((ROOT / 'apps/client/package.json').read_text())
     root = json.loads((ROOT / 'package.json').read_text())
@@ -104,7 +106,7 @@ def main():
              for e in old if 'license' in e}
     missing = sorted(entries - cache.keys())
     if missing and not args.fetch:
-        raise ValueError(f'{len(missing)} dependencies lack cached metadata; rerun with --fetch')
+        raise ValueError(f'{len(missing)} dependencies lack cached metadata; run python3 scripts/generate-dependencies.py --fetch')
     if missing:
         print(f'Fetching metadata for {len(missing)} dependency versions...', file=sys.stderr, flush=True)
         with ThreadPoolExecutor(max_workers=8) as pool:
@@ -118,7 +120,13 @@ def main():
         item['license'] = cache[(ecosystem, name, version, package)]
         item['url'] = package_url(ecosystem, package, version)
         output.append(item)
-    OUTPUT.write_text(json.dumps(output, indent=2, ensure_ascii=False) + '\n')
+    content = json.dumps(output, indent=2, ensure_ascii=False) + '\n'
+    if args.check:
+        if not OUTPUT.exists() or OUTPUT.read_text() != content:
+            raise ValueError('Dependency snapshot is stale; run python3 scripts/generate-dependencies.py --fetch')
+        print(f'Dependency snapshot is up to date ({len(output)} dependencies).', file=sys.stderr)
+        return
+    OUTPUT.write_text(content)
     print(f'Generated {len(output)} dependencies; {sum(e["license"] is None for e in output)} licenses unknown.', file=sys.stderr)
 
 

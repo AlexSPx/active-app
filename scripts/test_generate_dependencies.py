@@ -1,5 +1,9 @@
 import importlib.util
 import json
+import contextlib
+import io
+import tempfile
+from unittest.mock import patch
 import unittest
 from pathlib import Path
 
@@ -44,6 +48,43 @@ tooling@1:
         names = {entry[1] for entry in entries}
         self.assertTrue({'expo', 'react-native'} <= names)
         self.assertTrue({'prettier', 'jest-expo', 'openapi-typescript', '@remotion/cli'}.isdisjoint(names))
+
+    def test_check_is_offline_and_does_not_modify_snapshot(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'apps/client/features/about').mkdir(parents=True)
+            client = root / 'apps/client/package.json'
+            lock = root / 'yarn.lock'
+            output = root / 'apps/client/features/about/dependencies.json'
+            (root / 'package.json').write_text('{}')
+            client.write_text(json.dumps({'dependencies': {'react-native': '1'}}))
+            lock.write_text('react-native@1:\n  version "1.0.0"\n')
+            record = {'ecosystem': 'JavaScript', 'name': 'react-native', 'version': '1.0.0',
+                      'license': 'MIT', 'url': 'https://www.npmjs.com/package/react-native/v/1.0.0'}
+            fresh = json.dumps([record], indent=2) + '\n'
+            with patch.object(dependencies, 'ROOT', root), patch.object(dependencies, 'OUTPUT', output), \
+                    patch('sys.argv', ['generate-dependencies.py', '--check']), \
+                    patch.object(dependencies, 'fetch_license', side_effect=AssertionError('network used')), \
+                    contextlib.redirect_stderr(io.StringIO()):
+                output.write_text(fresh)
+                dependencies.main()
+                self.assertEqual(output.read_text(), fresh)
+                for stale in (fresh.rstrip(), json.dumps([record, {**record, 'name': 'removed'}])):
+                    output.write_text(stale)
+                    with self.assertRaisesRegex(ValueError, 'snapshot is stale.*--fetch'):
+                        dependencies.main()
+                    self.assertEqual(output.read_text(), stale)
+                output.write_text(fresh)
+                client.write_text(json.dumps({'dependencies': {'react-native': '1', 'new': '1'}}))
+                lock.write_text(lock.read_text() + 'new@1:\n  version "1.0.0"\n')
+                with self.assertRaisesRegex(ValueError, 'lack cached metadata.*--fetch'):
+                    dependencies.main()
+                self.assertEqual(output.read_text(), fresh)
+                client.write_text(json.dumps({'dependencies': {'react-native': '2'}}))
+                lock.write_text('react-native@2:\n  version "2.0.0"\n')
+                with self.assertRaisesRegex(ValueError, 'lack cached metadata.*--fetch'):
+                    dependencies.main()
+                self.assertEqual(output.read_text(), fresh)
 
     def test_exact_metadata_and_unknown(self):
         parse = dependencies.parse_metadata
