@@ -25,6 +25,12 @@ export default function SettingsStackLayout() {
       }}
     >
       <Stack.Screen
+        name="dependencies"
+        options={{
+          headerLeft: () => <BackHeaderButton label="About" fallback="/settings/about" />,
+        }}
+      />
+      <Stack.Screen
         name="index"
         options={{
           title: 'Settings',

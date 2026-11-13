@@ -1,0 +1,7362 @@
+[
+  {
+    "ecosystem": "JavaScript",
+    "name": "2g",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@asamuzakjp/css-color",
+    "version": "3.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/code-frame",
+    "version": "7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/code-frame",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/compat-data",
+    "version": "7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/compat-data",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/core",
+    "version": "7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/core",
+    "version": "7.29.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/core",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/generator",
+    "version": "7.29.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/generator",
+    "version": "7.29.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/generator",
+    "version": "7.29.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-annotate-as-pure",
+    "version": "7.27.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-annotate-as-pure",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-compilation-targets",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-compilation-targets",
+    "version": "7.29.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-compilation-targets",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-create-class-features-plugin",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-create-class-features-plugin",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-create-regexp-features-plugin",
+    "version": "7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-create-regexp-features-plugin",
+    "version": "7.29.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-define-polyfill-provider",
+    "version": "0.6.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-globals",
+    "version": "7.28.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-globals",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-member-expression-to-functions",
+    "version": "7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-member-expression-to-functions",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-module-imports",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-module-imports",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-module-transforms",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-module-transforms",
+    "version": "7.29.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-module-transforms",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-optimise-call-expression",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-optimise-call-expression",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-plugin-utils",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-plugin-utils",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-remap-async-to-generator",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-replace-supers",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-replace-supers",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-skip-transparent-expression-wrappers",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-skip-transparent-expression-wrappers",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-string-parser",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-string-parser",
+    "version": "7.29.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-string-parser",
+    "version": "7.29.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-validator-identifier",
+    "version": "7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-validator-identifier",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-validator-option",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-validator-option",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helper-wrap-function",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helpers",
+    "version": "7.29.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helpers",
+    "version": "7.29.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/helpers",
+    "version": "7.29.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/parser",
+    "version": "7.24.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/parser",
+    "version": "7.29.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/parser",
+    "version": "7.29.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/parser",
+    "version": "7.29.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-proposal-decorators",
+    "version": "7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-proposal-export-default-from",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-async-generators",
+    "version": "7.8.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-bigint",
+    "version": "7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-class-properties",
+    "version": "7.12.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-class-static-block",
+    "version": "7.14.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-decorators",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-dynamic-import",
+    "version": "7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-export-default-from",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-flow",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-import-attributes",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-import-meta",
+    "version": "7.10.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-json-strings",
+    "version": "7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-jsx",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-jsx",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-logical-assignment-operators",
+    "version": "7.10.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-nullish-coalescing-operator",
+    "version": "7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-numeric-separator",
+    "version": "7.10.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-object-rest-spread",
+    "version": "7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-optional-catch-binding",
+    "version": "7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-optional-chaining",
+    "version": "7.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-private-property-in-object",
+    "version": "7.14.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-top-level-await",
+    "version": "7.14.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-typescript",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-syntax-typescript",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-arrow-functions",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-async-generator-functions",
+    "version": "7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-async-to-generator",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-block-scoping",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-class-properties",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-class-properties",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-class-static-block",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-classes",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-classes",
+    "version": "7.29.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-destructuring",
+    "version": "7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-export-namespace-from",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-flow-strip-types",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-for-of",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-logical-assignment-operators",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-modules-commonjs",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-modules-commonjs",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-named-capturing-groups-regex",
+    "version": "7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-nullish-coalescing-operator",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-nullish-coalescing-operator",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-object-rest-spread",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-optional-catch-binding",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-optional-chaining",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-optional-chaining",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-parameters",
+    "version": "7.27.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-private-methods",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-private-property-in-object",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-display-name",
+    "version": "7.28.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-jsx",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-jsx",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-jsx-development",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-react-pure-annotations",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-runtime",
+    "version": "7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-shorthand-properties",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-template-literals",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-typescript",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-typescript",
+    "version": "7.29.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-unicode-regex",
+    "version": "7.27.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/plugin-transform-unicode-regex",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/preset-typescript",
+    "version": "7.28.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/preset-typescript",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/runtime",
+    "version": "7.29.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/template",
+    "version": "7.28.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/template",
+    "version": "7.29.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/traverse",
+    "version": "7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/traverse",
+    "version": "7.29.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/traverse",
+    "version": "7.29.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/types",
+    "version": "7.24.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/types",
+    "version": "7.29.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@babel/types",
+    "version": "7.29.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@bcoe/v8-coverage",
+    "version": "0.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@csstools/color-helpers",
+    "version": "5.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@csstools/css-calc",
+    "version": "2.1.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@csstools/css-color-parser",
+    "version": "3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@csstools/css-parser-algorithms",
+    "version": "3.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@csstools/css-tokenizer",
+    "version": "3.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@emnapi/core",
+    "version": "1.10.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@emnapi/core",
+    "version": "1.11.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@emnapi/runtime",
+    "version": "1.10.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@emnapi/runtime",
+    "version": "1.11.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@emnapi/wasi-threads",
+    "version": "1.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@emnapi/wasi-threads",
+    "version": "1.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/aix-ppc64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/android-arm",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/android-arm64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/android-x64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/darwin-arm64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/darwin-x64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/freebsd-arm64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/freebsd-x64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/linux-arm",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/linux-arm64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/linux-ia32",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/linux-loong64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/linux-mips64el",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/linux-ppc64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/linux-riscv64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/linux-s390x",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/linux-x64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/netbsd-arm64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/netbsd-x64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/openbsd-arm64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/openbsd-x64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/openharmony-arm64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/sunos-x64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/win32-arm64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/win32-ia32",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@esbuild/win32-x64",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/cli",
+    "version": "58.1.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/code-signing-certificates",
+    "version": "0.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/config",
+    "version": "58.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/config-plugins",
+    "version": "58.0.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/config-types",
+    "version": "58.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/devcert",
+    "version": "1.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/devtools",
+    "version": "58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/dom-webview",
+    "version": "58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/env",
+    "version": "2.5.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/fingerprint",
+    "version": "0.21.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/image-utils",
+    "version": "0.12.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/inline-modules",
+    "version": "0.2.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/json-file",
+    "version": "11.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/local-build-cache-provider",
+    "version": "58.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/log-box",
+    "version": "58.0.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/log-box-utils",
+    "version": "58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/metro",
+    "version": "58.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/metro-config",
+    "version": "58.0.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/metro-file-map",
+    "version": "58.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/metro-runtime",
+    "version": "58.0.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/modules-macros-linux-arm64",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/modules-macros-linux-x64",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/modules-macros-win32-arm64",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/modules-macros-win32-x64",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/osascript",
+    "version": "2.8.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/package-manager",
+    "version": "1.14.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/platforms",
+    "version": "58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/plist",
+    "version": "0.10.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/prebuild-config",
+    "version": "58.0.16"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/require-utils",
+    "version": "58.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/router-server",
+    "version": "58.0.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/schema-utils",
+    "version": "58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/sdk-runtime-versions",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/spawn-async",
+    "version": "1.8.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/sudo-prompt",
+    "version": "9.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/ui",
+    "version": "58.0.23"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/ws-tunnel",
+    "version": "2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@expo/xcpretty",
+    "version": "4.4.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@hookform/resolvers",
+    "version": "5.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@isaacs/cliui",
+    "version": "8.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@isaacs/ttlcache",
+    "version": "1.4.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@istanbuljs/load-nyc-config",
+    "version": "1.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@istanbuljs/schema",
+    "version": "0.1.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/console",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/core",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/create-cache-key-function",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/create-cache-key-function",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/diff-sequences",
+    "version": "30.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/environment",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/environment",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/environment-jsdom-abstract",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/expect",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/expect-utils",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/fake-timers",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/fake-timers",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/get-type",
+    "version": "30.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/globals",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/pattern",
+    "version": "30.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/react-is-18",
+    "version": "18.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/react-is-19",
+    "version": "19.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/reporters",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/schemas",
+    "version": "29.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/schemas",
+    "version": "30.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/snapshot-utils",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/source-map",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/test-result",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/test-sequencer",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/transform",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/transform",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/types",
+    "version": "29.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jest/types",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/gen-mapping",
+    "version": "0.3.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/remapping",
+    "version": "2.3.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/resolve-uri",
+    "version": "3.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/source-map",
+    "version": "0.3.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/sourcemap-codec",
+    "version": "1.5.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/sourcemap-codec",
+    "version": "1.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@jridgewell/trace-mapping",
+    "version": "0.3.31"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@mediabunny/aac-encoder",
+    "version": "1.61.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@mediabunny/flac-encoder",
+    "version": "1.61.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@mediabunny/mp3-encoder",
+    "version": "1.61.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@module-federation/error-codes",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@module-federation/runtime",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@module-federation/runtime-core",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@module-federation/runtime-tools",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@module-federation/sdk",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@module-federation/webpack-bundler-runtime",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@napi-rs/wasm-runtime",
+    "version": "1.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@napi-rs/wasm-runtime",
+    "version": "1.2.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-darwin-arm64",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-darwin-x64",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-linux-arm64-gnu",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-linux-arm64-musl",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-linux-x64-gnu",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-linux-x64-musl",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-win32-arm64-msvc",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noxcturnal/noxcturnal-win32-x64-msvc",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@oxc-project/types",
+    "version": "0.154.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-android-arm64",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-darwin-arm64",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-darwin-x64",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-freebsd-x64",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-linux-arm-glibc",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-linux-arm-musl",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-linux-arm64-glibc",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-linux-arm64-musl",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-linux-x64-glibc",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-linux-x64-musl",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-win32-arm64",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@parcel/watcher-win32-x64",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@pkgjs/parseargs",
+    "version": "0.11.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@pkgr/core",
+    "version": "0.3.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/primitive",
+    "version": "1.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-collection",
+    "version": "1.1.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-compose-refs",
+    "version": "1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-context",
+    "version": "1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-direction",
+    "version": "1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-id",
+    "version": "1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-presence",
+    "version": "1.1.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-primitive",
+    "version": "2.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-roving-focus",
+    "version": "1.1.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-slot",
+    "version": "1.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-slot",
+    "version": "1.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-tabs",
+    "version": "1.1.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-use-callback-ref",
+    "version": "1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-use-controllable-state",
+    "version": "1.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-use-effect-event",
+    "version": "0.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@radix-ui/react-use-layout-effect",
+    "version": "1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-buoy/core",
+    "version": "0.1.34"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-buoy/network",
+    "version": "0.1.34"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-buoy/react-query",
+    "version": "0.1.34"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-buoy/shared-ui",
+    "version": "0.1.34"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-async-storage/async-storage",
+    "version": "2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-community/datetimepicker",
+    "version": "9.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-google-signin/google-signin",
+    "version": "16.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-masked-view/masked-view",
+    "version": "0.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native-picker/picker",
+    "version": "2.11.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/asset-utils",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/babel-plugin-codegen",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/codegen",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/community-cli-plugin",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/debugger-frontend",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/debugger-shell",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/dev-middleware",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/gradle-plugin",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/jest-preset",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/js-polyfills",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/normalize-colors",
+    "version": "0.74.89"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/normalize-colors",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@react-native/virtualized-lists",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@redocly/ajv",
+    "version": "8.11.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@redocly/config",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@redocly/openapi-core",
+    "version": "1.34.24"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/bundler",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/captions",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/cli",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/codemods",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/compositor-darwin-arm64",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/compositor-darwin-x64",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/compositor-linux-arm64-gnu",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/compositor-linux-arm64-musl",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/compositor-linux-x64-gnu",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/compositor-linux-x64-musl",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/compositor-win32-x64-msvc",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/elevenlabs",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/licensing",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/media",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/media-utils",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/openai-whisper",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/paths",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/player",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/renderer",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/sdk",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/streaming",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/studio",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/studio-protocol",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/studio-server",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/studio-shared",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/timeline-utils",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/web-renderer",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@remotion/zod-types",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-darwin-arm64",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-darwin-x64",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-linux-arm64-gnu",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-linux-arm64-musl",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-linux-x64-gnu",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-linux-x64-musl",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-wasm32-wasi",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-win32-arm64-msvc",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-win32-ia32-msvc",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/binding-win32-x64-msvc",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/core",
+    "version": "1.7.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/lite-tapable",
+    "version": "1.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@rspack/plugin-react-refresh",
+    "version": "1.6.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@shopify/flash-list",
+    "version": "2.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@sinclair/typebox",
+    "version": "0.27.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@sinclair/typebox",
+    "version": "0.34.52"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@sinonjs/commons",
+    "version": "3.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@sinonjs/fake-timers",
+    "version": "10.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@sinonjs/fake-timers",
+    "version": "15.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@standard-schema/utils",
+    "version": "0.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/babel-plugin-add-jsx-attribute",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/babel-plugin-remove-jsx-attribute",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/babel-plugin-remove-jsx-empty-expression",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/babel-plugin-replace-jsx-attribute-value",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/babel-plugin-svg-dynamic-title",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/babel-plugin-svg-em-dimensions",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/babel-plugin-transform-react-native-svg",
+    "version": "8.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/babel-plugin-transform-svg-component",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/babel-preset",
+    "version": "8.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/core",
+    "version": "8.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/hast-util-to-babel-ast",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@svgr/plugin-jsx",
+    "version": "8.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/node",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-android-arm64",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-darwin-arm64",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-darwin-x64",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-freebsd-x64",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-arm-gnueabihf",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-arm64-gnu",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-arm64-musl",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-x64-gnu",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-linux-x64-musl",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-wasm32-wasi",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-win32-arm64-msvc",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tailwindcss/oxide-win32-x64-msvc",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tanstack/query-core",
+    "version": "5.100.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tanstack/react-query",
+    "version": "5.100.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tanstack/react-virtual",
+    "version": "3.14.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tanstack/virtual-core",
+    "version": "3.17.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@tybys/wasm-util",
+    "version": "0.10.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/babel__core",
+    "version": "7.20.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/babel__generator",
+    "version": "7.27.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/babel__template",
+    "version": "7.4.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/babel__traverse",
+    "version": "7.28.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/dom-mediacapture-transform",
+    "version": "0.1.12"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/dom-webcodecs",
+    "version": "0.1.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/dom-webcodecs",
+    "version": "0.1.19"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/eslint",
+    "version": "9.6.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/eslint-scope",
+    "version": "3.7.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/estree",
+    "version": "1.0.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/graceful-fs",
+    "version": "4.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/istanbul-lib-coverage",
+    "version": "2.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/istanbul-lib-report",
+    "version": "3.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/istanbul-reports",
+    "version": "3.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/jest",
+    "version": "30.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/jsdom",
+    "version": "21.1.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/json-schema",
+    "version": "7.0.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/node",
+    "version": "25.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/react",
+    "version": "19.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/react-reconciler",
+    "version": "0.33.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/react-test-renderer",
+    "version": "19.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/stack-utils",
+    "version": "2.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/tough-cookie",
+    "version": "4.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/yargs",
+    "version": "17.0.35"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@types/yargs-parser",
+    "version": "21.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@ungap/structured-clone",
+    "version": "1.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-android-arm-eabi",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-android-arm64",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-darwin-arm64",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-darwin-x64",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-freebsd-x64",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-arm-gnueabihf",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-arm-musleabihf",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-arm64-gnu",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-arm64-musl",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-loong64-gnu",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-loong64-musl",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-ppc64-gnu",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-riscv64-gnu",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-riscv64-musl",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-s390x-gnu",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-x64-gnu",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-linux-x64-musl",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-openharmony-arm64",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-wasm32-wasi",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-win32-arm64-msvc",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-win32-ia32-msvc",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@unrs/resolver-binding-win32-x64-msvc",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@vvo/tzdb",
+    "version": "6.198.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/ast",
+    "version": "1.14.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/floating-point-hex-parser",
+    "version": "1.13.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/helper-api-error",
+    "version": "1.13.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/helper-buffer",
+    "version": "1.14.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/helper-numbers",
+    "version": "1.13.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/helper-wasm-bytecode",
+    "version": "1.13.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/helper-wasm-section",
+    "version": "1.14.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/ieee754",
+    "version": "1.13.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/leb128",
+    "version": "1.13.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/utf8",
+    "version": "1.13.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/wasm-edit",
+    "version": "1.14.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/wasm-gen",
+    "version": "1.14.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/wasm-opt",
+    "version": "1.14.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/wasm-parser",
+    "version": "1.14.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@webassemblyjs/wast-printer",
+    "version": "1.14.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@xmldom/xmldom",
+    "version": "0.8.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@xtuc/ieee754",
+    "version": "1.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@xtuc/long",
+    "version": "4.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "abort-controller",
+    "version": "3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "accepts",
+    "version": "1.3.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "accepts",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "acorn",
+    "version": "8.16.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "acorn-import-phases",
+    "version": "1.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "agent-base",
+    "version": "7.1.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "agent-cli-detector",
+    "version": "0.1.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ajv",
+    "version": "8.20.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ajv-formats",
+    "version": "3.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ajv-keywords",
+    "version": "5.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "anser",
+    "version": "1.4.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-colors",
+    "version": "4.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-escapes",
+    "version": "4.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-escapes",
+    "version": "7.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-regex",
+    "version": "4.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-regex",
+    "version": "5.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-regex",
+    "version": "6.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-styles",
+    "version": "3.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-styles",
+    "version": "4.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-styles",
+    "version": "5.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ansi-styles",
+    "version": "6.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "anymatch",
+    "version": "3.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "arg",
+    "version": "4.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "arg",
+    "version": "5.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "argparse",
+    "version": "1.0.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "argparse",
+    "version": "2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "asap",
+    "version": "2.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ast-types",
+    "version": "0.16.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ast-types",
+    "version": "0.16.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "await-lock",
+    "version": "2.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-jest",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-jest",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-istanbul",
+    "version": "6.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-istanbul",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-jest-hoist",
+    "version": "29.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-jest-hoist",
+    "version": "30.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-polyfill-corejs2",
+    "version": "0.4.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-polyfill-corejs3",
+    "version": "0.13.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-polyfill-regenerator",
+    "version": "0.6.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-react-compiler",
+    "version": "1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-react-native-web",
+    "version": "0.21.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-syntax-hermes-parser",
+    "version": "0.36.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-plugin-transform-flow-enums",
+    "version": "0.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-preset-current-node-syntax",
+    "version": "1.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-preset-expo",
+    "version": "58.0.20"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-preset-jest",
+    "version": "29.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "babel-preset-jest",
+    "version": "30.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "badgin",
+    "version": "1.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "balanced-match",
+    "version": "1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "balanced-match",
+    "version": "4.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "base64-js",
+    "version": "1.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "baseline-browser-mapping",
+    "version": "2.10.21"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "big-integer",
+    "version": "1.6.52"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "boolbase",
+    "version": "1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bplist-creator",
+    "version": "0.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bplist-parser",
+    "version": "0.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bplist-parser",
+    "version": "0.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "brace-expansion",
+    "version": "1.1.21"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "brace-expansion",
+    "version": "2.1.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "brace-expansion",
+    "version": "5.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "braces",
+    "version": "3.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "browserslist",
+    "version": "4.28.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bser",
+    "version": "2.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bser",
+    "version": "2.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "buffer-from",
+    "version": "1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "burnt",
+    "version": "0.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "bytes",
+    "version": "3.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "callsites",
+    "version": "3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "camelcase",
+    "version": "5.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "camelcase",
+    "version": "6.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "caniuse-lite",
+    "version": "1.0.30001790"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "chalk",
+    "version": "2.4.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "chalk",
+    "version": "3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "chalk",
+    "version": "4.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "chalk",
+    "version": "5.6.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "change-case",
+    "version": "5.4.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "char-regex",
+    "version": "1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "chrome-trace-event",
+    "version": "1.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ci-info",
+    "version": "3.9.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ci-info",
+    "version": "4.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cjs-module-lexer",
+    "version": "2.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cli-cursor",
+    "version": "2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cli-spinners",
+    "version": "2.9.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "client-only",
+    "version": "0.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cliui",
+    "version": "8.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "clone",
+    "version": "1.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "co",
+    "version": "4.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "collect-v8-coverage",
+    "version": "1.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color",
+    "version": "4.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-convert",
+    "version": "1.9.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-convert",
+    "version": "2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-name",
+    "version": "1.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-name",
+    "version": "1.1.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "color-string",
+    "version": "1.9.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "colorette",
+    "version": "1.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "commander",
+    "version": "12.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "commander",
+    "version": "2.20.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "commander",
+    "version": "7.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "compressible",
+    "version": "2.0.18"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "compression",
+    "version": "1.8.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "concat-map",
+    "version": "0.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "connect",
+    "version": "3.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "convert-source-map",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "core-js-compat",
+    "version": "3.49.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cosmiconfig",
+    "version": "8.3.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cross-fetch",
+    "version": "3.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cross-spawn",
+    "version": "7.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "css-in-js-utils",
+    "version": "3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "css-loader",
+    "version": "7.1.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "css-select",
+    "version": "5.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "css-tree",
+    "version": "1.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "css-what",
+    "version": "6.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cssesc",
+    "version": "3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "cssstyle",
+    "version": "4.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "csstype",
+    "version": "3.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "culori",
+    "version": "4.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "data-urls",
+    "version": "5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "debug",
+    "version": "2.6.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "debug",
+    "version": "3.2.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "debug",
+    "version": "4.4.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "decimal.js",
+    "version": "10.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "dedent",
+    "version": "1.7.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "deepmerge",
+    "version": "4.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "defaults",
+    "version": "1.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "define-lazy-prop",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "depd",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "destroy",
+    "version": "1.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "detect-libc",
+    "version": "2.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "detect-newline",
+    "version": "3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "dnssd-advertise",
+    "version": "1.1.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "dom-serializer",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "domelementtype",
+    "version": "2.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "domhandler",
+    "version": "5.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "domutils",
+    "version": "3.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "dot-case",
+    "version": "3.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "dotenv",
+    "version": "17.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "eastasianwidth",
+    "version": "0.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ee-first",
+    "version": "1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "electron-to-chromium",
+    "version": "1.5.344"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "emittery",
+    "version": "0.13.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "emoji-regex",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "emoji-regex",
+    "version": "9.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "encodeurl",
+    "version": "1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "encodeurl",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "enhanced-resolve",
+    "version": "5.26.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "enhanced-resolve",
+    "version": "5.26.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "entities",
+    "version": "4.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "entities",
+    "version": "6.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "environment",
+    "version": "1.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "error-ex",
+    "version": "1.3.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "error-stack-parser",
+    "version": "2.1.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "es-errors",
+    "version": "1.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "es-module-lexer",
+    "version": "2.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "esbuild",
+    "version": "0.28.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "escalade",
+    "version": "3.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "escape-html",
+    "version": "1.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "escape-string-regexp",
+    "version": "1.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "escape-string-regexp",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "eslint-scope",
+    "version": "5.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "esprima",
+    "version": "4.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "esrecurse",
+    "version": "4.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "estraverse",
+    "version": "4.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "estraverse",
+    "version": "5.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "etag",
+    "version": "1.8.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "event-target-shim",
+    "version": "5.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "events",
+    "version": "3.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "execa",
+    "version": "5.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "exit-x",
+    "version": "0.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expect",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo",
+    "version": "58.0.19"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-application",
+    "version": "58.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-asset",
+    "version": "58.0.18"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-auth-session",
+    "version": "58.0.14"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-constants",
+    "version": "58.0.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-crypto",
+    "version": "58.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-dev-client",
+    "version": "58.0.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-dev-launcher",
+    "version": "58.0.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-dev-menu",
+    "version": "58.0.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-dev-menu-interface",
+    "version": "58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-device",
+    "version": "58.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-eas-client",
+    "version": "58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-file-system",
+    "version": "58.0.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-font",
+    "version": "58.0.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-glass-effect",
+    "version": "58.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-haptics",
+    "version": "58.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-image",
+    "version": "58.0.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-json-utils",
+    "version": "58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-keep-awake",
+    "version": "58.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-linear-gradient",
+    "version": "58.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-linking",
+    "version": "58.0.14"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-localization",
+    "version": "58.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-manifests",
+    "version": "58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-autolinking",
+    "version": "58.0.15"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-cli",
+    "version": "0.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-core",
+    "version": "58.0.26"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-jsi",
+    "version": "58.0.19"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-modules-macros",
+    "version": "0.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-network",
+    "version": "58.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-notifications",
+    "version": "58.1.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-router",
+    "version": "58.0.26"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-secure-store",
+    "version": "58.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-server",
+    "version": "58.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-splash-screen",
+    "version": "58.0.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-sqlite",
+    "version": "58.0.14"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-status-bar",
+    "version": "58.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-structured-headers",
+    "version": "58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-system-ui",
+    "version": "58.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-updates",
+    "version": "58.0.18"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-updates-interface",
+    "version": "58.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-web-browser",
+    "version": "58.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "expo-widgets",
+    "version": "58.0.23"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "exponential-backoff",
+    "version": "3.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fast-deep-equal",
+    "version": "3.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fast-json-stable-stringify",
+    "version": "2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fast-uri",
+    "version": "3.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fb-dotslash",
+    "version": "0.5.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fb-watchman",
+    "version": "2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fb-watchman",
+    "version": "2.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fbjs",
+    "version": "3.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fbjs-css-vars",
+    "version": "1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fdir",
+    "version": "6.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fetch-nodeshim",
+    "version": "0.4.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fill-range",
+    "version": "7.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "finalhandler",
+    "version": "1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "find-up",
+    "version": "4.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-enums-runtime",
+    "version": "0.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-estree",
+    "version": "0.327.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-estree",
+    "version": "0.331.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-parser",
+    "version": "0.327.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "flow-parser",
+    "version": "0.331.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "foreground-child",
+    "version": "3.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fresh",
+    "version": "0.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fs-monkey",
+    "version": "1.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fs.realpath",
+    "version": "1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "fsevents",
+    "version": "2.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "function-bind",
+    "version": "1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "gensync",
+    "version": "1.0.0-beta.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "get-caller-file",
+    "version": "2.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "get-package-type",
+    "version": "0.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "get-stream",
+    "version": "6.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "getenv",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "gifted-charts-core",
+    "version": "0.1.80"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "glob",
+    "version": "10.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "glob",
+    "version": "13.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "glob",
+    "version": "7.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "glob-to-regexp",
+    "version": "0.4.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "graceful-fs",
+    "version": "4.2.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "has-flag",
+    "version": "3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "has-flag",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hasown",
+    "version": "2.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hermes-compiler",
+    "version": "260318099.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hermes-estree",
+    "version": "0.36.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hermes-parser",
+    "version": "0.36.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hosted-git-info",
+    "version": "7.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "html-encoding-sniffer",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "html-entities",
+    "version": "2.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "html-escaper",
+    "version": "2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "http-errors",
+    "version": "2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "http-proxy-agent",
+    "version": "7.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "https-proxy-agent",
+    "version": "7.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "human-signals",
+    "version": "2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "hyphenate-style-name",
+    "version": "1.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "iconv-lite",
+    "version": "0.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "icss-utils",
+    "version": "5.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ignore",
+    "version": "5.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "import-fresh",
+    "version": "3.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "import-local",
+    "version": "3.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "imurmurhash",
+    "version": "0.1.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "index-to-position",
+    "version": "1.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "inflight",
+    "version": "1.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "inherits",
+    "version": "2.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "inline-style-prefixer",
+    "version": "7.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "invariant",
+    "version": "2.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-arrayish",
+    "version": "0.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-arrayish",
+    "version": "0.3.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-core-module",
+    "version": "2.16.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-docker",
+    "version": "2.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-extglob",
+    "version": "2.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-fullwidth-code-point",
+    "version": "3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-generator-fn",
+    "version": "2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-glob",
+    "version": "4.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-number",
+    "version": "7.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-plain-obj",
+    "version": "2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-potential-custom-element-name",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-stream",
+    "version": "2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "is-wsl",
+    "version": "2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "isexe",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "istanbul-lib-coverage",
+    "version": "3.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "istanbul-lib-instrument",
+    "version": "5.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "istanbul-lib-instrument",
+    "version": "6.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "istanbul-lib-report",
+    "version": "3.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "istanbul-lib-source-maps",
+    "version": "5.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "istanbul-reports",
+    "version": "3.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jackspeak",
+    "version": "3.4.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-changed-files",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-circus",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-cli",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-config",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-diff",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-docblock",
+    "version": "30.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-each",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-environment-jsdom",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-environment-node",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-environment-node",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-expo",
+    "version": "58.0.12"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-get-type",
+    "version": "29.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-haste-map",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-haste-map",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-leak-detector",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-matcher-utils",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-message-util",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-message-util",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-mock",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-mock",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-regex-util",
+    "version": "29.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-regex-util",
+    "version": "30.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-resolve",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-resolve-dependencies",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-runner",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-runtime",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-snapshot",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-util",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-util",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-validate",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-validate",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-watch-select-projects",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-watch-typeahead",
+    "version": "3.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-watcher",
+    "version": "30.5.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-worker",
+    "version": "27.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-worker",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jest-worker",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jimp-compact",
+    "version": "0.16.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jiti",
+    "version": "2.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "js-levenshtein",
+    "version": "1.1.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "js-tokens",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "js-yaml",
+    "version": "3.14.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "js-yaml",
+    "version": "4.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "js-yaml",
+    "version": "4.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jsc-safe-url",
+    "version": "0.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jsdom",
+    "version": "26.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "jsesc",
+    "version": "3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "json-parse-even-better-errors",
+    "version": "2.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "json-schema-traverse",
+    "version": "1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "json5",
+    "version": "2.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "kiwi-schema",
+    "version": "0.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "kleur",
+    "version": "3.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lan-network",
+    "version": "0.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "leven",
+    "version": "3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-android-arm64",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-darwin-arm64",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-darwin-arm64",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-darwin-x64",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-darwin-x64",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-freebsd-x64",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-freebsd-x64",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm-gnueabihf",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm-gnueabihf",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm64-gnu",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm64-gnu",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm64-musl",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-arm64-musl",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-x64-gnu",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-x64-gnu",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-x64-musl",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-linux-x64-musl",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-win32-arm64-msvc",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-win32-arm64-msvc",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-win32-x64-msvc",
+    "version": "1.30.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lightningcss-win32-x64-msvc",
+    "version": "1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lines-and-columns",
+    "version": "1.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "loader-runner",
+    "version": "4.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "locate-path",
+    "version": "5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lodash",
+    "version": "4.18.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lodash.debounce",
+    "version": "4.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lodash.throttle",
+    "version": "4.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "log-symbols",
+    "version": "2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "loose-envify",
+    "version": "1.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lower-case",
+    "version": "2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lru-cache",
+    "version": "10.4.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lru-cache",
+    "version": "11.3.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lru-cache",
+    "version": "5.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lru-cache",
+    "version": "6.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "lucide-react-native",
+    "version": "1.59.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "magic-string",
+    "version": "0.30.21"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "make-dir",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "makeerror",
+    "version": "1.0.12"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mdn-data",
+    "version": "2.0.14"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mediabunny",
+    "version": "1.61.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "memfs",
+    "version": "3.4.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "memoize-one",
+    "version": "5.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "memoize-one",
+    "version": "6.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "merge-options",
+    "version": "3.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "merge-stream",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-babel-transformer",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-cache",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-cache-key",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-config",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-core",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-file-map",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-minify-terser",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-resolver",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-runtime",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-source-map",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-symbolicate",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-transform-plugins",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "metro-transform-worker",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "micromatch",
+    "version": "4.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime",
+    "version": "1.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime-db",
+    "version": "1.52.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime-db",
+    "version": "1.54.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime-types",
+    "version": "2.1.35"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mime-types",
+    "version": "3.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mimic-fn",
+    "version": "1.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "mimic-fn",
+    "version": "2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "minimatch",
+    "version": "10.2.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "minimatch",
+    "version": "3.1.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "minimatch",
+    "version": "5.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "minimatch",
+    "version": "9.0.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "minimist",
+    "version": "1.2.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "minipass",
+    "version": "7.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ms",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ms",
+    "version": "2.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "multitars",
+    "version": "1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "nanoid",
+    "version": "3.3.20"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "napi-postinstall",
+    "version": "0.3.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "natural-compare",
+    "version": "1.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "negotiator",
+    "version": "0.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "negotiator",
+    "version": "0.6.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "negotiator",
+    "version": "1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "neo-async",
+    "version": "2.6.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "no-case",
+    "version": "3.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "node-addon-api",
+    "version": "7.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "node-fetch",
+    "version": "2.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "node-forge",
+    "version": "1.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "node-int64",
+    "version": "0.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "node-releases",
+    "version": "2.0.38"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "normalize-path",
+    "version": "3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "noxcturnal",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "npm-package-arg",
+    "version": "11.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "npm-run-path",
+    "version": "4.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "nth-check",
+    "version": "2.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "nullthrows",
+    "version": "1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "nwsapi",
+    "version": "2.2.28"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ob1",
+    "version": "0.87.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "object-assign",
+    "version": "4.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "on-finished",
+    "version": "2.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "on-finished",
+    "version": "2.4.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "on-headers",
+    "version": "1.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "once",
+    "version": "1.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "onetime",
+    "version": "2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "onetime",
+    "version": "5.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "open",
+    "version": "8.4.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "openapi-typescript",
+    "version": "7.10.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ora",
+    "version": "3.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "p-limit",
+    "version": "2.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "p-limit",
+    "version": "3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "p-locate",
+    "version": "4.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "p-try",
+    "version": "2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "package-json-from-dist",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "parent-module",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "parse-json",
+    "version": "5.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "parse-json",
+    "version": "8.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "parse-png",
+    "version": "2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "parse5",
+    "version": "7.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "parseurl",
+    "version": "1.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-exists",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-is-absolute",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-key",
+    "version": "3.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-parse",
+    "version": "1.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-scurry",
+    "version": "1.11.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-scurry",
+    "version": "2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "path-type",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "picocolors",
+    "version": "1.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "picomatch",
+    "version": "2.3.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "picomatch",
+    "version": "4.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "pirates",
+    "version": "4.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "pkg-dir",
+    "version": "4.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "plist",
+    "version": "3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "pluralize",
+    "version": "8.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "pngjs",
+    "version": "3.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss",
+    "version": "8.5.31"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss",
+    "version": "8.5.32"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss-modules-extract-imports",
+    "version": "3.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss-modules-local-by-default",
+    "version": "4.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss-modules-scope",
+    "version": "3.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss-modules-values",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss-selector-parser",
+    "version": "7.1.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "postcss-value-parser",
+    "version": "4.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "prettier",
+    "version": "3.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "pretty-format",
+    "version": "29.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "pretty-format",
+    "version": "30.5.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "prismjs",
+    "version": "1.30.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "proc-log",
+    "version": "4.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "progress",
+    "version": "2.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "promise",
+    "version": "7.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "promise",
+    "version": "8.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "prompts",
+    "version": "2.4.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "punycode",
+    "version": "2.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "pure-rand",
+    "version": "7.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "range-parser",
+    "version": "1.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react",
+    "version": "19.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react",
+    "version": "19.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-devtools-core",
+    "version": "6.1.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-dom",
+    "version": "19.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-dom",
+    "version": "19.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-fast-compare",
+    "version": "3.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-freeze",
+    "version": "1.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-hook-form",
+    "version": "7.73.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-is",
+    "version": "18.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-is",
+    "version": "19.2.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-is",
+    "version": "19.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native",
+    "version": "0.88.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-body-highlighter",
+    "version": "3.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-drawer-layout",
+    "version": "4.2.12"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-gesture-handler",
+    "version": "3.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-gifted-charts",
+    "version": "1.4.76"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-is-edge-to-edge",
+    "version": "1.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-linear-gradient",
+    "version": "2.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-reanimated",
+    "version": "4.7.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-safe-area-context",
+    "version": "5.10.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-screens",
+    "version": "4.30.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-svg",
+    "version": "15.16.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-web",
+    "version": "0.21.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-worklets",
+    "version": "0.13.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-reconciler",
+    "version": "0.34.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-refresh",
+    "version": "0.14.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-refresh",
+    "version": "0.18.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-test-renderer",
+    "version": "19.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "recast",
+    "version": "0.23.21"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerate",
+    "version": "1.4.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerate",
+    "version": "1.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerate-unicode-properties",
+    "version": "10.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerate-unicode-properties",
+    "version": "10.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regenerator-runtime",
+    "version": "0.13.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regexpu-core",
+    "version": "6.4.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regexpu-core",
+    "version": "6.5.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regjsgen",
+    "version": "0.8.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "regjsparser",
+    "version": "0.13.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "remotion",
+    "version": "4.0.536"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "require-directory",
+    "version": "2.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "require-from-string",
+    "version": "2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "resolve",
+    "version": "1.22.12"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "resolve-cwd",
+    "version": "3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "resolve-from",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "resolve-from",
+    "version": "5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "resolve-workspace-root",
+    "version": "2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "restore-cursor",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "rrweb-cssom",
+    "version": "0.8.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "rtl-detect",
+    "version": "1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "safe-buffer",
+    "version": "5.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "safer-buffer",
+    "version": "2.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sandbox-cli-detector",
+    "version": "0.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sax",
+    "version": "1.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "saxes",
+    "version": "6.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "scheduler",
+    "version": "0.27.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "scheduler",
+    "version": "0.28.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "schema-utils",
+    "version": "4.8.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "semver",
+    "version": "6.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "semver",
+    "version": "7.5.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "semver",
+    "version": "7.7.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "semver",
+    "version": "7.8.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "semver",
+    "version": "7.8.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "send",
+    "version": "0.19.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "serialize-error",
+    "version": "2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "serve-static",
+    "version": "1.16.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "server-only",
+    "version": "0.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "setimmediate",
+    "version": "1.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "setprototypeof",
+    "version": "1.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sf-symbols-typescript",
+    "version": "1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sf-symbols-typescript",
+    "version": "2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "shebang-command",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "shebang-regex",
+    "version": "3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "shell-quote",
+    "version": "1.8.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "signal-exit",
+    "version": "3.0.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "signal-exit",
+    "version": "4.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "simple-plist",
+    "version": "1.3.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "simple-swizzle",
+    "version": "0.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sisteransi",
+    "version": "1.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "slash",
+    "version": "3.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "slash",
+    "version": "5.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "slugify",
+    "version": "1.6.9"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "snake-case",
+    "version": "3.0.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sonner",
+    "version": "0.3.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map",
+    "version": "0.5.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map",
+    "version": "0.5.7"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map",
+    "version": "0.6.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map",
+    "version": "0.8.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map-js",
+    "version": "1.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map-js",
+    "version": "1.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "source-map-support",
+    "version": "0.5.21"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "sprintf-js",
+    "version": "1.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stack-generator",
+    "version": "2.0.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stack-utils",
+    "version": "2.0.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stackframe",
+    "version": "1.3.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stacktrace-gps",
+    "version": "3.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stacktrace-js",
+    "version": "2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stacktrace-parser",
+    "version": "0.1.11"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "standard-navigation",
+    "version": "0.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "statuses",
+    "version": "1.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "statuses",
+    "version": "2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "stream-buffers",
+    "version": "2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "string-length",
+    "version": "4.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "string-length",
+    "version": "6.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "string-width",
+    "version": "4.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "string-width",
+    "version": "5.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "string-width-cjs",
+    "version": "4.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "strip-ansi",
+    "version": "5.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "strip-ansi",
+    "version": "6.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "strip-ansi",
+    "version": "7.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "strip-ansi-cjs",
+    "version": "6.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "strip-bom",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "strip-final-newline",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "strip-json-comments",
+    "version": "3.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "structured-headers",
+    "version": "0.4.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "style-loader",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "styleq",
+    "version": "0.1.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-color",
+    "version": "10.2.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-color",
+    "version": "5.5.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-color",
+    "version": "7.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-color",
+    "version": "8.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-hyperlinks",
+    "version": "2.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "supports-preserve-symlinks-flag",
+    "version": "1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "svg-parser",
+    "version": "2.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "symbol-tree",
+    "version": "3.2.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "synckit",
+    "version": "0.11.13"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tailwindcss",
+    "version": "4.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tapable",
+    "version": "2.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "terminal-link",
+    "version": "2.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "terser",
+    "version": "5.46.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "terser",
+    "version": "5.51.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "terser-webpack-plugin",
+    "version": "5.6.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "test-exclude",
+    "version": "6.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "test-exclude",
+    "version": "7.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "test-renderer",
+    "version": "1.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "throat",
+    "version": "5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tiny-invariant",
+    "version": "1.3.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tinyglobby",
+    "version": "0.2.17"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tldts",
+    "version": "6.1.86"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tldts-core",
+    "version": "6.1.86"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tmpl",
+    "version": "1.0.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "to-fast-properties",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "to-regex-range",
+    "version": "5.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "toidentifier",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "toqr",
+    "version": "0.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tough-cookie",
+    "version": "5.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tr46",
+    "version": "0.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tr46",
+    "version": "5.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tslib",
+    "version": "2.8.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "tslib",
+    "version": "2.9.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "type-detect",
+    "version": "4.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "type-fest",
+    "version": "0.21.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "type-fest",
+    "version": "0.7.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "type-fest",
+    "version": "4.41.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "typescript",
+    "version": "6.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ua-parser-js",
+    "version": "0.7.41"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ua-parser-js",
+    "version": "1.0.41"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "undici-types",
+    "version": "7.19.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unicode-canonical-property-names-ecmascript",
+    "version": "2.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unicode-match-property-ecmascript",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unicode-match-property-value-ecmascript",
+    "version": "2.2.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unicode-property-aliases-ecmascript",
+    "version": "2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "uniwind",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unpipe",
+    "version": "1.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "unrs-resolver",
+    "version": "1.12.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "update-browserslist-db",
+    "version": "1.2.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "uri-js-replace",
+    "version": "1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "use-latest-callback",
+    "version": "0.2.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "util-deprecate",
+    "version": "1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "utils-merge",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "v8-to-istanbul",
+    "version": "9.3.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "validate-npm-package-name",
+    "version": "5.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "vary",
+    "version": "1.1.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "vlq",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "w3c-xmlserializer",
+    "version": "5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "walker",
+    "version": "1.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "warn-once",
+    "version": "0.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "watchpack",
+    "version": "2.6.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "wcwidth",
+    "version": "1.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "webidl-conversions",
+    "version": "3.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "webidl-conversions",
+    "version": "7.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "webpack",
+    "version": "5.105.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "webpack-sources",
+    "version": "3.7.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "whatwg-encoding",
+    "version": "3.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "whatwg-fetch",
+    "version": "3.6.20"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "whatwg-mimetype",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "whatwg-url",
+    "version": "14.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "whatwg-url",
+    "version": "5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "whatwg-url-minimum",
+    "version": "0.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "which",
+    "version": "2.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "wrap-ansi",
+    "version": "7.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "wrap-ansi",
+    "version": "8.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "wrap-ansi-cjs",
+    "version": "7.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "wrappy",
+    "version": "1.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "write-file-atomic",
+    "version": "4.0.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "write-file-atomic",
+    "version": "5.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ws",
+    "version": "7.5.10"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ws",
+    "version": "8.20.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ws",
+    "version": "8.21.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "ws",
+    "version": "8.22.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xcode",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xml-name-validator",
+    "version": "5.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xml2js",
+    "version": "0.6.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xmlbuilder",
+    "version": "11.0.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xmlbuilder",
+    "version": "15.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "xmlchars",
+    "version": "2.2.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "y18n",
+    "version": "5.0.8"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yallist",
+    "version": "3.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yallist",
+    "version": "4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yaml-ast-parser",
+    "version": "0.0.43"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yargs",
+    "version": "17.7.2"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yargs",
+    "version": "17.7.3"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yargs-parser",
+    "version": "21.1.1"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "yocto-queue",
+    "version": "0.1.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "zod",
+    "version": "3.25.76"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "zod",
+    "version": "4.3.6"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "zod",
+    "version": "4.5.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "zustand",
+    "version": "5.0.12"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "aho-corasick",
+    "version": "1.1.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "allocator-api2",
+    "version": "0.2.21"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "android_system_properties",
+    "version": "0.1.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "atoi",
+    "version": "2.0.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "atomic-waker",
+    "version": "1.1.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "autocfg",
+    "version": "1.5.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "axum",
+    "version": "0.8.9"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "axum-core",
+    "version": "0.5.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "base64",
+    "version": "0.22.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "base64",
+    "version": "0.23.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "base64ct",
+    "version": "1.8.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "bitflags",
+    "version": "2.13.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "block-buffer",
+    "version": "0.10.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "bumpalo",
+    "version": "3.20.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "byteorder",
+    "version": "1.5.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "bytes",
+    "version": "1.12.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "cc",
+    "version": "1.11.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "cfg-if",
+    "version": "1.0.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "cfg_aliases",
+    "version": "0.2.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "chacha20",
+    "version": "0.10.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "chrono",
+    "version": "0.4.45"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "chrono-tz",
+    "version": "0.10.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "chrono-tz-build",
+    "version": "0.5.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "const-oid",
+    "version": "0.9.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "core-foundation-sys",
+    "version": "0.8.7"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "cpufeatures",
+    "version": "0.2.17"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "cpufeatures",
+    "version": "0.3.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "crc",
+    "version": "3.4.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "crc-catalog",
+    "version": "2.5.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "crossbeam-queue",
+    "version": "0.3.14"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "crossbeam-utils",
+    "version": "0.8.23"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "crypto-common",
+    "version": "0.1.7"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "der",
+    "version": "0.7.10"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "deranged",
+    "version": "0.5.9"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "digest",
+    "version": "0.10.7"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "displaydoc",
+    "version": "0.2.7"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "dotenvy",
+    "version": "0.15.7"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "either",
+    "version": "1.19.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "equivalent",
+    "version": "1.0.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "errno",
+    "version": "0.3.14"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "etcetera",
+    "version": "0.8.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "event-listener",
+    "version": "5.4.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "fastrand",
+    "version": "2.5.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "find-msvc-tools",
+    "version": "0.1.15"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "flume",
+    "version": "0.11.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "foldhash",
+    "version": "0.1.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "form_urlencoded",
+    "version": "1.2.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "futures-channel",
+    "version": "0.3.34"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "futures-core",
+    "version": "0.3.34"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "futures-executor",
+    "version": "0.3.34"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "futures-intrusive",
+    "version": "0.5.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "futures-io",
+    "version": "0.3.34"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "futures-sink",
+    "version": "0.3.34"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "futures-task",
+    "version": "0.3.34"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "futures-util",
+    "version": "0.3.34"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "generic-array",
+    "version": "0.14.7"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "getrandom",
+    "version": "0.2.17"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "getrandom",
+    "version": "0.4.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "hashbrown",
+    "version": "0.15.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "hashbrown",
+    "version": "0.17.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "hashlink",
+    "version": "0.10.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "heck",
+    "version": "0.5.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "hex",
+    "version": "0.4.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "hkdf",
+    "version": "0.12.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "hmac",
+    "version": "0.12.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "home",
+    "version": "0.5.12"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "http",
+    "version": "1.5.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "http-body",
+    "version": "1.1.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "http-body-util",
+    "version": "0.1.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "httparse",
+    "version": "1.10.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "httpdate",
+    "version": "1.0.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "hyper",
+    "version": "1.12.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "hyper-rustls",
+    "version": "0.27.10"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "hyper-util",
+    "version": "0.1.21"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "iana-time-zone",
+    "version": "0.1.65"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "iana-time-zone-haiku",
+    "version": "0.1.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "icu_collections",
+    "version": "2.4.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "icu_locale_core",
+    "version": "2.4.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "icu_normalizer",
+    "version": "2.4.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "icu_normalizer_data",
+    "version": "2.4.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "icu_properties",
+    "version": "2.4.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "icu_properties_data",
+    "version": "2.4.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "icu_provider",
+    "version": "2.4.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "idna",
+    "version": "1.1.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "idna_adapter",
+    "version": "1.2.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "indexmap",
+    "version": "2.14.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "ipnet",
+    "version": "2.12.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "itoa",
+    "version": "1.0.18"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "js-sys",
+    "version": "0.3.107"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "jsonwebtoken",
+    "version": "9.3.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "lazy_static",
+    "version": "1.5.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "libc",
+    "version": "0.2.191"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "libm",
+    "version": "0.2.16"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "libredox",
+    "version": "0.1.25"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "libsqlite3-sys",
+    "version": "0.30.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "linux-raw-sys",
+    "version": "0.12.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "litemap",
+    "version": "0.8.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "lock_api",
+    "version": "0.4.14"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "log",
+    "version": "0.4.35"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "lru-slab",
+    "version": "0.1.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "matchers",
+    "version": "0.2.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "matchit",
+    "version": "0.8.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "md-5",
+    "version": "0.10.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "memchr",
+    "version": "2.8.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "mime",
+    "version": "0.3.18"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "mio",
+    "version": "1.2.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "nu-ansi-term",
+    "version": "0.50.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "num-bigint",
+    "version": "0.4.8"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "num-bigint-dig",
+    "version": "0.8.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "num-conv",
+    "version": "0.2.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "num-integer",
+    "version": "0.1.47"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "num-iter",
+    "version": "0.1.46"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "num-traits",
+    "version": "0.2.19"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "once_cell",
+    "version": "1.21.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "parking",
+    "version": "2.2.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "parking_lot",
+    "version": "0.12.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "parking_lot_core",
+    "version": "0.9.12"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "parse-zoneinfo",
+    "version": "0.4.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "pem",
+    "version": "3.0.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "pem-rfc7468",
+    "version": "0.7.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "percent-encoding",
+    "version": "2.3.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "phf",
+    "version": "0.12.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "phf_codegen",
+    "version": "0.12.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "phf_generator",
+    "version": "0.12.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "phf_macros",
+    "version": "0.12.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "phf_shared",
+    "version": "0.12.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "pin-project-lite",
+    "version": "0.2.17"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "pkcs1",
+    "version": "0.7.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "pkcs8",
+    "version": "0.10.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "pkg-config",
+    "version": "0.3.34"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "plain",
+    "version": "0.2.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "potential_utf",
+    "version": "0.1.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "powerfmt",
+    "version": "0.2.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "ppv-lite86",
+    "version": "0.2.21"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "proc-macro2",
+    "version": "1.0.107"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "quinn",
+    "version": "0.11.12"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "quinn-proto",
+    "version": "0.11.19"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "quinn-udp",
+    "version": "0.5.16"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "quote",
+    "version": "1.0.47"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "r-efi",
+    "version": "6.0.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rand",
+    "version": "0.10.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rand",
+    "version": "0.8.8"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rand_chacha",
+    "version": "0.3.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rand_core",
+    "version": "0.10.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rand_core",
+    "version": "0.6.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rand_pcg",
+    "version": "0.10.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "redox_syscall",
+    "version": "0.5.18"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "redox_syscall",
+    "version": "0.9.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "regex",
+    "version": "1.13.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "regex-automata",
+    "version": "0.4.18"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "regex-syntax",
+    "version": "0.8.11"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "reqwest",
+    "version": "0.12.28"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "ring",
+    "version": "0.17.14"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rsa",
+    "version": "0.9.10"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rustc-hash",
+    "version": "2.1.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rustix",
+    "version": "1.1.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rustls",
+    "version": "0.23.46"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rustls-pki-types",
+    "version": "1.15.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rustls-webpki",
+    "version": "0.103.16"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "rustversion",
+    "version": "1.0.23"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "ryu",
+    "version": "1.0.23"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "scopeguard",
+    "version": "1.2.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "serde",
+    "version": "1.0.229"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "serde_core",
+    "version": "1.0.229"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "serde_derive",
+    "version": "1.0.229"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "serde_json",
+    "version": "1.0.154"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "serde_path_to_error",
+    "version": "0.1.20"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "serde_urlencoded",
+    "version": "0.7.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sha1",
+    "version": "0.10.7"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sha2",
+    "version": "0.10.9"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sharded-slab",
+    "version": "0.1.7"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "shlex",
+    "version": "2.0.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "signal-hook-registry",
+    "version": "1.4.8"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "signature",
+    "version": "2.2.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "simple_asn1",
+    "version": "0.6.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "siphasher",
+    "version": "1.0.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "slab",
+    "version": "0.4.12"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "smallvec",
+    "version": "1.16.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "socket2",
+    "version": "0.6.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "spin",
+    "version": "0.9.9"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "spki",
+    "version": "0.7.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sqlx",
+    "version": "0.8.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sqlx-core",
+    "version": "0.8.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sqlx-macros",
+    "version": "0.8.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sqlx-macros-core",
+    "version": "0.8.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sqlx-mysql",
+    "version": "0.8.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sqlx-postgres",
+    "version": "0.8.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sqlx-sqlite",
+    "version": "0.8.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "stable_deref_trait",
+    "version": "1.2.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "stringprep",
+    "version": "0.1.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "subtle",
+    "version": "2.6.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "syn",
+    "version": "2.0.119"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "syn",
+    "version": "3.0.9"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "sync_wrapper",
+    "version": "1.0.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "synstructure",
+    "version": "0.14.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tempfile",
+    "version": "3.27.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "thiserror",
+    "version": "2.0.21"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "thiserror-impl",
+    "version": "2.0.21"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "thread_local",
+    "version": "1.1.10"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "time",
+    "version": "0.3.55"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "time-core",
+    "version": "0.1.9"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "time-macros",
+    "version": "0.2.32"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tinystr",
+    "version": "0.8.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tinyvec",
+    "version": "1.13.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tokio",
+    "version": "1.54.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tokio-macros",
+    "version": "2.7.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tokio-rustls",
+    "version": "0.26.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tokio-stream",
+    "version": "0.1.19"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tower",
+    "version": "0.5.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tower-http",
+    "version": "0.6.11"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tower-layer",
+    "version": "0.3.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tower-service",
+    "version": "0.3.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tracing",
+    "version": "0.1.44"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tracing-attributes",
+    "version": "0.1.31"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tracing-core",
+    "version": "0.1.36"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tracing-log",
+    "version": "0.2.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tracing-serde",
+    "version": "0.2.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "tracing-subscriber",
+    "version": "0.3.23"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "try-lock",
+    "version": "0.2.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "typenum",
+    "version": "1.20.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "uncased",
+    "version": "0.9.10"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "unicode-bidi",
+    "version": "0.3.18"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "unicode-ident",
+    "version": "1.0.27"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "unicode-normalization",
+    "version": "0.1.26"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "unicode-properties",
+    "version": "0.1.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "untrusted",
+    "version": "0.9.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "url",
+    "version": "2.5.8"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "utf8_iter",
+    "version": "1.1.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "utf_types",
+    "version": "1.0.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "uuid",
+    "version": "1.29.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "valuable",
+    "version": "0.1.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "vcpkg",
+    "version": "0.2.15"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "version_check",
+    "version": "0.9.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "want",
+    "version": "0.3.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "wasi",
+    "version": "0.11.1+wasi-snapshot-preview1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "wasite",
+    "version": "0.1.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "wasm-bindgen",
+    "version": "0.2.130"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "wasm-bindgen-futures",
+    "version": "0.4.80"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "wasm-bindgen-macro",
+    "version": "0.2.130"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "wasm-bindgen-macro-support",
+    "version": "0.2.130"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "wasm-bindgen-shared",
+    "version": "0.2.130"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "web-sys",
+    "version": "0.3.107"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "web-time",
+    "version": "1.1.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "webpki-roots",
+    "version": "1.0.11"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "whoami",
+    "version": "1.6.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-core",
+    "version": "0.62.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-implement",
+    "version": "0.60.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-interface",
+    "version": "0.59.3"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-link",
+    "version": "0.2.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-result",
+    "version": "0.4.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-strings",
+    "version": "0.5.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-sys",
+    "version": "0.48.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-sys",
+    "version": "0.52.0"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-sys",
+    "version": "0.61.2"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-targets",
+    "version": "0.48.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows-targets",
+    "version": "0.52.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_aarch64_gnullvm",
+    "version": "0.48.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_aarch64_gnullvm",
+    "version": "0.52.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_aarch64_msvc",
+    "version": "0.48.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_aarch64_msvc",
+    "version": "0.52.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_i686_gnu",
+    "version": "0.48.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_i686_gnu",
+    "version": "0.52.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_i686_gnullvm",
+    "version": "0.52.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_i686_msvc",
+    "version": "0.48.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_i686_msvc",
+    "version": "0.52.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_x86_64_gnu",
+    "version": "0.48.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_x86_64_gnu",
+    "version": "0.52.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_x86_64_gnullvm",
+    "version": "0.48.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_x86_64_gnullvm",
+    "version": "0.52.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_x86_64_msvc",
+    "version": "0.48.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "windows_x86_64_msvc",
+    "version": "0.52.6"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "writeable",
+    "version": "0.6.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "yoke",
+    "version": "0.8.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "yoke-derive",
+    "version": "0.8.4"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "zerocopy",
+    "version": "0.8.63"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "zerocopy-derive",
+    "version": "0.8.63"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "zerofrom",
+    "version": "0.1.8"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "zerofrom-derive",
+    "version": "0.1.8"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "zeroize",
+    "version": "1.9.1"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "zerotrie",
+    "version": "0.2.5"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "zerovec",
+    "version": "0.11.9"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "zerovec-derive",
+    "version": "0.11.7"
+  },
+  {
+    "ecosystem": "Rust",
+    "name": "zmij",
+    "version": "1.0.23"
+  }
+]

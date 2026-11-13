@@ -9,6 +9,7 @@ import {
   Clock3,
   Database,
   Globe2,
+  Library,
   LogOut,
   Palette,
   Ruler,
@@ -19,11 +20,8 @@ import {
 import * as Application from 'expo-application'
 import Constants from 'expo-constants'
 import { useAuth } from '../../contexts/AuthContext'
-import { useSettingsStore } from '../../features/settings'
-import { measurementText } from '../../features/settings/inputs'
-import NotificationPermissions from '../../components/NotificationPermissions'
 import { launchFacade } from '../../features/launch/launchFacade'
-import { Button, Divider, SettingsGroup, SettingsRow, UiText } from '../../components/ui/Controls'
+import { Button, SettingsGroup, SettingsRow, UiText } from '../../components/ui/Controls'
 import { useCadenceColors } from '../../components/ui/useCadenceColors'
 
 export default function SettingsMenuScreen() {
@@ -31,7 +29,6 @@ export default function SettingsMenuScreen() {
   const scrollViewRef = useRef<ScrollViewInstance>(null)
   const localProfile = launchFacade.auth.getStartupPlan().kind === 'local-profile'
   const { logout, user } = useAuth()
-  const settings = useSettingsStore()
   const colors = useCadenceColors()
   const account = launchFacade.settings.menuAccount(user)
   const version = Application.nativeApplicationVersion || Constants.expoConfig?.version || 'Unknown'
@@ -60,7 +57,7 @@ export default function SettingsMenuScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: bottomInset }}
       >
-        <View className="w-full max-w-[720px] self-center gap-field p-page">
+        <View className="w-full max-w-[720px] self-center gap-section p-page">
           <Link href={launchFacade.settings.profileRoute() as any} asChild>
             <Button
               variant="surface"
@@ -86,27 +83,13 @@ export default function SettingsMenuScreen() {
               <SettingsRow
                 title="Body measurements"
                 icon={<Ruler size={22} color={colors.accent} />}
-                description={[
-                  settings.bodyWeight == null
-                    ? 'Weight not set'
-                    : `${measurementText(settings.bodyWeight, settings.bodyWeightUnit)} ${settings.bodyWeightUnit}`,
-                  settings.height == null
-                    ? 'Height not set'
-                    : `${measurementText(settings.height, settings.heightUnit)} ${settings.heightUnit}`,
-                ].join(' · ')}
                 trailing={<ChevronRight size={20} color={colors.muted} />}
               />
             </Link>
-            <Divider className="ml-field" />
             <Link href="/settings/rest-timer" asChild>
               <SettingsRow
                 title="Rest timer"
                 icon={<Clock3 size={22} color={colors.accent} />}
-                description={
-                  settings.restTimerEnabled
-                    ? `On · ${Math.floor(settings.restTimerDefaultSeconds / 60)} min ${settings.restTimerDefaultSeconds % 60} sec`
-                    : 'Off'
-                }
                 trailing={<ChevronRight size={20} color={colors.muted} />}
               />
             </Link>
@@ -118,52 +101,43 @@ export default function SettingsMenuScreen() {
                 <SettingsRow
                   title="Data on this device"
                   icon={<Database size={22} color={colors.accent} />}
-                  description="Manage this training profile and erase saved data"
                   trailing={<ChevronRight size={20} color={colors.muted} />}
                 />
               </Link>
             </SettingsGroup>
           )}
 
-          <SettingsGroup title="Server">
-            <Link href="./server" relativeToDirectory asChild>
-              <SettingsRow
-                title="Self-hosted account"
-                icon={<Globe2 size={22} color={colors.accent} />}
-                description="Connect a server and manage your account"
-                trailing={<ChevronRight size={20} color={colors.muted} />}
-              />
-            </Link>
-          </SettingsGroup>
-
           <SettingsGroup title="Preferences">
             <Link href="/settings/theme" asChild>
               <SettingsRow
                 title="Appearance"
                 icon={<Palette size={22} color={colors.accent} />}
-                description={settings.theme.charAt(0).toUpperCase() + settings.theme.slice(1)}
                 trailing={<ChevronRight size={20} color={colors.muted} />}
               />
             </Link>
             {!localProfile && (
-              <>
-                <Divider className="ml-field" />
-                <Link href="/settings/time-zone" asChild>
-                  <SettingsRow
-                    title="Time zone"
-                    icon={<Globe2 size={22} color={colors.accent} />}
-                    description={settings.timeZone.replace(/_/g, ' ').replace(/\//g, ' / ')}
-                    trailing={<ChevronRight size={20} color={colors.muted} />}
-                  />
-                </Link>
-              </>
+              <Link href="/settings/time-zone" asChild>
+                <SettingsRow
+                  title="Time zone"
+                  icon={<Globe2 size={22} color={colors.accent} />}
+                  trailing={<ChevronRight size={20} color={colors.muted} />}
+                />
+              </Link>
             )}
-            <Divider className="ml-field" />
             <Link href="/settings/permissions" asChild>
               <SettingsRow
                 title="Permissions"
                 icon={<Bell size={22} color={colors.accent} />}
-                description={<NotificationPermissions summaryOnly />}
+                trailing={<ChevronRight size={20} color={colors.muted} />}
+              />
+            </Link>
+          </SettingsGroup>
+
+          <SettingsGroup title="About">
+            <Link href="/settings/about" asChild>
+              <SettingsRow
+                title="About Active"
+                icon={<Library size={22} color={colors.accent} />}
                 trailing={<ChevronRight size={20} color={colors.muted} />}
               />
             </Link>
@@ -174,16 +148,13 @@ export default function SettingsMenuScreen() {
               <SettingsRow
                 title="Privacy policy"
                 icon={<ShieldCheck size={22} color={colors.accent} />}
-                description="How we handle your data"
                 trailing={<ChevronRight size={20} color={colors.muted} />}
               />
             </Link>
-            <Divider className="ml-field" />
             <Link href="/legal/terms-of-service" asChild>
               <SettingsRow
                 title="Terms of service"
                 icon={<ScrollText size={22} color={colors.accent} />}
-                description="Terms for using Active"
                 trailing={<ChevronRight size={20} color={colors.muted} />}
               />
             </Link>
