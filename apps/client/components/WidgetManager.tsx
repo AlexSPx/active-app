@@ -207,7 +207,7 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
               </View>
 
               <ScrollView
-                className="max-h-52"
+                className="h-52 flex-none"
                 contentContainerClassName="gap-compact"
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"
@@ -320,33 +320,32 @@ export function WidgetManager({ isVisible, mode, onModeChange, onClose }: Widget
               )}
             </View>
           )}
-        </ScrollView>
-
-        <Button
-          variant="primary"
-          className="w-full flex-row gap-compact py-field"
-          disabled={mode === 'add' && (!selectedExercise || !!duplicate)}
-          accessibilityLabel={
-            mode === 'manage' ? 'Done' : duplicate ? 'Widget already added' : 'Add widget'
-          }
-          onPress={() => {
-            if (mode === 'add') {
-              if (!selectedExercise || duplicate) return
-              addWidget(selectedExercise.id, selectedExercise.name, selectedMetric)
+          <Button
+            variant="primary"
+            className="w-full flex-row gap-compact py-field"
+            disabled={mode === 'add' && (!selectedExercise || !!duplicate)}
+            accessibilityLabel={
+              mode === 'manage' ? 'Done' : duplicate ? 'Widget already added' : 'Add widget'
             }
-            closeManager()
-          }}
-        >
-          {mode === 'add' && <Plus size={18} color={colors.onAccent} aria-hidden />}
-          <UiText textRole="buttonOnAccent">
-            {mode === 'manage' ? 'Done' : duplicate ? 'Widget already added' : 'Add widget'}
-          </UiText>
-        </Button>
-        {mode === 'add' && (
-          <UiText textRole="caption" className="text-center">
-            Appears below your weekly board.
-          </UiText>
-        )}
+            onPress={() => {
+              if (mode === 'add') {
+                if (!selectedExercise || duplicate) return
+                addWidget(selectedExercise.id, selectedExercise.name, selectedMetric)
+              }
+              closeManager()
+            }}
+          >
+            {mode === 'add' && <Plus size={18} color={colors.onAccent} aria-hidden />}
+            <UiText textRole="buttonOnAccent">
+              {mode === 'manage' ? 'Done' : duplicate ? 'Widget already added' : 'Add widget'}
+            </UiText>
+          </Button>
+          {mode === 'add' && (
+            <UiText textRole="caption" className="text-center">
+              Appears below your weekly board.
+            </UiText>
+          )}
+        </ScrollView>
       </View>
     </CadenceOverlay>
   )
