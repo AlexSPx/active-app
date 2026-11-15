@@ -47,6 +47,11 @@ export function RootLayoutNav() {
           />
 
           <Stack.Screen
+            name="weight"
+            options={{ title: 'Body weight', headerBackTitle: 'Back', ...pageHeader }}
+          />
+
+          <Stack.Screen
             name="progress"
             options={{ title: 'Progress', headerBackTitle: 'Home', ...pageHeader }}
           />

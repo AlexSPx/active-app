@@ -2,7 +2,10 @@ import { useAuth } from '../contexts/AuthContext'
 import { RootLayoutNav } from '../components/RootLayoutNav'
 import { useEffect } from 'react'
 import { useRouter, useSegments, useRootNavigationState } from 'expo-router'
-import { View } from 'react-native'
+import { AppState, View } from 'react-native'
+import { configureWeightReminder, listenForWeightReminder } from '../services/notificationService'
+import { useSettingsStore } from '../features/settings/stores/settingsStore'
+import { getProfileScope, isCurrentProfile } from '../lib/profileScope'
 import { initializeAuth, useAuthStore } from '../stores/authStore'
 import { launchFacade } from '../features/launch/launchFacade'
 import { Button, UiText } from './ui/Controls'
@@ -84,6 +87,50 @@ export function AuthGuard() {
     navigationState?.key,
     profileOwnerId,
     user,
+  ])
+
+  useEffect(() => {
+    if (
+      !navigationState?.key ||
+      !isStartupReady ||
+      isProfileTransitioning ||
+      !isAuthenticated ||
+      !user?.registrationCompleted ||
+      isDeviceDataErasing
+    )
+      return
+    const scope = getProfileScope()
+    let active = true
+    let unsubscribe: (() => void) | undefined
+    void listenForWeightReminder(() => {
+      if (active && isCurrentProfile(scope)) router.push('/weight' as never)
+    })
+      .then((remove) => {
+        if (active) unsubscribe = remove
+        else remove()
+      })
+      .catch(() => {})
+    const appState = AppState.addEventListener('change', (state) => {
+      if (state !== 'active' || !isCurrentProfile(scope)) return
+      const settings = useSettingsStore.getState()
+      void configureWeightReminder(
+        settings.weightReminderEnabled,
+        settings.weightReminderHour
+      ).catch(() => {})
+    })
+    return () => {
+      active = false
+      unsubscribe?.()
+      appState.remove()
+    }
+  }, [
+    navigationState?.key,
+    isStartupReady,
+    isProfileTransitioning,
+    isAuthenticated,
+    user?.registrationCompleted,
+    isDeviceDataErasing,
+    profileOwnerId,
   ])
 
   if (isDeviceDataErasing) {

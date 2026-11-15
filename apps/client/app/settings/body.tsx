@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useRouter } from 'expo-router'
 import { View } from 'react-native'
 import { SettingsPage } from '../../components/settings/SettingsPage'
 import {
@@ -12,6 +13,7 @@ import { useSettingsStore, useUpdateUser } from '../../features/settings'
 import { measurementText, parseMeasurement } from '../../features/settings/inputs'
 
 export default function BodySettingsScreen() {
+  const router = useRouter()
   const settings = useSettingsStore()
   const [weight, setWeight] = useState<number | null | undefined>(settings.bodyWeight)
   const [height, setHeight] = useState<number | null | undefined>(settings.height)
@@ -148,6 +150,9 @@ export default function BodySettingsScreen() {
           <UiText textRole="caption">{heightUnit}</UiText>
         </View>
       </Surface>
+      <Button variant="secondary" onPress={() => router.push('/weight' as never)}>
+        Log weight and view history
+      </Button>
       <UiText textRole="caption">
         Switching units converts the current value. Leave a measurement blank if you prefer not to
         add it.

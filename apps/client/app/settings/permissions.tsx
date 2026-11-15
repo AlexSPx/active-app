@@ -1,4 +1,5 @@
 import { UiText } from '../../components/ui/Controls'
+import { WeightReminderSettings } from '../../components/WeightReminderSettings'
 import NotificationPermissions from '../../components/NotificationPermissions'
 import { SettingsPage } from '../../components/settings/SettingsPage'
 import { TrainingReminders } from '../../features/training/components/TrainingReminders'
@@ -11,6 +12,7 @@ export default function PermissionsScreen() {
     >
       <NotificationPermissions />
       <TrainingReminders />
+      <WeightReminderSettings />
       <UiText textRole="caption">
         Your device controls permission access. You can change it at any time in device settings.
       </UiText>

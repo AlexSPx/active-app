@@ -199,3 +199,19 @@ test('ordinary settings changes during a profile save persist the combined snaps
     theme: 'dark',
   })
 })
+
+test('legacy weight is migrated to a profile-scoped initial entry and survives restart', async () => {
+  mockValues.set(SETTINGS_KEY, JSON.stringify({ state: { bodyWeight: 81.2 }, version: 0 }))
+  const first = boot()
+  await first.hydrateProfileStores(OWNER, OWNER)
+  expect(first.useSettingsStore.getState().weightHistory).toMatchObject([
+    { weightKg: 81.2, initial: true },
+  ])
+  await first.saveSettingsProfile(first.scope, { bodyWeightUnit: 'lb' })
+  const second = boot()
+  await second.hydrateProfileStores(OWNER, OWNER)
+  expect(second.useSettingsStore.getState().weightHistory).toMatchObject([
+    { weightKg: 81.2, initial: true },
+  ])
+  expect(second.useSettingsStore.getState().bodyWeightUnit).toBe('lb')
+})

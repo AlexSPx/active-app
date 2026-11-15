@@ -1,3 +1,4 @@
+jest.mock('../../components/WeightReminderSettings', () => ({ WeightReminderSettings: () => null }))
 const mockUser = { id: 'local:device', registrationCompleted: false }
 const mockReplace = jest.fn()
 const mockBack = jest.fn()
@@ -81,7 +82,9 @@ jest.mock('../../components/feedback/FeedbackProvider', () => ({
 }))
 
 jest.mock('lucide-react-native', () =>
-  jest.requireActual(require.resolve('lucide-react-native').replace(/dist\/.*$/, 'dist/cjs/lucide-react-native.js'))
+  jest.requireActual(
+    require.resolve('lucide-react-native').replace(/dist\/.*$/, 'dist/cjs/lucide-react-native.js')
+  )
 )
 
 jest.mock('react-native-reanimated', () => {
