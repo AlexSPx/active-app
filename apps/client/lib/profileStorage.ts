@@ -1,3 +1,4 @@
+import { configureWeightReminder } from '../services/notificationService'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { createJSONStorage } from 'zustand/middleware'
 import {
@@ -75,6 +76,7 @@ async function migrateLegacyStorage(ownerId: string, legacyOwnerId: string | nul
 async function hydrate(ownerId: string, legacyOwnerId: string | null): Promise<void> {
   loadedOwner = null
   setActiveProfileOwner(ownerId)
+  await configureWeightReminder(false, 8).catch(() => {})
   await migrateLegacyStorage(ownerId, legacyOwnerId)
 
   // Clear the prior profile's in-memory values without persisting them into the next profile.
@@ -113,6 +115,8 @@ async function hydrate(ownerId: string, legacyOwnerId: string | null): Promise<v
     throw new Error(`Could not restore stored data for ${ownerId}`)
   }
   loadedOwner = ownerId
+  const { weightReminderEnabled, weightReminderHour } = useSettingsStore.getState()
+  await configureWeightReminder(weightReminderEnabled, weightReminderHour).catch(() => {})
 }
 
 export function hydrateProfileStores(ownerId: string, legacyOwnerId: string | null): Promise<void> {
@@ -137,6 +141,7 @@ export async function suspendProfileStoresForDeviceErase(ownerId: string): Promi
   await profilePersistenceOperations
   loadedOwner = null
   setActiveProfileOwner(ownerId)
+  await configureWeightReminder(false, 8).catch(() => {})
 }
 
 export async function flushProfileStoragePersistence(): Promise<void> {

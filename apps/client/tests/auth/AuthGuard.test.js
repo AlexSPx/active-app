@@ -1,3 +1,10 @@
+jest.mock('../../features/settings/stores/settingsStore', () => ({
+  useSettingsStore: { getState: () => ({ weightReminderEnabled: false, weightReminderHour: 8 }) },
+}))
+jest.mock('../../services/notificationService', () => ({
+  configureWeightReminder: jest.fn(async () => {}),
+  listenForWeightReminder: jest.fn(async () => () => {}),
+}))
 let mockNativeOfflineLaunch = false
 let mockSegments = ['welcome']
 let mockAuthValue = { isAuthenticated: false, user: null, isLoading: false }

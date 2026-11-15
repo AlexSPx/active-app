@@ -25,6 +25,7 @@ import { useAuthStore } from '../../stores/authStore'
 import { useUpdateUser } from '../../features/settings'
 import WheelSelector from '../../components/ui/WheelSelector'
 import TimeZoneSelector from '../../components/TimeZoneSelector'
+import { WeightReminderSettings } from '../../components/WeightReminderSettings'
 import NotificationPermissions from '../../components/NotificationPermissions'
 import * as Haptics from 'expo-haptics'
 import { WorkOSSignInButton } from '../../components/WorkOSSignInButton'
@@ -421,7 +422,12 @@ const AccountRegisterPage = () => {
           </Surface>
         )
       case 'Notifications':
-        return <NotificationPermissions onStatusChange={() => {}} />
+        return (
+          <View>
+            <NotificationPermissions onboarding />
+            <WeightReminderSettings />
+          </View>
+        )
       default:
         return null
     }

@@ -148,10 +148,82 @@ export async function cancelRestNotification(): Promise<void> {
 /** Cancels every scheduled local notification as part of on-device data erasure. */
 export async function cancelAllScheduledNotifications(): Promise<void> {
   scheduleGeneration += 1
-  await Promise.all(pendingSchedules)
+  reminderGeneration += 1
+  await Promise.all([...pendingSchedules, reminderQueue])
   const mod = await loadModule()
   if (!mod)
     throw new Error('Notifications are unavailable, so scheduled alerts could not be cleared.')
   await mod.cancelAllScheduledNotificationsAsync()
   scheduledId = null
+}
+
+// A stable identifier lets us replace or cancel the reminder after an app restart.
+const WEIGHT_REMINDER_ID = 'daily-weight-reminder'
+let reminderGeneration = 0
+let reminderQueue: Promise<void> = Promise.resolve()
+
+export function configureWeightReminder(enabled: boolean, hour: number): Promise<void> {
+  const generation = ++reminderGeneration
+  const operation = async () => {
+    const mod = await loadModule()
+    if (!mod) throw new Error('Notifications are unavailable on this device.')
+    await mod.cancelScheduledNotificationAsync(WEIGHT_REMINDER_ID)
+    if (!enabled || generation !== reminderGeneration) return
+    const permission = await mod.getPermissionsAsync()
+    if (!permission.granted && permission.ios?.status !== mod.IosAuthorizationStatus.PROVISIONAL) {
+      throw new Error('Allow notifications in device settings to receive this reminder.')
+    }
+    if (Platform.OS === 'android') {
+      await mod.setNotificationChannelAsync('weight-reminder', {
+        name: 'Weigh-in reminders',
+        importance: mod.AndroidImportance.DEFAULT,
+        sound: 'default',
+      })
+    }
+    if (generation !== reminderGeneration) return
+    await mod.scheduleNotificationAsync({
+      identifier: WEIGHT_REMINDER_ID,
+      content: {
+        title: 'Time to weigh in',
+        body: 'Log your weight and see your progress.',
+        sound: 'default',
+        data: { screen: 'weight' },
+      },
+      trigger: {
+        type: mod.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute: 0,
+        channelId: 'weight-reminder',
+      },
+    })
+    if (generation !== reminderGeneration)
+      await mod.cancelScheduledNotificationAsync(WEIGHT_REMINDER_ID)
+  }
+  const next = reminderQueue.then(operation, operation)
+  reminderQueue = next.catch(() => {})
+  return next
+}
+
+export async function requestWeightReminderPermission(): Promise<void> {
+  const mod = await loadModule()
+  if (!mod) throw new Error('Notifications are unavailable on this device.')
+  let permission = await mod.getPermissionsAsync()
+  if (!permission.granted && permission.canAskAgain)
+    permission = await mod.requestPermissionsAsync()
+  if (!permission.granted && permission.ios?.status !== mod.IosAuthorizationStatus.PROVISIONAL)
+    throw new Error('Allow notifications in device settings to receive this reminder.')
+}
+
+/** Listen after navigation is ready, including a response that launched the app. */
+export async function listenForWeightReminder(onOpen: () => void): Promise<() => void> {
+  const mod = await loadModule()
+  if (!mod) return () => {}
+  const handle = (response: import('expo-notifications').NotificationResponse | null) => {
+    if (response?.notification.request.content.data?.screen !== 'weight') return
+    onOpen()
+    void mod.clearLastNotificationResponseAsync().catch(() => {})
+  }
+  const subscription = mod.addNotificationResponseReceivedListener(handle)
+  handle(await mod.getLastNotificationResponseAsync())
+  return () => subscription.remove()
 }

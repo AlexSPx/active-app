@@ -4,6 +4,8 @@ import { View } from 'react-native'
 import { Button, UiText } from '../../../components/ui/Controls'
 import { BarChart2, Plus } from '../../../components/ui/icons'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
+import { WeightWidget } from '../../../components/WeightWidget'
+import { WEIGHT_WIDGET_ID } from '../../../stores/widgetStore'
 import { ProgressionWidget } from '../../../components/ProgressionWidget'
 import { WidgetManager } from '../../../components/WidgetManager'
 import { useWidgetStore } from '../../../stores/widgetStore'
@@ -36,15 +38,24 @@ export function TrainingWidgets() {
 
         {sortedWidgets.length > 0 ? (
           <View className="gap-field">
-            {sortedWidgets.map((widget) => (
-              <ProgressionWidget
-                key={widget.id}
-                config={widget}
-                onOpen={() => router.push({ pathname: '/progress', params: { id: widget.id } })}
-                onManage={() => setWidgetMode('manage')}
-                onRemove={() => removeWidget(widget.id)}
-              />
-            ))}
+            {sortedWidgets.map((widget) =>
+              widget.exerciseId === WEIGHT_WIDGET_ID ? (
+                <WeightWidget
+                  key={widget.id}
+                  onOpen={() => router.push('/weight' as never)}
+                  onManage={() => setWidgetMode('manage')}
+                  onRemove={() => removeWidget(widget.id)}
+                />
+              ) : (
+                <ProgressionWidget
+                  key={widget.id}
+                  config={widget}
+                  onOpen={() => router.push({ pathname: '/progress', params: { id: widget.id } })}
+                  onManage={() => setWidgetMode('manage')}
+                  onRemove={() => removeWidget(widget.id)}
+                />
+              )
+            )}
           </View>
         ) : (
           <View className="gap-field py-compact">
@@ -53,7 +64,7 @@ export function TrainingWidgets() {
               <View className="flex-1 gap-compact">
                 <UiText textRole="bodyEmphasis">Keep an eye on your lifts</UiText>
                 <UiText textRole="caption">
-                  Choose an exercise and metric. Your progress will show up here.
+                  Choose body weight or an exercise metric. Your progress will show up here.
                 </UiText>
               </View>
             </View>

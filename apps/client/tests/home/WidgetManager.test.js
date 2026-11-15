@@ -1,3 +1,4 @@
+jest.mock('../../components/WeightWidget', () => ({ WeightWidget: () => null }))
 jest.mock('../../components/ui/CadenceOverlay', () => ({
   CadenceOverlay: ({ children, ...props }) =>
     require('react').createElement('CadenceOverlay', props, props.open ? children : null),
@@ -258,4 +259,23 @@ test('picker scroll keeps the keyboard reachable without swallowing choices', ()
   expect(scrollViews[0].props.keyboardShouldPersistTaps).toBe('handled')
   expect(scrollViews[0].props.keyboardDismissMode).toBe('on-drag')
   expect(scrollViews[1].props.keyboardShouldPersistTaps).toBe('handled')
+})
+
+test('adds, reorders and removes a body weight widget', () => {
+  const renderer = render()
+  act(() => button(renderer, 'Body weight').props.onPress())
+  act(() => button(renderer, 'Add widget').props.onPress())
+  const widget = useWidgetStore.getState().widgets[0]
+  expect(widget).toMatchObject({ exerciseId: '__body_weight__', exerciseName: 'Body weight' })
+  act(() => useWidgetStore.getState().addWidget('bench', 'Bench press', 'maxWeight'))
+  act(() => renderer.update(React.createElement(WidgetManager, { ...props, mode: 'manage' })))
+  const down = renderer.root.findAll(
+    (node) =>
+      node.props.accessibilityLabel === 'Move Body weight Weight trend down' &&
+      typeof node.props.onPress === 'function'
+  )[0]
+  act(() => down.props.onPress())
+  expect(useWidgetStore.getState().widgets.find((item) => item.id === widget.id).position).toBe(1)
+  act(() => button(renderer, 'Remove Body weight Weight trend widget').props.onPress())
+  expect(useWidgetStore.getState().widgets.some((item) => item.id === widget.id)).toBe(false)
 })
