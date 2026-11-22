@@ -45,56 +45,31 @@ On a freshly loaded rig, call `createDumbbellGripTracks(asset.scene)` to get 30 
 
 The pose in `clips.mjs` uses left-hand Euler angles in degrees, multiplied onto each joint's rest quaternion in `ZXY` order. Local +X flexes each digit on both sides, and local Z controls spread. To mirror the pose onto the right hand, negate Y and Z.
 
-## Run the local check
+## Rebuild and verify the viewer
 
-Start the local viewer server, then run the following from this directory with Node.js and Chrome installed.
-
-```sh
-npm ci
-node verify-catalog-more.mjs
-node verify-resistance-training.mjs
-node verify-supplemental.mjs
-node verify-machine-guided.mjs
-node verify-machine-strength.mjs
-node verify-mobility-ball.mjs
-node verify-final-strength.mjs
-node verify-final-apparatus.mjs
-OFFLINE_HTML=./dist/exercise-animations.html node verify.mjs
-```
-
-The apparatus verifier samples Kipping Muscle Up at 120 Hz. It checks ring clearance against skinned torso and arm vertices outside the grip, ring seat and strap alignment, wrist bend, and straight-arm support.
-
-Run `node audit-arms.mjs > arm-audit.csv` to sample every catalog clip at 60 Hz. The CSV reports each clip's peak wrist bend, sideways wrist deviation, and twist relative to the forearm, plus the largest arm, forearm, or hand rotation between samples. Review flagged poses in context, since a planted palm or a wrist exercise can call for a large bend.
-
-Set `CHROME_BIN` or `VIEWER_URL` if your Chrome binary or viewer URL differs from the defaults. The catalog, resistance, and supplemental verifiers each check 100 clips for distinct sampled motion, loop closure, sampled floor clearance, handle alignment, and selected exercise-specific positions. The three latest family verifiers cover all 100 new clips. Chrome checks cover catalog IDs and names, cues and muscle legends, playback, scrubbing, switching, equipment visibility and synchronization, and camera fit. They exercise all four camera presets for the new families at a 360 px viewport. The check also compares the offline exercise menu with the source viewer and checks selection, scrubbing, and playback in each group with networking disabled. It compares source and offline renders for representative equipment and switches. The menu uses exact catalog IDs and names. Muscle legends use the animation’s authored atlas groups. For example, EZ-Bar Curl highlights Forearms as supporting, and Mountain Climbers highlights Core as primary. Close-Grip EZ Bar Curl uses the narrow grips of the EZ curl bar, while its source catalog equipment value is `BARBELL`.
-
-The squat checks verify all 30 finger joints and sample at 20 Hz to check foot contact, jump height, landing, crossed wrists, and dumbbell floor clearance. The core check runs `verify-grip.mjs` at every phase key in all 114 standard-grip dumbbell clips at the calibrated handle position. The dumbbell bench family verifier samples the authored handle offsets during the rep. The grip verifier checks finger curl and spacing, distal pad contact, thumb opposition, palm contact, shaft penetration, and clearance from cylindrical bounds around the heads. It includes a regression case that exercises the old grip pose. These checks sample geometry at discrete times.
-
-## Rebuild the offline catalog
-
-Run this after changing the viewer or registering a family.
-
-```sh
-npm ci
-python3 build-offline.py
-```
-
-To register a family, import its `createEntries` in `clips.mjs` and add the group to `createExerciseGroups`. Use exact catalog IDs. If the builder uses a calibrated equipment grip, pass `createDumbbellGripTracks` and `dumbbellGripTransform` as the builder’s second argument. Run the family verifier before registering the builder. Update the expected menu in `verify.mjs` when the catalog changes. Rebuild the offline HTML and run the Chrome check.
-
-## Bundle the demo player and record MP4s
-
-Install the viewer dependencies from this directory. Recording also requires Chrome, FFmpeg with libx264, and FFprobe.
+Run these commands from this directory after changing the rig, viewer, or clips. The playback checks require Chrome. Set `CHROME_BIN` if Chrome is installed somewhere other than `/usr/bin/google-chrome`.
 
 ```sh
 npm ci
 python3 build-offline.py --app
-node record-exercises.mjs
+node verify-clip-selection.mjs
+node verify-app-demo.mjs
+node verify-navigation.mjs
 ```
 
-The `--app` build regenerates `apps/client/assets/exercise-animations.html` and its TypeScript asset reference. Include both files when you change the model, motion, or player. The reference includes the HTML hash so Android's incremental build picks up a new player. Run `python3 build-offline.py --check` to check that both files are current. Exercise details build the requested fixed-angle animation by catalog ID. It loops at the authored pace or shows the opening pose with Reduce Motion enabled. Camera and playback controls are available in the standalone studio.
+The clip check compares the animation selected for each app exercise with the full catalog. The app check verifies offline autoplay and Reduce Motion. The navigation check covers exercise switching, playback, scrubbing, and camera controls at a phone width. To check the published site build, set `VIEWER_URL` to its `exercises.html` URL when running `verify-navigation.mjs`. Run `node verify-grip.mjs` when changing the calibrated dumbbell grip.
 
-Run `node verify-app-demo.mjs` to check autoplay, Reduce Motion, and the absence of controls in the bundled demo with HTTP requests blocked.
-Run `node verify-clip-selection.mjs` to compare the app's selected animations with the full catalog.
+Commit the regenerated `apps/client/assets/exercise-animations.html` and its TypeScript asset reference. Android's incremental build uses the HTML hash in that reference to pick up viewer changes. CI runs `python3 build-offline.py --check` to check both files.
+
+To register a family, import its `createEntries` in `clips.mjs` and add the group to `createExerciseGroups`. Use exact catalog IDs. If the builder uses a calibrated equipment grip, pass `createDumbbellGripTracks` and `dumbbellGripTransform` as the builder's second argument.
+
+## Record MP4s
+
+After rebuilding, run the recorder with Chrome, FFmpeg with libx264, and FFprobe installed.
+
+```sh
+node record-exercises.mjs
+```
 
 The recorder defaults to 12 exercises. Pass space-separated catalog source keys such as `Bodyweight_Squat Cat_Stretch` to record a subset, or pass `--all` to record the library. It writes silent 24 fps H.264 MP4s at 480 px and 360 px, plus a byte count and playback metadata for each file, to `dist/recordings`. Set `RECORDINGS_DIR` to write elsewhere or `CHROME_BIN` to select a different Chrome installation. One-shot clips include their finish pose. The MP4s stay outside the app bundle.
 
