@@ -2339,6 +2339,13 @@
   },
   {
     "ecosystem": "JavaScript",
+    "name": "escape-string-regexp",
+    "version": "4.0.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/escape-string-regexp/v/4.0.0"
+  },
+  {
+    "ecosystem": "JavaScript",
     "name": "etag",
     "version": "1.8.1",
     "license": "MIT",
@@ -3918,6 +3925,13 @@
     "version": "0.21.4",
     "license": "MIT",
     "url": "https://www.npmjs.com/package/react-native-web/v/0.21.4"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "react-native-webview",
+    "version": "14.0.1",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/react-native-webview/v/14.0.1"
   },
   {
     "ecosystem": "JavaScript",

@@ -1,5 +1,13 @@
 import { useMemo, useRef, useState } from 'react'
-import { FlatList, Keyboard, Pressable, ScrollView, View, type ViewInstance } from 'react-native'
+import {
+  FlatList,
+  Keyboard,
+  Linking,
+  Pressable,
+  ScrollView,
+  View,
+  type ViewInstance,
+} from 'react-native'
 import { Button, IconButton, TextField, UiText } from '../../../components/ui/Controls'
 import { Check, ChevronDown, ChevronRight, Search, X } from '../../../components/ui/icons'
 import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
@@ -13,6 +21,7 @@ import {
   filterCollection,
   muscleGroups,
 } from '../collection'
+import { ExerciseDemo } from './ExerciseDemo'
 import { MuscleAtlas } from './MuscleAtlas'
 
 export function ExerciseCollectionScreen() {
@@ -263,6 +272,12 @@ export function ExerciseCollectionScreen() {
                   </View>
                 ))}
               </View>
+              <View
+                className="h-[248px] items-stretch justify-center overflow-hidden rounded-card bg-raised"
+                pointerEvents="none"
+              >
+                <ExerciseDemo key={selected.id} exercise={selected} />
+              </View>
               <View className="flex-row items-center gap-field rounded-card bg-raised p-card">
                 <View className="min-w-0 flex-1 gap-field">
                   <View className="gap-compact">
@@ -301,6 +316,27 @@ export function ExerciseCollectionScreen() {
                   </UiText>
                 )}
               </View>
+              <UiText textRole="caption">
+                Anatomy adapted from{' '}
+                <UiText
+                  textRole="captionEmphasis"
+                  accessibilityRole="link"
+                  onPress={() => void Linking.openURL('https://github.com/Charleeh/ecorche')}
+                >
+                  Écorché by Charleeh
+                </UiText>
+                , BodyParts3D © DBCLS, and Z-Anatomy by Gauthier Kervyn. Head by USC ICT. Hands and
+                feet by MakeHuman.{' '}
+                <UiText
+                  textRole="captionEmphasis"
+                  accessibilityRole="link"
+                  onPress={() =>
+                    void Linking.openURL('https://creativecommons.org/licenses/by-sa/4.0/')
+                  }
+                >
+                  CC BY-SA 4.0
+                </UiText>
+              </UiText>
             </ScrollView>
           </>
         )}

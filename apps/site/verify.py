@@ -30,17 +30,25 @@ class Page(HTMLParser):
 
 def verify(root):
     pages = {path: Page(path) for path in root.rglob("*.html")}
-    for required in ("index.html", "legal/privacy-policy.html", "legal/terms-and-conditions.html"):
+    for required in (
+        "index.html",
+        "exercises.html",
+        "legal/privacy-policy.html",
+        "legal/terms-and-conditions.html",
+    ):
         if root / required not in pages:
             raise ValueError(f"Missing required page: {required}")
 
     version = sha256((root / "styles.css").read_bytes()).hexdigest()[:12]
     stylesheet = f"styles.css?v={version}"
-    if stylesheet not in pages[root / "index.html"].links:
-        raise ValueError(
-            f'index.html: update the stylesheet link to href="{stylesheet}" '
-            "so returning visitors load the current CSS"
-        )
+    for name in ("index.html", "exercises.html"):
+        if stylesheet not in pages[root / name].links:
+            raise ValueError(
+                f'{name}: update the stylesheet link to href="{stylesheet}" '
+                "so returning visitors load the current CSS"
+            )
+    if not (root / "assets/exercise-viewer.mjs").is_file():
+        raise ValueError("Missing exercise viewer bundle. Run bash apps/site/build.sh.")
 
     def local_target(path, link):
         url = urlsplit(link)
@@ -67,4 +75,4 @@ def verify(root):
 
 
 if __name__ == "__main__":
-    verify(Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent)
+    verify(Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parents[2] / "_site")
