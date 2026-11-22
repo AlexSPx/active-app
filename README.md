@@ -117,7 +117,7 @@ Feature modules own their workflows and data access. Router screens compose thos
 | `yarn legal:sync`           | Generate app legal content from the landing page documents |
 | `yarn legal:check`          | Test the legal content generator and check generated files |
 
-Run `yarn typecheck` and `yarn site:check` for additional checks. Use `yarn promo:studio`, `yarn promo:render`, or `yarn promo:poster` for the video project. Run EAS commands from `apps/client` after installing at the root.
+Run `yarn typecheck` to check the app. Install the exercise viewer dependencies with `npm ci --prefix tools/exercise-model`, then run `yarn site:check` to build and verify the site. Use `yarn promo:studio`, `yarn promo:render`, or `yarn promo:poster` for the video project. Run EAS commands from `apps/client` after installing at the root.
 
 The legal documents in `apps/site/legal/` are the source of truth. After editing them, run `yarn legal:sync` and commit the generated files. See the [landing page README](apps/site/README.md) for publishing and verification instructions.
 

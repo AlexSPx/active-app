@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#e3d7ee" />
+    <meta
+      name="description"
+      content="Browse the Active Next exercise catalog and study each movement with interactive 3D animations, muscle highlights, and form cues."
+    />
+    <title>Exercise catalog | Active Next</title>
+    <link rel="icon" href="assets/icon.png" type="image/png" />
+    <link rel="stylesheet" href="styles.css?v=257c4e739084" />
+    <link rel="stylesheet" href="exercises.css" />
+    <script type="module">
+      import('./assets/exercise-viewer.mjs').catch((error) => {
+        const status = document.getElementById('status')
+        if (status.textContent === 'Loading 3D model…') {
+          status.textContent = 'The 3D viewer could not load. Reload this page to try again.'
+        }
+        console.error(error)
+      })
+    </script>
+  </head>
+  <body>
+    <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <symbol id="dumbbell" viewBox="0 0 32 32">
+        <path d="M4 12v8m5-13v18m14-18v18m5-13v8M9 16h14" />
+      </symbol>
+    </svg>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header wrap">
+      <a class="wordmark" href="index.html" aria-label="Active Next home"
+        ><svg class="icon brand-icon"><use href="#dumbbell" /></svg>active next</a
+      >
+      <nav aria-label="Main navigation">
+        <a href="index.html#the-app">The app</a>
+        <a href="index.html#the-video">The video</a>
+        <a href="exercises.html" aria-current="page">Exercises</a>
+      </nav>
+    </header>
+    <main class="wrap" id="main" tabindex="-1">
+      <div class="catalog-heading">
+        <h1>Exercise catalog</h1>
+        <label for="exercise">
+          Choose an exercise
+          <select id="exercise" disabled></select>
+        </label>
+      </div>
+      <section class="exercise-panel" aria-labelledby="exercise-name">
+        <header class="exercise-heading">
+          <h2 id="exercise-name">Bodyweight Squat</h2>
+          <div class="exercise-navigation" role="group" aria-label="Browse exercises">
+            <button
+              type="button"
+              id="previous-exercise"
+              aria-label="Previous exercise and play"
+              disabled
+            >
+              ‹
+            </button>
+            <output id="exercise-position" aria-live="polite"></output>
+            <button type="button" id="next-exercise" aria-label="Next exercise and play" disabled>
+              ›
+            </button>
+          </div>
+        </header>
+        <div class="exercise-layout">
+          <div class="exercise-player">
+            <div class="camera-views" role="group" aria-label="Camera views">
+              <button type="button" data-view="angle" aria-pressed="true">¾ view</button>
+              <button type="button" data-view="front" aria-pressed="false">Front</button>
+              <button type="button" data-view="side" aria-pressed="false">Side</button>
+              <button type="button" data-view="back" aria-pressed="false">Back</button>
+            </div>
+            <div class="exercise-stage" id="stage">
+              <p id="status" role="status">Loading 3D model…</p>
+              <noscript><p>Enable JavaScript to use the 3D exercise viewer.</p></noscript>
+            </div>
+            <div class="exercise-transport">
+              <button type="button" id="play" disabled>Play</button>
+              <label for="timeline"><span>Rep timeline</span><span id="phase"></span></label>
+              <input id="timeline" type="range" min="0" max="4" step="any" value="0" disabled />
+              <output for="timeline" id="time"></output>
+              <select id="speed" aria-label="Playback speed">
+                <option value=".5">0.5×</option>
+                <option value="1" selected>1×</option>
+              </select>
+            </div>
+            <p class="exercise-hint">Drag to rotate. Scroll or pinch to zoom.</p>
+          </div>
+          <aside class="exercise-details" aria-label="Muscles and form">
+            <section>
+              <h3>Muscles worked</h3>
+              <div id="legend"></div>
+              <label for="muscle">Inspect a muscle group</label>
+              <select id="muscle">
+                <option value="">Exercise highlights</option>
+                <option value="gray">All gray</option>
+              </select>
+            </section>
+            <section>
+              <h3>Form cues</h3>
+              <ol id="cues"></ol>
+            </section>
+          </aside>
+        </div>
+      </section>
+      <footer class="exercise-credits">
+        <p>
+          Anatomy adapted from
+          <a href="https://github.com/Charleeh/ecorche">Écorché</a> (BodyParts3D © DBCLS and
+          Z-Anatomy by Gauthier Kervyn). Head by
+          <a href="https://github.com/ICT-VGL/ICT-FaceKit">USC ICT</a>. Hands and feet by
+          <a href="https://github.com/makehumancommunity/makehuman">MakeHuman</a>.
+          <a href="assets/CC-BY-SA-4.0.txt">CC BY-SA 4.0</a> and
+          <a href="assets/ICT-FaceKit-LICENSE.txt">ICT FaceKit license</a>.
+        </p>
+        <a id="download-model" href="assets/anatomy.glb" download>Download 3D model</a>
+      </footer>
+    </main>
+  </body>
+</html>
