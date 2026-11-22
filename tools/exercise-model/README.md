@@ -57,7 +57,7 @@ node verify-app-demo.mjs
 node verify-navigation.mjs
 ```
 
-The clip check compares the animation selected for each app exercise with the full catalog. The app check verifies offline autoplay and Reduce Motion. The navigation check covers exercise switching, playback, scrubbing, and camera controls at a phone width. To check the published site build, set `VIEWER_URL` to its `exercises.html` URL when running `verify-navigation.mjs`. Run `node verify-grip.mjs` when changing the calibrated dumbbell grip.
+The clip check compares the animation selected for each app exercise with the full catalog. The app check verifies offline autoplay and Reduce Motion. The navigation check covers exercise switching, playback, scrubbing, and camera controls at a phone width. To check the published site build, set `VIEWER_URL` to its `exercises.html` URL when running `verify-navigation.mjs`.
 
 Commit the regenerated `apps/client/assets/exercise-animations.html` and its TypeScript asset reference. Android's incremental build uses the HTML hash in that reference to pick up viewer changes. CI runs `python3 build-offline.py --check` to check both files.
 
