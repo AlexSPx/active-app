@@ -33,7 +33,7 @@ export function createClient(baseUrl: string, auth: Auth, transport: typeof fetc
     if (auth.kind === 'session') headers['X-CSRF-Token'] = auth.csrfToken
     if (args.idempotencyKey) headers['Idempotency-Key'] = args.idempotencyKey
     if (body !== null) headers['Content-Type'] = 'application/json'
-    const response = await transport(target.toString(), { method: spec.method, headers, credentials: auth.kind === 'session' ? 'same-origin' : 'omit', ...(body === null ? {} : { body: JSON.stringify(body) }) })
+    const response = await transport(target.toString(), { method: spec.method, headers, redirect: 'error', credentials: auth.kind === 'session' ? 'same-origin' : 'omit', ...(body === null ? {} : { body: JSON.stringify(body) }) })
     if (!response.ok) {
       const parsed = error.parse(await response.json()) as ApiErrorBody
       throw new ApiError(response.status, parsed, response.headers.get('x-request-id'))

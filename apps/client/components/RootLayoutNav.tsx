@@ -47,6 +47,11 @@ export function RootLayoutNav() {
           />
 
           <Stack.Screen
+            name="progress"
+            options={{ title: 'Progress', headerBackTitle: 'Home', ...pageHeader }}
+          />
+
+          <Stack.Screen
             name="settings"
             options={{ headerShown: false, animation: 'slide_from_right' }}
           />

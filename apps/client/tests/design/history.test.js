@@ -384,7 +384,7 @@ test('failed deletion keeps recorded strength/cardio values and the confirmation
   act(() => tree.unmount())
 })
 
-test('date selection filters records; Today, Show all, and record navigation work', () => {
+test('date selection filters records; Show all and record navigation work', () => {
   jest.useFakeTimers().setSystemTime(new Date(2026, 9, 1, 12))
   mockRecords = [
     mockRecord,
@@ -408,7 +408,7 @@ test('date selection filters records; Today, Show all, and record navigation wor
   expect(hasText(tree, 'Today run')).toBe(false)
   pressLabel(tree, 'Show all sessions')
   expect(hasText(tree, '2 completed sessions')).toBe(true)
-  pressLabel(tree, 'Go to today')
+  pressLabel(tree, `${longDate(new Date(2026, 9, 1))}, today, completed session`)
   expect(hasText(tree, 'Today run')).toBe(true)
   expect(hasText(tree, '60 min / 2 intervals')).toBe(true)
   expect(hasText(tree, 'Mixed session')).toBe(false)
@@ -490,7 +490,9 @@ test('empty, loading, and error states keep the calendar usable and history refr
   mockRecords = []
   mockLoading = true
   let tree = mount(React.createElement(HistoryPage))
-  expect(findLabel(tree, 'Go to today')).toBeTruthy()
+  expect(tree.root.findAllByProps({ accessibilityLabel: 'Go to today' })).toHaveLength(0)
+  expect(hasText(tree, 'Every session adds up.')).toBe(false)
+  expect(hasText(tree, 'Completed session · outlined date is today')).toBe(false)
   expect(findLabel(tree, 'Next month')).toBeTruthy()
   expect(hasText(tree, 'Loading history…')).toBe(true)
   act(() => tree.unmount())

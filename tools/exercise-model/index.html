@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bodyweight squat · Exercise anatomy</title>
+<script>
+  const viewerMode = new URLSearchParams(location.hash.slice(1)).get('mode');
+  if (viewerMode === 'app' || viewerMode === 'record') document.documentElement.dataset.viewer = viewerMode;
+</script>
+<style>
+  :root{font:16px/1.5 "Instrument Sans",system-ui,sans-serif;color:#17232e;background:#f8f9fa;--line:#dce2e8;--muted:#4d5d6c;--ink:#1d2e3c;--primary:#d74625;--secondary:#b97816;--inspect:#23629d}
+  *,*::before,*::after{box-sizing:border-box}
+  body{margin:0}
+  main{max-width:1240px;margin:auto;padding:clamp(16px,4vw,56px)}
+  h1,h2,p{margin:0}
+  button,select,input{font:inherit}
+  button,select{color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:7px;min-height:42px}
+  button{cursor:pointer}
+  button:hover,select:hover{border-color:#7e8c9a}
+  :focus-visible{outline:2px solid var(--inspect);outline-offset:2px}
+  [hidden]{display:none!important}
+  header{display:flex;justify-content:space-between;align-items:end;gap:20px;margin-bottom:24px}
+  header p{color:var(--muted);font-size:.89rem}
+  h1{font-size:clamp(2.1rem,5vw,4rem);font-weight:700;letter-spacing:-.06em;line-height:1.04;margin-top:5px}
+  header a,a{color:inherit;text-underline-offset:3px}
+  header a{font-size:.88rem;padding:8px 0;white-space:nowrap}
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 292px;border:1px solid var(--line);border-radius:15px;overflow:hidden;background:white}
+  .stage{height:clamp(425px,56vw,600px);position:relative;isolation:isolate;background:radial-gradient(ellipse at 50% 44%,#f3f6f9,#dae3eb 75%,#d4dee7)}
+  .stage canvas{display:block;max-width:100%;height:100%;touch-action:none;cursor:grab}
+  .stage canvas:active{cursor:grabbing}
+  .exercise-select{display:grid;gap:5px;margin:12px 12px 0;max-width:420px;font-size:.88rem}
+  .exercise-select select{width:100%;padding-inline:8px;text-overflow:ellipsis}
+  .exercise-navigation{display:flex;align-items:center;gap:8px;margin:8px 12px;flex-wrap:wrap}
+  .exercise-navigation button{padding:0 12px}
+  .exercise-navigation output{color:var(--muted)}
+  .views{display:flex;width:max-content;margin:8px 12px;gap:3px;background:#f7fafc;border:1px solid #cbd7e1;border-radius:9px;padding:3px}
+  .views button{background:transparent;border-color:transparent;min-height:36px;padding:0 10px;font-size:.82rem}
+  .views button[aria-pressed="true"]{background:#fff;border-color:#cbd7e1}
+  .hint{position:absolute;bottom:12px;left:15px;pointer-events:none;font-size:.82rem;color:#3f5365}
+  #status{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:30px;pointer-events:none}
+  .transport{display:grid;gap:10px;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;padding:15px 17px 13px;border-top:1px solid var(--line)}
+  .play{color:white;background:var(--ink);border-color:var(--ink);padding:0 13px;min-width:80px}
+  .play:hover{background:#344e63}
+  .transport label{grid-column:2;font-size:.78rem;color:var(--muted);display:flex;justify-content:space-between;gap:8px}
+  .transport input{grid-column:2;grid-row:1;width:100%;margin:0;accent-color:var(--ink)}
+  output{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:.82rem}
+  .speed{min-height:32px;padding:2px 6px;font-size:.8rem}
+  .side{border-left:1px solid var(--line);padding:22px 20px;display:flex;flex-direction:column;gap:20px}
+  h2{font-size:.98rem;letter-spacing:-.015em}
+  .legend{margin-top:10px;display:grid;gap:4px}
+  .muscle{display:grid;grid-template-columns:10px 1fr auto;align-items:center;gap:9px;text-align:left;padding:5px 8px;font-size:.88rem;border-color:transparent;background:transparent}
+  .muscle:hover{background:#f5f7f9}
+  .muscle[aria-pressed="false"] .dot{background:transparent}
+  .muscle .role{font-size:.72rem;color:var(--muted)}
+  .dot{width:9px;height:9px;border-radius:50%;border:1px solid var(--tone);background:var(--tone)}
+  .primary{--tone:var(--primary)}
+  .secondary{--tone:var(--secondary)}
+  .inspect{display:grid;gap:7px}
+  .inspect label{font-size:.85rem;color:var(--muted)}
+  .inspect select{width:100%;padding-inline:7px;font-size:.88rem}
+  .cues{padding-top:15px;border-top:1px solid var(--line)}
+  .cues ol{margin:9px 0 0;padding:0;list-style:none;display:grid;gap:4px}
+  .cues button{display:grid;grid-template-columns:23px 1fr;align-items:baseline;gap:3px 5px;text-align:left;padding:7px;width:100%;border-color:transparent}
+  .cues button[aria-current="step"]{background:#edf2f7}
+  .cues strong{font-size:.85rem}
+  .cues small{grid-column:2;font-size:.78rem;line-height:1.35;color:var(--muted)}
+  .cues span{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+  footer{color:var(--muted);font-size:.78rem;margin-top:14px}
+  @media(max-width:740px){.layout{grid-template-columns:1fr}.side{border-left:0;border-top:1px solid var(--line)}.stage{height:438px}}
+  @media(max-width:390px){main{padding:12px}.stage{height:400px}.views button{padding-inline:7px}.transport{gap:6px;padding-inline:10px}header{gap:10px}.side{padding:16px}}
+  [data-viewer] main{max-width:none;padding:0}
+  [data-viewer] .layout{display:block;border:0;border-radius:0}
+  [data-viewer] header,[data-viewer] .side,[data-viewer] footer,[data-viewer] .hint,
+  [data-viewer] .exercise-select,[data-viewer] .exercise-navigation{display:none}
+  [data-viewer=app] .stage{height:100vh;overflow:hidden}
+  [data-viewer=app] .stage canvas{pointer-events:none}
+  [data-viewer=record] .stage{height:100vh}
+  [data-viewer] .views,[data-viewer] .transport{display:none}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.183.2/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.183.2/examples/jsm/"
+  }
+}
+</script>
+<main>
+  <header>
+    <div><p>Exercise anatomy</p><h1 id="exercise-name">Bodyweight Squat</h1></div>
+    <a id="download-model" href="./anatomy.glb" download="anatomy.glb">Download model</a>
+  </header>
+  <div class="layout">
+    <section aria-label="Exercise viewer">
+      <div class="exercise-select">
+        <label for="exercise">Exercise</label>
+        <select id="exercise" disabled></select>
+      </div>
+      <div class="exercise-navigation" role="group" aria-label="Browse exercises">
+        <button type="button" id="previous-exercise" disabled>← Previous &amp; play</button>
+        <button type="button" id="next-exercise" disabled>Next &amp; play →</button>
+        <output id="exercise-position" aria-live="polite"></output>
+      </div>
+      <div class="views" role="group" aria-label="Camera views">
+        <button type="button" data-view="angle" aria-pressed="true">¾ view</button>
+        <button type="button" data-view="front" aria-pressed="false">Front</button>
+        <button type="button" data-view="side" aria-pressed="false">Side</button>
+        <button type="button" data-view="back" aria-pressed="false">Back</button>
+      </div>
+      <div class="stage" id="stage">
+        <div id="status" role="status">Loading 3D model…</div>
+        <p class="hint">Drag to rotate · Scroll or pinch to zoom</p>
+      </div>
+      <div class="transport">
+        <button type="button" class="play" id="play" disabled>Play</button>
+        <input id="timeline" type="range" min="0" max="4" step="any" value="0" disabled>
+        <output for="timeline" id="time" aria-live="off">0.0 / 4.0 s</output>
+        <select class="speed" id="speed" aria-label="Playback speed">
+          <option value=".5">0.5×</option><option value="1" selected>1×</option>
+        </select>
+        <label for="timeline"><span>Rep timeline</span><span id="phase">Setup</span></label>
+      </div>
+    </section>
+    <aside class="side" aria-label="Muscles and form">
+      <section>
+        <h2>Muscles worked</h2>
+        <div class="legend" id="legend"></div>
+      </section>
+      <section class="inspect">
+        <label for="muscle">Inspect a muscle group</label>
+        <select id="muscle"><option value="">Exercise highlights</option><option value="gray">All gray</option></select>
+      </section>
+      <section class="cues">
+        <h2>Form cues</h2>
+        <ol id="cues"></ol>
+      </section>
+    </aside>
+  </div>
+  <footer>Anatomy adapted from <a href="https://github.com/Charleeh/ecorche">Écorché</a> (BodyParts3D © DBCLS and Z-Anatomy by Gauthier Kervyn). Head by <a href="https://github.com/ICT-VGL/ICT-FaceKit">USC ICT</a>. Hands and feet by <a href="https://github.com/makehumancommunity/makehuman">MakeHuman</a>. <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a>.</footer>
+</main>
+<script type="module">
+  import("./viewer.mjs").catch((error) => {
+    document.getElementById("status").textContent = "The 3D viewer could not load. Check that WebGL and the model files are available.";
+    console.error(error);
+  });
+</script>
+</html>

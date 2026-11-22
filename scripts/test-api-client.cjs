@@ -1,5 +1,6 @@
 const assert = require('node:assert/strict')
 const fs = require('node:fs')
+const http = require('node:http')
 const { execFileSync } = require('node:child_process')
 const dir = 'target/contract-client'
 execFileSync('node_modules/.bin/tsc', ['--outDir', dir, '--strict', '--skipLibCheck', '--resolveJsonModule', '--esModuleInterop', '--moduleResolution', 'node16', '--module', 'node16', '--target', 'es2022', 'packages/api-client/src/index.ts'])
@@ -15,6 +16,22 @@ const empty = { path: {}, query: {}, body: null }
   assert.deepEqual(await call('history.revision', empty), { historyRevision: 4 })
   assert.equal(sent.url, 'https://active.example/api/history/revision')
   assert.equal(sent.init.headers.Authorization, 'Bearer token')
+  assert.equal(sent.init.redirect, 'error')
+  let leaked = false
+  const destination = http.createServer((req, res) => { leaked = true; res.end('{}') })
+  await new Promise(resolve => destination.listen(0, '127.0.0.1', resolve))
+  const redirect = http.createServer((req, res) => {
+    res.writeHead(307, { Location: `http://127.0.0.1:${destination.address().port}/capture` })
+    res.end()
+  })
+  await new Promise(resolve => redirect.listen(0, '127.0.0.1', resolve))
+  try {
+    const redirected = createClient(`http://127.0.0.1:${redirect.address().port}`, { kind: 'bearer', token: 'secret' })
+    await assert.rejects(() => redirected('history.revision', empty))
+    assert.equal(leaked, false)
+  } finally {
+    await Promise.all([new Promise(resolve => redirect.close(resolve)), new Promise(resolve => destination.close(resolve))])
+  }
   assert.equal(sent.init.headers['X-Active-Contract-Version'], '1')
   await assert.rejects(() => call('record.delete', { path: { id: 'a/b' }, query: { baseVersion: 1 }, body: null }), /Idempotency-Key/)
   for (const id of ['.', '..']) {

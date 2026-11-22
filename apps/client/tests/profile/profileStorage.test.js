@@ -151,6 +151,24 @@ test('profiles keep separate settings, widgets, and running sessions across swit
   expectProfile(restarted, { owner: ALICE, theme: 'dark', weight: 81, restSeconds: 150 })
 })
 
+test('a partial hydration failure can restore the prior stores and storage keys', async () => {
+  const app = boot()
+  await app.hydrateProfileStores(BOB, ALICE)
+  saveProfile(app, { owner: BOB, theme: 'light', weight: 66, restSeconds: 45 })
+  await app.flushSettingsPersistence()
+  await app.hydrateProfileStores(ALICE, ALICE)
+  saveProfile(app, { owner: ALICE, theme: 'dark', weight: 81, restSeconds: 150 })
+  await app.flushSettingsPersistence()
+
+  mockReadFailures.set(profileKey('widget-storage', BOB), 1)
+  await expect(app.hydrateProfileStores(BOB, ALICE)).rejects.toThrow()
+  await app.hydrateProfileStores(ALICE, ALICE)
+  expectProfile(app, { owner: ALICE, theme: 'dark', weight: 81, restSeconds: 150 })
+  expect(app.settings.persist.getOptions().name).toBe(profileKey('settings-storage', ALICE))
+  expect(app.running.persist.getOptions().name).toBe(profileKey('running-workout-storage', ALICE))
+  expect(app.widgets.persist.getOptions().name).toBe(profileKey('widget-storage', ALICE))
+})
+
 test('legacy values are claimed by the cached owner and legacy keys remain available', async () => {
   const legacySettings = persisted({ theme: 'dark', bodyWeight: 73, restTimerDefaultSeconds: 120 })
   const legacyRunning = persisted({

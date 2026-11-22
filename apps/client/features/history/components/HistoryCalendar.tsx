@@ -156,10 +156,6 @@ export function HistoryCalendar({
           })}
         </View>
       </View>
-      <View accessibilityRole="text" className="flex-row items-center gap-compact px-page">
-        <View className="h-1.5 w-1.5 rounded-full bg-accent" />
-        <UiText textRole="meta">Completed session · outlined date is today</UiText>
-      </View>
     </View>
   )
 }

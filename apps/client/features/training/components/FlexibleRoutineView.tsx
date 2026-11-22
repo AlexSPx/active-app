@@ -1,6 +1,7 @@
 import type { ViewInstance } from 'react-native'
 import { useRef, useState } from 'react'
 import { Pressable, ScrollView, View } from 'react-native'
+import Svg, { Circle } from 'react-native-svg'
 import { Button, UiText } from '../../../components/ui/Controls'
 import { CadenceOverlay } from '../../../components/ui/CadenceOverlay'
 import { Check, ChevronDown, ChevronRight, Dumbbell, Play } from '../../../components/ui/icons'
@@ -44,7 +45,7 @@ export function FlexibleRoutineView({
   }
 
   return (
-    <View className="gap-field">
+    <View className="gap-field rounded-card border border-divider bg-surface p-field">
       <Pressable
         className="min-h-touch flex-row items-center gap-field active:opacity-75"
         accessibilityRole="button"
@@ -56,38 +57,56 @@ export function FlexibleRoutineView({
         </UiText>
         <ChevronRight size={18} color={colors.muted} aria-hidden />
       </Pressable>
-      <View className="flex-row items-center justify-between gap-field">
-        <UiText textRole="bodyMuted">This week</UiText>
-        <UiText textRole="captionEmphasis">
-          {plan.completedCount === null
-            ? recordsError
-              ? 'Progress unavailable'
-              : 'Loading progress…'
-            : `${plan.completedCount} of ${plan.workouts.length} complete`}
-        </UiText>
-      </View>
-      <View
-        className="mb-field flex-row gap-compact"
-        accessibilityRole="progressbar"
-        accessibilityLabel="Weekly workouts completed"
-        accessibilityValue={{
-          min: 0,
-          max: plan.workouts.length,
-          now: plan.completedCount ?? undefined,
-          text:
-            plan.completedCount === null
-              ? 'Progress unavailable'
-              : `${plan.completedCount} of ${plan.workouts.length} complete`,
-        }}
-      >
-        {plan.workouts.map((item, index) => (
-          <View
-            key={item.id}
-            className={`h-1.5 min-w-0 flex-1 rounded-full ${index < (plan.completedCount ?? 0) ? 'bg-accent' : 'bg-divider'}`}
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-          />
-        ))}
+      <View className="flex-row items-center gap-field">
+        <View
+          accessibilityRole="progressbar"
+          accessibilityLabel="Weekly workouts completed"
+          accessibilityValue={{
+            min: 0,
+            max: plan.workouts.length,
+            now: plan.completedCount ?? undefined,
+            text:
+              plan.completedCount === null
+                ? 'Progress unavailable'
+                : `${plan.completedCount} of ${plan.workouts.length} complete`,
+          }}
+        >
+          <Svg width={64} height={64} viewBox="0 0 64 64" aria-hidden>
+            <Circle cx={32} cy={32} r={26} fill="none" stroke={colors.divider} strokeWidth={6} />
+            <Circle
+              cx={32}
+              cy={32}
+              r={26}
+              fill="none"
+              stroke={colors.accent}
+              strokeWidth={6}
+              strokeLinecap="round"
+              strokeDasharray={`${2 * Math.PI * 26}`}
+              strokeDashoffset={
+                2 *
+                Math.PI *
+                26 *
+                (1 -
+                  Math.max(
+                    0,
+                    Math.min(1, (plan.completedCount ?? 0) / (plan.workouts.length || 1))
+                  ))
+              }
+              rotation={-90}
+              origin="32, 32"
+            />
+          </Svg>
+        </View>
+        <View className="min-w-0 flex-1 gap-compact">
+          <UiText textRole="bodyMuted">This week</UiText>
+          <UiText textRole="captionEmphasis">
+            {plan.completedCount === null
+              ? recordsError
+                ? 'Progress unavailable'
+                : 'Loading progress…'
+              : `${plan.completedCount} of ${plan.workouts.length} complete`}
+          </UiText>
+        </View>
       </View>
       {complete && (
         <UiText textRole="caption">

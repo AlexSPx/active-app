@@ -99,6 +99,7 @@ export const convertToTemplateExercise = (exercise: CreateWorkoutExercise): Temp
     return {
       exerciseId: exercise.id,
       durationSeconds: durations,
+      ...exercise.additionalTemplateSets,
       notes: exercise.notes,
     } as unknown as TemplateExercise
   }
@@ -106,6 +107,7 @@ export const convertToTemplateExercise = (exercise: CreateWorkoutExercise): Temp
     exerciseId: exercise.id,
     reps: exercise.sets.map((set) => set.reps).filter((v): v is number => v != null),
     weight: exercise.sets.map((set) => set.weight).filter((v): v is number => v != null),
+    ...exercise.additionalTemplateSets,
     notes: exercise.notes,
   }
 }
@@ -141,7 +143,7 @@ export const buildUpdateWorkoutRequest = (params: {
   if (typeof params.notes !== 'undefined') {
     const trimmed = params.notes?.trim()
     if (trimmed && trimmed.length > 0) payload.notes = trimmed
-    else payload.notes = '' // allow clearing notes by sending empty string
+    else payload.notes = null
   }
   if (params.exercises) {
     payload.template = {
@@ -153,22 +155,32 @@ export const buildUpdateWorkoutRequest = (params: {
 
 /** Convert an ApiWorkout to editable WorkoutExercise[] used by the editor */
 export const apiWorkoutToEditableExercises = (workout: ApiWorkout): CreateWorkoutExercise[] => {
-  return workout.workoutTemplate.exercises.map((ex, idx) => ({
-    // Editor expects Exercise-like object with id/name/muscles.
-    // Use API exerciseTitle when present; fall back to a readable ID.
-    id: ex.exerciseId,
-    name: ex.exerciseTitle?.trim() || ex.exerciseId.replace(/_/g, ' '),
-    level: 'INTERMEDIATE',
-    force: 'PUSH',
-    mechanic: 'COMPOUND',
-    equipment: 'OTHER',
-    primaryMuscles: ex.primaryMuscles || [],
-    secondaryMuscles: ex.secondaryMuscles || [],
-    instructions: [],
-    category: ex.category,
-    coachPrescription: ex.coachPrescription,
-    sets:
-      ex.category === 'CARDIO' || ex.coachPrescription?.sets[0]?.kind === 'timed'
+  return workout.workoutTemplate.exercises.map((ex) => {
+    const isTimed = ex.category === 'CARDIO' || ex.coachPrescription?.sets[0]?.kind === 'timed'
+
+    return {
+      // Editor expects Exercise-like object with id/name/muscles.
+      // Use API exerciseTitle when present; fall back to a readable ID.
+      id: ex.exerciseId,
+      name: ex.exerciseTitle?.trim() || ex.exerciseId.replace(/_/g, ' '),
+      notes: ex.notes ?? undefined,
+      additionalTemplateSets: isTimed
+        ? (ex.reps?.length ?? 0) > 0
+          ? { reps: ex.reps, weight: ex.weight }
+          : undefined
+        : ex.durationSeconds?.length
+          ? { durationSeconds: ex.durationSeconds }
+          : undefined,
+      level: 'INTERMEDIATE',
+      force: 'PUSH',
+      mechanic: 'COMPOUND',
+      equipment: 'OTHER',
+      primaryMuscles: ex.primaryMuscles || [],
+      secondaryMuscles: ex.secondaryMuscles || [],
+      instructions: [],
+      category: ex.category,
+      coachPrescription: ex.coachPrescription,
+      sets: isTimed
         ? (typeof ex.durationSeconds === 'number'
             ? [ex.durationSeconds]
             : (ex.durationSeconds ?? [0])
@@ -185,7 +197,8 @@ export const apiWorkoutToEditableExercises = (workout: ApiWorkout): CreateWorkou
               ? { coachBodyweight: true }
               : {}),
           })),
-  })) as unknown as CreateWorkoutExercise[]
+    }
+  })
 }
 
 /**

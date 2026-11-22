@@ -348,10 +348,11 @@ describe('failed sync recovery', () => {
     'discarding %s releases unrelated work but preserves known dependencies',
     async (_name, scenario) => {
       const { api, blocker, dependents, tables } = scenario()
+      api.deleteRoutine.mockResolvedValue({ deletedRoutineId: 'server-routine', profileVersion: 1 })
       const independent = makeJob({
         id: 'independent',
         endpoint: 'deleteRoutine',
-        payload: { id: 'server-routine', baseVersion: 0, profileBaseVersion: 0 },
+        payload: { id: 'server-routine', baseVersion: 1, profileBaseVersion: 1 },
       })
       const db = new FakeDb({ jobs: [blocker, ...dependents, independent], tables })
       const engine = engineWith(api)
@@ -375,7 +376,7 @@ describe('failed sync recovery', () => {
         await engine.processQueue()
 
         expect(api.deleteRoutine).toHaveBeenCalledWith(
-          { id: 'server-routine', baseVersion: 0, profileBaseVersion: 0 },
+          { id: 'server-routine', baseVersion: 1, profileBaseVersion: 1 },
           'independent-key'
         )
         expect(db.getJob('independent')).toBeNull()

@@ -72,13 +72,19 @@ export class RoutineRepository extends BaseRepository {
   async create(payload: CreateRoutineRequest): Promise<Routine> {
     return this.commitMutation(async (tx) => {
       const profileBaseVersion = getCurrentProfileVersion()
+      const today = new Date()
       const resolvedPayload: CreateRoutineRequest = {
         ...payload,
+        startDate:
+          payload.startDate ??
+          new Date(today.getTime() - today.getTimezoneOffset() * 60000).toISOString().slice(0, 10),
         pattern: this.resolvePatternWorkoutIds(payload.pattern),
         ...(payload.active && profileBaseVersion !== null ? { profileBaseVersion } : {}),
       }
       const localId = this.generateLocalId()
       const now = new Date().toISOString()
+
+      if (resolvedPayload.active) await tx.runAsync('UPDATE routines SET is_active = 0')
 
       await tx.runAsync(
         `INSERT INTO routines (id, name, description, routine_type, pattern, start_date, created_at, updated_at, is_active, is_synced)
@@ -129,22 +135,14 @@ export class RoutineRepository extends BaseRepository {
         resolvedRoutineId
       )
       const profileBaseVersion = getCurrentProfileVersion()
-      const changesRoutine = Object.keys(payload).some(
-        (key) => key !== 'active' && key !== 'baseVersion' && key !== 'profileBaseVersion'
-      )
       const changesProfile = payload.active !== undefined
-      const hasAllBases =
-        (!changesRoutine || rowBeforeMutation?.server_version != null) &&
-        (!changesProfile || profileBaseVersion !== null)
       const resolvedPayload: UpdateRoutineRequest = {
         ...payload,
         ...(payload.pattern ? { pattern: this.resolvePatternWorkoutIds(payload.pattern) } : {}),
-        ...(hasAllBases && changesRoutine
-          ? { baseVersion: rowBeforeMutation?.server_version ?? undefined }
+        ...(rowBeforeMutation?.server_version != null
+          ? { baseVersion: rowBeforeMutation.server_version }
           : {}),
-        ...(hasAllBases && changesProfile && profileBaseVersion !== null
-          ? { profileBaseVersion }
-          : {}),
+        ...(changesProfile && profileBaseVersion !== null ? { profileBaseVersion } : {}),
       }
       const sets: string[] = []
       const vals: any[] = []
@@ -217,14 +215,11 @@ export class RoutineRepository extends BaseRepository {
         value: undefined,
         job: {
           apiMethod: 'deleteRoutine',
-          payload:
-            row?.server_version == null || profileBaseVersion === null
-              ? [resolvedRoutineId]
-              : {
-                  id: resolvedRoutineId,
-                  baseVersion: row.server_version,
-                  profileBaseVersion,
-                },
+          payload: {
+            id: resolvedRoutineId,
+            ...(row?.server_version == null ? {} : { baseVersion: row.server_version }),
+            ...(profileBaseVersion === null ? {} : { profileBaseVersion }),
+          },
         },
       }
     })

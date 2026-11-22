@@ -2482,6 +2482,16 @@
                       "exerciseTitle": {
                         "type": "string"
                       },
+                      "notes": {
+                        "anyOf": [
+                          {
+                            "type": "string"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
                       "reps": {
                         "type": "array",
                         "items": {
@@ -2539,6 +2549,7 @@
                     "required": [
                       "exerciseId",
                       "exerciseTitle",
+                      "notes",
                       "reps",
                       "weight",
                       "durationSeconds",
@@ -2744,6 +2755,16 @@
                     "exerciseTitle": {
                       "type": "string"
                     },
+                    "notes": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "reps": {
                       "type": "array",
                       "items": {
@@ -2801,6 +2822,7 @@
                   "required": [
                     "exerciseId",
                     "exerciseTitle",
+                    "notes",
                     "reps",
                     "weight",
                     "durationSeconds",
@@ -3017,6 +3039,16 @@
                     "exerciseTitle": {
                       "type": "string"
                     },
+                    "notes": {
+                      "anyOf": [
+                        {
+                          "type": "string"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
                     "reps": {
                       "type": "array",
                       "items": {
@@ -3074,6 +3106,7 @@
                   "required": [
                     "exerciseId",
                     "exerciseTitle",
+                    "notes",
                     "reps",
                     "weight",
                     "durationSeconds",

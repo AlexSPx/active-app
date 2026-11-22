@@ -1,3 +1,11 @@
+# Release Notes - v2.2.1
+
+- Improved home widgets and added detailed exercise progress charts.
+- Refreshed Settings and added an About screen.
+- Simplified the history calendar header and legend.
+- Improved bottom tab press feedback.
+- Fixed exercise search flicker in widgets.
+
 # Release Notes - v1.0.0
 
 ## 🌟 Welcome to Active!

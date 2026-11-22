@@ -111,9 +111,11 @@ test('duplicate conversion preserves strength and cardio targets in their origin
         {
           exerciseId: 'squat',
           exerciseTitle: 'Squat',
+          notes: 'Pause at the bottom',
           category: 'STRENGTH',
           reps: [8, 6],
           weight: [60.5, 70],
+          durationSeconds: [30, 45],
           primaryMuscles: ['quads'],
           secondaryMuscles: [],
         },
@@ -132,7 +134,13 @@ test('duplicate conversion preserves strength and cardio targets in their origin
   const duplicate = convertToCreateWorkoutRequest('Upper body copy', editable, original.notes)
   expect(duplicate.title).toBe('Upper body copy')
   expect(duplicate.template.exercises).toEqual([
-    { exerciseId: 'squat', reps: [8, 6], weight: [60.5, 70], notes: undefined },
+    {
+      exerciseId: 'squat',
+      reps: [8, 6],
+      weight: [60.5, 70],
+      durationSeconds: [30, 45],
+      notes: 'Pause at the bottom',
+    },
     { exerciseId: 'run', durationSeconds: [600, 900], notes: undefined },
   ])
 })
@@ -171,4 +179,30 @@ test.each([
   expect(
     convertToCreateWorkoutRequest('Run', editable).template.exercises[0].durationSeconds
   ).toEqual(expected)
+})
+
+test('clearing workout notes sends an explicit null', () => {
+  expect(buildUpdateWorkoutRequest({ notes: '' })).toEqual({ notes: null })
+})
+
+test('updating a timed coach exercise saves the edited duration and preserves its notes', () => {
+  const workout = {
+    workoutTemplate: {
+      exercises: [
+        {
+          exerciseId: 'plank',
+          exerciseTitle: 'Plank',
+          category: 'STRENGTH',
+          durationSeconds: [30],
+          notes: 'Keep hips level',
+          coachPrescription: { sets: [{ kind: 'timed', durationSeconds: 30 }] },
+        },
+      ],
+    },
+  }
+  const exercises = apiWorkoutToEditableExercises(workout)
+  exercises[0].sets[0].durationSeconds = 45
+  expect(buildUpdateWorkoutRequest({ exercises }).template.exercises).toEqual([
+    { exerciseId: 'plank', durationSeconds: [45], notes: 'Keep hips level' },
+  ])
 })

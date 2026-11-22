@@ -19,6 +19,7 @@ import type {
 } from '../../types/routine'
 
 export interface SyncApi {
+  getExerciseCatalog(): Promise<unknown>
   createWorkout(
     workoutData: CreateWorkoutRequest,
     idempotencyKey?: string
@@ -54,6 +55,7 @@ export interface SyncApi {
 }
 
 export const syncApi: SyncApi = {
+  getExerciseCatalog: () => apiService.getExerciseCatalog(),
   createWorkout: (workoutData, key) => apiService.createWorkout(workoutData, key),
   updateWorkout: (workoutId, payload, key) => apiService.updateWorkout(workoutId, payload, key),
   deleteWorkout: (request, key) => apiService.deleteWorkout(request, key),

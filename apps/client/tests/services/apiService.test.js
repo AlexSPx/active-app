@@ -64,6 +64,7 @@ describe('API credential refresh', () => {
 
     expect(global.fetch.mock.calls[0][1].headers).toMatchObject({
       'Idempotency-Key': 'operation-key',
+      'X-Active-Contract-Version': '1',
     })
   })
 
@@ -84,7 +85,10 @@ describe('API credential refresh', () => {
     expect(parsedUrl.searchParams.get('baseVersion')).toBe('4')
     expect(options).toMatchObject({
       method: 'DELETE',
-      headers: expect.objectContaining({ 'Idempotency-Key': 'delete-key' }),
+      headers: expect.objectContaining({
+        'Idempotency-Key': 'delete-key',
+        'X-Active-Contract-Version': '1',
+      }),
     })
   })
 

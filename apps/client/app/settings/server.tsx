@@ -4,33 +4,41 @@ import { SettingsPage } from '../../components/settings/SettingsPage'
 import { Button, Surface, TextField, UiText } from '../../components/ui/Controls'
 import { useAuth } from '../../contexts/AuthContext'
 import { useSettingsStore } from '../../features/settings'
+import { captureFirstWorkout } from '../../features/selfHosted/firstWorkout'
+import { getDatabase } from '../../lib/db/connection'
+import { getProfileScope, isCurrentProfile, LOCAL_PROFILE_OWNER } from '../../lib/profileScope'
 import {
-  connectAccount,
-  deleteRemoteAccount,
-  disconnectAccount,
-  initializeFromDevice,
   readAccount,
+  readServerWorkouts,
+  resumeFirstWorkout,
   type RemoteProfile,
 } from '../../features/selfHosted/account'
-import { loadConnection, type Connection } from '../../features/selfHosted/storage'
+import {
+  cancelConnection,
+  disconnectServer,
+  deleteServerAccount,
+  restoreConnectionLifecycle,
+  signInToServer,
+  useConnectionLifecycle,
+} from '../../features/selfHosted/lifecycle'
 
 export default function ServerSettingsScreen() {
   const { user } = useAuth()
   const settings = useSettingsStore()
   const [url, setUrl] = useState(Platform.OS === 'web' ? location.origin : '')
-  const [connection, setConnection] = useState<Connection | null>(null)
+  const { connection, status } = useConnectionLifecycle()
   const [profile, setProfile] = useState<RemoteProfile | null>(null)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [workouts, setWorkouts] = useState<string[] | null>(null)
 
   useEffect(() => {
     let mounted = true
-    void loadConnection()
-      .then((saved) => {
-        if (!mounted) return
-        setConnection(saved)
-        if (saved) setUrl(saved.baseUrl)
+    void restoreConnectionLifecycle()
+      .then(() => {
+        const saved = useConnectionLifecycle.getState().connection
+        if (mounted && saved) setUrl(saved.baseUrl)
       })
       .catch(() => {
         if (mounted) setMessage('Could not restore the server connection. Try again.')
@@ -53,6 +61,38 @@ export default function ServerSettingsScreen() {
     }
   }
 
+  async function signIn(attach = false) {
+    let snapshot
+    if (attach) {
+      const scope = getProfileScope()
+      if (scope.ownerId !== LOCAL_PROFILE_OWNER || !user?.registrationCompleted)
+        throw new Error('Return to your device profile and finish setting it up first')
+      snapshot = await captureFirstWorkout(
+        await getDatabase(),
+        user,
+        {
+          firstName: user.firstName,
+          lastName: user.lastName,
+          timezone: settings.timeZone,
+          measurements: { weightKg: settings.bodyWeight, heightCm: settings.height },
+          registrationCompleted: user.registrationCompleted,
+        },
+        {
+          enabled: user.notificationPreferences?.emailNotificationsEnabled ?? false,
+          schedule: user.notificationPreferences?.schedule ?? [],
+          timezone: settings.timeZone,
+        }
+      )
+      if (!isCurrentProfile(scope)) throw new Error('Device profile changed; try again')
+    }
+    const connected = await signInToServer(url, snapshot)
+    if (connected) {
+      setProfile(null)
+      if (attach)
+        setMessage('Workout saved for this account. Select Resume workout upload to continue.')
+    }
+  }
+
   return (
     <SettingsPage
       title="Self-hosted account"
@@ -68,33 +108,37 @@ export default function ServerSettingsScreen() {
             placeholder="https://active.example.com"
             autoCapitalize="none"
             autoCorrect={false}
-            editable={!busy && !connection}
+            editable={!busy}
             keyboardType="url"
           />
           {!connection ? (
-            <Button
-              disabled={busy}
-              onPress={() =>
-                void run(async () => {
-                  const connected = await connectAccount(url)
-                  if (!connected) return
-                  setConnection(connected)
-                  setProfile(await readAccount())
-                  setMessage('Connected. Your device profile has not been changed.')
-                })
-              }
-            >
-              <UiText>{busy ? 'Connecting…' : 'Sign in to server'}</UiText>
-            </Button>
+            <>
+              <Button disabled={busy} onPress={() => void run(() => signIn())}>
+                <UiText>{busy ? 'Connecting…' : 'Sign in to server'}</UiText>
+              </Button>
+              {Platform.OS !== 'web' && getProfileScope().ownerId === LOCAL_PROFILE_OWNER && (
+                <>
+                  <UiText textRole="bodyMuted">
+                    Attach your device profile and most recent workout to a new account. Your
+                    original data stays on this device.
+                  </UiText>
+                  <Button disabled={busy || !user} onPress={() => void run(() => signIn(true))}>
+                    <UiText>Sign in and attach one workout</UiText>
+                  </Button>
+                </>
+              )}
+            </>
           ) : (
             <>
-              <UiText textRole="bodyEmphasis">Connected to {connection.baseUrl}</UiText>
+              <UiText textRole="bodyEmphasis">
+                {status === 'auth-paused' ? 'Sign in again to' : 'Connected to'}{' '}
+                {connection.baseUrl}
+              </UiText>
               <Button
                 disabled={busy}
                 onPress={() =>
                   void run(async () => {
-                    const renewed = await connectAccount(connection.baseUrl)
-                    if (renewed) setConnection(renewed)
+                    await signIn()
                   })
                 }
               >
@@ -115,46 +159,47 @@ export default function ServerSettingsScreen() {
               >
                 <UiText>Read server profile</UiText>
               </Button>
-              <UiText textRole="bodyMuted">
-                Copy your device name, measurements, time zone and reminder preferences into a new
-                server profile. Existing server profiles are preserved. Workout upload is a separate
-                step.
-              </UiText>
-              <Button
-                disabled={busy || !user}
-                onPress={() =>
-                  void run(async () => {
-                    if (!user) throw new Error('Finish setting up your device profile first')
-                    await initializeFromDevice(
-                      {
-                        firstName: user.firstName,
-                        lastName: user.lastName,
-                        timezone: settings.timeZone,
-                        measurements: { weightKg: settings.bodyWeight, heightCm: settings.height },
-                        registrationCompleted: user.registrationCompleted,
-                      },
-                      {
-                        enabled: user.notificationPreferences?.emailNotificationsEnabled ?? false,
-                        schedule: user.notificationPreferences?.schedule ?? [],
-                        timezone: settings.timeZone,
-                      }
-                    )
-                    setProfile(await readAccount())
-                    setMessage(
-                      'Your device profile was copied to the server. Local training data is unchanged.'
-                    )
-                  })
-                }
-              >
-                <UiText>Copy device profile / resume</UiText>
-              </Button>
+              {Platform.OS !== 'web' && (
+                <>
+                  <UiText textRole="bodyMuted">
+                    Resume an attached workout after a connection or upload interruption. Other
+                    workouts and history remain on this device.
+                  </UiText>
+                  <Button
+                    disabled={busy}
+                    onPress={() =>
+                      void run(async () => {
+                        await resumeFirstWorkout()
+                        setMessage(
+                          'Your workout was uploaded. The original remains on this device.'
+                        )
+                      })
+                    }
+                  >
+                    <UiText>Resume workout upload</UiText>
+                  </Button>
+                </>
+              )}
               <Button
                 disabled={busy}
                 onPress={() =>
                   void run(async () => {
-                    await disconnectAccount()
-                    setConnection(null)
+                    setWorkouts((await readServerWorkouts()).map((workout) => workout.title))
+                  })
+                }
+              >
+                <UiText>Read server workouts</UiText>
+              </Button>
+              {workouts && (
+                <UiText>{workouts.length ? workouts.join('\n') : 'No server workouts yet.'}</UiText>
+              )}
+              <Button
+                disabled={busy}
+                onPress={() =>
+                  void run(async () => {
+                    await disconnectServer()
                     setProfile(null)
+                    setWorkouts(null)
                     setMessage('Disconnected. Your device data is still available.')
                   })
                 }
@@ -164,6 +209,11 @@ export default function ServerSettingsScreen() {
             </>
           )}
           {message && <UiText accessibilityRole="alert">{message}</UiText>}
+          {busy && (
+            <Button onPress={cancelConnection}>
+              <UiText>Cancel</UiText>
+            </Button>
+          )}
         </View>
       </Surface>
       {connection && (
@@ -181,8 +231,7 @@ export default function ServerSettingsScreen() {
                   disabled={busy}
                   onPress={() =>
                     void run(async () => {
-                      await deleteRemoteAccount()
-                      setConnection(null)
+                      await deleteServerAccount()
                       setProfile(null)
                       setConfirmDelete(false)
                       setMessage('Server account deleted. Your device data is still available.')

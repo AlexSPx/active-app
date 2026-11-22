@@ -214,7 +214,9 @@ export class WorkoutRepository extends BaseRepository {
         await tx.runAsync(
           'UPDATE routines SET pattern = ? WHERE id = ?',
           JSON.stringify(
-            pattern.map((day) => (day.workoutId === resolvedId ? { ...day, workoutId: null } : day))
+            pattern.map((day) =>
+              day.workoutId === resolvedId ? { ...day, dayType: 'REST', workoutId: null } : day
+            )
           ),
           routine.id
         )
@@ -451,6 +453,7 @@ export class WorkoutRepository extends BaseRepository {
       return {
         exerciseId: exercise.exerciseId,
         exerciseTitle: details.name,
+        notes: exercise.notes ?? null,
         reps: exercise.reps || [],
         weight: exercise.weight || [],
         durationSeconds: exercise.durationSeconds || null,

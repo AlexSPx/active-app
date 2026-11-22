@@ -484,6 +484,7 @@ export interface components {
                 exercises: {
                     exerciseId: string;
                     exerciseTitle: string;
+                    notes: string | null;
                     reps: number[];
                     weight: number[];
                     durationSeconds: number[];
@@ -531,6 +532,7 @@ export interface components {
                 exercises: {
                     exerciseId: string;
                     exerciseTitle: string;
+                    notes: string | null;
                     reps: number[];
                     weight: number[];
                     durationSeconds: number[];
@@ -580,6 +582,7 @@ export interface components {
                 exercises: {
                     exerciseId: string;
                     exerciseTitle: string;
+                    notes: string | null;
                     reps: number[];
                     weight: number[];
                     durationSeconds: number[];

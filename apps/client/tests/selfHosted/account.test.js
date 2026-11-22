@@ -1,5 +1,12 @@
 jest.mock('expo-crypto', () => ({ randomUUID: jest.fn(() => 'operation-key') }))
-jest.mock('expo-web-browser', () => ({ maybeCompleteAuthSession: jest.fn() }))
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock')
+)
+jest.mock('expo-web-browser', () => ({
+  maybeCompleteAuthSession: jest.fn(),
+  dismissAuthSession: jest.fn(),
+}))
+jest.mock('expo/fetch', () => ({ fetch: (...args) => global.fetch(...args) }))
 jest.mock('expo-auth-session', () => ({
   AuthRequest: jest.fn(),
   ResponseType: { Code: 'code' },
@@ -28,6 +35,7 @@ const storage = require('../../features/selfHosted/storage')
 const { createClient, ApiError } = require('../../../../packages/api-client/src')
 const auth = require('expo-auth-session')
 const account = require('../../features/selfHosted/account')
+const { setActiveProfileOwner, profileOwnerForConnection } = require('../../lib/profileScope')
 const profile = {
   id: 'account-a',
   email: 'a@example.com',
@@ -69,6 +77,7 @@ let failDelete
 beforeEach(() => {
   jest.clearAllMocks()
   Platform.OS = 'ios'
+  setActiveProfileOwner(profileOwnerForConnection(connection))
   plans = new Map()
   calls = []
   failPreferences = false
@@ -142,6 +151,16 @@ test('a changed server instance prevents sending credentials or mutation request
   expect(storage.clearConnection).not.toHaveBeenCalled()
 })
 
+test('web logout does not send its CSRF token to a replaced server instance', async () => {
+  Platform.OS = 'web'
+  storage.loadConnection.mockResolvedValue({ ...connection, kind: 'web', csrfToken: 'csrf' })
+  createClient.mockImplementation(() => async () => ({ instanceId: 'different' }))
+  global.fetch = jest.fn()
+  await expect(account.disconnectAccount()).rejects.toThrow('not supported')
+  expect(global.fetch).not.toHaveBeenCalled()
+  expect(storage.clearConnection).not.toHaveBeenCalled()
+})
+
 test('canceling authentication preserves the existing connection and pending work', async () => {
   auth.AuthRequest.mockImplementation(() => ({ promptAsync: async () => ({ type: 'cancel' }) }))
   global.fetch = jest.fn(async () => ({ ok: true, status: 200, json: async () => metadata }))
@@ -150,21 +169,102 @@ test('canceling authentication preserves the existing connection and pending wor
   expect(storage.clearConnection).not.toHaveBeenCalled()
 })
 
+test('canceling an in-flight browser sign-in fences a late successful callback', async () => {
+  let finish
+  let opened
+  const browserOpened = new Promise((resolve) => {
+    opened = resolve
+  })
+  auth.AuthRequest.mockImplementation(() => ({
+    state: 'state',
+    codeVerifier: 'verifier',
+    promptAsync: () => {
+      opened()
+      return new Promise((resolve) => {
+        finish = resolve
+      })
+    },
+  }))
+  global.fetch = jest.fn(async () => ({ ok: true, status: 200, json: async () => metadata }))
+  const connecting = account.connectAccount(connection.baseUrl)
+  await browserOpened
+  account.cancelAccountOperation()
+  finish({ type: 'success', params: { state: 'state', iss: metadata.issuer, code: 'code' } })
+  await expect(connecting).rejects.toThrow('canceled')
+  expect(storage.saveConnection).not.toHaveBeenCalled()
+  expect(global.fetch).toHaveBeenCalledTimes(1)
+})
+
+test('canceling discovery metadata aborts the request and keeps the previous connection', async () => {
+  let started
+  const requestStarted = new Promise((resolve) => {
+    started = resolve
+  })
+  global.fetch = jest.fn(
+    (url, init) =>
+      new Promise((resolve, reject) => {
+        init.signal.addEventListener('abort', () => reject(new Error('aborted')))
+        started()
+      })
+  )
+  const connecting = account.connectAccount(connection.baseUrl)
+  await requestStarted
+  account.cancelAccountOperation()
+  await expect(connecting).rejects.toThrow('aborted')
+  expect(storage.saveConnection).not.toHaveBeenCalled()
+  expect(storage.clearConnection).not.toHaveBeenCalled()
+})
+
+test('discarding an account operation rejects a profile response that arrives after cancellation', async () => {
+  let finish
+  let started
+  const pending = new Promise((resolve) => {
+    started = resolve
+  })
+  createClient.mockImplementation(() => async (operation) => {
+    if (operation === 'discovery') return { ...metadata, instanceId: connection.instanceId }
+    if (operation === 'profile.get') {
+      started()
+      return new Promise((resolve) => {
+        finish = resolve
+      })
+    }
+    throw new Error(operation)
+  })
+  const reading = account.readAccount()
+  await pending
+  account.cancelAccountOperation()
+  finish(profile)
+  await expect(reading).rejects.toThrow('canceled')
+})
+
+test.each(['authorizationEndpoint', 'tokenEndpoint', 'endSessionEndpoint'])(
+  'rejects an authentication %s that differs from discovery',
+  async (field) => {
+    global.fetch = jest.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ ...metadata, [field]: 'https://other.test/endpoint' }),
+    }))
+    await expect(account.connectAccount(connection.baseUrl)).rejects.toThrow('metadata changed')
+    expect(auth.AuthRequest).not.toHaveBeenCalled()
+    expect(storage.saveConnection).not.toHaveBeenCalled()
+  }
+)
+
 test('refresh rejects a changed subject without replacing stored credentials', async () => {
   storage.loadConnection.mockResolvedValue({ ...connection, expiresAt: 0 })
-  auth.refreshAsync.mockResolvedValue({
-    accessToken: 'new',
-    refreshToken: 'rotated',
-    issuedAt: 1,
-    expiresIn: 600,
-  })
-  global.fetch = jest.fn(async () => ({
+  global.fetch = jest.fn(async (url) => ({
     ok: true,
     status: 200,
-    json: async () => ({ subject: 'other' }),
+    json: async () =>
+      url === metadata.tokenEndpoint
+        ? { access_token: 'new', refresh_token: 'rotated', expires_in: 600 }
+        : { subject: 'other' },
   }))
   await expect(account.readAccount()).rejects.toThrow('refreshed account changed')
   expect(storage.saveConnection).not.toHaveBeenCalled()
+  expect(global.fetch.mock.calls[0][1]).toMatchObject({ redirect: 'error', credentials: 'omit' })
 })
 
 test.each([
@@ -176,8 +276,19 @@ test.each([
   expect(() => account.serverUrl(value)).toThrow()
 })
 
-test('web reauthentication cannot replace a different account with pending work', async () => {
+test('web reauthentication rejects a different account before replacing credentials', async () => {
   Platform.OS = 'web'
+  const { queryClient } = require('../../lib/queryClient')
+  const { useSettingsStore } = require('../../features/settings/stores/settingsStore')
+  const {
+    useRunningWorkoutStore,
+  } = require('../../features/workout-session/stores/runningWorkoutStore')
+  queryClient.setQueryData(['account-data'], { owner: 'account-a' })
+  useSettingsStore.getState().setBodyWeight(81)
+  useRunningWorkoutStore
+    .getState()
+    .startWorkout({ id: 'a-workout', name: 'A draft', exercises: [] })
+  const onConnection = jest.fn()
   const oldLocation = global.location
   global.location = { origin: connection.baseUrl }
   storage.loadConnection.mockResolvedValue({ ...connection, kind: 'web', csrfToken: 'old-csrf' })
@@ -188,10 +299,96 @@ test('web reauthentication cannot replace a different account with pending work'
       url.endsWith('/auth/config') ? metadata : { accountId: 'account-b', csrfToken: 'new-csrf' },
   }))
   try {
-    await expect(account.connectAccount(connection.baseUrl)).rejects.toThrow('previous account')
+    await expect(account.connectAccount(connection.baseUrl, onConnection)).rejects.toThrow(
+      'not supported'
+    )
     expect(storage.saveConnection).not.toHaveBeenCalled()
+    expect(onConnection).not.toHaveBeenCalled()
+    expect(queryClient.getQueryData(['account-data'])).toEqual({ owner: 'account-a' })
+    expect(useSettingsStore.getState().bodyWeight).toBe(81)
+    expect(useRunningWorkoutStore.getState().runningWorkout.id).toBe('a-workout')
     expect(storage.clearPlan).not.toHaveBeenCalled()
   } finally {
     global.location = oldLocation
+    queryClient.clear()
+    useSettingsStore.getState().reset()
+    useRunningWorkoutStore.getState().reset()
   }
+})
+
+test('native sign-in selects a different server and account without touching the prior plan', async () => {
+  auth.AuthRequest.mockImplementation(() => ({
+    state: 'state',
+    codeVerifier: 'verifier',
+    promptAsync: async () => ({
+      type: 'success',
+      params: { state: 'state', iss: metadata.issuer, code: 'code' },
+    }),
+  }))
+  createClient.mockImplementation(() => async (operation) => {
+    if (operation === 'discovery') return { ...metadata, instanceId: 'instance-b' }
+    if (operation === 'profile.get') return { ...profile, id: 'account-b' }
+    throw new Error(operation)
+  })
+  global.fetch = jest.fn(async (url) => ({
+    ok: true,
+    status: 200,
+    json: async () =>
+      url.endsWith('/auth/config')
+        ? metadata
+        : url === metadata.tokenEndpoint
+          ? { access_token: 'new', id_token: 'new-id', expires_in: 600 }
+          : { subject: 'subject-b' },
+  }))
+  await expect(account.connectAccount('https://other.test')).resolves.toMatchObject({
+    instanceId: 'instance-b',
+    accountId: 'account-b',
+    subject: 'subject-b',
+  })
+  expect(storage.saveConnection).toHaveBeenCalledWith(
+    expect.objectContaining({ accountId: 'account-b' })
+  )
+  expect(storage.loadPlan).toHaveBeenCalledWith(connection, 'delete')
+  expect(storage.clearPlan).not.toHaveBeenCalled()
+})
+
+test('rejects account operations when saved credentials belong to another profile', async () => {
+  setActiveProfileOwner(profileOwnerForConnection({ instanceId: 'instance-a', accountId: 'other' }))
+  await expect(account.readAccount()).rejects.toThrow('selected profile')
+  expect(calls).toEqual([])
+})
+
+test('a pending deletion blocks switching identities but permits reauthentication for recovery', async () => {
+  plans.set('delete', { kind: 'delete', plan: { accountId: connection.accountId } })
+  auth.AuthRequest.mockImplementation(() => ({
+    state: 'state',
+    codeVerifier: 'verifier',
+    promptAsync: async () => ({
+      type: 'success',
+      params: { state: 'state', iss: metadata.issuer, code: 'code' },
+    }),
+  }))
+  let subject = 'subject-b'
+  global.fetch = jest.fn(async (url) => ({
+    ok: true,
+    status: 200,
+    json: async () =>
+      url.endsWith('/auth/config')
+        ? metadata
+        : url === metadata.tokenEndpoint
+          ? { access_token: 'new', id_token: 'new-id', expires_in: 600 }
+          : { subject },
+  }))
+  const onConnection = jest.fn()
+  await expect(account.connectAccount(connection.baseUrl, onConnection)).rejects.toThrow(
+    'pending deletion'
+  )
+  expect(storage.saveConnection).not.toHaveBeenCalled()
+  expect(onConnection).not.toHaveBeenCalled()
+  expect(calls.map(([operation]) => operation)).not.toContain('profile.get')
+  subject = connection.subject
+  await expect(account.connectAccount(connection.baseUrl, onConnection)).resolves.toMatchObject({
+    accountId: connection.accountId,
+  })
+  expect(calls.map(([operation]) => operation)).not.toContain('profile.get')
 })

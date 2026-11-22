@@ -27,7 +27,7 @@
     "format:check": "yarn workspace active-next format:check",
     "legal:sync": "python3 scripts/sync-legal.py",
     "legal:check": "python3 scripts/test_sync_legal.py && python3 scripts/sync-legal.py --check",
-    "site:check": "python3 apps/site/verify.py",
+    "site:check": "bash apps/site/build.sh",
     "promo:studio": "yarn workspace active-cadence-promo studio",
     "promo:render": "yarn workspace active-cadence-promo render",
     "promo:poster": "yarn workspace active-cadence-promo poster",

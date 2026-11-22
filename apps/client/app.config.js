@@ -13,7 +13,7 @@ export default {
   expo: {
     name: 'Active Next',
     slug: 'active-next',
-    version: '2.2.0',
+    version: '2.2.1',
     orientation: 'portrait',
     scheme: 'activenext',
     userInterfaceStyle: 'automatic',

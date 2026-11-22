@@ -86,6 +86,33 @@ async fn call_raw(
     let bytes = to_bytes(response.into_body(), 65536).await.unwrap();
     (status, bytes.to_vec())
 }
+async fn workout_call(
+    state: &AppState,
+    token: &str,
+    method: &str,
+    path: &str,
+    key: Option<&str>,
+    body: &str,
+) -> (StatusCode, Value) {
+    let mut request = Request::builder()
+        .method(method)
+        .uri(path)
+        .header("authorization", format!("Bearer {token}"))
+        .header("content-type", "application/json");
+    if let Some(key) = key {
+        request = request.header("idempotency-key", key);
+    }
+    let response = active_api::workouts::routes()
+        .with_state(state.clone())
+        .oneshot(request.body(Body::from(body.to_owned())).unwrap())
+        .await
+        .unwrap();
+    let status = response.status();
+    (
+        status,
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap(),
+    )
+}
 fn token(issuer: &str, sub: &str) -> String {
     let mut header = jsonwebtoken::Header::new(jsonwebtoken::Algorithm::RS256);
     header.kid = Some("test".into());
@@ -376,6 +403,283 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
         .fetch_one(&pool).await.unwrap();
     assert_eq!(durable, (2, 1));
 
+    let owner: String = sqlx::query_scalar("SELECT user_id FROM identities WHERE subject='alice'")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let exercise: String = sqlx::query_scalar("SELECT id FROM exercises LIMIT 1")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    let create = json!({"title":"Workout", "notes":"note", "template":{"exercises":[{"exerciseId":exercise,"notes":"private exercise note","reps":[8,4],"weight":[10.0,12.0],"durationSeconds":[30.0,45.0]},{"exerciseId":exercise,"notes":"second entry","reps":[],"weight":[],"durationSeconds":[12.0]}]}}).to_string();
+    let created = workout_call(
+        &state,
+        &alice,
+        "POST",
+        "/api/workouts",
+        Some("workout-create"),
+        &create,
+    )
+    .await;
+    assert_eq!(created.0, StatusCode::CREATED);
+    assert_eq!(
+        workout_call(
+            &state,
+            &alice,
+            "POST",
+            "/api/workouts",
+            Some("workout-create"),
+            &create
+        )
+        .await,
+        created
+    );
+    let _: active_api::responses::Workout = serde_json::from_value(created.1.clone()).unwrap();
+    assert_eq!(
+        workout_call(
+            &state,
+            &alice,
+            "POST",
+            "/api/workouts",
+            Some("workout-create"),
+            r#"{"title":"other","template":{"exercises":[]}}"#
+        )
+        .await
+        .1["code"],
+        "IDEMPOTENCY_KEY_REUSED"
+    );
+    assert_eq!(
+        workout_call(
+            &state,
+            &alice,
+            "POST",
+            "/api/workouts",
+            Some("bad-exercise"),
+            r#"{"title":"bad","template":{"exercises":[{"exerciseId":"missing"}]}}"#
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    let clear_created = workout_call(
+        &state,
+        &alice,
+        "POST",
+        "/api/workouts",
+        Some("clear-create"),
+        &create,
+    )
+    .await;
+    let clear_path = format!("/api/workouts/{}", clear_created.1["id"].as_str().unwrap());
+    let cleared = workout_call(
+        &state,
+        &alice,
+        "PUT",
+        &clear_path,
+        Some("clear-template"),
+        r#"{"baseVersion":1,"template":{"exercises":[]}}"#,
+    )
+    .await;
+    assert_eq!(cleared.1["workoutTemplate"]["exercises"], json!([]));
+    assert_eq!(cleared.1["version"], 2);
+    assert_eq!(
+        workout_call(&state, &alice, "GET", "/api/workouts", None, "")
+            .await
+            .1
+            .as_array()
+            .unwrap()
+            .len(),
+        2
+    );
+    assert_eq!(
+        workout_call(&state, &bob, "GET", "/api/workouts", None, "")
+            .await
+            .1,
+        json!([])
+    );
+    let id = created.1["id"].as_str().unwrap();
+    let workout_path = format!("/api/workouts/{id}");
+    assert_eq!(
+        sqlx::query_scalar::<_, String>("SELECT notes FROM workout_exercises WHERE workout_id=?")
+            .bind(id)
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+        "private exercise note"
+    );
+    let listed = workout_call(&state, &alice, "GET", "/api/workouts", None, "").await;
+    let persisted = listed
+        .1
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|w| w["id"] == id)
+        .unwrap();
+    assert_eq!(
+        persisted["workoutTemplate"]["exercises"][0]["notes"],
+        "private exercise note"
+    );
+    let entry = &created.1["workoutTemplate"]["exercises"][0];
+    assert_eq!(entry["reps"], json!([8, 4]));
+    assert_eq!(entry["durationSeconds"], json!([30.0, 45.0]));
+    assert_eq!(
+        persisted["workoutTemplate"]["exercises"][1]["notes"],
+        "second entry"
+    );
+    assert_eq!(
+        persisted["workoutTemplate"]["exercises"][1]["durationSeconds"],
+        json!([12.0])
+    );
+    assert_eq!(entry["notes"], "private exercise note");
+    assert_eq!(
+        workout_call(
+            &state,
+            &bob,
+            "PUT",
+            &workout_path,
+            Some("bob-edit"),
+            r#"{"baseVersion":1,"title":"stolen"}"#
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    let updated = workout_call(
+        &state,
+        &alice,
+        "PUT",
+        &workout_path,
+        Some("workout-edit"),
+        r#"{"baseVersion":1,"notes":null}"#,
+    )
+    .await;
+    assert_eq!(updated.1["version"], 2);
+    assert_eq!(updated.1["notes"], Value::Null);
+    assert_eq!(
+        updated.1["workoutTemplate"]["id"],
+        created.1["workoutTemplate"]["id"]
+    );
+    assert_eq!(
+        workout_call(
+            &state,
+            &alice,
+            "PUT",
+            &workout_path,
+            Some("stale"),
+            r#"{"baseVersion":1,"title":"old"}"#
+        )
+        .await
+        .1["code"],
+        "STALE_VERSION"
+    );
+    let timestamp = "2026-01-01T00:00:00Z";
+    sqlx::query("INSERT INTO routines(id,owner_id,name,routine_type,start_date,created_at) VALUES('routine',?,'R','SEQUENTIAL','2026-01-01',?)").bind(&owner).bind(timestamp).execute(&pool).await.unwrap();
+    sqlx::query("INSERT INTO routine_pattern VALUES(?,'routine',0,'WORKOUT',?)")
+        .bind(&owner)
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO client_record_ids VALUES(?,'client')")
+        .bind(&owner)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("INSERT INTO workout_records(id,owner_id,client_record_id,workout_id,workout_title,start_time,completed_at,completion_timezone,created_at) VALUES('record',?,'client',?,'snapshot',?,?,'UTC',?)").bind(&owner).bind(id).bind(timestamp).bind(timestamp).bind(timestamp).execute(&pool).await.unwrap();
+    sqlx::query("INSERT INTO streak_snapshots(owner_id,version,history_revision,rules_version,current_streak,longest_streak,next_workout_id,next_workout_deadline,streak_freeze_count) VALUES(?,1,0,'v1',1,1,?,'2026-01-02',0)").bind(&owner).bind(id).execute(&pool).await.unwrap();
+    sqlx::query("INSERT INTO streak_weekly_workouts VALUES(?,0,?)")
+        .bind(&owner)
+        .bind(id)
+        .execute(&pool)
+        .await
+        .unwrap();
+    sqlx::query("CREATE TRIGGER fail_workout_delete BEFORE DELETE ON workouts BEGIN SELECT RAISE(ABORT,'failure'); END").execute(&pool).await.unwrap();
+    let delete_path = format!("{workout_path}?baseVersion=2");
+    assert_eq!(
+        workout_call(
+            &state,
+            &alice,
+            "DELETE",
+            &delete_path,
+            Some("workout-delete"),
+            ""
+        )
+        .await
+        .0,
+        StatusCode::INTERNAL_SERVER_ERROR
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, String>(
+            "SELECT day_type FROM routine_pattern WHERE routine_id='routine'"
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap(),
+        "WORKOUT"
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT history_revision FROM users WHERE id=?")
+            .bind(&owner)
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+        0
+    );
+    sqlx::query("DROP TRIGGER fail_workout_delete")
+        .execute(&pool)
+        .await
+        .unwrap();
+    let deleted = workout_call(
+        &state,
+        &alice,
+        "DELETE",
+        &delete_path,
+        Some("workout-delete"),
+        "",
+    )
+    .await;
+    assert_eq!(
+        deleted.1["routineVersions"],
+        json!([{"id":"routine","version":2}])
+    );
+    assert_eq!(
+        workout_call(
+            &state,
+            &alice,
+            "DELETE",
+            &delete_path,
+            Some("workout-delete"),
+            ""
+        )
+        .await,
+        deleted
+    );
+    let record: (Option<String>, i64, String) = sqlx::query_as(
+        "SELECT workout_id,version,workout_title FROM workout_records WHERE id='record'",
+    )
+    .fetch_one(&pool)
+    .await
+    .unwrap();
+    assert_eq!(record, (None, 2, "snapshot".into()));
+    let snapshot: (Option<String>,Option<String>,i64,i64) = sqlx::query_as("SELECT next_workout_id,next_workout_deadline,version,history_revision FROM streak_snapshots WHERE owner_id=?").bind(&owner).fetch_one(&pool).await.unwrap();
+    assert_eq!(snapshot, (None, None, 2, 0));
+    assert_eq!(
+        sqlx::query_scalar::<_, i64>("SELECT history_revision FROM users WHERE id=?")
+            .bind(&owner)
+            .fetch_one(&pool)
+            .await
+            .unwrap(),
+        1
+    );
+    assert_eq!(
+        sqlx::query_scalar::<_, String>(
+            "SELECT day_type FROM routine_pattern WHERE routine_id='routine'"
+        )
+        .fetch_one(&pool)
+        .await
+        .unwrap(),
+        "REST"
+    );
     let lock = db::begin_write(&pool).await.unwrap();
     let busy = call(
         &state,
@@ -473,6 +777,322 @@ async fn authenticated_receipts_replay_and_deletion_fence() {
             .await
             .0,
         StatusCode::OK
+    );
+    task.abort();
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn first_workout_client_sqlite_http_proof() {
+    if std::env::var_os("ACTIVE_FIRST_WORKOUT_PROOF").is_none() {
+        return;
+    }
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let issuer = format!("http://{}", listener.local_addr().unwrap());
+    let metadata = json!({"issuer":issuer,"jwks_uri":format!("{issuer}/jwks")});
+    let jwks = json!({"keys":[{"kty":"RSA","kid":"test","alg":"RS256","use":"sig","n":MODULUS,"e":"AQAB"}]});
+    let provider = Router::new()
+        .route(
+            "/.well-known/openid-configuration",
+            get(move || async move { Json(metadata.clone()) }),
+        )
+        .route("/jwks", get(move || async move { Json(jwks.clone()) }));
+    let provider_task = tokio::spawn(async move { axum::serve(listener, provider).await.unwrap() });
+    let dir = TempDir::new().unwrap();
+    let pool = db::open(&dir.path().join("server.sqlite")).await.unwrap();
+    active_api::catalog::seed(&pool).await.unwrap();
+    let state = AppState {
+        pool: pool.clone(),
+        auth: AuthState::new(AuthConfig {
+            issuer: issuer.clone(),
+            client_id: "client".into(),
+            resource: "api".into(),
+            redirect_uri: "active://callback".into(),
+        }),
+        discovery: Arc::new(RwLock::new(None)),
+        draining: Arc::new(AtomicBool::new(false)),
+        body_limit: 1048576,
+        request_timeout: Duration::from_secs(30),
+        origins: vec![],
+    };
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let base = format!("http://{}", listener.local_addr().unwrap());
+    let api_task =
+        tokio::spawn(async move { axum::serve(listener, active_api::app(state)).await.unwrap() });
+    let source = dir.path().join("source.sqlite");
+    let script = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/../../apps/client/tests/selfHosted/first-workout-proof.cjs"
+    );
+    for phase in ["prepare", "send", "resume"] {
+        let status = std::process::Command::new("node")
+            .arg(script)
+            .arg(phase)
+            .arg(&source)
+            .arg(&base)
+            .env("ACTIVE_PROOF_TOKEN", token(&issuer, "first-workout-proof"))
+            .status()
+            .unwrap();
+        assert!(status.success(), "client proof phase {phase} failed");
+    }
+    let count: i64 = sqlx::query_scalar("SELECT count(*) FROM workouts")
+        .fetch_one(&pool)
+        .await
+        .unwrap();
+    assert_eq!(count, 1);
+    api_task.abort();
+    provider_task.abort();
+}
+
+async fn routine_call(
+    state: &AppState,
+    token: &str,
+    method: &str,
+    path: &str,
+    key: &str,
+    body: &str,
+) -> (StatusCode, Value) {
+    let response = active_api::routines::routes()
+        .with_state(state.clone())
+        .oneshot(
+            Request::builder()
+                .method(method)
+                .uri(path)
+                .header("authorization", format!("Bearer {token}"))
+                .header("content-type", "application/json")
+                .header("idempotency-key", key)
+                .body(Body::from(body.to_owned()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    let status = response.status();
+    (
+        status,
+        serde_json::from_slice(&to_bytes(response.into_body(), 65536).await.unwrap()).unwrap(),
+    )
+}
+
+#[tokio::test]
+async fn routine_api_versions_ownership_replay_and_workout_deletion() {
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+    let issuer = format!("http://{}", listener.local_addr().unwrap());
+    let metadata = json!({"issuer":issuer,"jwks_uri":format!("{issuer}/jwks")});
+    let jwks = json!({"keys":[{"kty":"RSA","kid":"test","alg":"RS256","use":"sig","n":MODULUS,"e":"AQAB"}]});
+    let server = Router::new()
+        .route(
+            "/.well-known/openid-configuration",
+            get(move || async move { Json(metadata.clone()) }),
+        )
+        .route("/jwks", get(move || async move { Json(jwks.clone()) }));
+    let task = tokio::spawn(async move {
+        axum::serve(listener, server).await.unwrap();
+    });
+    let dir = TempDir::new().unwrap();
+    let pool = db::open(&dir.path().join("db.sqlite")).await.unwrap();
+    let state = AppState {
+        pool: pool.clone(),
+        auth: AuthState::new(AuthConfig {
+            issuer: issuer.clone(),
+            client_id: "client".into(),
+            resource: "api".into(),
+            redirect_uri: "active://callback".into(),
+        }),
+        discovery: Arc::new(RwLock::new(None)),
+        draining: Arc::new(AtomicBool::new(false)),
+        body_limit: 4096,
+        request_timeout: Duration::from_secs(5),
+        origins: vec![],
+    };
+    let alice = token(&issuer, "alice");
+    let bob = token(&issuer, "bob");
+    let workout = workout_call(
+        &state,
+        &alice,
+        "POST",
+        "/api/workouts",
+        Some("w"),
+        r#"{"title":"W","template":{"exercises":[]}}"#,
+    )
+    .await;
+    let wid = workout.1["id"].as_str().unwrap();
+    let body = json!({"name":"R","routineType":"WEEKLY_COMPLETION","startDate":"2026-01-01","active":true,"profileBaseVersion":1,"pattern":[{"dayIndex":0,"dayType":"WORKOUT","workoutId":wid},{"dayIndex":1,"dayType":"REST","workoutId":null}]}).to_string();
+    let create = routine_call(&state, &alice, "POST", "/api/routines", "create", &body).await;
+    assert_eq!(create.0, StatusCode::CREATED);
+    assert_eq!(create.1["profileVersion"], 2);
+    assert_eq!(create.1["pattern"][0]["workoutId"], wid);
+    assert_eq!(
+        routine_call(&state, &alice, "POST", "/api/routines", "create", &body).await,
+        create
+    );
+    let id = create.1["id"].as_str().unwrap();
+    let path = format!("/api/routines/{id}");
+    assert_eq!(
+        routine_call(&state, &bob, "GET", &path, "", "").await.0,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        routine_call(&state, &alice, "GET", "/api/routines/active", "", "")
+            .await
+            .1["id"],
+        id
+    );
+    let invalid = json!({"name":"bad","startDate":"2026-01-01","pattern":[]}).to_string();
+    assert_eq!(
+        routine_call(&state, &alice, "POST", "/api/routines", "invalid", &invalid)
+            .await
+            .0,
+        StatusCode::BAD_REQUEST
+    );
+    let missing = json!({"name":"bad","startDate":"2026-01-01","pattern":[{"dayIndex":0,"dayType":"WORKOUT","workoutId":"missing"}]}).to_string();
+    assert_eq!(
+        routine_call(&state, &alice, "POST", "/api/routines", "missing", &missing)
+            .await
+            .0,
+        StatusCode::NOT_FOUND
+    );
+    let malformed = json!({"name":"bad","startDate":"2026-01-01","pattern":[{"dayIndex":1,"dayType":"REST","workoutId":null}]}).to_string();
+    assert_eq!(
+        routine_call(
+            &state,
+            &alice,
+            "POST",
+            "/api/routines",
+            "malformed",
+            &malformed
+        )
+        .await
+        .0,
+        StatusCode::BAD_REQUEST
+    );
+    let foreign = json!({"name":"bad","startDate":"2026-01-01","pattern":[{"dayIndex":0,"dayType":"WORKOUT","workoutId":wid}]}).to_string();
+    assert_eq!(
+        routine_call(&state, &bob, "POST", "/api/routines", "foreign", &foreign)
+            .await
+            .0,
+        StatusCode::NOT_FOUND
+    );
+    assert_eq!(
+        routine_call(
+            &state,
+            &alice,
+            "PUT",
+            &path,
+            "stale",
+            r#"{"baseVersion":1,"active":false,"profileBaseVersion":1}"#
+        )
+        .await
+        .1["code"],
+        "STALE_VERSION"
+    );
+    let edited = routine_call(
+        &state,
+        &alice,
+        "PUT",
+        &path,
+        "edit",
+        r#"{"baseVersion":1,"routineType":"SEQUENTIAL"}"#,
+    )
+    .await;
+    assert_eq!(edited.1["version"], 2);
+    assert_eq!(edited.1["routineType"], "SEQUENTIAL");
+    let (a, b) = tokio::join!(
+        routine_call(
+            &state,
+            &alice,
+            "PUT",
+            &path,
+            "race-a",
+            r#"{"baseVersion":2,"active":false,"profileBaseVersion":2}"#
+        ),
+        routine_call(
+            &state,
+            &alice,
+            "PUT",
+            &path,
+            "race-b",
+            r#"{"baseVersion":2,"active":false,"profileBaseVersion":2}"#
+        )
+    );
+    assert!(
+        (a.0 == StatusCode::OK && b.0 == StatusCode::CONFLICT)
+            || (b.0 == StatusCode::OK && a.0 == StatusCode::CONFLICT)
+    );
+    let deleted = workout_call(
+        &state,
+        &alice,
+        "DELETE",
+        &format!("/api/workouts/{wid}?baseVersion=1"),
+        Some("delete-w"),
+        "",
+    )
+    .await;
+    assert_eq!(deleted.1["routineVersions"], json!([{"id":id,"version":3}]));
+    assert_eq!(
+        routine_call(
+            &state,
+            &alice,
+            "POST",
+            "/api/routines",
+            "deleted-reference",
+            &foreign
+        )
+        .await
+        .0,
+        StatusCode::NOT_FOUND
+    );
+    let after = routine_call(&state, &alice, "GET", &path, "", "").await;
+    assert_eq!(
+        after.1["pattern"][0],
+        json!({"dayIndex":0,"dayType":"REST","workoutId":null})
+    );
+    assert_eq!(
+        routine_call(
+            &state,
+            &alice,
+            "DELETE",
+            &format!("{path}?baseVersion=2&profileBaseVersion=3"),
+            "stale-delete",
+            ""
+        )
+        .await
+        .0,
+        StatusCode::CONFLICT
+    );
+    let delete_path = format!("{path}?baseVersion=3&profileBaseVersion=3");
+    let deleted = routine_call(&state, &alice, "DELETE", &delete_path, "delete-r", "").await;
+    assert_eq!(deleted.1, json!({"deletedRoutineId":id,"profileVersion":3}));
+    assert_eq!(
+        routine_call(&state, &alice, "DELETE", &delete_path, "delete-r", "").await,
+        deleted
+    );
+    let active_body = json!({"name":"Active", "startDate":"2026-01-01", "active":true, "profileBaseVersion":3, "pattern":[{"dayIndex":0,"dayType":"REST","workoutId":null}]}).to_string();
+    let active = routine_call(
+        &state,
+        &alice,
+        "POST",
+        "/api/routines",
+        "active-create",
+        &active_body,
+    )
+    .await;
+    assert_eq!(active.1["profileVersion"], 4);
+    let active_id = active.1["id"].as_str().unwrap();
+    let active_delete = format!("/api/routines/{active_id}?baseVersion=1&profileBaseVersion=4");
+    let ack = routine_call(
+        &state,
+        &alice,
+        "DELETE",
+        &active_delete,
+        "active-delete",
+        "",
+    )
+    .await;
+    assert_eq!(ack.1["profileVersion"], 5);
+    assert_eq!(
+        routine_call(&state, &alice, "GET", "/api/routines/active", "", "")
+            .await
+            .0,
+        StatusCode::NOT_FOUND
     );
     task.abort();
 }
