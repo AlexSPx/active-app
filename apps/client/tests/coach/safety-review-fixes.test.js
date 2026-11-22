@@ -4,7 +4,7 @@ const { formatCoachMetric } = require('../../features/coach/conversations')
 
 const turn = (message, priorUserMessages = []) => {
   const generate = jest.fn(async () => ({ kind: 'final', content: { intent: 'create_workout' } }))
-  return { generate, result: runConstrainedCoachTurn({ message, priorUserMessages, session: { appendUserMessage: async () => {}, generate }, execute: async () => { throw Error('unexpected read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 500 }) }
+  return { generate, result: runConstrainedCoachTurn({ message, priorUserMessages, session: { appendUserMessage: async () => {}, generate }, readHistory: async () => { throw Error('unexpected read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 500 }) }
 }
 test.each(['My chest is tight and I am struggling to breathe. Create a workout with full gym.', 'I have pressure in my chest and trouble breathing', 'My chest hurts now'])('routes acute symptoms before model work: %s', async message => {
   const { result, generate } = turn(message)

@@ -1,12 +1,12 @@
 import { z } from 'zod'
 import { parseWorkoutSchedule, workoutSessionFocuses } from './workoutSchedule'
 import type { CoachWorkout, CoachResponse } from './contracts'
-import { defaultSelection, planWorkout, renderWorkout, selectionSchema, validateSelection, workoutRequestText, type WorkoutTrace } from './workoutPlanner'
-import type { CoachToolExecutor, CoachTurnResult } from './engine'
+import { defaultSelection, planWorkout, renderWorkout, selectionSchema, validateSelection, workoutRequestText } from './workoutPlanner'
 import type { CoachRuntimeSession } from './runtime/types'
-import { coachToolResults } from './tools/contracts'
-import { fallbackHistoryQuery, historyMeasureHint, historyQuerySchema, normalizeHistoryName, resolveHistoryExercise } from './historyQuery'
+import { calculateHistoryMetrics, type CoachHistoryMetric } from './historyMetrics'
+import { fallbackHistoryQuery, historyExerciseFilter, historyMeasureHint, historyQuerySchema, normalizeHistoryName } from './historyQuery'
 import { exerciseCatalog } from '../../lib/exercises/catalog'
+import type { CoachHistoryRepository } from '../../lib/repositories/CoachHistoryRepository'
 
 export function applyWorkoutFollowUp(message: string, prior: ({ kind: 'user'; text: string } | { kind: 'response'; response: { kind: string; question?: string }; request?: string })[]): string {
   const last = prior.at(-1)
@@ -134,13 +134,25 @@ function validateHistoryScope(request: string, exercise: string | null, type: st
   return { kind: 'ambiguous' }
 }
 
-export async function runConstrainedCoachTurn(input: { message: string; session: CoachRuntimeSession; execute: CoachToolExecutor; signal: AbortSignal; isCurrentProfile: () => boolean; maxOutputTokens: number; priorUserMessages?: string[]; onWorkoutTrace?: (trace: WorkoutTrace) => void; onIntentDiagnostic?: (diagnostic: { attempt: number; outcome: string }) => void }): Promise<CoachTurnResult> {
-  const { message, session, execute, signal } = input
-  const clarification = (question: string): CoachTurnResult => ({ kind: 'response', response: { version: 1, kind: 'clarification', question }, repaired: false, toolCalls: 0 })
+export type CoachTurnResult =
+  | { kind: 'response'; response: CoachResponse; repaired: boolean; metrics?: CoachHistoryMetric[] }
+  | { kind: 'failure'; code: 'cancelled' | 'stale_profile' | 'runtime_error'; message: string }
+
+export async function runConstrainedCoachTurn(input: {
+  message: string
+  session: CoachRuntimeSession
+  readHistory: CoachHistoryRepository['readHistory']
+  signal: AbortSignal
+  isCurrentProfile: () => boolean
+  maxOutputTokens: number
+  priorUserMessages?: string[]
+}): Promise<CoachTurnResult> {
+  const { message, session, readHistory, signal } = input
+  const clarification = (question: string): CoachTurnResult => ({ kind: 'response', response: { version: 1, kind: 'clarification', question }, repaired: false })
   const alive = () => !signal.aborted && input.isCurrentProfile()
   const generate = async (prompt: string, schema: object) => {
     await session.appendUserMessage(prompt)
-    const result = await session.generate({ tools: [], finalResponseSchema: schema, maxOutputTokens: input.maxOutputTokens, signal })
+    const result = await session.generate({ finalResponseSchema: schema, maxOutputTokens: input.maxOutputTokens, signal })
     return result.kind === 'final' ? result.content : undefined
   }
   try {
@@ -150,10 +162,10 @@ export async function runConstrainedCoachTurn(input: { message: string; session:
     const restricted = /\b(pregnan\w*|postpartum|breastfeed\w*|child\w*|teen\w*|adolescen\w*|elderly|senior\w*|older adult\w*|injur\w*|rehab\w*|disab\w*|surgery|surgical|disease|diabet\w*|cardiac|heart|dizz\w*|symptom\w*|pain|hurts?|aches?|discomfort|soreness|cancer)\b/i
     const history = [...(input.priorUserMessages ?? []), message]
     const acute = history.some(text => emergency.test(text) && !/^(?:i have |there is )?no (?:chest pain|chest pressure|chest tightness|difficulty breathing|shortness of breath)[.!]?$/i.test(text.trim()) && !/\b(?:resolved|gone away|went away)\b.*\b(?:years? ago|months? ago)\b|\b(?:years? ago|months? ago)\b.*\b(?:resolved|gone away|went away)\b/i.test(text))
-    if (acute) return { kind: 'response', repaired: false, toolCalls: 0, response: { version: 1, kind: 'cannot_fulfill', reason: 'Stop exercising. If these symptoms are current or have just occurred, call your local emergency number now; do not drive yourself. Seek urgent medical help. I cannot determine from this conversation whether it is safe to train.' } }
+    if (acute) return { kind: 'response', repaired: false, response: { version: 1, kind: 'cannot_fulfill', reason: 'Stop exercising. If these symptoms are current or have just occurred, call your local emergency number now; do not drive yourself. Seek urgent medical help. I cannot determine from this conversation whether it is safe to train.' } }
     if (history.some(text => emergency.test(text))) return clarification('Are these symptoms current or recent, or explicitly absent or resolved? I cannot determine whether training is safe; consult a qualified health professional before exercising.')
     if (/\bno\s+(?:pain|injuries|injury|symptoms)\b/i.test(message)) return clarification('You mentioned no pain or injuries. I cannot determine whether training is safe; consult a qualified health professional if you have concerns.')
-    if (restricted.test(message)) return { kind: 'response', repaired: false, toolCalls: 0, response: { version: 1, kind: 'cannot_fulfill', reason: 'Stop any activity that causes symptoms or pain. I cannot recommend exercise for this situation; consult a qualified health professional who knows your circumstances.' } }
+    if (restricted.test(message)) return { kind: 'response', repaired: false, response: { version: 1, kind: 'cannot_fulfill', reason: 'Stop any activity that causes symptoms or pain. I cannot recommend exercise for this situation; consult a qualified health professional who knows your circumstances.' } }
     if (message.includes('\nUnsupported workout revision: ')) return clarification('Which single change should I make? You can specify a number of sets, reps, exercises, or rest. For equipment or other changes, please start a new workout request with all your requirements.')
     const explicitWorkout = /\b(?:build|create|make|design|generate|give|suggest|write|plan)\b[^.!?]{0,100}\b(?:workouts?|routines?|exercise plans?|training plans?)\b/i.test(workoutRequestText(message))
     let intent: z.infer<typeof intentSchema> | undefined
@@ -161,12 +173,10 @@ export async function runConstrainedCoachTurn(input: { message: string; session:
       await session.appendUserMessage(attempt === 1
         ? `Classify the user request into exactly one category: create_workout means they want a workout or exercise plan made for them; history_question means they ask about their past logged training; coach_qa means general advice or explanation. Use create_workout when they ask you to build, suggest, or design a session, even if they also ask for advice. Return the intent field only. Request: ${message}`
         : 'The classification was invalid. Return exactly one allowed intent.')
-      const result = await session.generate({ tools: [], finalResponseSchema: z.toJSONSchema(intentSchema), maxOutputTokens: input.maxOutputTokens, signal })
+      const result = await session.generate({ finalResponseSchema: z.toJSONSchema(intentSchema), maxOutputTokens: input.maxOutputTokens, signal })
       if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
       const parsed = result.kind === 'final' ? intentSchema.safeParse(result.content) : undefined
       if (parsed?.success) { intent = parsed.data; break }
-      const outcome = result.kind === 'failure' ? `failure:${result.code}` : result.kind === 'final' ? 'schema_mismatch' : result.kind
-      try { input.onIntentDiagnostic?.({ attempt, outcome }) } catch {}
       if (result.kind === 'failure') {
         if (explicitWorkout) break
         return { kind: 'failure', code: 'runtime_error', message: 'The coach could not classify this request. Please try again.' }
@@ -189,19 +199,18 @@ export async function runConstrainedCoachTurn(input: { message: string; session:
     else if (explicitRecordedBest && explicitRecommendation) return clarification('Would you like your recorded result or a weight recommendation?')
     else if (explicitLoadAdvice) intent = { intent: 'coach_qa' }
     else if (intent.intent === 'coach_qa' && explicitRecordedBest) intent = { intent: 'history_question' }
-    const end = new Date()
-    const start = new Date(end.getTime() - 90 * 86400000)
-    const interval = { start: start.toISOString(), end: end.toISOString() }
     if (intent.intent === 'history_question') {
+      const end = new Date()
       if (/\b(?:january|february|march|april|may|june|july|august|september|october|november|december|\d{4}-\d{1,2}(?:-\d{1,2})?)\b/i.test(request)) return clarification('Which recent period in days or weeks should I check? Specific calendar dates are not supported yet.')
-      let query = fallbackHistoryQuery(message)
+      const requested = fallbackHistoryQuery(message)
+      const hint = historyMeasureHint(message)
+      const constrainedSchema = hint ? historyQuerySchema.extend({ type: z.literal(hint) }) : historyQuerySchema
+      let query = requested
       let repaired = false
       try {
         for (let attempt = 0; attempt < 2; attempt++) {
-          const hint = historyMeasureHint(message)
-          const requested = fallbackHistoryQuery(message)
-          const constrainedSchema = hint ? historyQuerySchema.extend({ type: z.literal(hint) }) : historyQuerySchema
           const parsed = constrainedSchema.safeParse(await generate(`Extract the history query from: ${message}. Use type sessions, repetitions, volume, best, latest, or presence. Exercise is the requested exercise name or null; days is the requested period in days or null for available history. Do not invent an exercise or period.${attempt ? ' The previous query missed the requested measure or exercise; include both.' : ''}`, z.toJSONSchema(constrainedSchema)))
+          if (!alive()) break
           if (parsed.success) {
             if (requested.exercise && !parsed.data.exercise) { repaired = true; continue }
             const extracted = parsed.data.exercise === 'null' && normalizeHistoryName(requestedHistoryExercise(request) ?? '') !== 'null' ? null : parsed.data.exercise
@@ -215,97 +224,120 @@ export async function runConstrainedCoachTurn(input: { message: string; session:
       if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
       const scope = validateHistoryScope(request, query.exercise, query.type)
       if (scope.kind === 'ambiguous') return clarification('Which exercise should I check?')
-      query.exercise = scope.kind === 'named' ? scope.exercise : null
-      const answer = (text: string, limitations: string[] = [], toolCalls = 0): CoachTurnResult => ({ kind: 'response', response: { version: 1, kind: 'answer', blocks: [{ kind: 'text', text, evidence: [] }], limitations }, repaired, toolCalls })
-      const historyInterval = { start: new Date(end.getTime() - Math.min(query.days ?? 365, 365) * 86400000).toISOString(), end: end.toISOString() }
-      const scopeLimit = query.days === null || query.days > 365 ? ['Reviewed the most recent year; older history was not queried.'] : []
-      let exerciseId: string | undefined
-      if (query.exercise) {
-        const requestedName = normalizeHistoryName(query.exercise)
-        const catalog = resolveHistoryExercise(query.exercise)
-        let cursor: string | undefined
-        const seen = new Set<string>()
-        const identities = new Set<string>()
-        let identityLimitations: string[] = []
-        let unresolved = false
-        let calls = 0
-        try {
-          do {
-            const raw = await execute({ id: `history-identities-${calls}`, name: 'readRecords', arguments: { interval: historyInterval, limit: 50, ...(cursor ? { cursor } : {}) } }, signal)
-            calls++
-            const result = coachToolResults.readRecords.safeParse(raw)
-            if (!result.success || result.data.kind !== 'success') return answer('I could not read your training history.', ['History read failed.'], calls)
-            identityLimitations = [...new Set([...identityLimitations, ...result.data.data.coverage.limitations])]
-            for (const record of result.data.data.items) for (const exercise of record.exercises) {
-              const sameName = normalizeHistoryName(exercise.name) === requestedName
-              const sameCatalog = catalog.kind === 'match' && exercise.exerciseId === catalog.exercise.id
-              if (sameName || sameCatalog) {
-                if (exercise.exerciseId) identities.add(exercise.exerciseId)
-                else unresolved = true
-              }
-            }
-            cursor = result.data.data.nextCursor ?? undefined
-            if (cursor && seen.has(cursor)) break
-            if (cursor) seen.add(cursor)
-          } while (cursor && calls < 10)
-          if (cursor) return answer('I could not reliably identify the exercise across all matching records.', [...identityLimitations, ...scopeLimit, 'Only part of the records was reviewed.'], calls)
-          if (unresolved || identities.size > 1) return answer(`I found history for “${query.exercise}”, but its exercise identity is unresolved or ambiguous.`, [...identityLimitations, ...scopeLimit], calls)
-          exerciseId = [...identities][0]
-          if (!exerciseId) {
-            if (catalog.kind === 'ambiguous' || catalog.kind === 'unknown') return answer(`I could not reliably identify “${query.exercise}” in the reviewed history.`, [...identityLimitations, ...scopeLimit], calls)
-            return answer('I found no matching records in the reviewed period.', [...identityLimitations, ...scopeLimit], calls)
-          }
-        } catch { return answer('I could not read your training history.', ['History read failed.'], calls) }
+      const answer = (
+        blocks: Extract<CoachResponse, { kind: 'answer' }>['blocks'],
+        limitations: string[],
+        metric?: CoachHistoryMetric
+      ): CoachTurnResult => ({
+        kind: 'response',
+        response: { version: 1, kind: 'answer', blocks, limitations },
+        ...(metric && { metrics: [metric] }),
+        repaired,
+      })
+      const textAnswer = (text: string, limitations: string[]) =>
+        answer([{ kind: 'text', text, evidence: [] }], limitations)
+      const interval = {
+        start: new Date(end.getTime() - Math.min(query.days ?? 365, 365) * 86400000).toISOString(),
+        end: end.toISOString(),
       }
+      const scopeLimit = query.days === null || query.days > 365
+        ? ['Reviewed the most recent year; older history was not queried.']
+        : []
       try {
-        if (query.type === 'latest' || query.type === 'presence') {
-          let cursor: string | undefined
-          const cursors = new Set<string>()
-          let record: { id: string; startedAt: string | null; createdAt: string; exercises: { exerciseId: string | null; name: string; repetitions: number[]; weightsKg: number[]; durationSeconds: number[] | null }[] } | undefined
-          let limitations: string[] = []
-          let calls = 0
-          do {
-            const raw = await execute({ id: `history-records-${calls}`, name: 'readRecords', arguments: { interval: historyInterval, ...(exerciseId ? { exerciseId } : {}), limit: 50, ...(cursor ? { cursor } : {}) } }, signal)
-            calls++
-            if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
-            const result = coachToolResults.readRecords.safeParse(raw)
-            if (!result.success || result.data.kind !== 'success') return answer('I could not read your training history.', ['History read failed.'], calls)
-            const data = result.data.data
-            limitations = [...new Set([...limitations, ...data.coverage.limitations])]
-            for (const item of data.items) if (!record || Date.parse(item.startedAt ?? item.createdAt) > Date.parse(record.startedAt ?? record.createdAt)) record = item
-            cursor = data.nextCursor ?? undefined
-            if (cursor && cursors.has(cursor)) break
-            if (cursor) cursors.add(cursor)
-          } while (cursor && calls < 10 && !(query.type === 'presence' && record))
-          if (!record) return answer('I found no matching records in the reviewed period.', [...limitations, ...scopeLimit, ...(cursor ? ['Only part of the records was reviewed.'] : [])], calls)
-          const evidence = [{ kind: 'record' as const, id: record.id }]
-          const text = query.type === 'presence' ? 'I found a matching training record.' : cursor ? `A matching record is dated ${(record.startedAt ?? record.createdAt).slice(0, 10)}; I could not determine the latest from the reviewed pages.` : `The latest matching record is dated ${(record.startedAt ?? record.createdAt).slice(0, 10)}.`
-          const wantsFields = query.type === 'latest' && /\b(?:sets?|load|weight|reps|repetitions)\b/i.test(message)
-          if (wantsFields && !cursor) {
-            const exercises = record.exercises.filter(e => !exerciseId || e.exerciseId === exerciseId)
-            const sets = exercises.flatMap(e => e.repetitions.flatMap((repetitions, i) => Number.isInteger(repetitions) && repetitions > 0 && Number.isFinite(e.weightsKg[i]) && e.weightsKg[i] >= 0 ? [{ exerciseId: e.exerciseId, exerciseName: e.name, repetitions, weightKg: e.weightsKg[i], recordId: record.id }] : []))
-            if (!sets.length) return { kind: 'response', response: { version: 1, kind: 'answer', blocks: [{ kind: 'text', text, evidence }], limitations: [...limitations, ...scopeLimit, 'The requested load and repetitions are not both available for this record.'] }, repaired, toolCalls: calls }
-            const metric = { id: `latest-sets:${record.id}`, kind: 'latest_recorded_sets' as const, value: sets, evidenceIds: [record.id], missingDataCount: exercises.reduce((n, e) => n + Math.max(e.repetitions.length, e.weightsKg.length), 0) - sets.length, definition: 'Recorded sets in the latest matching record; load in kilograms.' }
-            return { kind: 'response', response: { version: 1, kind: 'answer', blocks: [{ kind: 'text', text, evidence }, { kind: 'metric', metricId: metric.id }], limitations: [...limitations, ...scopeLimit, ...(metric.missingDataCount ? ['Some sets have missing or invalid load or repetitions.'] : [])] }, metrics: [metric], repaired, toolCalls: calls }
-          }
-          return { kind: 'response', response: { version: 1, kind: 'answer', blocks: [{ kind: 'text', text, evidence }], limitations: [...limitations, ...scopeLimit, ...(cursor ? ['Only part of the records was reviewed.'] : [])] }, repaired, toolCalls: calls }
-        }
-        const metric = query.type === 'best' ? 'best_recorded_sets' : query.type === 'volume' ? 'external_load_volume_kg' : query.type === 'repetitions' ? 'recorded_repetitions' : 'completed_sessions'
-        const raw = await execute({ id: 'summary', name: 'readTrainingSummary', arguments: { interval: historyInterval, ...(exerciseId ? { exerciseId } : {}), metrics: [metric] } }, signal)
+        const result = await readHistory({
+          interval,
+          exercise: scope.kind === 'named' ? historyExerciseFilter(scope.exercise) : null,
+        })
         if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
-        const result = coachToolResults.readTrainingSummary.safeParse(raw)
-        if (!result.success || result.data.kind !== 'success' || !result.data.data.metrics.length) return answer('I could not read your training history.', ['History summary failed.'], 1)
-        const metrics = result.data.data.metrics
-        if (metrics.some(m => m.kind !== metric)) return answer('I could not read the requested history measure.', ['History summary returned an unexpected measure.'], 1)
-        if (metrics.every(m => !m.evidenceIds.length || (Array.isArray(m.value) && !m.value.length))) return answer('I found no matching recorded data in the reviewed period.', [...result.data.data.coverage.limitations, ...scopeLimit], 1)
-        return { kind: 'response', response: { version: 1, kind: 'answer', blocks: metrics.map(m => ({ kind: 'metric' as const, metricId: m.id })), limitations: [...result.data.data.coverage.limitations, ...scopeLimit] }, metrics, repaired, toolCalls: 1 }
+        const limitations = [...result.limitations, ...scopeLimit]
+        if (result.kind !== 'success') {
+          const name = scope.kind === 'named' ? scope.exercise : query.exercise
+          return textAnswer(
+            result.kind === 'ambiguous'
+              ? `I found history for “${name}”, but its exercise identity is unresolved or ambiguous.`
+              : `I could not reliably identify “${name}” in the reviewed history.`,
+            limitations
+          )
+        }
+
+        const { records } = result
+        const [firstRecord] = records
+        if (!firstRecord) {
+          return textAnswer(
+            scope.kind === 'named' || query.type === 'latest' || query.type === 'presence'
+              ? 'I found no matching records in the reviewed period.'
+              : 'I found no matching recorded data in the reviewed period.',
+            limitations
+          )
+        }
+        if (query.type === 'latest' || query.type === 'presence') {
+          let record = firstRecord
+          for (const item of records) {
+            if (item.timestamp > record.timestamp) record = item
+          }
+          const date = new Date(record.timestamp).toISOString().slice(0, 10)
+          const text = query.type === 'presence'
+            ? 'I found a matching training record.'
+            : `The latest matching record is dated ${date}.`
+          const block = { kind: 'text' as const, text, evidence: [{ kind: 'record' as const, id: record.id }] }
+          if (query.type === 'presence' || !/\b(?:sets?|load|weight|reps|repetitions)\b/i.test(message)) {
+            return answer([block], limitations)
+          }
+          const recordId = record.id
+          const sets = record.exercises.flatMap(exercise =>
+            exercise.repetitions.flatMap((repetitions, i) => {
+              const weightKg = exercise.weightsKg[i]
+              return Number.isInteger(repetitions) && repetitions > 0 && Number.isFinite(weightKg) && weightKg >= 0
+                ? [{ exerciseId: exercise.exerciseId, exerciseName: exercise.name, repetitions, weightKg, recordId }]
+                : []
+            })
+          )
+          if (!sets.length) {
+            return answer([block], [...limitations, 'The requested load and repetitions are not both available for this record.'])
+          }
+          const totalSets = record.exercises.reduce((total, exercise) =>
+            total + Math.max(exercise.repetitions.length, exercise.weightsKg.length), 0
+          )
+          const metric: CoachHistoryMetric = {
+            id: `latest-sets:${recordId}`,
+            kind: 'latest_recorded_sets',
+            value: sets,
+            evidenceIds: [recordId],
+            missingDataCount: totalSets - sets.length,
+            definition: 'Recorded sets in the latest matching record; load in kilograms.',
+          }
+          if (metric.missingDataCount) limitations.push('Some sets have missing or invalid load or repetitions.')
+          return answer([block, { kind: 'metric', metricId: metric.id }], limitations, metric)
+        }
+
+        const calculated = calculateHistoryMetrics(records)
+        const missingLoadData = calculated.invalidRepetitions + calculated.invalidLoads + calculated.missingWeights
+        const measures = {
+          best: { kind: 'best_recorded_sets', value: calculated.bestSets, missingDataCount: missingLoadData },
+          volume: { kind: 'external_load_volume_kg', value: calculated.externalLoadVolumeKg, missingDataCount: missingLoadData },
+          repetitions: { kind: 'recorded_repetitions', value: calculated.repetitions, missingDataCount: calculated.invalidRepetitions },
+          sessions: { kind: 'completed_sessions', value: calculated.completedSessions, missingDataCount: 0 },
+        } satisfies Record<typeof query.type, Pick<CoachHistoryMetric, 'kind' | 'value' | 'missingDataCount'>>
+        const measure = measures[query.type]
+        if (Array.isArray(measure.value) && !measure.value.length) {
+          return textAnswer('I found no matching recorded data in the reviewed period.', limitations)
+        }
+        if (typeof measure.value === 'number' && !Number.isFinite(measure.value)) {
+          return textAnswer('I could not read your training history.', ['History summary failed.'])
+        }
+        const metric: CoachHistoryMetric = {
+          ...measure,
+          id: measure.kind,
+          evidenceIds: records.map(record => record.id),
+        }
+        return answer([{ kind: 'metric', metricId: metric.id }], limitations, metric)
       } catch {
         if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
-        return answer('I could not read your training history.', ['History read failed.'], 1)
+        return textAnswer('I could not read your training history.', ['History read failed.'])
       }
     }
     const userRequest = workoutRequestText(message)
-    if (intent.intent === 'coach_qa') return { kind: 'response', response: { version: 1, kind: 'answer', blocks: [{ kind: 'text', text: 'I cannot answer that advice question: generated coaching advice is currently unavailable. I can help build a workout from your available equipment and preferences, or review your recorded training history. For individual exercise advice, consult a qualified professional.', evidence: [] }], limitations: ['Specific coaching advice is unavailable until its sources and safety have been reviewed.'] }, repaired: false, toolCalls: 0 }
+    if (intent.intent === 'coach_qa') return { kind: 'response', response: { version: 1, kind: 'answer', blocks: [{ kind: 'text', text: 'I cannot answer that advice question: generated coaching advice is currently unavailable. I can help build a workout from your available equipment and preferences, or review your recorded training history. For individual exercise advice, consult a qualified professional.', evidence: [] }], limitations: ['Specific coaching advice is unavailable until its sources and safety have been reviewed.'] }, repaired: false }
     const schedule = parseWorkoutSchedule(userRequest)
     if (schedule.kind === 'clarification') return clarification(schedule.question)
     const sessionCount = schedule.kind === 'weekly' ? schedule.sessions : 1
@@ -313,56 +345,49 @@ export async function runConstrainedCoachTurn(input: { message: string; session:
     const plannedSessions = focuses.map(focus => planWorkout(message, focus))
     for (const planned of plannedSessions) {
       if (planned.kind === 'clarification') {
-        try { input.onWorkoutTrace?.({ ...planned.diagnostics, source: 'defaults', assumptions: [], validationErrors: [], timedOut: false }) } catch { /* Diagnostics cannot alter delivery. */ }
         return clarification(planned.question)
       }
       if (planned.kind === 'infeasible') {
-        try { input.onWorkoutTrace?.({ ...planned.diagnostics, source: 'defaults', assumptions: [], validationErrors: [], timedOut: false }) } catch { /* Diagnostics cannot alter delivery. */ }
-        return { kind: 'response', response: { version: 1, kind: 'cannot_fulfill', reason: planned.reason }, repaired: false, toolCalls: 0 }
+        return { kind: 'response', response: { version: 1, kind: 'cannot_fulfill', reason: planned.reason }, repaired: false }
       }
     }
     const plans = plannedSessions.flatMap(result => result.kind === 'plan' ? [result.plan] : [])
     const titles = focuses.map((focus, index) => `Day ${index + 1}${focus ? ` — ${focus[0].toUpperCase()}${focus.slice(1)}` : ''}`)
     const errors: string[] = []
-    let timedOut = false
     let selected: string[][] | undefined
-    const routineSelections = z.strictObject({ sessions: z.strictObject(Object.fromEntries(
+    const workoutSelections = z.strictObject({ sessions: z.strictObject(Object.fromEntries(
       plans.map((plan, index) => [`day_${index + 1}`, selectionSchema(plan)])
     )) })
-    const singleSelections = selectionSchema(plans[0])
-    const schema = z.toJSONSchema(sessionCount === 1 ? singleSelections : routineSelections)
+    const schema = z.toJSONSchema(workoutSelections)
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        await session.appendUserMessage(`Original request: ${userRequest}\nPlan ${sessionCount} training session(s). Exercise counts, sets, repetitions, and duration apply to each session. Choose one distinct exercise name for each slot, in order, for each session. Prefer complementary movements and angles; multiple exercises from the same movement family are allowed. Never repeat the same exercise within a session. ${sessionCount > 1 ? 'Return a sessions object keyed day_1, day_2, etc. Each day contains a selections object with one allowed exercise per slot. Respect each day’s distinct focus and choices.' : 'Return a selections object keyed slot_1, slot_2, etc., with one allowed exercise name per slot.'} Session slots: ${JSON.stringify(plans.map((plan, index) => ({ day: `day_${index + 1}`, title: titles[index], slots: plan.slots.map(slot => slot.map(exercise => exercise.name)) })))}. ${errors.length ? `Validation errors: ${errors.join('; ')}` : ''}`)
-        const generated = await session.generate({ tools: [], finalResponseSchema: schema, maxOutputTokens: input.maxOutputTokens, signal })
+        await session.appendUserMessage(`Original request: ${userRequest}\nPlan ${sessionCount} training session(s). Exercise counts, sets, repetitions, and duration apply to each session. Choose one distinct exercise name for each slot, in order, for each session. Prefer complementary movements and angles; multiple exercises from the same movement family are allowed. Never repeat the same exercise within a session. Return a sessions object with the listed day keys, starting at day_1. Each day contains a selections object keyed slot_1, slot_2, etc., with one allowed exercise name per slot. Respect each day's focus and choices. Session slots: ${JSON.stringify(plans.map((plan, index) => ({ day: `day_${index + 1}`, title: titles[index], slots: plan.slots.map(slot => slot.map(exercise => exercise.name)) })))}. ${errors.length ? `Validation errors: ${errors.join('; ')}` : ''}`)
+        const generated = await session.generate({ finalResponseSchema: schema, maxOutputTokens: input.maxOutputTokens, signal })
         if (generated.kind === 'failure') throw new Error(generated.message)
         const raw = generated.kind === 'final' ? generated.content : undefined
         if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
-        const batch = routineSelections.safeParse(raw)
-        const single = singleSelections.safeParse(raw)
-        const sessions = sessionCount === 1 ? single.success ? [{ selections: plans[0].slots.map((_, index) => single.data.selections[`slot_${index + 1}`]) }] : [] : batch.success ? plans.map((plan, index) => ({ selections: plan.slots.map((_, slotIndex) => batch.data.sessions[`day_${index + 1}`].selections[`slot_${slotIndex + 1}`]) })) : []
-        if (sessions.length !== sessionCount) { errors.push(`Expected ${sessionCount} workout sessions`); continue }
-        const checked = sessions.map((session, index) => validateSelection(plans[index], session))
+        const parsed = workoutSelections.safeParse(raw)
+        if (!parsed.success) { errors.push(`Expected ${sessionCount} workout sessions`); continue }
+        const checked = plans.map((plan, index) => {
+          const { selections } = parsed.data.sessions[`day_${index + 1}`]
+          return validateSelection(plan, { selections: plan.slots.map((_, slotIndex) => selections[`slot_${slotIndex + 1}`]) })
+        })
         errors.push(...checked.flatMap(result => result.errors))
         const names = checked.flatMap(result => result.names ? [result.names] : [])
         if (names.length === sessionCount) { selected = names; break }
       } catch (error) {
         if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
-        timedOut = error instanceof Error && /timeout|timed out|deadline/i.test(error.message)
+        const timedOut = error instanceof Error && /timeout|timed out|deadline/i.test(error.message)
         errors.push(timedOut ? 'Model selection timed out' : 'Model selection failed')
         break
       }
     }
     const renderedSessions = plans.map((plan, index) => renderWorkout(plan, selected?.[index] ?? defaultSelection(plan)))
     const workouts: CoachWorkout[] = renderedSessions.map((rendered, index) => ({ ...rendered.workout, ref: `workout-${index + 1}`, title: `${titles[index]}${plans[index].partial ? ' — partial workout' : ''}` }))
-    const source = selected ? 'model' : 'template'
     const response: CoachResponse = schedule.kind === 'weekly'
       ? { version: 1, kind: 'routine_draft', workouts, routine: { type: 'WEEKLY_COMPLETION', title: `${sessionCount}-day workout routine`, workoutRefs: workouts.map(workout => workout.ref) }, assumptions: [...new Set(renderedSessions.flatMap(rendered => rendered.assumptions)), `Planned ${sessionCount} training sessions per week; choose your training and rest days. Exercise counts and durations apply to each session.`, schedule.split === 'ppl' ? 'Push/Pull/Legs split: chest, shoulders and triceps; back and biceps; then legs. Each day has its own eligible exercise choices.' : 'Sessions use the same requested muscle targets; exercises may repeat across days.', ...(selected ? [] : [schedule.split === 'ppl' ? 'Model selection was unavailable; each training day uses its own focus-specific catalog template.' : 'Model selection was unavailable; each training day repeats the catalog template.'])] }
       : { ...renderedSessions[0], assumptions: [...renderedSessions[0].assumptions, ...(selected ? [] : ['Model selection was unavailable; this draft uses a validated catalog template.'])] }
-    plannedSessions.forEach((planned, index) => {
-      try { input.onWorkoutTrace?.({ ...planned.diagnostics, source, assumptions: response.assumptions, validationErrors: errors, timedOut, session: { index: index + 1, title: titles[index], focus: focuses[index] ?? 'shared' } }) } catch { /* Diagnostics cannot alter delivery. */ }
-    })
-    return { kind: 'response', response, repaired: errors.length > 0, toolCalls: 0 }
+    return { kind: 'response', response, repaired: errors.length > 0 }
   } catch {
     return alive() ? { kind: 'failure', code: 'runtime_error', message: 'The coach could not complete this request.' } : { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
   }

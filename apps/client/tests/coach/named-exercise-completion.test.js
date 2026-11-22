@@ -71,7 +71,7 @@ test.each([
 test('a named movement does not supply its own equipment', () => {
   const result = planWorkout('Create a workout with only Dumbbell Bench Press.')
   expect(result.kind).toBe('clarification')
-  expect(result.diagnostics.equipment).toEqual([])
+  expect(result.question).toMatch(/what equipment can you use/i)
 })
 
 test('only dumbbells restricts a full gym inventory', () => {

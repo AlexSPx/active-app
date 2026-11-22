@@ -122,10 +122,8 @@ function hasBench(request: string, context: SuppliedContext | null): boolean {
   return /\bbench\b|\bfull[- ]gym\b/i.test(request) || (context?.equipment ?? []).some(item => /\bbench\b|\bfull[- ]gym\b/i.test(item))
 }
 
-export type PlannerDiagnostics = { equipment: string[]; candidateCounts: number[]; durationMinutes: number | null; estimatedMinutes: number; sets: number; setsExplicit: boolean; refusalReason: string | null; unmetRequirements: string[] }
-export type WorkoutTrace = PlannerDiagnostics & { session?: { index: number; title: string; focus: WorkoutFocus | 'shared' }; source: 'model' | 'template' | 'defaults'; assumptions: string[]; validationErrors: string[]; timedOut: boolean }
 type Plan = { countRange: { min: number; max: number }; prescription: ReturnType<typeof prescriptions>; mandatoryIds: string[]; slots: Exercise[][]; sets: number; reps: number; restSeconds: number; durationLimitSeconds?: number; repetitionsRange?: { min: number; max: number }; includeCues: boolean; assumptions: string[]; partial: boolean; preparation: { kind: 'warmup' | 'cooldown'; description: string; durationSeconds: number }[] }
-type PlanResult = { kind: 'plan'; plan: Plan; diagnostics: PlannerDiagnostics } | { kind: 'clarification'; question: string; diagnostics: PlannerDiagnostics } | { kind: 'infeasible'; reason: string; diagnostics: PlannerDiagnostics }
+type PlanResult = { kind: 'plan'; plan: Plan } | { kind: 'clarification'; question: string } | { kind: 'infeasible'; reason: string }
 
 function excludedEquipment(text: string): Set<Equipment> {
   const excluded = new Set<Equipment>()
@@ -244,12 +242,12 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const benchAvailable = hasBench(message, context)
   const levelText = `${message} ${context?.profile?.trainingAge ?? ''}`
   const abilityLevel = /\b(?:expert|advanced|experienced)\b/i.test(levelText) ? 'EXPERT' : /\bintermediate\b/i.test(levelText) ? 'INTERMEDIATE' : 'BEGINNER'
-  const diagnostics: PlannerDiagnostics = { equipment: uniqueAvailable, candidateCounts: [], durationMinutes: duration, estimatedMinutes: count * sets * 2, sets, setsExplicit: !!setsMatch, refusalReason: null, unmetRequirements: [] }
-  const fail = (reason: string): PlanResult => ({ kind: 'infeasible', reason, diagnostics: { ...diagnostics, refusalReason: reason } })
-  if (/\b(?:no|not|without|avoid|exclude)\s+(?:(?:more|less|fewer)\s+than\s+)?(?:\d+|one|two|three|four|five|any)\s*(?:sets?|reps?|repetitions?|exercises?|movements?)\b/i.test(message) || /\b(?:sets?|reps?|repetitions?)\s*(?:of\s*)?(?:zero|one|two|three|four|five)\b/i.test(message)) return { kind: 'clarification', question: 'Please specify one supported positive exercise count, set count, and repetition range.', diagnostics }
-  if (/\b\d+\s*(?:-|–|—|to)\s*\d+\s*sets?\b/i.test(message)) return { kind: 'clarification', question: 'Please specify one exercise and set count rather than a range.', diagnostics }
-  if (countScopes.size > 1 || countMinimum > countMaximum) return { kind: 'clarification', question: 'Please clarify the exercise counts and whether they apply to the whole workout or a specific muscle group.', diagnostics }
-  if (prescription.conflict) return { kind: 'clarification', question: 'Please clarify the conflicting or unsupported sets, repetitions, rest, or session duration.', diagnostics }
+  const unmetRequirements: string[] = []
+  const fail = (reason: string): PlanResult => ({ kind: 'infeasible', reason })
+  if (/\b(?:no|not|without|avoid|exclude)\s+(?:(?:more|less|fewer)\s+than\s+)?(?:\d+|one|two|three|four|five|any)\s*(?:sets?|reps?|repetitions?|exercises?|movements?)\b/i.test(message) || /\b(?:sets?|reps?|repetitions?)\s*(?:of\s*)?(?:zero|one|two|three|four|five)\b/i.test(message)) return { kind: 'clarification', question: 'Please specify one supported positive exercise count, set count, and repetition range.' }
+  if (/\b\d+\s*(?:-|–|—|to)\s*\d+\s*sets?\b/i.test(message)) return { kind: 'clarification', question: 'Please specify one exercise and set count rather than a range.' }
+  if (countScopes.size > 1 || countMinimum > countMaximum) return { kind: 'clarification', question: 'Please clarify the exercise counts and whether they apply to the whole workout or a specific muscle group.' }
+  if (prescription.conflict) return { kind: 'clarification', question: 'Please clarify the conflicting or unsupported sets, repetitions, rest, or session duration.' }
   if (duration !== null && (!Number.isFinite(duration) || duration <= 0)) return fail('Session duration must be positive.')
   const namedExercises: Exercise[] = []
   for (const name of names) {
@@ -257,15 +255,15 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     if (resolved.kind !== 'match') {
       const query = normalizeHistoryName(name).replace(/s$/, '')
       const choices = exerciseCatalog.filter(exercise => exercise.setupReviewStatus === 'reviewed' && normalizeHistoryName(exercise.name).includes(query)).slice(0, 5).map(exercise => exercise.name)
-      return { kind: 'clarification', question: `I cannot identify “${name}” as one specific catalog exercise.${choices.length ? ` Did you mean ${choices.join(', ')}?` : ' Please name a supported catalog exercise.'} I cannot substitute another movement.`, diagnostics }
+      return { kind: 'clarification', question: `I cannot identify “${name}” as one specific catalog exercise.${choices.length ? ` Did you mean ${choices.join(', ')}?` : ' Please name a supported catalog exercise.'} I cannot substitute another movement.` }
     }
     namedExercises.push(resolved.exercise)
   }
-  if (new Set(namedExercises.map(exercise => exerciseSlotIdentity(exercise.id))).size !== namedExercises.length) return { kind: 'clarification', question: 'Please choose distinct named exercises.', diagnostics }
+  if (new Set(namedExercises.map(exercise => exerciseSlotIdentity(exercise.id))).size !== namedExercises.length) return { kind: 'clarification', question: 'Please choose distinct named exercises.' }
   const exactNames = !!namedClause?.[1] && namedExercises.length > 0
-  if (namedExercises.length && ((countMatch && (namedExercises.length > count || (exactNames && namedExercises.length !== count))) || (!countMatch && exactNames && namedExercises.length > 8))) return { kind: 'clarification', question: 'The named exercise list conflicts with the requested exercise count. Which count and movements should I use?', diagnostics }
+  if (namedExercises.length && ((countMatch && (namedExercises.length > count || (exactNames && namedExercises.length !== count))) || (!countMatch && exactNames && namedExercises.length > 8))) return { kind: 'clarification', question: 'The named exercise list conflicts with the requested exercise count. Which count and movements should I use?' }
   if (exactNames && !countMatch) count = namedExercises.length
-  if (!equipmentSpecified) return { kind: 'clarification', question: 'What equipment can you use: a full gym, specific equipment, or bodyweight only?', diagnostics }
+  if (!equipmentSpecified) return { kind: 'clarification', question: 'What equipment can you use: a full gym, specific equipment, or bodyweight only?' }
   if (!Number.isSafeInteger(restSeconds) || restSeconds < 0) return fail('Rest must be a whole number of seconds.')
   if (countMinimum < 1 || countMinimum > countMaximum || count < 1 || sets < 1 || sets > 5 || reps < 1 || reps > 30 || (repetitionsRange && (repetitionsRange.min < 1 || repetitionsRange.max > 30 || repetitionsRange.min > repetitionsRange.max))) return fail('The requested exercise, set, or repetition count is outside the supported range.')
   const preparation: Plan['preparation'] = []
@@ -295,7 +293,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const targets = requested.length ? requested : wholeBodyTargets
   if (/(?:knee|knees).{0,32}(?:pain|discomfort|injur|hurt|ache)|(?:pain|discomfort|injur|hurt|ache).{0,32}(?:knee|knees)/i.test(restrictions) &&
       /\b(?:legs?|lower body|full[- ]body|squat|lunge)\b/i.test(messageText)) {
-    return { kind: 'clarification', question: 'Which lower-body movements, if any, feel comfortable with your knee right now? Should I avoid knee-bending movements such as squats and lunges?', diagnostics }
+    return { kind: 'clarification', question: 'Which lower-body movements, if any, feel comfortable with your knee right now? Should I avoid knee-bending movements such as squats and lunges?' }
   }
   let bodyweightFallback = false
   if (context && abilityLevel === 'BEGINNER' && /\beasy to scale\b/i.test(message) && available.includes('BARBELL') && !available.some(item => ['DUMBBELL', 'BANDS', 'KETTLEBELLS'].includes(item))) {
@@ -312,15 +310,15 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
         : /\bwrist\b/i.test(restrictions)
         ? 'What is the barbell’s unloaded weight, and can you grip it while keeping your wrists neutral? Do you have lighter plates or another lighter option?'
         : 'What is the barbell’s unloaded weight, and do you have lighter plates or another lighter option? I can then choose movements that are easy to scale.'
-      return { kind: 'clarification', question, diagnostics }
+      return { kind: 'clarification', question }
     }
     bodyweightFallback = true
   }
   if (/\bunknown (?:ability|experience)\b/i.test(message)) {
-    return { kind: 'clarification', question: 'What exercises or movement patterns can you currently perform comfortably, and what support or equipment is available?', diagnostics }
+    return { kind: 'clarification', question: 'What exercises or movement patterns can you currently perform comfortably, and what support or equipment is available?' }
   }
   const requestedSlots = Math.min(count, 8)
-  if (count > 8 && !isCap) diagnostics.unmetRequirements.push(`Requested ${count} exercises; this planner supports up to 8.`)
+  if (count > 8 && !isCap) unmetRequirements.push(`Requested ${count} exercises; this planner supports up to 8.`)
   const allTargets = [...new Set(targets.flat())]
   const selectedTargets = Array.from({ length: requestedSlots }, (_, i) => targets[i] ?? allTargets)
   const namedEquipmentRequired = /\b(?:using\s+(?:the\s+)?only\s+|with\s+(?:the\s+)?only\s+)(?:dumbbells?|barbells?|bands?|kettlebells?|cables?|machines?)\b|\b(?:dumbbells?|barbells?|bands?|kettlebells?|cables?|machines?)\s+only\b/i.test(message)
@@ -341,7 +339,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   for (const exercise of namedExercises) {
     if (!catalog.some(item => item.id === exercise.id)) {
       const reason = exercise.setupReviewStatus !== 'reviewed' ? 'its setup has not been reviewed' : !uniqueAvailable.includes(exercise.equipment ?? 'BODY_ONLY') ? `the available equipment does not include ${exercise.equipment ?? 'bodyweight'}` : missingSetup(exercise, message, context) || (requiresBench(exercise) && !benchAvailable) ? 'the required setup is not available or specified' : restrictionExcludes(exercise, safetyText) ? 'it conflicts with your stated restriction' : 'its ability level or other setup requirements do not match this request'
-      return { kind: 'clarification', question: `${exercise.name} cannot be included because ${reason}. What compatible alternative can you use?`, diagnostics }
+      return { kind: 'clarification', question: `${exercise.name} cannot be included because ${reason}. What compatible alternative can you use?` }
     }
   }
   const allCandidates = selectedTargets.map(target => {
@@ -354,20 +352,19 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     .sort((a, b) => Number(!a.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase()))) - Number(!b.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase()))) || Number(!explicitlySpecified.has(a.equipment ?? 'BODY_ONLY')) - Number(!explicitlySpecified.has(b.equipment ?? 'BODY_ONLY')))
   })
   namedExercises.forEach((exercise, index) => { allCandidates[index] = [exercise]; selectedTargets[index] = exercise.primaryMuscles.map(muscle => muscle.toLowerCase()) })
-  diagnostics.candidateCounts = allCandidates.map(slot => slot.length)
   const viableTargets = selectedTargets.filter((_, index) => allCandidates[index].length > 0)
   const candidates = allCandidates.filter(slot => slot.length > 0)
   const targetHasPrimary = catalog.some(exercise => viableTargets.some(target => exercise.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase()))))
   if (!candidates.length || !targetHasPrimary) {
     if (context && abilityLevel === 'BEGINNER' && uniqueAvailable.length === 2 && uniqueAvailable.includes('KETTLEBELLS') && uniqueAvailable.includes('BODY_ONLY') && /\b(?:back|lats?)\b/i.test(message)) {
-      return { kind: 'clarification', question: 'What is the kettlebell’s weight, and can you hold a controlled hip hinge and row without discomfort? The catalog’s back-row option is labeled intermediate.', diagnostics }
+      return { kind: 'clarification', question: 'What is the kettlebell’s weight, and can you hold a controlled hip hinge and row without discomfort? The catalog’s back-row option is labeled intermediate.' }
     }
     if (context && uniqueAvailable.length === 1 && uniqueAvailable[0] === 'BODY_ONLY' && /\b(?:back|lats?)\b/i.test(message) && /\boverhead press(?:ing)?\b/i.test(restrictions)) {
-      return { kind: 'clarification', question: 'Do you have secure support such as a pull-up bar, and is overhead reaching comfortable? If not, what other equipment or back movements can you use?', diagnostics }
+      return { kind: 'clarification', question: 'Do you have secure support such as a pull-up bar, and is overhead reaching comfortable? If not, what other equipment or back movements can you use?' }
     }
-    if (equipmentConflict) return { kind: 'clarification', question: `The cable machine conflicts with the listed setup (${context?.equipment?.join(', ') || uniqueAvailable.join(', ')}), and I could not establish a setup-reviewed movement for ${targets.map(target => target.join('/')).join(' or ')} using only that setup. What other equipment or movement variation can you use?`, diagnostics }
+    if (equipmentConflict) return { kind: 'clarification', question: `The cable machine conflicts with the listed setup (${context?.equipment?.join(', ') || uniqueAvailable.join(', ')}), and I could not establish a setup-reviewed movement for ${targets.map(target => target.join('/')).join(' or ')} using only that setup. What other equipment or movement variation can you use?` }
     const equipmentRequest = explicitlySpecified.size > 0 ? [...explicitlySpecified].join(', ') : 'suitable equipment or movement options'
-    return { kind: 'clarification', question: `I could not establish a suitable setup-reviewed catalog movement for this request with ${equipmentRequest}; other catalog setup requirements may be unknown. What equipment and movement variations can you use comfortably?`, diagnostics }
+    return { kind: 'clarification', question: `I could not establish a suitable setup-reviewed catalog movement for this request with ${equipmentRequest}; other catalog setup requirements may be unknown. What equipment and movement variations can you use comfortably?` }
   }
   const chosen: Exercise[] = []
   const assignment: (Exercise | undefined)[] = []
@@ -386,7 +383,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   }
   let assigned = false
   for (let slotCount = candidates.length; slotCount > 0 && !assigned; slotCount--) assigned = assign(Array.from({ length: slotCount }, (_, i) => i))
-  if (!assigned) return { kind: 'clarification', question: 'The available movements overlap too much to make a useful distinct session. Which muscle group or exercise variation should I prioritize?', diagnostics }
+  if (!assigned) return { kind: 'clarification', question: 'The available movements overlap too much to make a useful distinct session. Which muscle group or exercise variation should I prioritize?' }
   const filled = assignment.filter((exercise): exercise is Exercise => exercise !== undefined)
   let selectedAssignments = assignment.flatMap((exercise, index) => exercise ? [{ exercise, target: viableTargets[index] }] : [])
   const scheduleSeconds = (items: typeof selectedAssignments) => preparationMinutes * 60 + items.reduce((sum, item, index) => {
@@ -398,23 +395,22 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   }, 0)
   // Reduce default sets before dropping requested movements.
   while (durationIsMaximum && duration !== null && !setsMatch && sets > 1 && scheduleSeconds(selectedAssignments) > duration * 60) sets--
-  diagnostics.sets = sets
   while (durationIsMaximum && duration !== null && selectedAssignments.length > 1 && scheduleSeconds(selectedAssignments) > duration * 60) {
     if (selectedAssignments.length <= namedExercises.length) return fail('The named exercises do not fit within the requested time limit.')
     selectedAssignments = selectedAssignments.slice(0, -1)
   }
   if (durationIsMaximum && duration !== null && scheduleSeconds(selectedAssignments) > duration * 60) return fail(`The requested work, rest, transitions, and preparation do not fit within ${duration} minutes.`)
-  if (!isCap && (selectedAssignments.length < filled.length)) diagnostics.unmetRequirements.push(`The time limit restricts the requested exercise count with the estimated work, rest, transitions and preparation.`)
-  diagnostics.estimatedMinutes = Math.ceil(scheduleSeconds(selectedAssignments) / 60)
-  if (filled.length < requestedSlots && !isCap) diagnostics.unmetRequirements.push(`Requested ${count} exercises; found ${filled.length} distinct catalog choices with reviewed setup compatible with the known equipment and restrictions; other catalog setup requirements may be unknown.`)
-  if (isCap && count > 1 && filled.length === 1 && /\bbalanced\b/i.test(message)) diagnostics.unmetRequirements.push('Only one distinct movement pattern fits this setup, so this is not a balanced session; add equipment or allow another variation.')
-  if (/\barms?\b/i.test(message) && /\bbalanced\b/i.test(message) && !['biceps', 'triceps'].every(muscle => selectedAssignments.some(({ exercise }) => exercise.primaryMuscles.some(item => item.toLowerCase() === muscle)))) diagnostics.unmetRequirements.push('The selected movements do not cover both biceps and triceps, so this is not a balanced arm session.')
-  if (explicitTargetCount > count || (fullBody && targets.length > count)) diagnostics.unmetRequirements.push(`The request names ${fullBody ? targets.length : explicitTargetCount} muscle groups but allows at most ${count} exercise${count === 1 ? '' : 's'}; some groups are uncovered.`)
-  if (allCandidates.some(slot => slot.length === 0)) diagnostics.unmetRequirements.push('Some requested muscle groups have no compatible setup-reviewed catalog exercise in the recorded setup; other catalog options have unknown setup requirements.')
-  if (selectedAssignments.some(({ exercise, target }) => !exercise.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase())))) diagnostics.unmetRequirements.push('Some listed exercises involve the requested area secondarily, so target coverage is limited.')
-  if (duration !== null && !durationIsMaximum && (diagnostics.estimatedMinutes < duration * 0.8 || diagnostics.estimatedMinutes > duration)) diagnostics.unmetRequirements.push(`The estimated session does not match the requested ${duration}-minute session.`)
+  if (!isCap && (selectedAssignments.length < filled.length)) unmetRequirements.push(`The time limit restricts the requested exercise count with the estimated work, rest, transitions and preparation.`)
+  const estimatedMinutes = Math.ceil(scheduleSeconds(selectedAssignments) / 60)
+  if (filled.length < requestedSlots && !isCap) unmetRequirements.push(`Requested ${count} exercises; found ${filled.length} distinct catalog choices with reviewed setup compatible with the known equipment and restrictions; other catalog setup requirements may be unknown.`)
+  if (isCap && count > 1 && filled.length === 1 && /\bbalanced\b/i.test(message)) unmetRequirements.push('Only one distinct movement pattern fits this setup, so this is not a balanced session; add equipment or allow another variation.')
+  if (/\barms?\b/i.test(message) && /\bbalanced\b/i.test(message) && !['biceps', 'triceps'].every(muscle => selectedAssignments.some(({ exercise }) => exercise.primaryMuscles.some(item => item.toLowerCase() === muscle)))) unmetRequirements.push('The selected movements do not cover both biceps and triceps, so this is not a balanced arm session.')
+  if (explicitTargetCount > count || (fullBody && targets.length > count)) unmetRequirements.push(`The request names ${fullBody ? targets.length : explicitTargetCount} muscle groups but allows at most ${count} exercise${count === 1 ? '' : 's'}; some groups are uncovered.`)
+  if (allCandidates.some(slot => slot.length === 0)) unmetRequirements.push('Some requested muscle groups have no compatible setup-reviewed catalog exercise in the recorded setup; other catalog options have unknown setup requirements.')
+  if (selectedAssignments.some(({ exercise, target }) => !exercise.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase())))) unmetRequirements.push('Some listed exercises involve the requested area secondarily, so target coverage is limited.')
+  if (duration !== null && !durationIsMaximum && (estimatedMinutes < duration * 0.8 || estimatedMinutes > duration)) unmetRequirements.push(`The estimated session does not match the requested ${duration}-minute session.`)
   const assumptions = [
-    ...(diagnostics.unmetRequirements.length ? [`PARTIAL WORKOUT — ${diagnostics.unmetRequirements.join(' ')}`] : []),
+    ...(unmetRequirements.length ? [`PARTIAL WORKOUT — ${unmetRequirements.join(' ')}`] : []),
     'Exercise choices are limited to catalog entries with reviewed setup requirements; other catalog options may have unknown setup requirements.',
     ...(equipmentExplanation ? [equipmentExplanation] : []),
     ...(/\bfull[- ]gym\b/i.test(`${message} ${(context?.equipment ?? []).join(' ')}`) ? ['Full gym is treated as including a bench and pairs of dumbbells.'] : []),
@@ -445,7 +441,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     const next = eligible.sort((a, b) => slots[a].length - slots[b].length)[0]
     if (next !== undefined) slots[next].push(candidate)
   }
-  return { kind: 'plan', plan: { countRange: { min: !countMatch ? (exactNames ? count : 1) : diagnostics.unmetRequirements.length ? Math.min(countMinimum, slots.length) : countMinimum, max: countMatch ? countMaximum : exactNames ? count : slots.length }, prescription, mandatoryIds: namedExercises.map(exercise => exercise.id), slots, sets, reps, restSeconds, ...(durationIsMaximum && duration !== null ? { durationLimitSeconds: duration * 60 } : {}), ...(repetitionsRange ? { repetitionsRange } : {}), includeCues, preparation, assumptions, partial: diagnostics.unmetRequirements.length > 0 }, diagnostics }
+  return { kind: 'plan', plan: { countRange: { min: !countMatch ? (exactNames ? count : 1) : unmetRequirements.length ? Math.min(countMinimum, slots.length) : countMinimum, max: countMatch ? countMaximum : exactNames ? count : slots.length }, prescription, mandatoryIds: namedExercises.map(exercise => exercise.id), slots, sets, reps, restSeconds, ...(durationIsMaximum && duration !== null ? { durationLimitSeconds: duration * 60 } : {}), ...(repetitionsRange ? { repetitionsRange } : {}), includeCues, preparation, assumptions, partial: unmetRequirements.length > 0 } }
 }
 
 export function selectionSchema(plan: Plan) {

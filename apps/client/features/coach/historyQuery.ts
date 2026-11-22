@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { exerciseCatalog } from '../../lib/exercises/catalog'
 import metadata from '../../lib/data/coach/exercise-planning-metadata.json'
+import type { HistoryExerciseFilter } from '../../lib/repositories/CoachHistoryRepository'
 
 export const historyQuerySchema = z.strictObject({
   type: z.enum(['sessions', 'repetitions', 'volume', 'best', 'latest', 'presence']),
@@ -10,11 +11,30 @@ export const historyQuerySchema = z.strictObject({
 export type HistoryQuery = z.infer<typeof historyQuerySchema>
 export const normalizeHistoryName = (value: string) => value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim().replace(/\s+/g, ' ').replace(/\bpull ?ups?\b/g, 'pull up').replace(/\bsplit squats\b/g, 'split squat')
 const normalize = normalizeHistoryName
+const catalogIds = new Set(exerciseCatalog.map(exercise => exercise.id))
 
 export function resolveHistoryExercise(name: string) {
   const target = normalize(name)
   const matches = exerciseCatalog.filter(e => normalize(e.name) === target || metadata.some(a => a.sourceKey === e.sourceKey && a.aliases.some(alias => normalize(alias) === target)))
   return matches.length === 1 ? { kind: 'match' as const, exercise: matches[0] } : { kind: matches.length ? 'ambiguous' as const : 'unknown' as const }
+}
+
+export function historyExerciseFilter(name: string): HistoryExerciseFilter {
+  const resolved = resolveHistoryExercise(name)
+  if (resolved.kind === 'ambiguous') return { kind: 'ambiguous' }
+  const target = normalize(name)
+  const catalogId = resolved.kind === 'match' ? resolved.exercise.id : null
+  const canonicalName = resolved.kind === 'match' ? normalize(resolved.exercise.name) : target
+  return {
+    kind: catalogId ? 'catalog' : 'custom',
+    match: entry => {
+      if (catalogId && entry.exerciseId === catalogId) return 'match'
+      const label = normalize(entry.name)
+      if (label !== target && label !== canonicalName) return null
+      if (label !== target) return 'conflict'
+      return entry.exerciseId && catalogIds.has(entry.exerciseId) ? 'conflict' : 'match'
+    },
+  }
 }
 
 export function historyMeasureHint(message: string): HistoryQuery['type'] | null {

@@ -6,7 +6,7 @@ async function run(message) {
   return runConstrainedCoachTurn({ message, session: { appendUserMessage: async () => {}, generate: async () => {
     if (calls++ === 0) return { kind: 'final', content: { intent: 'create_workout' } }
     throw Error('Use validated template')
-  } }, execute: async () => { throw Error('Unexpected tool') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 500 })
+  } }, readHistory: async () => { throw Error('Unexpected history read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 500 })
 }
 async function next(prior, message) {
   const request = applyWorkoutFollowUp(message, JSON.parse(JSON.stringify(prior)))

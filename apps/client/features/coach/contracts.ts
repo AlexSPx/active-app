@@ -158,13 +158,7 @@ export type CoachResponse = z.infer<typeof coachResponseSchema>
 export type CoachWorkout = z.infer<typeof coachWorkoutSchema>
 export type CoachEvidenceReference = z.infer<typeof coachEvidenceReferenceSchema>
 
-// Cross-reference checks run in validation.ts; JSON Schema cannot express them.
+// Cross-reference checks run in coachResponseSchema since JSON Schema cannot express them.
 export function coachResponseJsonSchema() {
   return z.toJSONSchema(coachResponseShapeSchema)
-}
-
-// The engine still validates all generated responses with the complete production schema.
-export function coachResponseVariantJsonSchema(kind: 'answer' | 'workout_draft' | 'routine_draft') {
-  const selected = kind === 'answer' ? answerSchema : kind === 'workout_draft' ? workoutDraftSchema : routineDraftSchema
-  return z.toJSONSchema(z.union([selected, clarificationSchema, cannotFulfillSchema]))
 }

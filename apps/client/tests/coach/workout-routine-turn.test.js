@@ -4,7 +4,7 @@ const { validateWorkoutReview } = require('../../features/coach/workoutPlanner')
 const { exerciseCatalog } = require('../../lib/exercises/catalog')
 
 function harness(mode = 'valid') {
-  const prompts = [], traces = []
+  const prompts = []
   let calls = 0
   const session = {
     appendUserMessage: async prompt => prompts.push(prompt),
@@ -18,7 +18,7 @@ function harness(mode = 'valid') {
       return { kind: 'final', content: { sessions: mode === 'short' ? { day_1: sessions.day_1 } : mode === 'alllegs' ? Object.fromEntries(Object.keys(sessions).map(day => [day, sessions.day_3])) : sessions } }
     },
   }
-  return { prompts, traces, run: message => runConstrainedCoachTurn({ message, session, execute: async () => { throw Error('Unexpected tool') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 1024, onWorkoutTrace: trace => traces.push(trace) }) }
+  return { prompts, run: message => runConstrainedCoachTurn({ message, session, readHistory: async () => { throw Error('Unexpected history read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 1024 }) }
 }
 
 test.each(['Create a 3 day workout', 'Create a 3-day workout', 'Create a three-day workout', 'I want three days per week', 'Train 3 times/week'])('%s creates three sessions and keeps exercise count separate', async request => {
@@ -34,7 +34,7 @@ test.each(['Create a 3 day workout', 'Create a 3-day workout', 'Create a three-d
     expect(workout.exercises.some(exercise => exerciseCatalog.find(entry => entry.id === exercise.catalogId).equipment !== 'BODY_ONLY')).toBe(true)
   }
   expect(h.prompts[1]).toContain('Plan 3 training session(s)')
-  expect(h.traces[0].source).toBe('model')
+  expect(result.response.assumptions.join(' ')).not.toMatch(/catalog template/i)
   expect(validateWorkoutReview(`${request}, full gym, 4 exercises, 2 sets and 8 reps per session`, result.response)).toEqual([])
 })
 
@@ -62,7 +62,6 @@ test.each(['short', 'timeout'])('a %s model response cannot collapse a routine t
   expect(result.response.kind).toBe('routine_draft')
   expect(result.response.workouts).toHaveLength(3)
   expect(coachResponseSchema.safeParse(result.response).success).toBe(true)
-  expect(h.traces[0].source).toBe('template')
   expect(result.response.assumptions.join(' ')).toMatch(/each training day repeats the catalog template/i)
 })
 
@@ -107,8 +106,7 @@ test.each(['valid', 'alllegs', 'timeout'])('PPL keeps each day in its own muscle
     expect(entries.every(entry => entry.primaryMuscles.some(muscle => focusMuscles[index].includes(muscle.toLowerCase())))).toBe(true)
   })
   expect(validateWorkoutReview(pplRequest, response)).toEqual([])
-  expect(h.traces.map(trace => trace.session.focus)).toEqual(['push', 'pull', 'legs'])
-  expect(h.traces.every(trace => trace.source === (mode === 'valid' ? 'model' : 'template'))).toBe(true)
+  expect(response.assumptions.some(value => value.includes('focus-specific catalog template'))).toBe(mode !== 'valid')
   expect(response.assumptions.join(' ')).not.toMatch(/same requested muscle targets|repeats the catalog template/)
 })
 
@@ -147,30 +145,27 @@ test.each(['valid', 'timeout'])('six exercises per PPL session remain six with %
 })
 
 test('the reported PPL request survives malformed intent output and produces a validated routine', async () => {
-  const traces = [], diagnostics = []
   let calls = 0
   const session = {
     appendUserMessage: async () => {},
     generate: async ({ finalResponseSchema: schema }) => {
-      if (calls++ < 2) return { kind: 'invalid_final', content: 'private malformed output' }
+      if (calls++ < 2) return { kind: 'invalid_final' }
       const sessions = Object.fromEntries(Object.entries(schema.properties.sessions.properties).map(([day, daySchema]) => [day, { selections: Object.fromEntries(Object.entries(daySchema.properties.selections.properties).map(([key, slot]) => [key, slot.enum ? slot.enum[0] : slot.const])) }]))
       return { kind: 'final', content: { sessions } }
     },
   }
   const message = 'Build me a 3 days Push Pull Legs routine for a full gym with like 5-6 exercises each'
-  const result = await runConstrainedCoachTurn({ message, session, execute: async () => { throw Error('unexpected read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 1024, onWorkoutTrace: trace => traces.push(trace), onIntentDiagnostic: diagnostic => diagnostics.push(diagnostic) })
+  const result = await runConstrainedCoachTurn({ message, session, readHistory: async () => { throw Error('unexpected read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 1024 })
   expect(result.response.kind).toBe('routine_draft')
   expect(coachResponseSchema.safeParse(result.response).success).toBe(true)
   expect(result.response.workouts).toHaveLength(3)
   expect(result.response.workouts.every(workout => workout.exercises.length >= 5 && workout.exercises.length <= 6)).toBe(true)
   expect(validateWorkoutReview(message, result.response)).toEqual([])
-  expect(diagnostics).toEqual([{ attempt: 1, outcome: 'invalid_final' }, { attempt: 2, outcome: 'invalid_final' }])
-  expect(JSON.stringify(diagnostics)).not.toContain('private')
 })
 
 test('the reported simple request asks for equipment after malformed classification', async () => {
   const session = { appendUserMessage: async () => {}, generate: async () => ({ kind: 'final', content: {} }) }
-  const result = await runConstrainedCoachTurn({ message: 'Build me a workout', session, execute: async () => {}, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 1024 })
+  const result = await runConstrainedCoachTurn({ message: 'Build me a workout', session, readHistory: async () => {}, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 1024 })
   expect(result.response.kind).toBe('clarification')
   expect(result.response.question).toMatch(/equipment/i)
 })

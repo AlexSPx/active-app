@@ -35,7 +35,7 @@ test('supplied equipment is authoritative when user language mentions another se
   ))
 
   expect(result.kind).toBe('plan')
-  expect(result.diagnostics.equipment).toEqual(['BODY_ONLY'])
+  expect(result.plan.slots.flat().every(exercise => exercise.equipment === 'BODY_ONLY')).toBe(true)
 })
 
 test('beginner barbell request requiring easy scaling clarifies the unknown minimum load', () => {
@@ -115,7 +115,7 @@ test('core can use bodyweight even when the available setup also lists a barbell
   ))
 
   expect(result.kind).toBe('plan')
-  expect(result.diagnostics.equipment).toContain('BODY_ONLY')
+  expect(result.plan.slots.flat().some(exercise => exercise.equipment === 'BODY_ONLY')).toBe(true)
 })
 
 test('a beginner barbell legs request can use an available bodyweight option before asking about bar load', () => {
@@ -194,7 +194,6 @@ test('equipment conflict is explained, and unavailable catalog options prompt fo
   expect(feasible.plan.assumptions.join(' ')).toMatch(/cable machine options conflict with the listed setup.*dumbbells, bench/i)
   expect(feasible.plan.partial).toBe(true)
   expect(feasible.plan.assumptions.join(' ')).toMatch(/requested 12-minute session/i)
-  expect(feasible.diagnostics.unmetRequirements.join(' ')).not.toMatch(/cable machine/i)
   expect(feasible.plan.slots.flat().every(exercise => ['DUMBBELL', 'BODY_ONLY'].includes(exercise.equipment ?? 'BODY_ONLY'))).toBe(true)
 
   const infeasible = planWorkout(supplied(
@@ -232,7 +231,7 @@ test('core plans can include multiple flexion movements without truncating the r
   expect(names).toHaveLength(6)
   expect(new Set(names).size).toBe(6)
   expect(result.plan.partial).toBe(false)
-  expect(result.diagnostics.estimatedMinutes).toBeLessThanOrEqual(30)
+  expect(estimateWorkoutSeconds(renderWorkout(result.plan, defaultSelection(result.plan)).workout)).toBeLessThanOrEqual(1800)
 })
 
 test('dumbbell core sessions retain bodyweight variety and include every requested cue', () => {
@@ -252,14 +251,14 @@ test('dumbbell core sessions retain bodyweight variety and include every request
 })
 
 test('short session estimates include rest and transitions and disclose the budget', () => {
-  for (const request of [
-    'Help me set up a 25-minute routine targeting glutes, capped at 4 exercises. I only have the stated time including rests.',
-    'I need a 18-minute legs session with 4 movements. I only have the stated time including rests.',
+  for (const [request, minutes] of [
+    ['Help me set up a 25-minute routine targeting glutes, capped at 4 exercises. I only have the stated time including rests.', 25],
+    ['I need a 18-minute legs session with 4 movements. I only have the stated time including rests.', 18],
   ]) {
     const result = planWorkout(supplied(request, { trainingAge: 'beginner', limitations: [] }, ['no equipment']))
     expect(result.kind).toBe('plan')
     if (result.kind !== 'plan') throw new Error('Expected a time-bounded partial plan')
-    expect(result.diagnostics.estimatedMinutes).toBeLessThanOrEqual(result.diagnostics.durationMinutes)
+    expect(estimateWorkoutSeconds(renderWorkout(result.plan, defaultSelection(result.plan)).workout)).toBeLessThanOrEqual(minutes * 60)
     expect(result.plan.assumptions.join(' ')).toMatch(/including rest and transitions.*approximate/i)
     expect(result.plan.assumptions.join(' ')).not.toMatch(/working sets only/i)
   }
@@ -310,7 +309,7 @@ test('18-minute kettlebell leg plan uses distinct options within the rest-inclus
   expect(new Set(defaultSelection(result.plan)).size).toBe(4)
   expect(result.plan.partial).toBe(false)
   expect(result.plan.sets).toBe(2)
-  expect(result.diagnostics.estimatedMinutes).toBeLessThanOrEqual(18)
+  expect(estimateWorkoutSeconds(renderWorkout(result.plan, defaultSelection(result.plan)).workout)).toBeLessThanOrEqual(1080)
 })
 
 test('balanced leg plans do not repeat squat and lunge variants as separate patterns', () => {

@@ -1,24 +1,21 @@
 const { boundedCoachSession } = require('../../features/coach/session')
 
-test('bounds the transcript without rewriting native tool results', async () => {
-  const received = []
+test('bounds the transcript using user messages and JSON replies', async () => {
+  const reply = { kind: 'final', content: { text: 'ok' } }
   const native = {
-    appendUserMessage: async (value) => received.push(value),
-    appendToolResult: async (value) => received.push(value),
-    generate: jest.fn(async () => ({ kind: 'final', content: { text: 'ok' } })),
+    appendUserMessage: jest.fn(),
+    generate: jest.fn(async () => reply),
     cancel: async () => {},
     dispose: async () => {},
   }
-  const bounded = boundedCoachSession(native, 120)
-  const tool = {
-    callId: 'call',
-    name: 'readWorkout',
-    result: { kind: 'error', code: 'not_found', message: 'none' },
-  }
+  const bounded = boundedCoachSession(native, 100)
+  const request = { finalResponseSchema: { type: 'object' }, maxOutputTokens: 100, signal: new AbortController().signal }
   await bounded.session.appendUserMessage('hello')
-  await bounded.session.appendToolResult(tool)
-  expect(received[1]).toBe(tool)
+  expect(native.appendUserMessage).toHaveBeenCalledWith('hello')
+  expect(bounded.isFull()).toBe(false)
+  expect(await bounded.session.generate(request)).toBe(reply)
   expect(bounded.isFull()).toBe(true)
-  expect(await bounded.session.generate({})).toMatchObject({ kind: 'failure', code: 'truncated' })
-  expect(native.generate).not.toHaveBeenCalled()
+  expect(await bounded.session.generate(request)).toMatchObject({ kind: 'failure', code: 'truncated' })
+  expect(native.generate).toHaveBeenCalledTimes(1)
+  expect(native.generate).toHaveBeenCalledWith(request)
 })

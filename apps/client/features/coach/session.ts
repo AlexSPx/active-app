@@ -1,4 +1,3 @@
-import { coachInstructions } from './prompts'
 import type { CoachRuntimeSession } from './runtime/types'
 
 // A byte ceiling bounds transcript growth; exact tokenizer and template accounting requires native support.
@@ -13,16 +12,8 @@ export function boundedCoachSession(session: CoachRuntimeSession, maxBytes = 120
       await session.appendSystemMessage(message)
     },
     async appendUserMessage(message) {
-      if (message === coachInstructions) {
-        await session.appendSystemMessage(message)
-        return
-      }
       add(message)
       await session.appendUserMessage(message)
-    },
-    async appendToolResult(result) {
-      add(result)
-      await session.appendToolResult(result)
     },
     async generate(request) {
       if (bytes > maxBytes)

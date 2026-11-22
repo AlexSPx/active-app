@@ -193,7 +193,7 @@ test.each([
   async function turn(message) {
     const request = applyWorkoutFollowUp(message, prior)
     let calls = 0
-    const result = await runConstrainedCoachTurn({ message: request, session: { appendUserMessage: async () => {}, generate: async () => { if (!calls++) return { kind: 'final', content: { intent: 'create_workout' } }; throw Error('template') } }, execute: async () => { throw Error('unexpected read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 500 })
+    const result = await runConstrainedCoachTurn({ message: request, session: { appendUserMessage: async () => {}, generate: async () => { if (!calls++) return { kind: 'final', content: { intent: 'create_workout' } }; throw Error('template') } }, readHistory: async () => { throw Error('unexpected read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 500 })
     prior.push({ kind: 'user', text: message }, { kind: 'response', response: result.response, request })
     return { request, response: result.response }
   }

@@ -2,10 +2,10 @@ import { z } from 'zod'
 import type { SQLiteDatabase } from 'expo-sqlite'
 import { coachResponseSchema } from './contracts'
 import { syncEngine } from '../../lib/sync'
-import { coachToolResults } from './tools/contracts'
+import { coachHistoryMetricSchema } from './historyMetrics'
 
 export function formatCoachMetric(value: unknown): { id: string; text: string } | null {
-  const parsed = coachToolResults.readTrainingSummary.options[0].shape.data.shape.metrics.element.safeParse(value)
+  const parsed = coachHistoryMetricSchema.safeParse(value)
   if (!parsed.success) return null
   const metric = parsed.data
   if (Array.isArray(metric.value)) return { id: metric.id, text: `${metric.value.map(set => `${set.exerciseName ?? 'Exercise'}: ${set.weightKg} kg, ${set.repetitions} reps`).join('; ')}${metric.missingDataCount ? ` (${metric.missingDataCount} missing or invalid)` : ''}.${metric.definition ? ` ${metric.definition}` : ''}` }

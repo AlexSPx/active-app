@@ -38,7 +38,7 @@ test.each([
 test('half an hour is a duration and all rest spans are excluded', () => {
   const result = planWorkout('Create 3 chest exercises within half an hour with 3 sets of 8 reps and 2 minutes rest, full gym.')
   expect(result.kind).toBe('plan')
-  expect(result.diagnostics.durationMinutes).toBe(30)
+  expect(result.plan.durationLimitSeconds).toBe(1800)
 })
 
 test('upper-body choices have upper-body primary muscles and dumbbells only requires dumbbells', () => {

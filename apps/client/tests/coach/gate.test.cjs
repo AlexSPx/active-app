@@ -83,3 +83,21 @@ test('local gate rejects tampered shipped data without external evidence', () =>
     rmSync(copy, { recursive: true, force: true })
   }
 })
+
+test('local gate rejects development metadata reachable from the history repository', () => {
+  const copy = mkdtempSync(path.join(tmpdir(), 'coach-graph-'))
+  try {
+    for (const dir of ['features/coach', 'lib', 'scripts/coach']) {
+      mkdirSync(path.dirname(path.join(copy, dir)), { recursive: true })
+      cpSync(path.join(root, dir), path.join(copy, dir), { recursive: true })
+    }
+    appendFileSync(path.join(copy, 'lib/repositories/CoachHistoryRepository.ts'), "\nimport '../../features/coach/historyQuery'\n")
+    const result = spawnSync(process.execPath, ['scripts/coach/gate.mjs', 'local'], {
+      cwd: copy, encoding: 'utf8', env: { ...process.env, COACH_EVIDENCE_ROOT: path.join(copy, 'missing') },
+    })
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /Quarantined coach data reachable from the history repository: lib\/data\/coach\/exercise-planning-metadata\.json/)
+  } finally {
+    rmSync(copy, { recursive: true, force: true })
+  }
+})

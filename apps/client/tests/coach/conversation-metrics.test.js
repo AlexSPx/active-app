@@ -45,7 +45,7 @@ test('acute user context survives SQLite reload before a new workout turn', asyn
   await repository.save('c1', [{ kind: 'user', text: 'My chest hurts now' }])
   const loaded = await repository.load('c1')
   const generate = jest.fn()
-  const result = await runConstrainedCoachTurn({ message: 'Create a new workout, full gym', priorUserMessages: loaded.filter(item => item.kind === 'user').map(item => item.text), session: { appendUserMessage: async () => {}, generate }, execute: jest.fn(), signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 500 })
+  const result = await runConstrainedCoachTurn({ message: 'Create a new workout, full gym', priorUserMessages: loaded.filter(item => item.kind === 'user').map(item => item.text), session: { appendUserMessage: async () => {}, generate }, readHistory: jest.fn(), signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 500 })
   expect(result.response.kind).toBe('cannot_fulfill')
   expect(generate).not.toHaveBeenCalled()
   sql.close()

@@ -18,7 +18,7 @@ test('a 13-minute cap preserves three movements by reducing default sets', () =>
 test.each(['90 seconds rest', 'rest for 90 seconds', '1.5 minutes of rest', 'rest 1.5 minutes'])('preserves %s in planning, rendering and save review', rest => {
   const request = `Create 3 chest exercises, 2 sets of 8 reps, ${rest}, full gym.`
   const { result, response } = draft(request)
-  expect(result.diagnostics.durationMinutes).toBeNull()
+  expect(result.plan.durationLimitSeconds).toBeUndefined()
   expect(response.workout.exercises.every(exercise => exercise.guidance.restSeconds === 90 && exercise.sets.every(set => set.repetitions === 8))).toBe(true)
   expect(estimateWorkoutSeconds(response.workout)).toBe(834)
   expect(validateWorkoutReview(request, response)).toEqual([])
@@ -61,26 +61,30 @@ test('a model alternative that overruns the cap is rejected', () => {
   expect(validateSelection(result.plan, { selections: choices }).errors).toContain('Selected exercises exceed the time limit')
 })
 
-test('single-workout named slots accept model choices and reject malformed selections', async () => {
-  for (const mode of ['valid', 'missing', 'extra', 'invented']) {
+test.each(['valid', 'missing', 'extra', 'invented', 'legacy', 'retry'])(
+  'single-workout session selections handle %s model output', async mode => {
     let calls = 0
-    const traces = []
+    const prompts = []
     const session = {
-      appendUserMessage: async () => {},
+      appendUserMessage: async prompt => prompts.push(prompt),
       generate: async ({ finalResponseSchema: schema }) => {
         if (calls++ === 0) return { kind: 'final', content: { intent: 'create_workout' } }
-        const slots = schema.properties.selections.properties
-        const selections = Object.fromEntries(Object.entries(slots).map(([key, slot]) => [key, slot.enum[0]]))
-        if (mode === 'missing') delete selections.slot_2
+        const slots = schema.properties.sessions.properties.day_1.properties.selections.properties
+        const selections = Object.fromEntries(Object.entries(slots).map(([key, slot]) => [key, slot.enum?.[0] ?? slot.const]))
+        if (mode === 'missing' || (mode === 'retry' && calls === 2)) delete selections.slot_2
         if (mode === 'extra') selections.slot_4 = 'Invented movement'
         if (mode === 'invented') selections.slot_1 = 'Invented movement'
-        return { kind: 'final', content: { selections } }
+        if (mode === 'legacy') return { kind: 'final', content: { selections } }
+        return { kind: 'final', content: { sessions: { day_1: { selections } } } }
       },
     }
-    const result = await runConstrainedCoachTurn({ message: 'Create 3 chest exercises, full gym.', session, execute: async () => { throw Error('Unexpected tool') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 1024, onWorkoutTrace: trace => traces.push(trace) })
+    const result = await runConstrainedCoachTurn({ message: 'Create 3 chest exercises, full gym.', session, readHistory: async () => { throw Error('Unexpected history read') }, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 1024 })
     expect(result.response.kind).toBe('workout_draft')
     expect(result.response.workout.exercises).toHaveLength(3)
-    expect(traces[0].source).toBe(mode === 'valid' ? 'model' : 'template')
-    expect(result.response.assumptions.some(value => value.includes('validated catalog template'))).toBe(mode !== 'valid')
+    expect(result.response.assumptions.some(value => value.includes('validated catalog template'))).toBe(mode !== 'valid' && mode !== 'retry')
+    expect(result.repaired).toBe(mode !== 'valid')
+    expect(calls).toBe(mode === 'valid' ? 2 : 3)
+    expect(prompts[1]).toMatch(/sessions object.*day_1.*selections object/)
+    if (mode !== 'valid') expect(prompts[2]).toContain('Validation errors:')
   }
-})
+)

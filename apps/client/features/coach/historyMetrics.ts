@@ -1,3 +1,35 @@
+import { z } from 'zod'
+
+const metricId = z.string().trim().min(1).max(200)
+const metricText = z.string().trim().min(1).max(500)
+
+export const coachHistoryMetricSchema = z.strictObject({
+  id: metricId,
+  kind: z.enum([
+    'completed_sessions',
+    'exercise_exposures',
+    'recorded_repetitions',
+    'timed_duration_seconds',
+    'external_load_volume_kg',
+    'best_recorded_sets',
+    'latest_recorded_sets',
+  ]),
+  value: z.union([
+    z.number(),
+    z.array(z.strictObject({
+      weightKg: z.number().nonnegative(),
+      repetitions: z.number().int().positive(),
+      exerciseId: metricId.nullable().optional(),
+      exerciseName: metricText.optional(),
+      recordId: metricId.optional(),
+    })),
+  ]),
+  evidenceIds: z.array(metricId),
+  missingDataCount: z.number().int().nonnegative(),
+  definition: metricText.optional(),
+})
+export type CoachHistoryMetric = z.infer<typeof coachHistoryMetricSchema>
+
 export interface CompletedExercise {
   exerciseId: string | null
   repetitions: number[]

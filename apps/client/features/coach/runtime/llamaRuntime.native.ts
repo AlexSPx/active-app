@@ -1,16 +1,7 @@
-import {
-  initLlama,
-  releaseAllLlama,
-  type LlamaContext,
-  type RNLlamaOAICompatibleMessage,
-  type ToolCall,
-} from 'llama.rn'
-import type { JinjaFormattedChatResult } from 'llama.rn/lib/typescript/types'
+import { initLlama, releaseAllLlama, type LlamaContext } from 'llama.rn'
 import { coachInstructions } from '../prompts'
-import { coachToolCallSchema } from '../tools/contracts'
 import type {
   CoachGenerationRequest,
-  CoachGenerationMeasurement,
   CoachGenerationResult,
   CoachRuntime,
   CoachRuntimeSession,
@@ -35,18 +26,16 @@ function bounded<T>(operation: Promise<T>, onTimeout: () => void): Promise<T> {
   })
 }
 
-type ChatMessage = RNLlamaOAICompatibleMessage & {
-  tool_calls?: ToolCall[]
-  tool_call_id?: string
-  name?: string
+type ChatMessage = {
+  role: 'system' | 'user' | 'assistant'
+  content: string
 }
 
 export function createLlamaSession(
   context: Pick<
     LlamaContext,
     'completion' | 'stopCompletion' | 'release' | 'getFormattedChat' | 'tokenize'
-  >,
-  modelSha256: string | null = null
+  >
 ): CoachRuntimeSession {
   const messages: ChatMessage[] = [{ role: 'system', content: coachInstructions }]
   let pending: Promise<CoachGenerationResult> | undefined
@@ -54,7 +43,6 @@ export function createLlamaSession(
   let disposal: Promise<void> | undefined
   let stopping = false
   let stopRequest: Promise<void> | undefined
-  let pendingCalls = new Map<string, string>()
   const cancelled = (): CoachGenerationResult => ({
     kind: 'failure',
     code: 'cancelled',
@@ -75,18 +63,12 @@ export function createLlamaSession(
       messages[0] = { role: 'system', content: message }
     },
     async appendUserMessage(message) {
-      if (disposed || pending || pendingCalls.size)
+      if (disposed || pending)
         throw new Error('Session is not ready for a user message.')
       messages.push({ role: 'user', content: message })
     },
-    async appendToolResult({ callId, name, result }) {
-      if (disposed || pending || pendingCalls.get(callId) !== name)
-        throw new Error('Unexpected tool result.')
-      messages.push({ role: 'tool', tool_call_id: callId, name, content: JSON.stringify(result) })
-      pendingCalls.delete(callId)
-    },
     async generate(request: CoachGenerationRequest) {
-      if (disposed || pending || pendingCalls.size)
+      if (disposed || pending)
         return {
           kind: 'failure',
           code: 'runtime_error',
@@ -94,28 +76,13 @@ export function createLlamaSession(
         }
       if (request.signal.aborted) return cancelled()
       stopping = false
-      let timedOut = false
       stopRequest = undefined
       const onAbort = () => {
         void cancel().catch(() => {})
       }
       request.signal.addEventListener('abort', onAbort, { once: true })
       const run = async (): Promise<CoachGenerationResult> => {
-        let stage = 'format_chat'
-        const measurement: CoachGenerationMeasurement = {
-          provider: 'llama.rn', modelSha256, requestSha256: null, toolsSha256: null, schemaSha256: null, renderedPromptTokens: null,
-          providerInputTokens: null, providerOutputTokens: null, outputReserve: request.maxOutputTokens,
-          effectiveInputLimit: null, effectiveOutputLimit: null, contextFit: 'unknown', truncation: 'unknown',
-        }
         try {
-          const tools = request.tools.map((tool) => ({
-            type: 'function' as const,
-            function: {
-              name: tool.name,
-              description: tool.description,
-              parameters: tool.inputSchema,
-            },
-          }))
           const response_format = {
             type: 'json_schema' as const,
             json_schema: { schema: request.finalResponseSchema },
@@ -123,11 +90,9 @@ export function createLlamaSession(
           const now = Date.now()
           const formatted = await context.getFormattedChat([...messages], null, {
             jinja: true,
-            ...(tools.length ? { tool_choice: 'auto' as const, tools } : {}),
             response_format,
             enable_thinking: false,
-            // Schema-only turns need JSON content, without tool/reasoning parser routing.
-            force_pure_content: tools.length === 0,
+            force_pure_content: true,
             now,
           })
           if (formatted.type !== 'jinja' || formatted.has_media || !formatted.prompt)
@@ -137,9 +102,7 @@ export function createLlamaSession(
               message: 'Prompt token accounting is unavailable.',
             }
           if (stopping || request.signal.aborted) return cancelled()
-          stage = 'tokenize_prompt'
           const counted = await context.tokenize(formatted.prompt)
-          if (!counted.has_media) measurement.renderedPromptTokens = counted.tokens.length
           // Allow space for binding-added special tokens; device behavior still needs verification.
           if (counted.has_media || counted.tokens.length + 8 + request.maxOutputTokens > 4096)
             return {
@@ -148,36 +111,14 @@ export function createLlamaSession(
               message: 'Prompt and output exceed the context budget.',
             }
           if (stopping || request.signal.aborted) return cancelled()
-          // The binding returns this shape for Jinja, but its base type has a non-discriminating type field.
-          const chat = formatted as JinjaFormattedChatResult
-          stage = 'completion'
+          // The rendered prompt already contains the assistant prefix. Passing it separately would prefill the JSON grammar.
           const result = await context.completion({
             prompt: formatted.prompt,
-            chat_format: chat.chat_format,
-            grammar: chat.grammar,
-            grammar_lazy: chat.grammar_lazy,
-            grammar_triggers: chat.grammar_triggers,
-            preserved_tokens: chat.preserved_tokens,
-            stop: chat.additional_stops,
-            generation_prompt: chat.generation_prompt,
-            thinking_forced_open: chat.thinking_forced_open,
-            chat_parser: chat.chat_parser,
-            ...{
-              thinking_start_tag: chat.thinking_start_tag,
-              thinking_end_tag: chat.thinking_end_tag,
-            },
             response_format,
             n_predict: request.maxOutputTokens,
             temperature: 0.2,
             enable_thinking: false,
           })
-          stage = 'decode_completion'
-          if (Number.isSafeInteger(result.tokens_evaluated) && result.tokens_evaluated >= 0)
-            measurement.providerInputTokens = result.tokens_evaluated
-          if (Number.isSafeInteger(result.tokens_predicted) && result.tokens_predicted >= 0)
-            measurement.providerOutputTokens = result.tokens_predicted
-          if (typeof result.truncated === 'boolean' && typeof result.context_full === 'boolean' && typeof result.stopped_limit === 'number')
-            measurement.truncation = result.truncated || result.stopped_limit || result.context_full ? 'reported' : 'not_reported'
           if (stopping || request.signal.aborted || result.interrupted) return cancelled()
           if (result.truncated || result.stopped_limit || result.context_full)
             return {
@@ -185,79 +126,29 @@ export function createLlamaSession(
               code: 'truncated',
               message: 'Generation exceeded its context or output budget.',
             }
-          if (result.tool_calls !== undefined && !Array.isArray(result.tool_calls))
-            return { kind: 'failure', code: 'invalid_output', message: 'Invalid tool calls.' }
-          if (result.tool_calls?.length) {
-            const rawCalls = result.tool_calls.map((call, index) => ({
-              ...call,
-              id: call.id || `call_${index}`,
-            }))
-            const calls = rawCalls.map((call) => {
-              let args: unknown
-              try {
-                args = JSON.parse(call.function.arguments)
-              } catch {
-                return null
-              }
-              const parsed = coachToolCallSchema.safeParse({
-                id: call.id,
-                name: call.function.name,
-                arguments: args,
-              })
-              return parsed.success ? parsed.data : null
-            })
-            if (
-              calls.some((call) => call === null || !request.tools.some((tool) => tool.name === call.name)) ||
-              new Set(rawCalls.map((call) => call.id)).size !== rawCalls.length
-            )
-              return { kind: 'failure', code: 'invalid_output', message: 'Invalid tool calls.' }
-            const validCalls = calls.filter((call) => call !== null)
-            messages.push({
-              role: 'assistant',
-              content: result.content || '',
-              tool_calls: rawCalls,
-            })
-            pendingCalls = new Map(validCalls.map((call) => [call.id, call.name]))
-            return { kind: 'tool_calls', calls: validCalls }
-          }
-          const raw = result.content || result.text
+          const raw = result.text || result.content
           let content: unknown
           try {
             content = JSON.parse(raw)
           } catch {
-            if (typeof __DEV__ !== 'undefined' && __DEV__)
-              console.warn('Coach native final JSON failed', {
-                contentLength: result.content?.length ?? 0,
-                textLength: result.text?.length ?? 0,
-                hasReasoning: Boolean(result.reasoning_content),
-                startsWithJson: /^\s*[{[]/.test(raw),
-                hasCodeFence: raw.includes('```'),
-              })
             messages.push({ role: 'assistant', content: raw })
-            return { kind: 'invalid_final', content: raw }
+            return { kind: 'invalid_final' }
           }
           messages.push({ role: 'assistant', content: raw })
           return { kind: 'final', content }
-        } catch (error) {
-          if (!stopping && !request.signal.aborted && typeof __DEV__ !== 'undefined' && __DEV__)
-            console.warn('Coach native generation failed', {
-              stage,
-              name: error instanceof Error ? error.name : 'NativeError',
-              message: error instanceof Error ? error.message : String(error),
-            })
+        } catch {
           return stopping || request.signal.aborted
             ? cancelled()
             : { kind: 'failure', code: 'runtime_error', message: 'Local inference failed.' }
         } finally {
           request.signal.removeEventListener('abort', onAbort)
-          if (!timedOut) try { request.onMeasurement?.(measurement) } catch {}
         }
       }
       const running = run()
       pending = running
       void running.then(() => { if (pending === running) pending = undefined })
       try {
-        return await bounded(running, () => { timedOut = true; stopping = true; disposed = true })
+        return await bounded(running, () => { stopping = true; disposed = true })
       } catch {
         return { kind: 'failure', code: 'runtime_error', message: STALL_MESSAGE }
       }
@@ -277,7 +168,6 @@ export function createLlamaSession(
         }
         await context.release()
         messages.length = 0
-        pendingCalls.clear()
       })()
       disposal = bounded(cleanup, () => { stopping = true })
       return disposal
@@ -286,21 +176,6 @@ export function createLlamaSession(
 }
 
 let contextAvailable: Promise<void> = Promise.resolve()
-let contextClaims = 0
-export function tryClaimDiagnosticContext(): (() => void) | undefined {
-  if (contextClaims || contextReleaseFailed) return undefined
-  contextClaims++
-  let unlock = () => {}
-  contextAvailable = new Promise<void>((resolve) => { unlock = resolve })
-  let released = false
-  return () => {
-    if (released) return
-    released = true
-    contextClaims--
-    unlock()
-  }
-}
-
 export const llamaCoachRuntime: CoachRuntime = {
   async load(artifact) {
     if (
@@ -314,11 +189,10 @@ export const llamaCoachRuntime: CoachRuntime = {
         code: 'invalid_artifact',
         message: 'Model artifact is not verified.',
       }
-    contextClaims++
     const previous = contextAvailable
     let unlock = () => {}
     contextAvailable = new Promise<void>((resolve) => {
-      unlock = () => { contextClaims--; resolve() }
+      unlock = resolve
     })
     let timedOut = false
     const operation = (async () => {
@@ -334,7 +208,7 @@ export const llamaCoachRuntime: CoachRuntime = {
           unlock()
           return { kind: 'failure' as const, code: 'runtime_error' as const, message: STALL_MESSAGE }
         }
-        const session = createLlamaSession(context, artifact.sha256)
+        const session = createLlamaSession(context)
         const dispose = session.dispose
         let disposal: Promise<void> | undefined
         session.dispose = () => {
