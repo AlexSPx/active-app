@@ -1,4 +1,9 @@
 jest.mock('lucide-react-native', () => new Proxy({}, { get: (_, name) => name }))
+jest.mock('react-native-reanimated', () => ({
+  __esModule: true,
+  default: { View: require('react-native').View },
+  useReducedMotion: () => false,
+}))
 jest.mock('uniwind', () => ({ useUniwind: () => ({ theme: 'light' }) }))
 jest.mock('../../stores/authStore', () => { const state = { isProfileTransitioning: false, isDeviceDataErasing: false }; const useAuthStore = selector => selector(state); useAuthStore.getState = () => state; useAuthStore.subscribe = () => () => {}; return { useAuthStore } })
 jest.mock('../../lib/sync', () => ({ syncEngine: { resolveId: (_, id) => id, withIdRemapLock: fn => fn(), enqueue: async () => {}, scheduleQueueProcessing: () => {} } }))
@@ -7,7 +12,7 @@ jest.mock('../../lib/db/ProfileSQLiteProvider', () => ({ useProfileDatabase: () 
 jest.mock('../../utils/haptics', () => ({ haptics: { success: () => {} } }))
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'))
 jest.mock('../../features/coach/runtime/modelFiles', () => ({ getVerifiedModel: async () => ({ kind: 'ready', artifact: {} }) }))
-jest.mock('../../features/coach/runtime/llamaRuntime', () => ({ llamaCoachRuntime: { load: async () => ({ kind: 'ready', session: { appendSystemMessage: async () => {}, appendUserMessage: async () => {}, generate: async () => ({ kind: 'final', content: mockOutputs.shift() }), cancel: () => {}, dispose: async () => {} } }) } }))
+jest.mock('../../features/coach/runtime/llamaRuntime', () => ({ llamaCoachRuntime: { load: async () => ({ kind: 'ready', session: { appendSystemMessage: async () => {}, appendUserMessage: async () => {}, generate: async () => ({ kind: 'final', content: await mockOutputs.shift() }), cancel: () => {}, dispose: async () => {} } }) } }))
 jest.mock('expo-router', () => ({ useRouter: () => ({ back: () => {} }) }))
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }))
 jest.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ invalidateQueries: async () => {} }) }))
@@ -30,6 +35,42 @@ async function sendMessage(tree, message) {
     await flush()
   })
 }
+
+test('Coach shows three staggered dots while generating and stops from the composer', async () => {
+  mockDb = { getAllAsync: async () => [], runAsync: async () => {} }
+  const { promise, resolve: finishGeneration } = Promise.withResolvers()
+  mockOutputs = [promise]
+  let tree
+  try {
+    await act(async () => {
+      tree = create(React.createElement(CoachScreen))
+      await flush()
+    })
+    await sendMessage(tree, 'How long should I rest?')
+
+    const indicator = tree.root.findByProps({ accessibilityLabel: 'Coach is thinking' })
+    const dots = indicator.findAll(
+      (node) =>
+        typeof node.type === 'string' && node.props.style?.animationIterationCount === 'infinite'
+    )
+    expect(dots).toHaveLength(3)
+    expect(new Set(dots.map((dot) => dot.props.style.animationDelay)).size).toBe(3)
+    expect(JSON.stringify(tree.toJSON())).not.toContain('"Cancel"')
+
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: 'Stop generation' }).props.onPress()
+      finishGeneration()
+      await flush()
+    })
+    expect(tree.root.findAllByProps({ accessibilityLabel: 'Coach is thinking' })).toHaveLength(0)
+    expect(JSON.stringify(tree.toJSON())).toContain(
+      'Cancelled. Start a new conversation to continue.'
+    )
+  } finally {
+    finishGeneration()
+    if (tree) await act(async () => tree.unmount())
+  }
+})
 
 test('running correction persists and replacement changes rendered coach metrics while preserving prior reply', async () => {
   const sql = new DatabaseSync(':memory:')

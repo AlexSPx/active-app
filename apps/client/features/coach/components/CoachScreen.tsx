@@ -24,10 +24,12 @@ import {
   Pencil,
   Plus,
   Search,
+  Square,
   SquarePen,
   Trash2,
   X,
 } from 'lucide-react-native'
+import Animated, { useReducedMotion } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useEffect, useRef, useState, type ComponentRef } from 'react'
 import { Button, UiText, TextField, SegmentedSelection } from '../../../components/ui/Controls'
@@ -1239,6 +1241,10 @@ const colors = (dark: boolean) =>
       }
 
 const messageTextStyle = { fontSize: 16, lineHeight: 23 }
+const typingBounce = {
+  '0%, 55%, 100%': { transform: [{ translateY: 0 }] },
+  '27%': { transform: [{ translateY: -4 }] },
+}
 const chatStyles = StyleSheet.create({
   overlay: {
     position: 'absolute',
@@ -1267,6 +1273,38 @@ const chatStyles = StyleSheet.create({
     paddingVertical: 11,
   },
 })
+
+function TypingIndicator({ color, background }: { color: string; background: string }) {
+  const reduceMotion = useReducedMotion()
+  return (
+    <View
+      accessible
+      accessibilityLabel="Coach is thinking"
+      accessibilityLiveRegion="polite"
+      style={[
+        chatStyles.bubble,
+        { backgroundColor: background, flexDirection: 'row', alignItems: 'center', gap: 5 },
+      ]}
+    >
+      {[0, 130, 260].map((delay) => (
+        <Animated.View
+          key={delay}
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: color,
+            animationName: reduceMotion ? 'none' : typingBounce,
+            animationDelay: delay,
+            animationDuration: 900,
+            animationTimingFunction: 'ease-in-out',
+            animationIterationCount: 'infinite',
+          }}
+        />
+      ))}
+    </View>
+  )
+}
 
 function PromptChips({
   choices,
@@ -1326,8 +1364,8 @@ export function CoachScreen() {
   const hasMessages = coach.items.length > 0
   const isReady = coach.status === 'ready'
   const canSend = isReady && coach.draft.trim().length > 0
-  const busy =
-    coach.status === 'checking' || coach.status === 'loading' || coach.status === 'generating'
+  const isGenerating = coach.status === 'generating'
+  const composerActionEnabled = isGenerating || canSend
   if (lastScrollKey.current !== scrollKey) {
     const firstSend =
       lastScrollKey.current === '__new__' && coach.items.length > previousItemCount.current
@@ -1827,7 +1865,8 @@ export function CoachScreen() {
               </View>
             )
           })}
-          {busy && (
+          {isGenerating && <TypingIndicator color={c.quiet} background={c.surface} />}
+          {(coach.status === 'checking' || coach.status === 'loading') && (
             <View
               style={[
                 chatStyles.bubble,
@@ -1838,11 +1877,9 @@ export function CoachScreen() {
                 accessibilityLiveRegion="polite"
                 style={{ color: c.quiet, fontFamily: 'DM Sans', flexShrink: 1 }}
               >
-                {coach.status === 'generating'
-                  ? 'Thinking…'
-                  : coach.status === 'loading'
-                    ? 'Loading model…'
-                    : `${coach.progressPhase === 'download' ? 'Downloading model' : 'Checking model'}… ${coach.progress > 0 ? `${Math.round(coach.progress * 100)}%` : ''}`}
+                {coach.status === 'loading'
+                  ? 'Loading model…'
+                  : `${coach.progressPhase === 'download' ? 'Downloading model' : 'Checking model'}… ${coach.progress > 0 ? `${Math.round(coach.progress * 100)}%` : ''}`}
               </Text>
               <Button variant="ghost" density="compact" onPress={coach.cancel}>
                 Cancel
@@ -1937,14 +1974,21 @@ export function CoachScreen() {
               />
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Send message"
-                disabled={!canSend}
-                accessibilityState={{ disabled: !canSend }}
-                onPress={() => void coach.send()}
+                accessibilityLabel={isGenerating ? 'Stop generation' : 'Send message'}
+                disabled={!composerActionEnabled}
+                accessibilityState={{ disabled: !composerActionEnabled }}
+                onPress={isGenerating ? coach.cancel : () => void coach.send()}
                 className="focus:border focus:border-foreground active:opacity-70"
-                style={[chatStyles.iconButton, { backgroundColor: canSend ? c.plum : c.surface }]}
+                style={[
+                  chatStyles.iconButton,
+                  { backgroundColor: composerActionEnabled ? c.plum : c.surface },
+                ]}
               >
-                <ArrowUp size={21} color={canSend ? c.onPlum : c.quiet} />
+                {isGenerating ? (
+                  <Square size={14} color={c.onPlum} fill={c.onPlum} />
+                ) : (
+                  <ArrowUp size={21} color={canSend ? c.onPlum : c.quiet} />
+                )}
               </Pressable>
             </View>
             <Text
