@@ -57,6 +57,24 @@ function loadSummary(exercise: CoachWorkout['exercises'][number]) {
   return loads.some((load) => load.kind === 'bodyweight') ? `Bodyweight · ${weight}` : weight
 }
 
+function setSummary(exercise: CoachWorkout['exercises'][number]) {
+  const { sets } = exercise
+  const first = sets[0]
+  if (
+    first?.kind === 'timed' &&
+    sets.every((set) => set.kind === 'timed' && set.durationSeconds === first.durationSeconds)
+  ) {
+    return `${sets.length} × ${first.durationSeconds}s`
+  }
+  if (
+    first?.kind === 'strength' &&
+    sets.every((set) => set.kind === 'strength' && set.repetitions === first.repetitions)
+  ) {
+    return `${sets.length} × ${first.repetitions}`
+  }
+  return sets.length === 1 ? '1 set' : `${sets.length} sets`
+}
+
 function SetNumberInput({
   value,
   onChange,
@@ -196,11 +214,14 @@ export function Review({
       ? initial.routine.days
       : null
   )
-  const [openExercises, setOpenExercises] = useState<Record<string, boolean>>({})
-  const [openLoadOptions, setOpenLoadOptions] = useState<string | null>(null)
-  const [openGuidance, setOpenGuidance] = useState<string | null>(null)
+  const [openExercise, setOpenExercise] = useState<string | null>(null)
+  const [openSection, setOpenSection] = useState<'loads' | 'guidance' | null>(null)
+  const [openNotes, setOpenNotes] = useState(false)
+  const didScrollToWorkout = useRef(false)
   const c = colors(useUniwind().theme === 'dark')
   const workouts = draft.kind === 'workout_draft' ? [draft.workout] : draft.workouts
+  const shortfalls = draft.assumptions.filter((item) => item.startsWith('PARTIAL WORKOUT'))
+  const notes = draft.assumptions.filter((item) => !item.startsWith('PARTIAL WORKOUT'))
   const updateWorkout = (
     index: number,
     change: CoachWorkout | ((workout: CoachWorkout) => CoachWorkout)
@@ -255,18 +276,11 @@ export function Review({
             paddingHorizontal: 12,
           }}
         />
-        {draft.kind === 'workout_draft' &&
-          draft.assumptions.some((item) => item.startsWith('PARTIAL WORKOUT')) && (
-            <UiText textRole="bodyDestructive">
-              Partial workout — review the listed shortfalls and uncovered requirements before
-              saving.
-            </UiText>
-          )}
-        {draft.kind === 'workout_draft' && (
-          <UiText textRole="bodyMuted">
-            Keep the first session comfortable. Stop with about 2 good reps left in each set.
+        {shortfalls.map((shortfall, index) => (
+          <UiText key={index} textRole="captionDestructive">
+            {shortfall.replace(/^PARTIAL WORKOUT/, 'Partial workout')}
           </UiText>
-        )}
+        ))}
         {!request && (
           <UiText textRole="bodyDestructive">
             This restored draft has no original request, so its constraints cannot be rechecked.
@@ -280,7 +294,12 @@ export function Review({
         )}
         {draft.kind === 'routine_draft' && (
           <View style={{ gap: 10, marginTop: 8 }}>
-            <Text style={{ color: c.ink, fontSize: 13, fontWeight: '600' }}>How it repeats</Text>
+            <Text
+              accessibilityRole="header"
+              style={{ color: c.ink, fontSize: 14, fontWeight: '600' }}
+            >
+              Schedule
+            </Text>
             <SegmentedSelection
               accessibilityLabel="Routine schedule"
               disabled={saving}
@@ -318,11 +337,6 @@ export function Review({
               }
             />
             <RoutineCycle draft={draft} />
-            <Text style={{ color: c.quiet, fontSize: 11 }}>
-              {draft.routine.type === 'SEQUENTIAL'
-                ? 'Follow the days in order, then repeat.'
-                : 'Fit the workouts around your week, in any order.'}
-            </Text>
           </View>
         )}
         {workouts.some((workout) =>
@@ -334,28 +348,36 @@ export function Review({
             Choose a load for the marked sets before saving.
           </UiText>
         )}
-        <Text style={{ color: c.ink, fontSize: 16, fontWeight: '600', marginTop: 12 }}>
-          {draft.kind === 'routine_draft' ? `Workouts  ${workouts.length} included` : 'Exercises'}
+        <Text
+          accessibilityRole="header"
+          style={{ color: c.ink, fontSize: 16, fontWeight: '600', marginTop: 12 }}
+        >
+          {draft.kind === 'routine_draft' ? 'Workouts' : 'Exercises'}
         </Text>
         {workouts.map((workout, wi) => (
           <View
             key={workout.ref}
             onLayout={(event) => {
-              if (draft.kind === 'routine_draft' && selectedWorkout === workout.ref) {
+              if (selectedWorkout === workout.ref && !didScrollToWorkout.current) {
+                didScrollToWorkout.current = true
                 reviewScroll.current?.scrollTo({ y: event.nativeEvent.layout.y, animated: false })
               }
             }}
             style={
               draft.kind === 'routine_draft'
                 ? { borderWidth: 1, borderColor: c.line, borderRadius: 14, overflow: 'hidden' }
-                : { gap: 10 }
+                : undefined
             }
           >
             {draft.kind === 'routine_draft' && (
               <Pressable
                 accessibilityRole="button"
                 accessibilityState={{ expanded: openWorkout === workout.ref }}
-                onPress={() => setOpenWorkout(openWorkout === workout.ref ? null : workout.ref)}
+                onPress={() => {
+                  setOpenWorkout(openWorkout === workout.ref ? null : workout.ref)
+                  setOpenExercise(null)
+                  setOpenSection(null)
+                }}
                 style={{
                   minHeight: 58,
                   paddingHorizontal: 12,
@@ -397,9 +419,10 @@ export function Review({
               </Pressable>
             )}
             {(draft.kind === 'workout_draft' || openWorkout === workout.ref) && (
-              <>
+              <View style={draft.kind === 'routine_draft' ? { padding: 12 } : undefined}>
                 {draft.kind === 'routine_draft' && (
                   <TextField
+                    className="mb-compact"
                     disabled={saving}
                     accessibilityLabel={`Workout ${wi + 1} title`}
                     value={workout.title}
@@ -407,44 +430,49 @@ export function Review({
                   />
                 )}
                 {workout.preparation?.map((part) => (
-                  <UiText key={part.kind} textRole="caption">
+                  <UiText key={part.kind} textRole="caption" style={{ paddingVertical: 6 }}>
                     {part.kind === 'warmup' ? 'Warm-up' : 'Cool-down'}: {part.description} (
                     {part.durationSeconds / 60} min)
                   </UiText>
                 ))}
                 {workout.exercises.map((exercise, ei) => {
                   const exerciseKey = `${workout.ref}:${ei}`
+                  const catalogExercise = exerciseCatalog.find(
+                    (item) => item.id === exercise.catalogId
+                  )
                   const name =
                     details.names.get(exercise.catalogId) ??
-                    exerciseCatalog.find((item) => item.id === exercise.catalogId)?.name ??
+                    catalogExercise?.name ??
                     exercise.catalogId
-                  const summary = [`${exercise.sets.length} sets`, loadSummary(exercise)]
+                  const rest = exercise.guidance?.restSeconds
+                  const summary = [
+                    setSummary(exercise),
+                    loadSummary(exercise),
+                    rest === undefined ? '' : `${rest}s rest`,
+                  ]
                     .filter(Boolean)
                     .join(' · ')
-                  const expanded = openExercises[exerciseKey] ?? ei === 0
-                  const isDumbbell =
-                    exerciseCatalog.find((item) => item.id === exercise.catalogId)?.equipment ===
-                    'DUMBBELL'
+                  const expanded = openExercise === exerciseKey
+                  const allStrength = exercise.sets.every((set) => set.kind === 'strength')
+                  const allTimed = exercise.sets.every((set) => set.kind === 'timed')
                   const hasGuidance = !!(
                     exercise.guidance?.effort ||
-                    exercise.guidance?.restSeconds !== undefined ||
                     exercise.guidance?.repetitionsRange ||
                     exercise.guidance?.cues?.length ||
                     exercise.guidance?.progression
                   )
                   return (
-                    <View key={exerciseKey} style={{ gap: 0 }}>
+                    <View key={exerciseKey} style={{ borderTopWidth: 1, borderColor: c.line }}>
                       <Pressable
                         accessibilityRole="button"
                         accessibilityState={{ expanded }}
                         accessibilityLabel={`${name} details, ${summary}`}
-                        onPress={() =>
-                          setOpenExercises((old) => ({ ...old, [exerciseKey]: !expanded }))
-                        }
+                        onPress={() => {
+                          setOpenExercise(expanded ? null : exerciseKey)
+                          setOpenSection(null)
+                        }}
                         style={{
-                          backgroundColor: c.surface,
-                          borderRadius: 14,
-                          padding: 12,
+                          paddingVertical: 12,
                           flexDirection: 'row',
                           alignItems: 'center',
                           gap: 8,
@@ -452,10 +480,10 @@ export function Review({
                       >
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: c.ink, fontWeight: '600', fontSize: 14 }}>
-                            {ei + 1}. {name}
+                            {name}
                           </Text>
                           <Text style={{ color: c.quiet, fontSize: 11, marginTop: 4 }}>
-                            {summary} · {expanded ? 'Hide sets' : 'Edit sets'}
+                            {summary}
                           </Text>
                         </View>
                         {expanded ? (
@@ -465,26 +493,21 @@ export function Review({
                         )}
                       </Pressable>
                       {expanded && (
-                        <View style={{ padding: 12, gap: 8 }}>
-                          {(exercise.guidance?.restSeconds !== undefined || isDumbbell) && (
+                        <View style={{ paddingBottom: 12, gap: 8 }}>
+                          {!allTimed && catalogExercise?.equipment === 'DUMBBELL' && (
                             <Text style={{ color: c.quiet, fontSize: 11, lineHeight: 17 }}>
-                              {exercise.guidance?.restSeconds !== undefined
-                                ? `Rest ${exercise.guidance.restSeconds} sec between sets. `
-                                : ''}
-                              {isDumbbell ? 'Weight is per dumbbell.' : ''}
+                              Weight is per dumbbell.
                             </Text>
                           )}
                           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
                             <Text style={{ width: 28, color: c.quiet, fontSize: 11 }}>Set</Text>
+                            {!allTimed && (
+                              <Text style={{ flex: 1, color: c.quiet, fontSize: 11 }}>
+                                Weight (kg)
+                              </Text>
+                            )}
                             <Text style={{ flex: 1, color: c.quiet, fontSize: 11 }}>
-                              Weight (kg)
-                            </Text>
-                            <Text style={{ flex: 1, color: c.quiet, fontSize: 11 }}>
-                              {exercise.sets.every((set) => set.kind === 'strength')
-                                ? 'Reps'
-                                : exercise.sets.every((set) => set.kind === 'timed')
-                                  ? 'Seconds'
-                                  : 'Reps / sec'}
+                              {allStrength ? 'Reps' : allTimed ? 'Seconds' : 'Reps / sec'}
                             </Text>
                             <View style={{ width: 44 }} />
                           </View>
@@ -511,72 +534,73 @@ export function Review({
                               flex: 1,
                             }
                             return (
-                              <View key={si} style={{ gap: 6 }}>
-                                <View
-                                  style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
-                                >
-                                  <Text style={{ width: 28, color: c.quiet }}>{si + 1}</Text>
-                                  {set.kind === 'timed' ? (
+                              <View
+                                key={si}
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                              >
+                                <Text style={{ width: 28, color: c.quiet }}>{si + 1}</Text>
+                                {set.kind === 'timed' ? (
+                                  !allTimed && (
                                     <Text style={{ flex: 1, color: c.quiet }}>Timed</Text>
-                                  ) : set.load.kind === 'bodyweight' ? (
-                                    <Text style={{ flex: 1, color: c.quiet }}>Bodyweight</Text>
-                                  ) : (
-                                    <SetNumberInput
-                                      accessibilityLabel={`Set ${si + 1} kilograms`}
-                                      editable={!saving}
-                                      keyboardType="decimal-pad"
-                                      selectTextOnFocus
-                                      placeholder="kg"
-                                      placeholderTextColor={c.quiet}
-                                      value={
-                                        set.load.kind === 'kilograms' ? String(set.load.value) : ''
-                                      }
-                                      onChange={(value) =>
-                                        updateSet((current) =>
-                                          current.kind === 'strength'
-                                            ? {
-                                                ...current,
-                                                load: value.trim()
-                                                  ? {
-                                                      kind: 'kilograms',
-                                                      value: Number(value.replace(',', '.')),
-                                                    }
-                                                  : { kind: 'user_selected' },
-                                              }
-                                            : current
-                                        )
-                                      }
-                                      style={inputStyle}
-                                    />
-                                  )}
+                                  )
+                                ) : set.load.kind === 'bodyweight' ? (
+                                  <Text style={{ flex: 1, color: c.quiet }}>Bodyweight</Text>
+                                ) : (
                                   <SetNumberInput
-                                    accessibilityLabel={
-                                      set.kind === 'timed'
-                                        ? `Set ${si + 1} duration seconds`
-                                        : `Set ${si + 1} repetitions`
-                                    }
+                                    accessibilityLabel={`Set ${si + 1} kilograms`}
                                     editable={!saving}
-                                    keyboardType="number-pad"
+                                    keyboardType="decimal-pad"
                                     selectTextOnFocus
-                                    value={String(
-                                      set.kind === 'timed' ? set.durationSeconds : set.repetitions
-                                    )}
+                                    placeholder="kg"
+                                    placeholderTextColor={c.quiet}
+                                    value={
+                                      set.load.kind === 'kilograms' ? String(set.load.value) : ''
+                                    }
                                     onChange={(value) =>
                                       updateSet((current) =>
-                                        current.kind === 'timed'
-                                          ? { ...current, durationSeconds: Number(value) }
-                                          : { ...current, repetitions: Number(value) }
+                                        current.kind === 'strength'
+                                          ? {
+                                              ...current,
+                                              load: value.trim()
+                                                ? {
+                                                    kind: 'kilograms',
+                                                    value: Number(value.replace(',', '.')),
+                                                  }
+                                                : { kind: 'user_selected' },
+                                            }
+                                          : current
                                       )
                                     }
                                     style={inputStyle}
                                   />
+                                )}
+                                <SetNumberInput
+                                  accessibilityLabel={
+                                    set.kind === 'timed'
+                                      ? `Set ${si + 1} duration seconds`
+                                      : `Set ${si + 1} repetitions`
+                                  }
+                                  editable={!saving}
+                                  keyboardType="number-pad"
+                                  selectTextOnFocus
+                                  value={String(
+                                    set.kind === 'timed' ? set.durationSeconds : set.repetitions
+                                  )}
+                                  onChange={(value) =>
+                                    updateSet((current) =>
+                                      current.kind === 'timed'
+                                        ? { ...current, durationSeconds: Number(value) }
+                                        : { ...current, repetitions: Number(value) }
+                                    )
+                                  }
+                                  style={inputStyle}
+                                />
+                                {exercise.sets.length > 1 ? (
                                   <Pressable
                                     accessibilityRole="button"
                                     accessibilityLabel={`Delete set ${si + 1} for ${name}`}
-                                    accessibilityState={{
-                                      disabled: saving || exercise.sets.length === 1,
-                                    }}
-                                    disabled={saving || exercise.sets.length === 1}
+                                    accessibilityState={{ disabled: saving }}
+                                    disabled={saving}
                                     onPress={() =>
                                       updateExercise(wi, ei, (exercise) =>
                                         exercise.sets.length > 1
@@ -592,60 +616,68 @@ export function Review({
                                       minHeight: 44,
                                       alignItems: 'center',
                                       justifyContent: 'center',
-                                      opacity: exercise.sets.length === 1 ? 0.35 : 1,
                                     }}
                                   >
                                     <Trash2 size={17} color={c.quiet} />
                                   </Pressable>
-                                </View>
+                                ) : (
+                                  <View style={{ width: 44 }} />
+                                )}
                               </View>
                             )
                           })}
-                          <Pressable
-                            accessibilityRole="button"
-                            accessibilityLabel={`Add set to ${name}`}
-                            disabled={saving}
-                            onPress={() =>
-                              updateExercise(wi, ei, (exercise) => {
-                                const last = exercise.sets[exercise.sets.length - 1]
-                                return last
-                                  ? { ...exercise, sets: [...exercise.sets, { ...last }] }
-                                  : exercise
-                              })
-                            }
+                          <View
                             style={{
-                              minHeight: 44,
-                              justifyContent: 'center',
+                              flexDirection: 'row',
+                              flexWrap: 'wrap',
                               alignItems: 'center',
-                              backgroundColor: c.raised,
-                              borderRadius: 11,
+                              gap: 4,
                             }}
                           >
-                            <Text style={{ color: c.plum, fontWeight: '600', fontSize: 12 }}>
-                              + Add set
-                            </Text>
-                          </Pressable>
-                          {exercise.sets.some((set) => set.kind === 'strength') && (
-                            <Pressable
-                              accessibilityRole="button"
-                              accessibilityLabel={`Change load types for ${name}`}
-                              accessibilityState={{ expanded: openLoadOptions === exerciseKey }}
+                            <Button
+                              variant="ghost"
+                              density="compact"
+                              accessibilityLabel={`Add set to ${name}`}
                               disabled={saving}
                               onPress={() =>
-                                setOpenLoadOptions(
-                                  openLoadOptions === exerciseKey ? null : exerciseKey
-                                )
+                                updateExercise(wi, ei, (exercise) => {
+                                  const last = exercise.sets[exercise.sets.length - 1]
+                                  return last
+                                    ? { ...exercise, sets: [...exercise.sets, { ...last }] }
+                                    : exercise
+                                })
                               }
-                              style={{ minHeight: 44, justifyContent: 'center' }}
                             >
-                              <Text style={{ color: c.plum, fontSize: 12 }}>
-                                {openLoadOptions === exerciseKey
-                                  ? 'Hide load options'
-                                  : 'Change load types'}
-                              </Text>
-                            </Pressable>
-                          )}
-                          {openLoadOptions === exerciseKey &&
+                              <UiText textRole="captionEmphasis">+ Add set</UiText>
+                            </Button>
+                            {!allTimed && (
+                              <Button
+                                variant="ghost"
+                                density="compact"
+                                accessibilityLabel={`Change load types for ${name}`}
+                                accessibilityState={{ expanded: openSection === 'loads' }}
+                                disabled={saving}
+                                onPress={() =>
+                                  setOpenSection(openSection === 'loads' ? null : 'loads')
+                                }
+                              >
+                                <UiText textRole="captionEmphasis">Load types</UiText>
+                              </Button>
+                            )}
+                            {hasGuidance && (
+                              <Button
+                                variant="ghost"
+                                density="compact"
+                                accessibilityState={{ expanded: openSection === 'guidance' }}
+                                onPress={() =>
+                                  setOpenSection(openSection === 'guidance' ? null : 'guidance')
+                                }
+                              >
+                                <UiText textRole="captionEmphasis">Guidance</UiText>
+                              </Button>
+                            )}
+                          </View>
+                          {openSection === 'loads' &&
                             exercise.sets.map((set, si) =>
                               set.kind === 'strength' ? (
                                 <View key={si} style={{ gap: 4 }}>
@@ -682,21 +714,7 @@ export function Review({
                                 </View>
                               ) : null
                             )}
-                          {hasGuidance && (
-                            <Pressable
-                              accessibilityRole="button"
-                              accessibilityState={{ expanded: openGuidance === exerciseKey }}
-                              onPress={() =>
-                                setOpenGuidance(openGuidance === exerciseKey ? null : exerciseKey)
-                              }
-                              style={{ minHeight: 44, justifyContent: 'center' }}
-                            >
-                              <UiText textRole="bodyEmphasis">
-                                {openGuidance === exerciseKey ? 'Hide guidance' : 'Show guidance'}
-                              </UiText>
-                            </Pressable>
-                          )}
-                          {openGuidance === exerciseKey && (
+                          {openSection === 'guidance' && (
                             <>
                               {exercise.guidance?.effort && (
                                 <UiText textRole="caption">
@@ -704,11 +722,6 @@ export function Review({
                                   {exercise.guidance.effort.kind === 'rpe'
                                     ? 'RPE'
                                     : 'reps in reserve'}
-                                </UiText>
-                              )}
-                              {exercise.guidance?.restSeconds !== undefined && (
-                                <UiText textRole="caption">
-                                  Rest: {exercise.guidance.restSeconds} seconds
                                 </UiText>
                               )}
                               {exercise.guidance?.repetitionsRange && (
@@ -734,21 +747,47 @@ export function Review({
                     </View>
                   )
                 })}
-              </>
+              </View>
             )}
           </View>
         ))}
-        {draft.kind === 'routine_draft' && (
-          <Text style={{ color: c.quiet, fontSize: 11, lineHeight: 17 }}>
-            Saving adds the routine and all its workouts to your library. Your active routine stays
-            as it is.
-          </Text>
+        {(notes.length > 0 || draft.kind === 'workout_draft') && (
+          <View style={{ borderTopWidth: 1, borderColor: c.line }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: openNotes }}
+              onPress={() => setOpenNotes(!openNotes)}
+              style={{
+                minHeight: 44,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <UiText textRole="bodyEmphasis">Draft notes</UiText>
+              {openNotes ? (
+                <ChevronDown size={20} color={c.quiet} />
+              ) : (
+                <ChevronRight size={20} color={c.quiet} />
+              )}
+            </Pressable>
+            {openNotes && (
+              <View style={{ gap: 8 }}>
+                {draft.kind === 'workout_draft' && (
+                  <UiText textRole="caption">
+                    Keep the first session comfortable. Stop with about 2 good reps left in each
+                    set.
+                  </UiText>
+                )}
+                {notes.map((note, index) => (
+                  <UiText key={index} textRole="caption">
+                    {note}
+                  </UiText>
+                ))}
+              </View>
+            )}
+          </View>
         )}
-        {draft.assumptions.map((assumption, i) => (
-          <UiText key={i} textRole="caption">
-            Assumption: {assumption}
-          </UiText>
-        ))}
       </ScrollView>
       <View
         style={{
@@ -761,7 +800,7 @@ export function Review({
       >
         {draft.kind === 'routine_draft' && (
           <Text style={{ color: c.quiet, textAlign: 'center', fontSize: 11, marginBottom: 9 }}>
-            Saves the routine and all {workouts.length} workouts.
+            Adds all workouts to your library and keeps your active routine.
           </Text>
         )}
         <Button
@@ -987,7 +1026,6 @@ function Response({
                 details.names.get(exercise.catalogId) ??
                 exerciseCatalog.find((item) => item.id === exercise.catalogId)?.name ??
                 exercise.catalogId
-              const first = exercise.sets[0]
               const detail = [
                 exercise.guidance?.restSeconds !== undefined
                   ? `Rest ${exercise.guidance.restSeconds} sec`
@@ -996,15 +1034,6 @@ function Response({
               ]
                 .filter(Boolean)
                 .join(' · ')
-              const uniform = exercise.sets.every(
-                (set) =>
-                  first &&
-                  (set.kind === 'timed' && first.kind === 'timed'
-                    ? set.durationSeconds === first.durationSeconds
-                    : set.kind === 'strength' &&
-                      first.kind === 'strength' &&
-                      set.repetitions === first.repetitions)
-              )
               return (
                 <View
                   key={`${exercise.catalogId}-${index}`}
@@ -1027,9 +1056,7 @@ function Response({
                     )}
                   </View>
                   <Text style={{ color: c.plum, fontSize: 12, fontWeight: '600' }}>
-                    {uniform
-                      ? `${exercise.sets.length} × ${first?.kind === 'timed' ? `${first.durationSeconds}s` : first?.repetitions}`
-                      : `${exercise.sets.length} sets`}
+                    {setSummary(exercise)}
                   </Text>
                 </View>
               )
@@ -1104,13 +1131,6 @@ function Response({
             {response.kind === 'workout_draft' ? 'workout' : 'routine'}
           </Text>
         </Pressable>
-        <Text style={{ textAlign: 'center', color: c.quiet, fontSize: 10, marginTop: 8 }}>
-          {response.kind === 'workout_draft'
-            ? saved
-              ? 'Saved to your library.'
-              : 'Make it yours before you save.'
-            : ''}
-        </Text>
       </View>
       <Modal
         visible={reviewing}
@@ -1131,16 +1151,6 @@ function Response({
           >
             <View
               style={{
-                width: 34,
-                height: 4,
-                borderRadius: 4,
-                backgroundColor: c.line,
-                alignSelf: 'center',
-                marginTop: 10,
-              }}
-            />
-            <View
-              style={{
                 paddingHorizontal: 20,
                 paddingTop: 14,
                 paddingBottom: 12,
@@ -1149,16 +1159,12 @@ function Response({
                 alignItems: 'center',
               }}
             >
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: c.ink, fontSize: 22, fontWeight: '600' }}>
-                  Review {response.kind === 'workout_draft' ? 'workout' : 'routine'}
-                </Text>
-                <Text style={{ color: c.quiet, fontSize: 12, marginTop: 4 }}>
-                  {response.kind === 'workout_draft'
-                    ? 'Adjust the details to suit you.'
-                    : 'One routine. All your workouts together.'}
-                </Text>
-              </View>
+              <Text
+                accessibilityRole="header"
+                style={{ flex: 1, color: c.ink, fontSize: 22, fontWeight: '600' }}
+              >
+                Review {response.kind === 'workout_draft' ? 'workout' : 'routine'}
+              </Text>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Close review"
@@ -1174,7 +1180,10 @@ function Response({
               </Pressable>
             </View>
             {!!saveNotice && (
-              <Text accessibilityLiveRegion="polite" style={{ color: c.ink }}>
+              <Text
+                accessibilityLiveRegion="polite"
+                style={{ color: c.ink, marginHorizontal: 20, marginBottom: 8 }}
+              >
                 {saveNotice}
               </Text>
             )}
