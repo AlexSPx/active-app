@@ -47,7 +47,7 @@ Set `MAESTRO_UDID` to select a device when more than one is connected. Set `MAES
 
 ## Coverage and limits
 
-The six flows cover onboarding, workout creation and stored targets, completion and history values, persistence after force-stop, edit/discard and deletion, active-session recovery, routine scheduling, and theme persistence. Workout and history assertions exercise real SQLite; settings and sessions use their existing device-local stores.
+All five flows start with local onboarding and verify that Home appears. They cover workout creation and stored targets, completion and history values, persistence after force-stop, editing and discarding changes, deletion, active-session recovery, routine scheduling, and theme persistence. Workout and history assertions exercise real SQLite. Settings and sessions use their existing device-local stores.
 
 Upgrade retention is excluded from the default suite. It requires a previous APK with the same signing certificate and package ID, containing a workout and completed history record named `Upgrade Retention Check`. Install the candidate over it with `adb install -r`, without clearing data, then run:
 
