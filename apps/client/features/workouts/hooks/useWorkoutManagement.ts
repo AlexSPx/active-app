@@ -29,6 +29,7 @@ export function useWorkoutManagement(): UseWorkoutManagementActions {
       id: workout.id,
       name: workout.title || 'Untitled Workout',
       exercises: workout.workoutTemplate.exercises.map((exercise, index) => ({
+        coachPrescription: exercise.coachPrescription,
         id: exercise.exerciseId,
         sessionId: `${workout.id}-ex-${index}`,
         name: exercise.exerciseTitle?.trim() || exercise.exerciseId.replace(/_/g, ' '),
@@ -41,23 +42,39 @@ export function useWorkoutManagement(): UseWorkoutManagementActions {
         instructions: [],
         category: exercise.category,
         sets:
-          exercise.category === 'CARDIO'
-            ? exercise.durationSeconds!.length
+          exercise.category === 'CARDIO' || exercise.coachPrescription?.sets[0]?.kind === 'timed'
+            ? (exercise.durationSeconds?.length ?? 0)
             : Math.max(1, exercise.reps.length || 0),
-        reps: exercise.category === 'CARDIO' ? 0 : exercise.reps[0] || 10,
+        reps:
+          exercise.category === 'CARDIO' || exercise.coachPrescription?.sets[0]?.kind === 'timed'
+            ? 0
+            : exercise.reps[0] || 10,
         sessionSets: Array.from(
           {
             length:
-              exercise.category === 'CARDIO'
-                ? exercise.durationSeconds!.length
+              exercise.category === 'CARDIO' ||
+              exercise.coachPrescription?.sets[0]?.kind === 'timed'
+                ? (exercise.durationSeconds?.length ?? 0)
                 : Math.max(1, exercise.reps.length || 0),
           },
           (_, setIndex) => ({
             id: `${workout.id}-ex-${index}-set-${setIndex}`,
-            reps: null,
-            weight: null,
+            reps:
+              exercise.coachPrescription?.sets[setIndex]?.kind === 'strength'
+                ? exercise.reps[setIndex]
+                : null,
+            weight:
+              exercise.coachPrescription?.sets[setIndex]?.kind === 'strength'
+                ? exercise.weight[setIndex]
+                : null,
             // initialize durationSeconds for CARDIO so the session UI can render the input
-            durationSeconds: exercise.category === 'CARDIO' ? 0 : undefined,
+            durationSeconds:
+              exercise.category === 'CARDIO' ||
+              exercise.coachPrescription?.sets[0]?.kind === 'timed'
+                ? exercise.coachPrescription
+                  ? (exercise.durationSeconds?.[setIndex] ?? 0)
+                  : 0
+                : undefined,
             completed: false,
           })
         ),

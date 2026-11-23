@@ -40,7 +40,8 @@ export const WorkoutSessionExercise = memo(
     onStartRestTimer,
   }: WorkoutSessionExerciseProps) {
     const colors = useCadenceColors()
-    const isCardio = exercise.category === 'CARDIO'
+    const isCardio =
+      exercise.category === 'CARDIO' || exercise.coachPrescription?.sets[0]?.kind === 'timed'
     const renderSetRow = useCallback(
       ({ item: set, index }: { item: Set; index: number }) => {
         if (isCardio) {
@@ -94,6 +95,27 @@ export const WorkoutSessionExercise = memo(
             {isCardio ? 'intervals' : 'sets'}
           </UiText>
         </View>
+        {exercise.coachPrescription?.guidance?.effort && (
+          <UiText textRole="caption">
+            Effort: {exercise.coachPrescription.guidance.effort.value}{' '}
+            {exercise.coachPrescription.guidance.effort.kind === 'rpe' ? 'RPE' : 'reps in reserve'}
+          </UiText>
+        )}
+        {exercise.coachPrescription?.guidance?.restSeconds !== undefined && (
+          <UiText textRole="caption">
+            Rest: {exercise.coachPrescription.guidance.restSeconds} seconds
+          </UiText>
+        )}
+        {exercise.coachPrescription?.guidance?.progression && (
+          <UiText textRole="caption">
+            Progression: {exercise.coachPrescription.guidance.progression}
+          </UiText>
+        )}
+        {exercise.coachPrescription?.sets.some(
+          (set) => set.kind === 'strength' && set.load.kind === 'bodyweight'
+        ) && (
+          <UiText textRole="caption">Bodyweight targets are shown as 0 kg external load.</UiText>
+        )}
         <View className="gap-compact">
           <View className="mb-compact w-full min-w-0 flex-row items-center gap-compact">
             <UiText textRole="meta" className="w-8 text-center">

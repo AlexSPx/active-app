@@ -10,6 +10,12 @@
 import { type SQLiteDatabase } from 'expo-sqlite'
 import { syncEngine, type SyncJobConfig } from '../sync'
 
+export function nextUpdatedAt(previous?: string | null): string {
+  const previousTime = Date.parse(previous ?? '')
+  const minimum = Number.isFinite(previousTime) ? previousTime + 1 : 0
+  return new Date(Math.max(Date.now(), minimum)).toISOString()
+}
+
 export abstract class BaseRepository {
   constructor(protected db: SQLiteDatabase) {}
 

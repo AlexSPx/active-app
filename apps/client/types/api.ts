@@ -102,10 +102,29 @@ export type MuscleGroup =
   | 'TRICEPS'
 
 // Workout Template Types (Server Request/Response)
+export type CoachPrescription = {
+  sets: (
+    | { kind: 'timed'; durationSeconds: number }
+    | {
+        kind: 'strength'
+        repetitions: number
+        load: { kind: 'bodyweight' } | { kind: 'kilograms'; value: number }
+      }
+  )[]
+  guidance?: {
+    effort?: { kind: 'rpe' | 'reps_in_reserve'; value: number }
+    restSeconds?: number
+    repetitionsRange?: { min: number; max: number }
+    cues?: string[]
+    progression?: string
+  }
+}
+
 export interface ApiWorkoutExercise {
   exerciseId: string
   exerciseTitle: string
   notes?: string | null
+  coachPrescription?: CoachPrescription
   reps: number[]
   weight: number[]
   durationSeconds?: number[] | null
@@ -117,6 +136,7 @@ export interface ApiWorkoutExercise {
 export interface ApiWorkoutTemplate {
   id: string
   exercises: ApiWorkoutExercise[]
+  coachSchedule?: { preparation: { kind: 'warmup' | 'cooldown'; description: string; durationSeconds: number }[]; estimatedSeconds: number; transitionSeconds: number }
   createdAt: string
   updatedAt: string
 }

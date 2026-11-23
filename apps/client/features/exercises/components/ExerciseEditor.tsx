@@ -33,14 +33,17 @@ export default function ExerciseEditor({
 }: ExerciseEditorProps) {
   const [expanded, setExpanded] = useState(true)
   const [actionsOpen, setActionsOpen] = useState(false)
-  const cardio = exercise.category === 'CARDIO'
+  const cardio =
+    exercise.category === 'CARDIO' || exercise.coachPrescription?.sets[0]?.kind === 'timed'
   const colors = useCadenceColors()
 
   const updateSet = (setIndex: number, field: keyof WorkoutSet, value: number | null) => {
     onUpdateSets(
       exercise.id,
       exercise.sets.map((set, currentIndex) =>
-        currentIndex === setIndex ? { ...set, [field]: value } : set
+        currentIndex === setIndex
+          ? { ...set, [field]: value, ...(field === 'weight' ? { coachBodyweight: false } : {}) }
+          : set
       )
     )
   }
@@ -80,6 +83,24 @@ export default function ExerciseEditor({
 
       {expanded && (
         <View className="gap-compact">
+          {exercise.coachPrescription?.guidance?.effort && (
+            <UiText textRole="caption">
+              Effort: {exercise.coachPrescription.guidance.effort.value}{' '}
+              {exercise.coachPrescription.guidance.effort.kind === 'rpe'
+                ? 'RPE'
+                : 'reps in reserve'}
+            </UiText>
+          )}
+          {exercise.coachPrescription?.guidance?.restSeconds !== undefined && (
+            <UiText textRole="caption">
+              Rest: {exercise.coachPrescription.guidance.restSeconds} seconds
+            </UiText>
+          )}
+          {exercise.coachPrescription?.guidance?.progression && (
+            <UiText textRole="caption">
+              Progression: {exercise.coachPrescription.guidance.progression}
+            </UiText>
+          )}
           <View className="flex-row items-center gap-compact">
             <UiText textRole="meta" className="w-8 text-center">
               {cardio ? '#' : 'Set'}
@@ -111,6 +132,7 @@ export default function ExerciseEditor({
                   <UiText textRole="meta" className="w-8 text-center">
                     {setIndex + 1}
                   </UiText>
+                  {set.coachBodyweight && <UiText textRole="caption">Bodyweight</UiText>}
                   {cardio ? (
                     <DurationTargetInput
                       mode="editor"

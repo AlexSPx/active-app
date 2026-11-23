@@ -1,0 +1,1182 @@
+{
+  "version": "revision-01",
+  "author": {
+    "provider": "codex",
+    "model": "gpt-6.1-terra",
+    "reasoning_effort": "high",
+    "verification": "User verified; runtime reports same configuration"
+  },
+  "review_manifest_sha256": "f64dcea73c296de716a482d74cf6eede36871e8a7913c0f12cd046507ebc1e83",
+  "rows": [
+    {
+      "kind": "card",
+      "id": "card-001",
+      "raw_sha256": "ce1ecace416ec2d2da45bb462fe0a66de0afa9dcf8b9dcd2e9e0a1c1e62fe835",
+      "manifest_sha256": "ce1ecace416ec2d2da45bb462fe0a66de0afa9dcf8b9dcd2e9e0a1c1e62fe835",
+      "decision": "accept",
+      "reason": "A gradual, manageable start is reasonable; gives no starting dose or recovery threshold.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-001",
+        "title": "Start small",
+        "claim": "Begin with a manageable amount of strength work and add work gradually as you learn how you recover.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["beginner", "starting", "strength"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-002",
+      "raw_sha256": "93d55a18aa9e9eeac4d9e3d42525466fcac4c203e316d59a64fc85d80ec8626c",
+      "manifest_sha256": "93d55a18aa9e9eeac4d9e3d42525466fcac4c203e316d59a64fc85d80ec8626c",
+      "decision": "accept",
+      "reason": "A repeatable schedule supports adherence; it does not specify sufficient training frequency.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-002",
+        "title": "Choose a repeatable schedule",
+        "claim": "Choose training days you can repeat consistently within your other commitments.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["frequency", "schedule", "consistency"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-003",
+      "raw_sha256": "d0d5cf3de82883a5ad4e1e7568f90a056ff75bded128063c3f044a46476a3948",
+      "manifest_sha256": "d0d5cf3de82883a5ad4e1e7568f90a056ff75bded128063c3f044a46476a3948",
+      "decision": "accept",
+      "reason": "Spacing demanding work and responding to persistent fatigue is reasonable; no universal recovery interval is asserted.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-003",
+        "title": "Allow recovery time",
+        "claim": "Leave time between demanding sessions for the same muscles and adjust if soreness or fatigue persists.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["recovery", "rest", "frequency"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-004",
+      "raw_sha256": "860fea457538fb23d13d9e7d32f91d8b30150161dbe0c152ed6cb410e2662346",
+      "manifest_sha256": "860fea457538fb23d13d9e7d32f91d8b30150161dbe0c152ed6cb410e2662346",
+      "decision": "accept",
+      "reason": "Control while learning is prudent; consistent technique is not a single mandatory form.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-004",
+        "title": "Practice movement",
+        "claim": "Use a controllable load while learning a movement and prioritize consistent technique.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["technique", "beginner", "load", "form"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-005",
+      "raw_sha256": "ab84788c09dca4f6c6855b35929262e2e6068a7b1885624ed3ad0e16cc028619",
+      "manifest_sha256": "ab84788c09dca4f6c6855b35929262e2e6068a7b1885624ed3ad0e16cc028619",
+      "decision": "accept",
+      "reason": "Squats can train legs; comfort and equipment do not alone establish suitability.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-005",
+        "title": "Select a squat pattern",
+        "claim": "A squat pattern can train the legs; choose a version that fits available equipment and comfortable range.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["squat", "legs", "selection"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-006",
+      "raw_sha256": "327b8ff733cf8b60b870453774fbff56076f4f0846e6a0bf3a51b7d5e72eba73",
+      "manifest_sha256": "327b8ff733cf8b60b870453774fbff56076f4f0846e6a0bf3a51b7d5e72eba73",
+      "decision": "accept",
+      "reason": "Hinges can involve posterior muscles; control and individual tolerance matter.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-006",
+        "title": "Select a hinge pattern",
+        "claim": "A hip hinge is one option for training the posterior chain; choose a variation you can control.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["hinge", "deadlift", "posterior", "chain"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-007",
+      "raw_sha256": "5ae923469f66f6476ba4e0b4c5acab5bf8b2d6b014cc55106f182682aa48cf46",
+      "manifest_sha256": "5ae923469f66f6476ba4e0b4c5acab5bf8b2d6b014cc55106f182682aa48cf46",
+      "decision": "revise",
+      "reason": "Push-up is horizontal, but an unspecified press may be overhead; qualify as a horizontal press.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-007",
+        "title": "Select a horizontal push",
+        "claim": "A push-up or press can provide a horizontal pushing pattern when appropriate for the person and equipment.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["chest", "horizontal", "push", "press"]
+      },
+      "revision": {
+        "id": "card-007",
+        "title": "Select a horizontal push",
+        "claim": "A push-up or horizontal press can provide a horizontal pushing pattern when appropriate for the person and equipment.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["chest", "horizontal", "push", "press"]
+      },
+      "revision_sha256": "3b9a41b263a9f0472581a6d62d417bb9fb58ee7699c58340742281b1ecbbd2f6",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-008",
+      "raw_sha256": "4c1a93cf3508f0e88a51b8f01822b3c55e3c141c96542cc2308b55350b6d5aac",
+      "manifest_sha256": "4c1a93cf3508f0e88a51b8f01822b3c55e3c141c96542cc2308b55350b6d5aac",
+      "decision": "accept",
+      "reason": "Rows are horizontal pulling options; equipment fit alone is not full suitability.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-008",
+        "title": "Select a horizontal pull",
+        "claim": "A row can provide a horizontal pulling pattern; select a variation that fits the available equipment.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["back", "row", "horizontal", "pull"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-009",
+      "raw_sha256": "4a8553cdbeb99d119fba69e71bc59e2aa52a4745b768b2715e73df9e0f292ce9",
+      "manifest_sha256": "4a8553cdbeb99d119fba69e71bc59e2aa52a4745b768b2715e73df9e0f292ce9",
+      "decision": "accept",
+      "reason": "Overhead press is vertical pushing; comfort alone cannot screen injury or other contraindications.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-009",
+        "title": "Select a vertical push",
+        "claim": "An overhead press is one option for a vertical push if the movement is comfortable.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["shoulder", "overhead", "vertical", "push"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-010",
+      "raw_sha256": "2a1d1e5a280576e4c75c409ac2f0ad0bbdaa41c9e3217be97f56403f2fa10eb3",
+      "manifest_sha256": "2a1d1e5a280576e4c75c409ac2f0ad0bbdaa41c9e3217be97f56403f2fa10eb3",
+      "decision": "revise",
+      "reason": "Pull-up and pulldown require sufficient ability and individual suitability, not only equipment.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-010",
+        "title": "Select a vertical pull",
+        "claim": "A pull-up or pulldown can provide a vertical pulling pattern if suitable equipment is available.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["back", "pullup", "pulldown", "vertical", "pull"]
+      },
+      "revision": {
+        "id": "card-010",
+        "title": "Select a vertical pull",
+        "claim": "A pull-up or pulldown can provide a vertical pulling pattern when the movement, equipment and difficulty suit the person.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["back", "pullup", "pulldown", "vertical", "pull"]
+      },
+      "revision_sha256": "0a9f7725f7386c2d0ddb93a8837a36f4a1e173cd7f9d618a6a95e74600a0f4f2",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-011",
+      "raw_sha256": "86f160e084352bc3b1ed873544580c6d67b64899d053cc7f04811611f4cef43c",
+      "manifest_sha256": "86f160e084352bc3b1ed873544580c6d67b64899d053cc7f04811611f4cef43c",
+      "decision": "accept",
+      "reason": "Split squats and step-ups involve unilateral leg work; support, balance and stable step matter.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-011",
+        "title": "Use single-leg work",
+        "claim": "A split squat or step-up can add single-leg work when it fits balance and available support.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["unilateral", "single", "leg", "split", "squat"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-012",
+      "raw_sha256": "552159c7554503d9c18baa9091119b06ac04930cd5400b473c6ac569460f53c2",
+      "manifest_sha256": "552159c7554503d9c18baa9091119b06ac04930cd5400b473c6ac569460f53c2",
+      "decision": "accept",
+      "reason": "A plank is a trunk stability option; control is a reasonable limit, not a universal duration.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-012",
+        "title": "Consider a trunk exercise",
+        "claim": "A plank is one option for practicing trunk stability; choose a duration that preserves control.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["core", "trunk", "plank", "stability"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-013",
+      "raw_sha256": "41042bddaaa525e78c726fe9020c0740c0e2b9d25e3c2c4ee670c1b29ac1f571",
+      "manifest_sha256": "41042bddaaa525e78c726fe9020c0740c0e2b9d25e3c2c4ee670c1b29ac1f571",
+      "decision": "accept",
+      "reason": "Checking all required equipment is prudent; this is only useful when complete requirements are verified.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-013",
+        "title": "Match exercise to equipment",
+        "claim": "Check every required item, including benches, racks and bars, before selecting an exercise.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["equipment", "bench", "rack", "availability"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-014",
+      "raw_sha256": "932934068ea50a51976ff7b1d1d010bac8dab52e0cc03fa8144cc2d5ec8ee64d",
+      "manifest_sha256": "932934068ea50a51976ff7b1d1d010bac8dab52e0cc03fa8144cc2d5ec8ee64d",
+      "decision": "revise",
+      "reason": "Compare target muscles, loading, difficulty and goals as well as pattern, equipment and comfort; substitutions need not be equivalent.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-014",
+        "title": "Choose a substitute by pattern",
+        "claim": "When replacing an exercise, compare movement, equipment and comfort rather than relying on the name alone.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["substitution", "replace", "exercise", "movement"]
+      },
+      "revision": {
+        "id": "card-014",
+        "title": "Choose a substitute by pattern",
+        "claim": "When replacing an exercise, compare target muscles, movement, loading, difficulty, goals, equipment and comfort; alternatives are not necessarily equivalent.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["substitution", "replace", "exercise", "movement"]
+      },
+      "revision_sha256": "829c67811881838190db006f6559e74c99b4664fdad205d6774f4d6d6c16c9bd",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-015",
+      "raw_sha256": "4acf29bb623fd907c1049c9e3b2d92334dccbc6f884906873215b2864277016b",
+      "manifest_sha256": "4acf29bb623fd907c1049c9e3b2d92334dccbc6f884906873215b2864277016b",
+      "decision": "revise",
+      "reason": "Specify stop and seek assessment for concerning or persistent pain; comfort alone is not a diagnostic test.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-015",
+        "title": "Adapt to range of motion",
+        "claim": "Use a range you can control and adjust the exercise if the available range is uncomfortable.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["range", "motion", "mobility", "comfort"]
+      },
+      "revision": {
+        "id": "card-015",
+        "title": "Adapt to range of motion",
+        "claim": "Use a controllable range. Stop for concerning pain and seek assessment for persistent or concerning symptoms; comfort does not establish a diagnosis.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["range", "motion", "mobility", "comfort"]
+      },
+      "revision_sha256": "5bf7e13e22a626cda3780606a35d06ed47fee8ee1423f31d3051c6872e0db4dd",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-016",
+      "raw_sha256": "578b9273ec0c3aab4a50806fd9f731ef31881cddb1ac86d90c9e76a4912f06e7",
+      "manifest_sha256": "578b9273ec0c3aab4a50806fd9f731ef31881cddb1ac86d90c9e76a4912f06e7",
+      "decision": "accept",
+      "reason": "Reserving repetitions is a plausible starting heuristic; beginners may estimate reserve poorly.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-016",
+        "title": "Set an initial load",
+        "claim": "Choose an initial load you can lift with consistent form while leaving some repetitions in reserve.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["initial", "weight", "load", "effort", "reps", "reserve"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-017",
+      "raw_sha256": "8cda79c428162626b9d4470f39aee7baaa5e35b81fc9bdb9c510b58afb11d472",
+      "manifest_sha256": "8cda79c428162626b9d4470f39aee7baaa5e35b81fc9bdb9c510b58afb11d472",
+      "decision": "revise",
+      "reason": "Leaving load to the person avoids fabrication but does not itself teach safe selection; combine with controllable trial and stop criteria.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-017",
+        "title": "Keep load unspecified",
+        "claim": "When ability or equipment is unknown, leave the load for the person to choose rather than inventing a weight.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["unknown", "weight", "load", "selection"]
+      },
+      "revision": {
+        "id": "card-017",
+        "title": "Keep load unspecified",
+        "claim": "When ability or equipment is unknown, do not invent a load. If appropriate, begin with a controllable trial and stop for concerning symptoms.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["unknown", "weight", "load", "selection"]
+      },
+      "revision_sha256": "891ab74d062f59727e0d920dff3d15e8f659446281e3726de64d02a2a6f21c3b",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-018",
+      "raw_sha256": "14bd9a264b82de8cfd29f03ad1c9a38708a08c745c6c9b405a044292f152311f",
+      "manifest_sha256": "14bd9a264b82de8cfd29f03ad1c9a38708a08c745c6c9b405a044292f152311f",
+      "decision": "accept",
+      "reason": "Adding reps before load is one viable progression, not a universal rule.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-018",
+        "title": "Progress repetitions first",
+        "claim": "One progression option is to add repetitions within a chosen range before increasing load.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["progression", "repetitions", "rep", "range"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-019",
+      "raw_sha256": "588a79d5d1175bc2a8adedf7c754ed5d09634ec44f4831d166c55c6d29cfb0cf",
+      "manifest_sha256": "588a79d5d1175bc2a8adedf7c754ed5d09634ec44f4831d166c55c6d29cfb0cf",
+      "decision": "revise",
+      "reason": "Completion and control alone do not establish readiness; consider effort, recovery and all prescribed sets; no increase is mandatory.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-019",
+        "title": "Progress load gradually",
+        "claim": "After completing the planned repetitions with good control, consider a small load increase next time.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["progression", "increase", "weight", "load"]
+      },
+      "revision": {
+        "id": "card-019",
+        "title": "Progress load gradually",
+        "claim": "After all planned sets, consider control, effort and recovery before deciding whether a small load increase is appropriate; an increase is not mandatory.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["progression", "increase", "weight", "load"]
+      },
+      "revision_sha256": "3df5ebe0bcd0db37717e92732175f2d0e047c222207d58fcb27abe21c231e677",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-020",
+      "raw_sha256": "9736c683d732a612916e083f3efffb349e199e98c754e7d12b5273eb5c2b0f36",
+      "manifest_sha256": "9736c683d732a612916e083f3efffb349e199e98c754e7d12b5273eb5c2b0f36",
+      "decision": "accept",
+      "reason": "Repeating or lowering a load is a reasonable response to inconsistent control; do not diagnose its cause.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-020",
+        "title": "Repeat a load",
+        "claim": "If a new load makes technique inconsistent, repeat or reduce it while practicing the movement.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["progression", "plateau", "technique", "weight"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-021",
+      "raw_sha256": "a8c34823d97d4378a4f5316b84c80b31b9c7f5b3d3243eecc0eacc9162a6dd02",
+      "manifest_sha256": "a8c34823d97d4378a4f5316b84c80b31b9c7f5b3d3243eecc0eacc9162a6dd02",
+      "decision": "accept",
+      "reason": "Changing one variable can aid interpretation; not a prerequisite for effective programming.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-021",
+        "title": "Change one variable",
+        "claim": "When adjusting training, consider changing one of load, repetitions or sets at a time so the response is easier to interpret.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["progression", "adjust", "sets", "reps", "weight"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-022",
+      "raw_sha256": "4302f68c9f0e24bf392fb41d0f5b77b940d78d74033d3f0353de0015116df537",
+      "manifest_sha256": "4302f68c9f0e24bf392fb41d0f5b77b940d78d74033d3f0353de0015116df537",
+      "decision": "accept",
+      "reason": "A rep range can allow progression at a fixed load; it does not guarantee progression.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-022",
+        "title": "Use a repetition range",
+        "claim": "A repetition range allows a person to progress within the same load before adjusting it.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["rep", "range", "repetitions", "progression"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-023",
+      "raw_sha256": "37d3194197a5b4810872e464323e81d3c16ba8b316b2574882a5849de28e2a43",
+      "manifest_sha256": "37d3194197a5b4810872e464323e81d3c16ba8b316b2574882a5849de28e2a43",
+      "decision": "accept",
+      "reason": "Rest sufficient for intended technique and effort is contextual; does not provide a fixed duration.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-023",
+        "title": "Rest between sets",
+        "claim": "Rest long enough to perform the next set with the intended technique and effort.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["rest", "between", "sets", "recovery"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-024",
+      "raw_sha256": "431d6e021ff70f49229e353c260ffb61701428ab2b1c35f95deae78c1b2def16",
+      "manifest_sha256": "431d6e021ff70f49229e353c260ffb61701428ab2b1c35f95deae78c1b2def16",
+      "decision": "accept",
+      "reason": "RIR is an estimate of additional reps; accuracy varies, especially for inexperienced lifters.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-024",
+        "title": "Use effort as a guide",
+        "claim": "Repetitions in reserve describe how many additional repetitions a person estimates they could perform with good form.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["effort", "rir", "reps", "in", "reserve"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-025",
+      "raw_sha256": "08c7376161fbff927640a27a6f52cda836e051d76075ea11bd8d95f2e889f752",
+      "manifest_sha256": "08c7376161fbff927640a27a6f52cda836e051d76075ea11bd8d95f2e889f752",
+      "decision": "accept",
+      "reason": "A maximal lift test is not necessary for a useful session; this does not prohibit all demanding training.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-025",
+        "title": "Avoid forced maximums",
+        "claim": "A useful training session does not require testing a maximal lift; select loads suited to the session.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["maximum", "one", "rep", "max", "effort", "safety"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-026",
+      "raw_sha256": "e4d3b0f48cc7e45d67f65d090199618981db51bdb9a67cc6aff6fb7e1b03f88e",
+      "manifest_sha256": "e4d3b0f48cc7e45d67f65d090199618981db51bdb9a67cc6aff6fb7e1b03f88e",
+      "decision": "accept",
+      "reason": "Recording sets and reps enables comparison; interpretation may also require load, exercise and context.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-026",
+        "title": "Track working sets",
+        "claim": "Record sets and repetitions consistently so future changes can be compared with the original plan.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["volume", "sets", "tracking", "record"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-027",
+      "raw_sha256": "b029a9c4d503fcec24a87368512cfa7a9a9649e2b0fb79878ad20bf0acc34d77",
+      "manifest_sha256": "b029a9c4d503fcec24a87368512cfa7a9a9649e2b0fb79878ad20bf0acc34d77",
+      "decision": "accept",
+      "reason": "Less work or distribution may help manage recovery; assess persistent fatigue and other causes.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-027",
+        "title": "Adjust total work",
+        "claim": "If a workload is hard to recover from, consider reducing sets or spacing the work across sessions.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["volume", "fatigue", "recovery", "reduce", "sets"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-028",
+      "raw_sha256": "fa66a5ad31a59f82d529a5ea011c7f6177b45bb45c5a24dd51c7a7bc770f0d9b",
+      "manifest_sha256": "fa66a5ad31a59f82d529a5ea011c7f6177b45bb45c5a24dd51c7a7bc770f0d9b",
+      "decision": "accept",
+      "reason": "Small changes and monitoring are sensible but no specific effective dose is established.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-028",
+        "title": "Build volume gradually",
+        "claim": "When adding sets, make small changes and observe how performance and recovery respond.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["volume", "sets", "progression", "workload"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-029",
+      "raw_sha256": "3478212b414495b700b36ca805a5dc502362a9e09c48bedfd9410b2a47150917",
+      "manifest_sha256": "3478212b414495b700b36ca805a5dc502362a9e09c48bedfd9410b2a47150917",
+      "decision": "accept",
+      "reason": "Distribution can shorten individual sessions; increased days may add travel and warm-up time.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-029",
+        "title": "Distribute work",
+        "claim": "Spreading planned work across available days is one way to manage session length.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["frequency", "volume", "schedule", "sessions"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-030",
+      "raw_sha256": "a4f51b2332ae730120d034f05eff70f7ebde540b42400c0be969e6bb390fe403",
+      "manifest_sha256": "a4f51b2332ae730120d034f05eff70f7ebde540b42400c0be969e6bb390fe403",
+      "decision": "accept",
+      "reason": "Prioritizing movements and allowing warm-up and rest is a reasonable time-constrained approach.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-030",
+        "title": "Set a time limit",
+        "claim": "For a short session, prioritize a few relevant movements and leave sufficient time for warm-up and rest.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["time", "limit", "short", "workout", "selection"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-031",
+      "raw_sha256": "b2648e8bebe777954c0b2940b613cac80ac1e155015b9e77a77fdf8e8e4ff2b5",
+      "manifest_sha256": "b2648e8bebe777954c0b2940b613cac80ac1e155015b9e77a77fdf8e8e4ff2b5",
+      "decision": "accept",
+      "reason": "Lighter movement-specific practice is one preparation option; it does not define the entire warm-up.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-031",
+        "title": "Warm up specifically",
+        "claim": "Before harder sets, practice the movement with lighter effort appropriate to the exercise.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["warmup", "warm", "up", "preparation"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-032",
+      "raw_sha256": "023ec1eb4264fe79a31402e59783be94b638c3393a0912141756fead51294935",
+      "manifest_sha256": "023ec1eb4264fe79a31402e59783be94b638c3393a0912141756fead51294935",
+      "decision": "accept",
+      "reason": "Sleep and stress are relevant context; this is not a precise readiness measurement.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-032",
+        "title": "Plan around sleep",
+        "claim": "Consider sleep and other stressors when deciding whether to maintain or reduce a demanding session.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["sleep", "recovery", "fatigue", "stress"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-033",
+      "raw_sha256": "62295933ea85084191530b8720d786cb3ee30882f0716d79cab3f382c991839e",
+      "manifest_sha256": "62295933ea85084191530b8720d786cb3ee30882f0716d79cab3f382c991839e",
+      "decision": "revise",
+      "reason": "Define when to seek assessment more clearly; persistent or severe unexplained fatigue warrants professional evaluation.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-033",
+        "title": "Respond to persistent fatigue",
+        "claim": "If fatigue persists, consider reducing training demands and seek qualified advice when needed.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["fatigue", "persistent", "recovery", "advice"]
+      },
+      "revision": {
+        "id": "card-033",
+        "title": "Respond to persistent fatigue",
+        "claim": "Consider reducing training demands if fatigue persists. Seek professional evaluation for persistent, severe or unexplained fatigue.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["fatigue", "persistent", "recovery", "advice"]
+      },
+      "revision_sha256": "ed5d5d33bac1ff4838f74767a3e36c52fd1502c25b5021370c946aa34c7ea84f",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-034",
+      "raw_sha256": "2b5d19d31d68aa1921d297d98d7d1dbcc300c36367fa778e62483f55d8360f02",
+      "manifest_sha256": "2b5d19d31d68aa1921d297d98d7d1dbcc300c36367fa778e62483f55d8360f02",
+      "decision": "revise",
+      "reason": "Concerning pain is vague; new chest pain, fainting or severe symptoms require urgent assessment as appropriate, not merely exercise substitution.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-034",
+        "title": "Take symptoms seriously",
+        "claim": "Stop an exercise that causes concerning pain and seek an appropriate qualified professional for assessment.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["pain", "symptoms", "injury", "stop"]
+      },
+      "revision": {
+        "id": "card-034",
+        "title": "Take symptoms seriously",
+        "claim": "Stop exercise for concerning symptoms. New chest pain, fainting or severe symptoms require urgent medical assessment as appropriate.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["pain", "symptoms", "injury", "stop"]
+      },
+      "revision_sha256": "0e9aaea3dcec24f207d91fab124acdf6905af01f2ef0a6284bb611f0a188f200",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-035",
+      "raw_sha256": "faf9601058e178ee6e9bcd926f9acc651e707f38b1999b795d4a1ee69900fb8c",
+      "manifest_sha256": "faf9601058e178ee6e9bcd926f9acc651e707f38b1999b795d4a1ee69900fb8c",
+      "decision": "accept",
+      "reason": "One missed session is insufficient to establish a trend; resumption must still account for illness or injury.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-035",
+        "title": "Interpret a missed session",
+        "claim": "A missed session alone does not establish a trend; resume with a practical schedule rather than compensating automatically.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["missed", "session", "adherence", "history"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-036",
+      "raw_sha256": "69e1de3796404d55ccc9f5ec134ac25df195570839c8fedea91d36eaf4b45cc3",
+      "manifest_sha256": "69e1de3796404d55ccc9f5ec134ac25df195570839c8fedea91d36eaf4b45cc3",
+      "decision": "accept",
+      "reason": "Few workouts can be insufficient for trends; completeness and measurement consistency also matter.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-036",
+        "title": "Interpret a short history",
+        "claim": "A few recorded workouts may be too little evidence to identify a reliable performance trend.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["limited", "history", "records", "trend"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-037",
+      "raw_sha256": "5902e1461e3151cad2fb023ad1d7b4f96d35720b05f529ba14b1ed49643fa1f4",
+      "manifest_sha256": "5902e1461e3151cad2fb023ad1d7b4f96d35720b05f529ba14b1ed49643fa1f4",
+      "decision": "accept",
+      "reason": "A planned set does not prove completion; completed records can still be incomplete or inaccurate.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-037",
+        "title": "Separate plan and completion",
+        "claim": "A planned set is not evidence that the set was completed; use completed records for history claims.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["history", "planned", "completed", "evidence"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-038",
+      "raw_sha256": "ba4466d5fa7136e576a8dc60cac7019f06363a805cf9eaf1f0c7a45fb1b8cc9f",
+      "manifest_sha256": "ba4466d5fa7136e576a8dc60cac7019f06363a805cf9eaf1f0c7a45fb1b8cc9f",
+      "decision": "accept",
+      "reason": "Missing recorded weight is unknown; distinguish known bodyweight and explicit zero external load.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-038",
+        "title": "Treat missing load as unknown",
+        "claim": "A missing recorded weight is unknown and should not be assumed to be zero.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["missing", "weight", "unknown", "history", "volume"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-039",
+      "raw_sha256": "c9d216e559805a2f42d403a9cc745e47e219353e02a33bf0e604c63d68e55189",
+      "manifest_sha256": "c9d216e559805a2f42d403a9cc745e47e219353e02a33bf0e604c63d68e55189",
+      "decision": "accept",
+      "reason": "Similar movements, units and reps improve comparison; tempo, range and effort may also differ.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-039",
+        "title": "Compare like with like",
+        "claim": "Compare similar exercises, units and repetition targets before drawing conclusions from recorded sets.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["compare", "history", "reps", "units", "exercise"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-040",
+      "raw_sha256": "9a118417f68c131df8cda6991a0257118e3551533ded3331fa78a9a139e4be5c",
+      "manifest_sha256": "9a118417f68c131df8cda6991a0257118e3551533ded3331fa78a9a139e4be5c",
+      "decision": "accept",
+      "reason": "Context-sensitive exercise selection is sound but this general advice cannot screen special populations.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-040",
+        "title": "Account for individual context",
+        "claim": "Adjust exercise choices to the person’s goals, experience, equipment and response rather than using a universal plan.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["individual", "goals", "experience", "selection"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-041",
+      "raw_sha256": "a1b428ec6723f271fa398e42caa5e556559d4f22ff8da0095b3803e040ca8bac",
+      "manifest_sha256": "a1b428ec6723f271fa398e42caa5e556559d4f22ff8da0095b3803e040ca8bac",
+      "decision": "revise",
+      "reason": "Too nonspecific to guide strength programming: progression, sufficient challenge, recovery and exercise-specific context matter; avoid treating it as a complete prescription.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-041",
+        "title": "Strength emphasis",
+        "claim": "For a strength-oriented goal, practice the selected lifts regularly with loads and repetition targets the person can manage.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["strength", "goal", "programming"]
+      },
+      "revision": {
+        "id": "card-041",
+        "title": "Strength emphasis",
+        "claim": "For a strength goal, practice relevant lifts with manageable challenge and progressive training while allowing recovery; individual programming depends on context.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["strength", "goal", "programming"]
+      },
+      "revision_sha256": "f60f2d6e18d3447c11c150e0f2a4ad5e28d3159afe5078f73e674643511b94a7",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-042",
+      "raw_sha256": "750bac2240a26f558fb8ac366ab508678a7c4b671c4d966b43ac16da99d5bd96",
+      "manifest_sha256": "750bac2240a26f558fb8ac366ab508678a7c4b671c4d966b43ac16da99d5bd96",
+      "decision": "revise",
+      "reason": "Consistency and progression alone are insufficient to characterize hypertrophy programming; include appropriate challenge, volume and recovery without claiming universal thresholds.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-042",
+        "title": "Muscle-building emphasis",
+        "claim": "For a muscle-building goal, choose exercises that can be performed consistently and progressed over time.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["hypertrophy", "muscle", "growth", "goal"]
+      },
+      "revision": {
+        "id": "card-042",
+        "title": "Muscle-building emphasis",
+        "claim": "For muscle-building, consider suitable exercises, sufficient challenge and volume, progression and recovery; individual programming depends on context.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["hypertrophy", "muscle", "growth", "goal"]
+      },
+      "revision_sha256": "61061f4dbcbf61c48661702694fcf8bc3acb3c2009d8fd9ca14fbf88dc8c20cd",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "card",
+      "id": "card-043",
+      "raw_sha256": "7854d42f8cc52e13929235fa7c9acebb08097c78156bc370b9744603f4606e5b",
+      "manifest_sha256": "7854d42f8cc52e13929235fa7c9acebb08097c78156bc370b9744603f4606e5b",
+      "decision": "accept",
+      "reason": "Reducing load or sets can make a session easier; individual symptoms may require stopping rather than a familiar movement.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-043",
+        "title": "Plan easier sessions",
+        "claim": "If a session must be easier, reducing load or sets is an option while keeping movements familiar.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["deload", "easy", "session", "reduce", "load"]
+      }
+    },
+    {
+      "kind": "card",
+      "id": "card-044",
+      "raw_sha256": "18bf2980b118125e7e6749435d7bab09a83f50bf0a94d53f04b10da81e545f58",
+      "manifest_sha256": "18bf2980b118125e7e6749435d7bab09a83f50bf0a94d53f04b10da81e545f58",
+      "decision": "revise",
+      "reason": "Several sessions may inform a decision, but urgent symptoms, injury or equipment problems may require immediate change; trends can remain noisy.",
+      "common_limit": "No independent supporting coaching source is provided; accept means provisional semantic review only, not release or training acceptance. Applicability is general adult strength training, not special-population clearance.",
+      "raw": {
+        "id": "card-044",
+        "title": "Review after changes",
+        "claim": "After changing a plan, compare recorded performance and recovery over several sessions before making another large change.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["review", "progress", "performance", "recovery"]
+      },
+      "revision": {
+        "id": "card-044",
+        "title": "Review after changes",
+        "claim": "Performance and recovery across several sessions can inform changes, but trends may be noisy. Urgent symptoms, injury or equipment problems can require immediate action.",
+        "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+        "sourceIds": ["original-author"],
+        "reviewStatus": "pending_review",
+        "aliases": ["review", "progress", "performance", "recovery"]
+      },
+      "revision_sha256": "1f901dcacf3f88f84003f70e301f780612893cfcab5a5a307d684d1b15b2170d",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "annotation",
+      "id": "Barbell_Deadlift",
+      "raw_sha256": "d23cca47a88c9930c14ee68eb3409cb287afdf2fd3fc07f486e3079b077f2666",
+      "manifest_sha256": "d23cca47a88c9930c14ee68eb3409cb287afdf2fd3fc07f486e3079b077f2666",
+      "decision": "revise",
+      "reason": "Pinned source specifies a loaded bar; plates appropriate for this exact setup, but straps are optional. Safety depends on load, competence and a suitable clear floor; avoid implying movement equivalence to all hinges.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Barbell_Deadlift",
+        "equipment": ["BARBELL", "WEIGHT_PLATES"],
+        "movementPatterns": ["hinge"],
+        "aliases": ["deadlift"],
+        "note": "A loaded bar requires plates.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision": {
+        "sourceKey": "Barbell_Deadlift",
+        "equipment": ["BARBELL", "WEIGHT_PLATES"],
+        "movementPatterns": ["hinge"],
+        "aliases": ["deadlift"],
+        "note": "Loaded bar and plates; straps optional. Load, competence and a clear suitable floor matter.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision_sha256": "aeb423bbb6817c1b87fe866c5c72a7a35a5300c73f0a7bfcf9a0b591559b2b7e",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "annotation",
+      "id": "Barbell_Squat",
+      "raw_sha256": "33a1a2e9dde83a1db652d161d24577186ea3a513c1e48fcd7105cd5846c5ab68",
+      "manifest_sha256": "33a1a2e9dde83a1db652d161d24577186ea3a513c1e48fcd7105cd5846c5ab68",
+      "decision": "revise",
+      "reason": "Pinned source requires rack and loaded bar; rack safeties/spotting are not represented, and raw instructions falsely universalize knees past toes. Quarantine instructions and resolve safety provision before compatibility use.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Barbell_Squat",
+        "equipment": ["BARBELL", "WEIGHT_PLATES", "SQUAT_RACK"],
+        "movementPatterns": ["squat"],
+        "aliases": ["back squat"],
+        "note": "The catalog instructions use a rack.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision": {
+        "sourceKey": "Barbell_Squat",
+        "equipment": ["BARBELL", "WEIGHT_PLATES", "SQUAT_RACK"],
+        "movementPatterns": ["squat"],
+        "aliases": ["back squat"],
+        "note": "Loaded bar and rack; appropriate safeties or spotting must be established. Suitability is not implied.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision_sha256": "f4be8f18fef0cb8221ab58c908461775e61f5bfd713cf84bd7ce4ea8a2829b2d",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "annotation",
+      "id": "Bent_Over_Barbell_Row",
+      "raw_sha256": "d9f4d1cb859890173f21099bde018e1b0a43fdedcc66f10ccddee264c38ea3a7",
+      "manifest_sha256": "d9f4d1cb859890173f21099bde018e1b0a43fdedcc66f10ccddee264c38ea3a7",
+      "decision": "revise",
+      "reason": "Source names barbell but does not explicitly require plates; empty bar is possible. Clarify whether annotation models loaded variant; do not exclude it categorically. Hinge tolerance matters.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Bent_Over_Barbell_Row",
+        "equipment": ["BARBELL", "WEIGHT_PLATES"],
+        "movementPatterns": ["horizontal pull"],
+        "aliases": ["barbell row"],
+        "note": "A loaded bar requires plates.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision": {
+        "sourceKey": "Bent_Over_Barbell_Row",
+        "equipment": ["BARBELL"],
+        "movementPatterns": ["horizontal pull"],
+        "aliases": ["barbell row"],
+        "note": "Barbell required; plates are optional for an unloaded-bar variant. Hinge tolerance and load matter.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision_sha256": "450868f5811ff33ba5bbe0c156512ca15bbda02e4600fe745b0724112a18ceb3",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "annotation",
+      "id": "Bodyweight_Squat",
+      "raw_sha256": "8bad29948670355a6e0bbb9ee449df4184abc5ccca6669d9f12f0a87246856ad",
+      "manifest_sha256": "8bad29948670355a6e0bbb9ee449df4184abc5ccca6669d9f12f0a87246856ad",
+      "decision": "accept",
+      "reason": "Source uses standing bodyweight and no equipment; squat pattern and air-squat alias fit. Full depth/quick reversal in source is not universal; control and ability matter.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Bodyweight_Squat",
+        "equipment": [],
+        "movementPatterns": ["squat"],
+        "aliases": ["air squat"],
+        "note": "The catalog describes a standing bodyweight movement.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      }
+    },
+    {
+      "kind": "annotation",
+      "id": "Dumbbell_Bench_Press",
+      "raw_sha256": "0a6c70e4cece328266ecfc5e525e613f2bd4fc2c8b33359d4dfc53650a08fe4e",
+      "manifest_sha256": "0a6c70e4cece328266ecfc5e525e613f2bd4fc2c8b33359d4dfc53650a08fe4e",
+      "decision": "accept",
+      "reason": "Source explicitly specifies flat bench and a dumbbell in each hand; horizontal push is correct. One equipment token does not encode the pair; load and bench stability still matter.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Dumbbell_Bench_Press",
+        "equipment": ["DUMBBELL", "BENCH"],
+        "movementPatterns": ["horizontal push"],
+        "aliases": ["dumbbell chest press"],
+        "note": "The catalog specifies a flat bench.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      }
+    },
+    {
+      "kind": "annotation",
+      "id": "Dumbbell_Shoulder_Press",
+      "raw_sha256": "8ab47a2ddf95a94b23413acf3ab0395a1648e68014d0a29bdb3def1e3de50955",
+      "manifest_sha256": "8ab47a2ddf95a94b23413acf3ab0395a1648e68014d0a29bdb3def1e3de50955",
+      "decision": "revise",
+      "reason": "Source specifies two dumbbells and supported bench; vertical push is reasonable. BACK_SUPPORT_BENCH is a separate exact token, so a user supplying BENCH may be incorrectly excluded; model a supported bench capability and pair.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Dumbbell_Shoulder_Press",
+        "equipment": ["DUMBBELL", "BACK_SUPPORT_BENCH"],
+        "movementPatterns": ["vertical push"],
+        "aliases": ["seated dumbbell press"],
+        "note": "The catalog specifies a bench with back support.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision": {
+        "sourceKey": "Dumbbell_Shoulder_Press",
+        "equipment": ["DUMBBELL", "BACK_SUPPORT_BENCH"],
+        "movementPatterns": ["vertical push"],
+        "aliases": ["seated dumbbell press"],
+        "note": "Two dumbbells and a stable bench with back support are specified; a generic bench does not establish back support.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision_sha256": "d7bf23643ffab37304562380080e46118b6fd7cbee61ba8cf581fd29c8ffea05",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "annotation",
+      "id": "Dumbbell_Squat",
+      "raw_sha256": "7db6352319c1ba10de4808e99d66409eaf4d4632a9da18b3b78691f68d626d86",
+      "manifest_sha256": "7db6352319c1ba10de4808e99d66409eaf4d4632a9da18b3b78691f68d626d86",
+      "decision": "revise",
+      "reason": "Source specifies two dumbbells and squat; count is not encoded. Raw instruction repeats the unsupported knees-past-toes rule; quarantine that text and specify tolerable range.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Dumbbell_Squat",
+        "equipment": ["DUMBBELL"],
+        "movementPatterns": ["squat"],
+        "aliases": ["dumbbell squat"],
+        "note": "The catalog specifies a dumbbell in each hand.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision": {
+        "sourceKey": "Dumbbell_Squat",
+        "equipment": ["DUMBBELL"],
+        "movementPatterns": ["squat"],
+        "aliases": ["dumbbell squat"],
+        "note": "Two dumbbells are specified. Use an individually tolerable range; suitability is not implied.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision_sha256": "e77c68381f9722bdc0bc67aa6093d40b805e8f208145e5e7ece6cb3b4c46bcb5",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "annotation",
+      "id": "Plank",
+      "raw_sha256": "290d9fa9d5459681a376ceaba64d919c18b48f40c0bb47aabcdd0110a71a4b84",
+      "manifest_sha256": "290d9fa9d5459681a376ceaba64d919c18b48f40c0bb47aabcdd0110a71a4b84",
+      "decision": "revise",
+      "reason": "Source uses forearms and toes on floor, matching alias and trunk stability; instruction to hold as long as possible may compromise form. Set a controlled duration; a mat is optional.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Plank",
+        "equipment": [],
+        "movementPatterns": ["trunk stability"],
+        "aliases": ["forearm plank"],
+        "note": "The catalog describes a floor plank.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision": {
+        "sourceKey": "Plank",
+        "equipment": [],
+        "movementPatterns": ["trunk stability"],
+        "aliases": ["forearm plank"],
+        "note": "Forearms and toes on a suitable floor; mat optional. Choose a controlled duration.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision_sha256": "193830f34fb74a71d4a14833869f929e5ee9558b4a9507bef9109d1a8856ff63",
+      "revision_review_status": "pending_independent_review"
+    },
+    {
+      "kind": "annotation",
+      "id": "Pullups",
+      "raw_sha256": "0915a89a0ae892e07e75b0a89d0fe9fdfd0f38b78d1d98a4519dd719680d3538",
+      "manifest_sha256": "0915a89a0ae892e07e75b0a89d0fe9fdfd0f38b78d1d98a4519dd719680d3538",
+      "decision": "accept",
+      "reason": "Pinned instructions use a pull-up bar; vertical pull and aliases fit. Bar security, grip and sufficient ability are necessary but not encoded; equipment compatibility is not suitability.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Pullups",
+        "equipment": ["PULL_UP_BAR"],
+        "movementPatterns": ["vertical pull"],
+        "aliases": ["pull up", "pullup"],
+        "note": "The catalog specifies a pull-up bar.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      }
+    },
+    {
+      "kind": "annotation",
+      "id": "Pushups",
+      "raw_sha256": "14fb5beb3e862f1dcbb1d651d073b43db4d50c696c722a2cd792180b568f75d4",
+      "manifest_sha256": "14fb5beb3e862f1dcbb1d651d073b43db4d50c696c722a2cd792180b568f75d4",
+      "decision": "revise",
+      "reason": "No equipment and horizontal push fit. Source mandates hands 36 inches apart, an arbitrary absolute width; individualize hand position and ability. A floor is assumed.",
+      "common_limit": "Identity and instructions match pinned source; exercise text is not independent evidence of effectiveness or complete safety; pending qualified human review.",
+      "raw": {
+        "sourceKey": "Pushups",
+        "equipment": [],
+        "movementPatterns": ["horizontal push"],
+        "aliases": ["push up", "pushup"],
+        "note": "The catalog describes a floor push-up.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision": {
+        "sourceKey": "Pushups",
+        "equipment": [],
+        "movementPatterns": ["horizontal push"],
+        "aliases": ["push up", "pushup"],
+        "note": "A suitable floor is assumed. Hand position and difficulty depend on the individual.",
+        "reviewStatus": "pending_review",
+        "sourceId": "free-exercise-db-f00c92c"
+      },
+      "revision_sha256": "735eee23567d365faeec8325be47c7145dab6fe08f1811a56fbd28aacf797488",
+      "revision_review_status": "pending_independent_review"
+    }
+  ]
+}

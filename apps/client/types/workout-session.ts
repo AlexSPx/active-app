@@ -1,4 +1,4 @@
-import type { ApiExercise } from './api'
+import type { ApiExercise, CoachPrescription } from './api'
 
 // ==========================================
 // Workout Session Types (for active workouts)
@@ -15,5 +15,6 @@ export interface Set {
 
 export interface Exercise extends ApiExercise {
   sessionId: string
+  coachPrescription?: CoachPrescription
   sets: Set[]
 }

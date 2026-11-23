@@ -7,7 +7,7 @@ import type { SQLiteBindValue, SQLiteDatabase } from 'expo-sqlite'
 import type { User } from '../../types/api'
 import { getProfileScope, isCurrentProfile, type ProfileScope } from '../profileScope'
 
-const DATABASE_VERSION = 8
+const DATABASE_VERSION = 10
 const LEGACY_DATABASE_NAME = 'active.db'
 const LEGACY_OWNER_KEY = 'legacy_active_db_owner'
 const LEGACY_IMPORT_KEY = 'legacy_active_db_import_owner'
@@ -283,6 +283,28 @@ async function migrateSchema(db: SQLiteDatabase) {
       PRAGMA user_version = 8;
       `)
       }
+
+      if (currentDbVersion < 9) {
+        await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS coach_draft_saves (
+        revision TEXT PRIMARY KEY,
+        draft_json TEXT NOT NULL,
+        result_json TEXT NOT NULL
+      );
+      PRAGMA user_version = 9;
+      `)
+      }
+      if (currentDbVersion < 10) {
+        await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS coach_conversations (
+        id TEXT PRIMARY KEY,
+        updated_at TEXT NOT NULL,
+        items_json TEXT NOT NULL
+      );
+      PRAGMA user_version = 10;
+      `)
+      }
+
     })
   } finally {
     await db.execAsync('PRAGMA foreign_keys = ON')

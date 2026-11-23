@@ -8,7 +8,11 @@ export function getRestTimerNextStepText(exercises: Exercise[], activeSetId: str
   const nextSet = sets.find(({ set }, index) => index > activeIndex && !set.completed)
 
   if (nextSet) {
-    const noun = nextSet.exercise.category === 'CARDIO' ? 'interval' : 'set'
+    const noun =
+      nextSet.exercise.category === 'CARDIO' ||
+      nextSet.exercise.coachPrescription?.sets[0]?.kind === 'timed'
+        ? 'interval'
+        : 'set'
     return `Next up: ${nextSet.exercise.name}, ${noun} ${nextSet.index + 1}.`
   }
 
@@ -21,9 +25,10 @@ export function getRestTimerNextStepText(exercises: Exercise[], activeSetId: str
 
 export function hasSetValues(
   category: string | null,
-  set: Pick<Set, 'reps' | 'weight' | 'durationSeconds'>
+  set: Pick<Set, 'reps' | 'weight' | 'durationSeconds'>,
+  timed = false
 ) {
-  if (category === 'CARDIO') {
+  if (category === 'CARDIO' || timed) {
     return (
       set.durationSeconds != null && Number.isFinite(set.durationSeconds) && set.durationSeconds > 0
     )

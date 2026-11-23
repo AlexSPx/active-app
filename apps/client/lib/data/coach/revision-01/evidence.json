@@ -1,0 +1,19 @@
+{
+  "sources": [
+    {
+      "id": "cdc-getting-started-2025",
+      "role": "factual_support_candidate",
+      "title": "Steps for Getting Started With Physical Activity",
+      "url": "https://www.cdc.gov/healthy-weight-growth/physical-activity/getting-started.html",
+      "version": "2025-12-04",
+      "accessed": "2026-11-01",
+      "attribution": "Centers for Disease Control and Prevention",
+      "claimIds": ["card-001", "card-002"],
+      "supportLimit": "General activity guidance supports starting slowly, building activity gradually and scheduling it. It does not establish a strength-specific dose, recovery threshold or every part of either card.",
+      "termsUrl": "https://www.cdc.gov/other/agencymaterials.html",
+      "redistribution": "CDC says most site information is public domain and reusable, but identifies third-party and international exceptions; attribution, prominent non-endorsement disclaimer, no substantive changes and free-availability notice are required by its stated policy. Individual page provenance and applicability to proposed use remain unverified.",
+      "training": "Not expressly addressed in the agency policy; applicability to the intended training use and jurisdiction remains unverified.",
+      "clearance": "unverified"
+    }
+  ]
+}

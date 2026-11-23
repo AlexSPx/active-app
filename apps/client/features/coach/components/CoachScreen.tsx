@@ -1,0 +1,2011 @@
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+  type TextInputProps,
+} from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
+import { useRouter } from 'expo-router'
+import {
+  ArrowLeft,
+  ArrowUp,
+  ChevronDown,
+  ChevronRight,
+  Dumbbell,
+  History,
+  MessageCircle,
+  Pencil,
+  Plus,
+  Search,
+  Square,
+  SquarePen,
+  Trash2,
+  X,
+} from 'lucide-react-native'
+import Animated, { useReducedMotion } from 'react-native-reanimated'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useEffect, useRef, useState, type ComponentRef } from 'react'
+import { Button, UiText, TextField, SegmentedSelection } from '../../../components/ui/Controls'
+import { useUniwind } from 'uniwind'
+import { useCoachController } from '../hooks/useCoachController'
+import { exerciseCatalog } from '../../../lib/exercises/catalog'
+import type { CoachResponse, CoachReview, CoachWorkout } from '../contracts'
+import { shouldFollowCoachMessages } from '../scrollBehavior'
+
+type Details = {
+  metrics: Map<string, string>
+  names: Map<string, string>
+  evidence: Map<string, string>
+}
+
+type Draft = Extract<CoachResponse, { kind: 'workout_draft' | 'routine_draft' }>
+
+function loadSummary(exercise: CoachWorkout['exercises'][number]) {
+  const loads = exercise.sets.flatMap((set) => (set.kind === 'strength' ? [set.load] : []))
+  if (!loads.length) return ''
+  if (loads.some((load) => load.kind === 'user_selected')) return 'Set weights'
+  if (loads.every((load) => load.kind === 'bodyweight')) return 'Bodyweight'
+  const weights = loads.flatMap((load) => (load.kind === 'kilograms' ? [load.value] : []))
+  const low = Math.min(...weights),
+    high = Math.max(...weights)
+  const weight = `${low === high ? low : `${low}–${high}`} kg`
+  return loads.some((load) => load.kind === 'bodyweight') ? `Bodyweight · ${weight}` : weight
+}
+
+function setSummary(exercise: CoachWorkout['exercises'][number]) {
+  const { sets } = exercise
+  const first = sets[0]
+  if (
+    first?.kind === 'timed' &&
+    sets.every((set) => set.kind === 'timed' && set.durationSeconds === first.durationSeconds)
+  ) {
+    return `${sets.length} × ${first.durationSeconds}s`
+  }
+  if (
+    first?.kind === 'strength' &&
+    sets.every((set) => set.kind === 'strength' && set.repetitions === first.repetitions)
+  ) {
+    return `${sets.length} × ${first.repetitions}`
+  }
+  return sets.length === 1 ? '1 set' : `${sets.length} sets`
+}
+
+function SetNumberInput({
+  value,
+  onChange,
+  ...props
+}: Omit<TextInputProps, 'value' | 'onChangeText' | 'onChange'> & {
+  value: string
+  onChange: (value: string) => void
+}) {
+  const [text, setText] = useState(value)
+  const focused = useRef(false)
+  useEffect(() => {
+    if (!focused.current) setText(value)
+  }, [value])
+  return (
+    <TextInput
+      {...props}
+      value={text}
+      onFocus={() => {
+        focused.current = true
+      }}
+      onBlur={() => {
+        focused.current = false
+        setText(value)
+      }}
+      onChangeText={(next) => {
+        setText(next)
+        onChange(next)
+      }}
+    />
+  )
+}
+
+function RoutineCycle({ draft }: { draft: Extract<Draft, { kind: 'routine_draft' }> }) {
+  const c = colors(useUniwind().theme === 'dark')
+  if (draft.routine.type === 'WEEKLY_COMPLETION') {
+    return (
+      <Text
+        style={{
+          backgroundColor: c.surface,
+          color: c.quiet,
+          borderRadius: 11,
+          padding: 10,
+          fontSize: 11,
+          lineHeight: 17,
+        }}
+      >
+        Complete all {draft.routine.workoutRefs.length} workouts each week, in any order.
+      </Text>
+    )
+  }
+  return (
+    <View>
+      <Text style={{ color: c.quiet, fontSize: 11, marginBottom: 6 }}>
+        Repeating {draft.routine.days.length}-day cycle · Rest included
+      </Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5 }}>
+        {draft.routine.days.map((day, index) => {
+          const workoutIndex =
+            day.kind === 'workout'
+              ? draft.workouts.findIndex((workout) => workout.ref === day.workoutRef)
+              : -1
+          const label =
+            day.kind === 'rest'
+              ? 'Rest'
+              : workoutIndex >= 0
+                ? String.fromCharCode(65 + workoutIndex)
+                : 'Workout'
+          return (
+            <View
+              key={index}
+              accessibilityLabel={`Day ${index + 1}: ${day.kind === 'rest' ? 'Rest' : (draft.workouts[workoutIndex]?.title ?? 'Workout')}`}
+              style={{
+                flexGrow: 1,
+                minWidth: 38,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 9,
+                minHeight: 36,
+                backgroundColor: day.kind === 'rest' ? c.surface : c.featured,
+              }}
+            >
+              <Text style={{ color: c.quiet, fontSize: 9 }}>Day {index + 1}</Text>
+              <Text
+                style={{
+                  color: day.kind === 'rest' ? c.quiet : c.plum,
+                  fontSize: day.kind === 'rest' ? 10 : 12,
+                  fontWeight: day.kind === 'rest' ? '400' : '600',
+                }}
+              >
+                {label}
+              </Text>
+            </View>
+          )
+        })}
+      </View>
+    </View>
+  )
+}
+
+export function Review({
+  initial,
+  details,
+  save,
+  saving,
+  remoteUnmapped,
+  transitioning,
+  request,
+  onChange,
+  bottomInset = 0,
+  selectedWorkout,
+  saved = false,
+}: {
+  initial: Draft
+  bottomInset?: number
+  selectedWorkout?: string | null
+  saved?: boolean
+  onChange?: (draft: Draft) => void
+  details: Details
+  save: (draft: Draft) => void
+  saving: boolean
+  remoteUnmapped: boolean
+  transitioning: boolean
+  request?: string
+}) {
+  const [draft, setDraft] = useState(initial)
+  const reviewScroll = useRef<ComponentRef<typeof ScrollView>>(null)
+  const onChangeRef = useRef(onChange)
+  onChangeRef.current = onChange
+  useEffect(() => {
+    onChangeRef.current?.(draft)
+  }, [draft])
+  const [openWorkout, setOpenWorkout] = useState<string | null>(
+    initial.kind === 'workout_draft' ? initial.workout.ref : (selectedWorkout ?? null)
+  )
+  const cycleRef = useRef(
+    initial.kind === 'routine_draft' && initial.routine.type === 'SEQUENTIAL'
+      ? initial.routine.days
+      : null
+  )
+  const [openExercise, setOpenExercise] = useState<string | null>(null)
+  const [openSection, setOpenSection] = useState<'loads' | 'guidance' | null>(null)
+  const [openNotes, setOpenNotes] = useState(false)
+  const didScrollToWorkout = useRef(false)
+  const c = colors(useUniwind().theme === 'dark')
+  const workouts = draft.kind === 'workout_draft' ? [draft.workout] : draft.workouts
+  const shortfalls = draft.assumptions.filter((item) => item.startsWith('PARTIAL WORKOUT'))
+  const notes = draft.assumptions.filter((item) => !item.startsWith('PARTIAL WORKOUT'))
+  const updateWorkout = (
+    index: number,
+    change: CoachWorkout | ((workout: CoachWorkout) => CoachWorkout)
+  ) => {
+    const apply = (workout: CoachWorkout) =>
+      typeof change === 'function' ? change(workout) : change
+    setDraft((old) =>
+      old.kind === 'workout_draft'
+        ? { ...old, workout: apply(old.workout) }
+        : {
+            ...old,
+            workouts: old.workouts.map((workout, i) => (i === index ? apply(workout) : workout)),
+          }
+    )
+  }
+  const updateExercise = (
+    wi: number,
+    ei: number,
+    change: (exercise: CoachWorkout['exercises'][number]) => CoachWorkout['exercises'][number]
+  ) =>
+    updateWorkout(wi, (workout) => ({
+      ...workout,
+      exercises: workout.exercises.map((exercise, i) => (i === ei ? change(exercise) : exercise)),
+    }))
+  return (
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        ref={reviewScroll}
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20, gap: 10 }}
+      >
+        <Text style={{ color: c.ink, fontSize: 12 }}>
+          {draft.kind === 'routine_draft' ? 'Routine name' : 'Workout name'}
+        </Text>
+        <TextInput
+          accessibilityLabel={draft.kind === 'routine_draft' ? 'Routine name' : 'Workout name'}
+          editable={!saving}
+          maxLength={80}
+          value={draft.kind === 'routine_draft' ? draft.routine.title : draft.workout.title}
+          onChangeText={(title) =>
+            setDraft((old) =>
+              old.kind === 'routine_draft'
+                ? { ...old, routine: { ...old.routine, title } }
+                : { ...old, workout: { ...old.workout, title } }
+            )
+          }
+          style={{
+            color: c.ink,
+            backgroundColor: c.raised,
+            borderRadius: 12,
+            minHeight: 44,
+            paddingHorizontal: 12,
+          }}
+        />
+        {shortfalls.map((shortfall, index) => (
+          <UiText key={index} textRole="captionDestructive">
+            {shortfall.replace(/^PARTIAL WORKOUT/, 'Partial workout')}
+          </UiText>
+        ))}
+        {!request && (
+          <UiText textRole="bodyDestructive">
+            This restored draft has no original request, so its constraints cannot be rechecked.
+            Start a new coach request to create a saveable draft.
+          </UiText>
+        )}
+        {remoteUnmapped && (
+          <UiText textRole="bodyDestructive">
+            Saving is unavailable: exercise IDs are not mapped for sync.
+          </UiText>
+        )}
+        {draft.kind === 'routine_draft' && (
+          <View style={{ gap: 10, marginTop: 8 }}>
+            <Text
+              accessibilityRole="header"
+              style={{ color: c.ink, fontSize: 14, fontWeight: '600' }}
+            >
+              Schedule
+            </Text>
+            <SegmentedSelection
+              accessibilityLabel="Routine schedule"
+              disabled={saving}
+              value={draft.routine.type}
+              options={[
+                { value: 'SEQUENTIAL', label: 'Repeating cycle' },
+                { value: 'WEEKLY_COMPLETION', label: 'Weekly goal' },
+              ]}
+              onValueChange={(type) =>
+                setDraft((old) => {
+                  if (old.kind !== 'routine_draft' || old.routine.type === type) return old
+                  if (old.routine.type === 'SEQUENTIAL') cycleRef.current = old.routine.days
+                  const title = old.routine.title
+                  return {
+                    ...old,
+                    routine:
+                      type === 'WEEKLY_COMPLETION'
+                        ? { type, title, workoutRefs: old.workouts.map((workout) => workout.ref) }
+                        : {
+                            type: 'SEQUENTIAL',
+                            title,
+                            days:
+                              cycleRef.current ??
+                              old.workouts.flatMap((workout, index) =>
+                                index % 2 === 1
+                                  ? [
+                                      { kind: 'workout' as const, workoutRef: workout.ref },
+                                      { kind: 'rest' as const },
+                                    ]
+                                  : [{ kind: 'workout' as const, workoutRef: workout.ref }]
+                              ),
+                          },
+                  }
+                })
+              }
+            />
+            <RoutineCycle draft={draft} />
+          </View>
+        )}
+        {workouts.some((workout) =>
+          workout.exercises.some((exercise) =>
+            exercise.sets.some((set) => set.kind !== 'timed' && set.load.kind === 'user_selected')
+          )
+        ) && (
+          <UiText textRole="bodyDestructive">
+            Choose a load for the marked sets before saving.
+          </UiText>
+        )}
+        <Text
+          accessibilityRole="header"
+          style={{ color: c.ink, fontSize: 16, fontWeight: '600', marginTop: 12 }}
+        >
+          {draft.kind === 'routine_draft' ? 'Workouts' : 'Exercises'}
+        </Text>
+        {workouts.map((workout, wi) => (
+          <View
+            key={workout.ref}
+            onLayout={(event) => {
+              if (selectedWorkout === workout.ref && !didScrollToWorkout.current) {
+                didScrollToWorkout.current = true
+                reviewScroll.current?.scrollTo({ y: event.nativeEvent.layout.y, animated: false })
+              }
+            }}
+            style={
+              draft.kind === 'routine_draft'
+                ? { borderWidth: 1, borderColor: c.line, borderRadius: 14, overflow: 'hidden' }
+                : undefined
+            }
+          >
+            {draft.kind === 'routine_draft' && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityState={{ expanded: openWorkout === workout.ref }}
+                onPress={() => {
+                  setOpenWorkout(openWorkout === workout.ref ? null : workout.ref)
+                  setOpenExercise(null)
+                  setOpenSection(null)
+                }}
+                style={{
+                  minHeight: 58,
+                  paddingHorizontal: 12,
+                  paddingVertical: 13,
+                  backgroundColor: c.surface,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <View
+                  style={{
+                    width: 28,
+                    height: 30,
+                    borderRadius: 9,
+                    backgroundColor: c.raised,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: c.plum, fontWeight: '600' }}>
+                    {String.fromCharCode(65 + wi)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <UiText textRole="bodyEmphasis">{workout.title || `Workout ${wi + 1}`}</UiText>
+                  <UiText textRole="caption">
+                    {workout.exercises.length} exercises
+                    {workout.schedule
+                      ? ` · About ${Math.round(workout.schedule.estimatedSeconds / 60)} min`
+                      : ''}
+                  </UiText>
+                </View>
+                {openWorkout === workout.ref ? (
+                  <ChevronDown size={20} color={c.quiet} />
+                ) : (
+                  <ChevronRight size={20} color={c.quiet} />
+                )}
+              </Pressable>
+            )}
+            {(draft.kind === 'workout_draft' || openWorkout === workout.ref) && (
+              <View style={draft.kind === 'routine_draft' ? { padding: 12 } : undefined}>
+                {draft.kind === 'routine_draft' && (
+                  <TextField
+                    className="mb-compact"
+                    disabled={saving}
+                    accessibilityLabel={`Workout ${wi + 1} title`}
+                    value={workout.title}
+                    onChangeText={(title) => updateWorkout(wi, { ...workout, title })}
+                  />
+                )}
+                {workout.preparation?.map((part) => (
+                  <UiText key={part.kind} textRole="caption" style={{ paddingVertical: 6 }}>
+                    {part.kind === 'warmup' ? 'Warm-up' : 'Cool-down'}: {part.description} (
+                    {part.durationSeconds / 60} min)
+                  </UiText>
+                ))}
+                {workout.exercises.map((exercise, ei) => {
+                  const exerciseKey = `${workout.ref}:${ei}`
+                  const catalogExercise = exerciseCatalog.find(
+                    (item) => item.id === exercise.catalogId
+                  )
+                  const name =
+                    details.names.get(exercise.catalogId) ??
+                    catalogExercise?.name ??
+                    exercise.catalogId
+                  const rest = exercise.guidance?.restSeconds
+                  const summary = [
+                    setSummary(exercise),
+                    loadSummary(exercise),
+                    rest === undefined ? '' : `${rest}s rest`,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                  const expanded = openExercise === exerciseKey
+                  const allStrength = exercise.sets.every((set) => set.kind === 'strength')
+                  const allTimed = exercise.sets.every((set) => set.kind === 'timed')
+                  const hasGuidance = !!(
+                    exercise.guidance?.effort ||
+                    exercise.guidance?.repetitionsRange ||
+                    exercise.guidance?.cues?.length ||
+                    exercise.guidance?.progression
+                  )
+                  return (
+                    <View key={exerciseKey} style={{ borderTopWidth: 1, borderColor: c.line }}>
+                      <Pressable
+                        accessibilityRole="button"
+                        accessibilityState={{ expanded }}
+                        accessibilityLabel={`${name} details, ${summary}`}
+                        onPress={() => {
+                          setOpenExercise(expanded ? null : exerciseKey)
+                          setOpenSection(null)
+                        }}
+                        style={{
+                          paddingVertical: 12,
+                          flexDirection: 'row',
+                          alignItems: 'center',
+                          gap: 8,
+                        }}
+                      >
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: c.ink, fontWeight: '600', fontSize: 14 }}>
+                            {name}
+                          </Text>
+                          <Text style={{ color: c.quiet, fontSize: 11, marginTop: 4 }}>
+                            {summary}
+                          </Text>
+                        </View>
+                        {expanded ? (
+                          <ChevronDown size={20} color={c.quiet} />
+                        ) : (
+                          <ChevronRight size={20} color={c.quiet} />
+                        )}
+                      </Pressable>
+                      {expanded && (
+                        <View style={{ paddingBottom: 12, gap: 8 }}>
+                          {!allTimed && catalogExercise?.equipment === 'DUMBBELL' && (
+                            <Text style={{ color: c.quiet, fontSize: 11, lineHeight: 17 }}>
+                              Weight is per dumbbell.
+                            </Text>
+                          )}
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                            <Text style={{ width: 28, color: c.quiet, fontSize: 11 }}>Set</Text>
+                            {!allTimed && (
+                              <Text style={{ flex: 1, color: c.quiet, fontSize: 11 }}>
+                                Weight (kg)
+                              </Text>
+                            )}
+                            <Text style={{ flex: 1, color: c.quiet, fontSize: 11 }}>
+                              {allStrength ? 'Reps' : allTimed ? 'Seconds' : 'Reps / sec'}
+                            </Text>
+                            <View style={{ width: 44 }} />
+                          </View>
+                          {exercise.sets.map((set, si) => {
+                            const updateSet = (
+                              change: (
+                                current: CoachWorkout['exercises'][number]['sets'][number]
+                              ) => CoachWorkout['exercises'][number]['sets'][number]
+                            ) =>
+                              updateExercise(wi, ei, (exercise) => ({
+                                ...exercise,
+                                sets: exercise.sets.map((current, j) =>
+                                  j === si ? change(current) : current
+                                ),
+                              }))
+                            const inputStyle = {
+                              color: c.ink,
+                              backgroundColor: c.raised,
+                              borderColor: c.line,
+                              borderWidth: 1,
+                              borderRadius: 9,
+                              minHeight: 44,
+                              paddingHorizontal: 8,
+                              flex: 1,
+                            }
+                            return (
+                              <View
+                                key={si}
+                                style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}
+                              >
+                                <Text style={{ width: 28, color: c.quiet }}>{si + 1}</Text>
+                                {set.kind === 'timed' ? (
+                                  !allTimed && (
+                                    <Text style={{ flex: 1, color: c.quiet }}>Timed</Text>
+                                  )
+                                ) : set.load.kind === 'bodyweight' ? (
+                                  <Text style={{ flex: 1, color: c.quiet }}>Bodyweight</Text>
+                                ) : (
+                                  <SetNumberInput
+                                    accessibilityLabel={`Set ${si + 1} kilograms`}
+                                    editable={!saving}
+                                    keyboardType="decimal-pad"
+                                    selectTextOnFocus
+                                    placeholder="kg"
+                                    placeholderTextColor={c.quiet}
+                                    value={
+                                      set.load.kind === 'kilograms' ? String(set.load.value) : ''
+                                    }
+                                    onChange={(value) =>
+                                      updateSet((current) =>
+                                        current.kind === 'strength'
+                                          ? {
+                                              ...current,
+                                              load: value.trim()
+                                                ? {
+                                                    kind: 'kilograms',
+                                                    value: Number(value.replace(',', '.')),
+                                                  }
+                                                : { kind: 'user_selected' },
+                                            }
+                                          : current
+                                      )
+                                    }
+                                    style={inputStyle}
+                                  />
+                                )}
+                                <SetNumberInput
+                                  accessibilityLabel={
+                                    set.kind === 'timed'
+                                      ? `Set ${si + 1} duration seconds`
+                                      : `Set ${si + 1} repetitions`
+                                  }
+                                  editable={!saving}
+                                  keyboardType="number-pad"
+                                  selectTextOnFocus
+                                  value={String(
+                                    set.kind === 'timed' ? set.durationSeconds : set.repetitions
+                                  )}
+                                  onChange={(value) =>
+                                    updateSet((current) =>
+                                      current.kind === 'timed'
+                                        ? { ...current, durationSeconds: Number(value) }
+                                        : { ...current, repetitions: Number(value) }
+                                    )
+                                  }
+                                  style={inputStyle}
+                                />
+                                {exercise.sets.length > 1 ? (
+                                  <Pressable
+                                    accessibilityRole="button"
+                                    accessibilityLabel={`Delete set ${si + 1} for ${name}`}
+                                    accessibilityState={{ disabled: saving }}
+                                    disabled={saving}
+                                    onPress={() =>
+                                      updateExercise(wi, ei, (exercise) =>
+                                        exercise.sets.length > 1
+                                          ? {
+                                              ...exercise,
+                                              sets: exercise.sets.filter((_, j) => j !== si),
+                                            }
+                                          : exercise
+                                      )
+                                    }
+                                    style={{
+                                      width: 44,
+                                      minHeight: 44,
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Trash2 size={17} color={c.quiet} />
+                                  </Pressable>
+                                ) : (
+                                  <View style={{ width: 44 }} />
+                                )}
+                              </View>
+                            )
+                          })}
+                          <View
+                            style={{
+                              flexDirection: 'row',
+                              flexWrap: 'wrap',
+                              alignItems: 'center',
+                              gap: 4,
+                            }}
+                          >
+                            <Button
+                              variant="ghost"
+                              density="compact"
+                              accessibilityLabel={`Add set to ${name}`}
+                              disabled={saving}
+                              onPress={() =>
+                                updateExercise(wi, ei, (exercise) => {
+                                  const last = exercise.sets[exercise.sets.length - 1]
+                                  return last
+                                    ? { ...exercise, sets: [...exercise.sets, { ...last }] }
+                                    : exercise
+                                })
+                              }
+                            >
+                              <UiText textRole="captionEmphasis">+ Add set</UiText>
+                            </Button>
+                            {!allTimed && (
+                              <Button
+                                variant="ghost"
+                                density="compact"
+                                accessibilityLabel={`Change load types for ${name}`}
+                                accessibilityState={{ expanded: openSection === 'loads' }}
+                                disabled={saving}
+                                onPress={() =>
+                                  setOpenSection(openSection === 'loads' ? null : 'loads')
+                                }
+                              >
+                                <UiText textRole="captionEmphasis">Load types</UiText>
+                              </Button>
+                            )}
+                            {hasGuidance && (
+                              <Button
+                                variant="ghost"
+                                density="compact"
+                                accessibilityState={{ expanded: openSection === 'guidance' }}
+                                onPress={() =>
+                                  setOpenSection(openSection === 'guidance' ? null : 'guidance')
+                                }
+                              >
+                                <UiText textRole="captionEmphasis">Guidance</UiText>
+                              </Button>
+                            )}
+                          </View>
+                          {openSection === 'loads' &&
+                            exercise.sets.map((set, si) =>
+                              set.kind === 'strength' ? (
+                                <View key={si} style={{ gap: 4 }}>
+                                  <Text style={{ color: c.quiet, fontSize: 11 }}>Set {si + 1}</Text>
+                                  <SegmentedSelection
+                                    disabled={saving}
+                                    accessibilityLabel={`Set ${si + 1} load type`}
+                                    value={
+                                      set.load.kind === 'user_selected'
+                                        ? 'kilograms'
+                                        : set.load.kind
+                                    }
+                                    options={[
+                                      { value: 'kilograms', label: 'Kilograms' },
+                                      { value: 'bodyweight', label: 'Bodyweight' },
+                                    ]}
+                                    onValueChange={(kind) =>
+                                      updateExercise(wi, ei, (exercise) => ({
+                                        ...exercise,
+                                        sets: exercise.sets.map((current, j) =>
+                                          j === si && current.kind === 'strength'
+                                            ? {
+                                                ...current,
+                                                load:
+                                                  kind === 'bodyweight'
+                                                    ? { kind: 'bodyweight' }
+                                                    : { kind: 'user_selected' },
+                                              }
+                                            : current
+                                        ),
+                                      }))
+                                    }
+                                  />
+                                </View>
+                              ) : null
+                            )}
+                          {openSection === 'guidance' && (
+                            <>
+                              {exercise.guidance?.effort && (
+                                <UiText textRole="caption">
+                                  Effort: {exercise.guidance.effort.value}{' '}
+                                  {exercise.guidance.effort.kind === 'rpe'
+                                    ? 'RPE'
+                                    : 'reps in reserve'}
+                                </UiText>
+                              )}
+                              {exercise.guidance?.repetitionsRange && (
+                                <UiText textRole="caption">
+                                  Repetitions per set: {exercise.guidance.repetitionsRange.min}–
+                                  {exercise.guidance.repetitionsRange.max}
+                                </UiText>
+                              )}
+                              {exercise.guidance?.cues?.map((cue, ci) => (
+                                <UiText key={`cue-${ci}`} textRole="caption">
+                                  {cue}
+                                </UiText>
+                              ))}
+                              {exercise.guidance?.progression && (
+                                <UiText textRole="caption">
+                                  Progression: {exercise.guidance.progression}
+                                </UiText>
+                              )}
+                            </>
+                          )}
+                        </View>
+                      )}
+                    </View>
+                  )
+                })}
+              </View>
+            )}
+          </View>
+        ))}
+        {(notes.length > 0 || draft.kind === 'workout_draft') && (
+          <View style={{ borderTopWidth: 1, borderColor: c.line }}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ expanded: openNotes }}
+              onPress={() => setOpenNotes(!openNotes)}
+              style={{
+                minHeight: 44,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <UiText textRole="bodyEmphasis">Draft notes</UiText>
+              {openNotes ? (
+                <ChevronDown size={20} color={c.quiet} />
+              ) : (
+                <ChevronRight size={20} color={c.quiet} />
+              )}
+            </Pressable>
+            {openNotes && (
+              <View style={{ gap: 8 }}>
+                {draft.kind === 'workout_draft' && (
+                  <UiText textRole="caption">
+                    Keep the first session comfortable. Stop with about 2 good reps left in each
+                    set.
+                  </UiText>
+                )}
+                {notes.map((note, index) => (
+                  <UiText key={index} textRole="caption">
+                    {note}
+                  </UiText>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
+      </ScrollView>
+      <View
+        style={{
+          paddingHorizontal: 20,
+          paddingTop: 12,
+          paddingBottom: Math.max(bottomInset, 25),
+          borderTopWidth: 1,
+          borderColor: c.line,
+        }}
+      >
+        {draft.kind === 'routine_draft' && (
+          <Text style={{ color: c.quiet, textAlign: 'center', fontSize: 11, marginBottom: 9 }}>
+            Adds all workouts to your library and keeps your active routine.
+          </Text>
+        )}
+        <Button
+          disabled={remoteUnmapped || transitioning || saving || !request}
+          loading={saving}
+          onPress={() => save(draft)}
+        >
+          {saved ? 'Save copy' : draft.kind === 'routine_draft' ? 'Save routine' : 'Save workout'}
+        </Button>
+      </View>
+    </View>
+  )
+}
+function Response({
+  response,
+  details,
+  save,
+  saving,
+  remoteUnmapped,
+  transitioning,
+  request,
+  saveNotice,
+  saved,
+  onChange,
+}: {
+  response: CoachResponse
+  onChange: (draft: Draft) => void
+  saveNotice: string
+  saved?: boolean
+  details: Details
+  save: (review: CoachReview) => void
+  saving: boolean
+  remoteUnmapped: boolean
+  transitioning: boolean
+  request?: string
+}) {
+  const [reviewing, setReviewing] = useState(false)
+  const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null)
+  const wasSaving = useRef(false)
+  useEffect(() => {
+    if (wasSaving.current && !saving && saved && !saveNotice) setReviewing(false)
+    wasSaving.current = saving
+  }, [saving, saved, saveNotice])
+  const insets = useSafeAreaInsets()
+  const c = colors(useUniwind().theme === 'dark')
+  if (response.kind === 'clarification' || response.kind === 'cannot_fulfill') {
+    const message = response.kind === 'clarification' ? response.question : response.reason
+    return (
+      <UiText
+        accessible
+        accessibilityLabel={`Coach. ${message}`}
+        selectable
+        style={messageTextStyle}
+      >
+        {message}
+      </UiText>
+    )
+  }
+  if (response.kind === 'library_edit') {
+    const { target, summary } = response.edit
+    const action = `Update ${target.kind}`
+    return (
+      <View className="gap-compact">
+        <UiText
+          accessible
+          accessibilityLabel={`Coach. ${target.title}`}
+          selectable
+          textRole="cardTitle"
+        >
+          {target.title}
+        </UiText>
+        {summary.map((line, index) => (
+          <UiText key={index} selectable style={messageTextStyle}>
+            {line}
+          </UiText>
+        ))}
+        {saved ? (
+          <UiText textRole="bodyMuted" accessibilityLiveRegion="polite">
+            Changes saved
+          </UiText>
+        ) : remoteUnmapped ? (
+          <UiText textRole="bodyMuted">Coach edits are available in device mode.</UiText>
+        ) : (
+          <Button
+            accessibilityLabel={action}
+            disabled={transitioning || saving || !request}
+            onPress={() => save(response)}
+          >
+            {action}
+          </Button>
+        )}
+      </View>
+    )
+  }
+  if (response.kind === 'answer')
+    return (
+      <View className="gap-compact">
+        {response.blocks.map((block, index) => {
+          const message =
+            block.kind === 'metric'
+              ? (details.metrics.get(block.metricId) ?? block.metricId)
+              : block.text
+          return (
+            <View key={index}>
+              <UiText
+                accessible={index === 0 ? true : undefined}
+                accessibilityLabel={index === 0 ? `Coach. ${message}` : undefined}
+                selectable
+                style={messageTextStyle}
+              >
+                {message}
+              </UiText>
+              {block.kind !== 'metric' &&
+                block.evidence.map((ref) => (
+                  <UiText key={`${ref.kind}:${ref.id}`} textRole="caption" selectable>
+                    Evidence: {ref.kind} · {details.evidence.get(`${ref.kind}:${ref.id}`) ?? ref.id}
+                  </UiText>
+                ))}
+            </View>
+          )
+        })}
+        {response.limitations.map((limit, i) => (
+          <UiText key={i} textRole="bodyMuted">
+            {limit}
+          </UiText>
+        ))}
+      </View>
+    )
+  const workouts = response.kind === 'workout_draft' ? [response.workout] : response.workouts
+  const title = response.kind === 'workout_draft' ? response.workout.title : response.routine.title
+  const equipment = workouts.flatMap((workout) =>
+    workout.exercises.map(
+      (exercise) => exerciseCatalog.find((item) => item.id === exercise.catalogId)?.equipment
+    )
+  )
+  const equipmentLabel =
+    equipment.length && equipment.every((item) => item === equipment[0])
+      ? equipment[0] === 'BODY_ONLY'
+        ? 'Bodyweight'
+        : equipment[0] === 'DUMBBELL'
+          ? 'Dumbbells'
+          : undefined
+      : undefined
+  return (
+    <View
+      style={{
+        backgroundColor: c.card,
+        borderColor: c.line,
+        borderWidth: 1,
+        borderRadius: 26,
+        borderCurve: 'continuous',
+        boxShadow: `0 3px 14px ${c.shadow}`,
+      }}
+    >
+      <View
+        style={{
+          backgroundColor: c.featured,
+          borderTopLeftRadius: 25,
+          borderTopRightRadius: 25,
+          borderCurve: 'continuous',
+          paddingTop: 15,
+          paddingHorizontal: 16,
+          paddingBottom: 13,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 8,
+          }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
+            <Dumbbell size={14} color={c.quiet} />
+            <Text style={{ color: c.quiet, fontSize: 11 }}>
+              {response.kind === 'workout_draft' ? 'Workout' : 'Routine'}
+            </Text>
+          </View>
+          <Text
+            style={{
+              color: c.quiet,
+              backgroundColor: c.card,
+              borderRadius: 8,
+              overflow: 'hidden',
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              fontSize: 10,
+            }}
+          >
+            {saved ? 'Saved' : 'Draft'}
+          </Text>
+        </View>
+        <Text
+          accessible
+          accessibilityLabel={`Coach. ${title}`}
+          style={{
+            color: c.ink,
+            fontSize: 24,
+            lineHeight: 30,
+            letterSpacing: -0.8,
+            fontWeight: '600',
+            marginBottom: 5,
+          }}
+        >
+          {title}
+        </Text>
+        <Text style={{ color: c.quiet, fontSize: 12, lineHeight: 18 }}>
+          {response.kind === 'workout_draft'
+            ? `${workouts[0].schedule ? `About ${Math.round(workouts[0].schedule.estimatedSeconds / 60)} min · ` : ''}${workouts[0].exercises.length} exercises${equipmentLabel ? ` · ${equipmentLabel}` : ''}`
+            : `${workouts.length} workouts${workouts[0].schedule && workouts.every((workout) => workout.schedule?.estimatedSeconds === workouts[0].schedule?.estimatedSeconds) ? ` · About ${Math.round(workouts[0].schedule.estimatedSeconds / 60)} min each` : ''}`}
+        </Text>
+      </View>
+      {response.kind === 'routine_draft' && (
+        <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>
+          <RoutineCycle draft={response} />
+        </View>
+      )}
+      <View style={{ paddingHorizontal: 16, paddingTop: 3 }}>
+        {response.kind === 'workout_draft'
+          ? workouts[0].exercises.map((exercise, index) => {
+              const name =
+                details.names.get(exercise.catalogId) ??
+                exerciseCatalog.find((item) => item.id === exercise.catalogId)?.name ??
+                exercise.catalogId
+              const detail = [
+                exercise.guidance?.restSeconds !== undefined
+                  ? `Rest ${exercise.guidance.restSeconds} sec`
+                  : null,
+                loadSummary(exercise) || null,
+              ]
+                .filter(Boolean)
+                .join(' · ')
+              return (
+                <View
+                  key={`${exercise.catalogId}-${index}`}
+                  style={{
+                    borderTopWidth: 1,
+                    borderColor: c.line,
+                    paddingVertical: 10,
+                    minHeight: 48,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 10,
+                  }}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: c.ink, fontSize: 13, lineHeight: 19, fontWeight: '600' }}>
+                      {name}
+                    </Text>
+                    {!!detail && (
+                      <Text style={{ color: c.quiet, fontSize: 11, lineHeight: 17 }}>{detail}</Text>
+                    )}
+                  </View>
+                  <Text style={{ color: c.plum, fontSize: 12, fontWeight: '600' }}>
+                    {setSummary(exercise)}
+                  </Text>
+                </View>
+              )
+            })
+          : workouts.map((workout, index) => (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Preview ${workout.title}`}
+                onPress={() => {
+                  setSelectedWorkout(workout.ref)
+                  setReviewing(true)
+                }}
+                key={workout.ref}
+                style={{
+                  borderTopWidth: 1,
+                  borderColor: c.line,
+                  paddingVertical: 7,
+                  flexDirection: 'row',
+                  gap: 12,
+                  alignItems: 'center',
+                }}
+              >
+                <View
+                  style={{
+                    width: 32,
+                    height: 34,
+                    borderRadius: 11,
+                    backgroundColor: c.surface,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text style={{ color: c.plum, fontSize: 12, fontWeight: '600' }}>
+                    {String.fromCharCode(65 + index)}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: c.ink, fontSize: 13, lineHeight: 19, fontWeight: '600' }}>
+                    {workout.title}
+                  </Text>
+                  <Text style={{ color: c.quiet, fontSize: 11, lineHeight: 17 }}>
+                    {workout.exercises.length} exercises
+                    {workout.schedule
+                      ? ` · ${Math.round(workout.schedule.estimatedSeconds / 60)} min`
+                      : ''}
+                  </Text>
+                </View>
+                <ChevronRight size={15} color={c.quiet} />
+              </Pressable>
+            ))}
+      </View>
+      <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14 }}>
+        <Pressable
+          accessibilityRole="button"
+          onPress={() => {
+            setSelectedWorkout(null)
+            setReviewing(true)
+          }}
+          style={{
+            backgroundColor: c.plum,
+            borderRadius: 23,
+            minHeight: 46,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+          }}
+        >
+          <Pencil size={17} color={c.onPlum} />
+          <Text style={{ color: c.onPlum, fontSize: 13, fontWeight: '600' }}>
+            {saved ? 'View saved' : 'Review'}{' '}
+            {response.kind === 'workout_draft' ? 'workout' : 'routine'}
+          </Text>
+        </Pressable>
+      </View>
+      <Modal
+        visible={reviewing}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setReviewing(false)}
+      >
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: '#00000066' }}>
+          <KeyboardAvoidingView
+            style={{
+              height: '92%',
+              backgroundColor: c.canvas,
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              overflow: 'hidden',
+            }}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <View
+              style={{
+                paddingHorizontal: 20,
+                paddingTop: 14,
+                paddingBottom: 12,
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <Text
+                accessibilityRole="header"
+                style={{ flex: 1, color: c.ink, fontSize: 22, fontWeight: '600' }}
+              >
+                Review {response.kind === 'workout_draft' ? 'workout' : 'routine'}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Close review"
+                onPress={() => setReviewing(false)}
+                style={{
+                  minWidth: 44,
+                  minHeight: 44,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X color={c.ink} />
+              </Pressable>
+            </View>
+            {!!saveNotice && (
+              <Text
+                accessibilityLiveRegion="polite"
+                style={{ color: c.ink, marginHorizontal: 20, marginBottom: 8 }}
+              >
+                {saveNotice}
+              </Text>
+            )}
+            <Review
+              key={`${selectedWorkout ?? 'all'}:${reviewing}`}
+              initial={response}
+              selectedWorkout={selectedWorkout}
+              saved={saved}
+              bottomInset={insets.bottom}
+              onChange={onChange}
+              details={details}
+              save={save}
+              saving={saving}
+              remoteUnmapped={remoteUnmapped}
+              transitioning={transitioning}
+              request={request}
+            />
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+    </View>
+  )
+}
+const colors = (dark: boolean) =>
+  dark
+    ? {
+        canvas: '#2d2235',
+        ink: '#faf5fc',
+        quiet: '#c0afcb',
+        surface: '#382b42',
+        raised: '#42314d',
+        line: '#51415d',
+        plum: '#e3d7ee',
+        onPlum: '#2d2235',
+        featured: '#493656',
+        featuredLine: '#796287',
+        card: '#382b42',
+        shadow: '#00000026',
+      }
+    : {
+        canvas: '#faf7fc',
+        ink: '#2d2235',
+        quiet: '#76627e',
+        surface: '#f0e9f5',
+        raised: '#e9dff0',
+        line: '#dcd0e4',
+        plum: '#624572',
+        onPlum: '#faf5fc',
+        featured: '#e3d7ee',
+        featuredLine: '#c6b8d0',
+        card: '#fffcff',
+        shadow: '#62457214',
+      }
+
+const messageTextStyle = { fontSize: 16, lineHeight: 23 }
+const typingBounce = {
+  '0%, 55%, 100%': { transform: [{ translateY: 0 }] },
+  '27%': { transform: [{ translateY: -4 }] },
+}
+const chatStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 1,
+  },
+  column: {
+    width: '100%',
+    maxWidth: 680,
+    alignSelf: 'center',
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bubble: {
+    alignSelf: 'flex-start',
+    maxWidth: '92%',
+    borderRadius: 22,
+    borderCurve: 'continuous',
+    paddingHorizontal: 15,
+    paddingVertical: 11,
+  },
+})
+
+function TypingIndicator({ color, background }: { color: string; background: string }) {
+  const reduceMotion = useReducedMotion()
+  return (
+    <View
+      accessible
+      accessibilityLabel="Coach is thinking"
+      accessibilityLiveRegion="polite"
+      style={[
+        chatStyles.bubble,
+        { backgroundColor: background, flexDirection: 'row', alignItems: 'center', gap: 5 },
+      ]}
+    >
+      {[0, 130, 260].map((delay) => (
+        <Animated.View
+          key={delay}
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: color,
+            animationName: reduceMotion ? 'none' : typingBounce,
+            animationDelay: delay,
+            animationDuration: 900,
+            animationTimingFunction: 'ease-in-out',
+            animationIterationCount: 'infinite',
+          }}
+        />
+      ))}
+    </View>
+  )
+}
+
+function PromptChips({
+  choices,
+  disabled = false,
+  onChoose,
+}: {
+  choices: readonly string[]
+  disabled?: boolean
+  onChoose: (choice: string) => void
+}) {
+  const c = colors(useUniwind().theme === 'dark')
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      {choices.map((choice) => (
+        <Pressable
+          key={choice}
+          disabled={disabled}
+          accessibilityRole="button"
+          accessibilityState={{ disabled }}
+          onPress={() => onChoose(choice)}
+          className="border border-divider focus:border-accent active:opacity-70 disabled:opacity-50"
+          style={{
+            minHeight: 44,
+            justifyContent: 'center',
+            backgroundColor: c.card,
+            borderRadius: 22,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+          }}
+        >
+          <Text style={{ color: c.plum, fontFamily: 'DM Sans Medium', fontSize: 13 }}>
+            {choice}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  )
+}
+
+export function CoachScreen() {
+  const coach = useCoachController()
+  const router = useRouter()
+  const insets = useSafeAreaInsets()
+  const c = colors(useUniwind().theme === 'dark')
+  const [showHistory, setShowHistory] = useState(false)
+  const [historySearch, setHistorySearch] = useState('')
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 96)
+  const [composerHeight, setComposerHeight] = useState(108)
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null)
+  const restorePosition = useRef(true)
+  const scrollKey = coach.currentConversationId ?? '__new__'
+  const lastScrollKey = useRef(scrollKey)
+  const previousItemCount = useRef(coach.items.length)
+  const nearBottom = useRef(true)
+  const viewportHeight = useRef(0)
+  const followMessages = useRef(false)
+  const hasMessages = coach.items.length > 0
+  const isReady = coach.status === 'ready'
+  const canSend = isReady && coach.draft.trim().length > 0
+  const isGenerating = coach.status === 'generating'
+  const composerActionEnabled = isGenerating || canSend
+  if (lastScrollKey.current !== scrollKey) {
+    const firstSend =
+      lastScrollKey.current === '__new__' && coach.items.length > previousItemCount.current
+    lastScrollKey.current = scrollKey
+    restorePosition.current = true
+    followMessages.current = firstSend && nearBottom.current
+    nearBottom.current = coach.scrollOffset === 0
+  } else if (coach.items.length > previousItemCount.current && !restorePosition.current) {
+    followMessages.current = nearBottom.current
+  }
+  previousItemCount.current = coach.items.length
+  const query = historySearch.trim().toLocaleLowerCase()
+  const history = coach.history.filter((entry) =>
+    `${entry.title} ${entry.searchText}`.toLocaleLowerCase().includes(query)
+  )
+  const dayLabel = (value: string) => {
+    const date = new Date(value)
+    const today = new Date()
+    const days = Math.round(
+      (Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()) -
+        Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())) /
+        86400000
+    )
+    return days <= 0 ? 'Today' : days === 1 ? 'Yesterday' : days < 7 ? 'Last 7 days' : 'Earlier'
+  }
+  return (
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: c.canvas }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <View style={{ flex: 1 }}>
+        <View
+          pointerEvents="box-none"
+          onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
+          style={[chatStyles.overlay, { top: 0 }]}
+        >
+          <LinearGradient
+            pointerEvents="none"
+            colors={[c.canvas, `${c.canvas}F5`, `${c.canvas}00`]}
+            locations={[0, 0.53, 1]}
+            style={[StyleSheet.absoluteFill, { bottom: -16 }]}
+          />
+          <View
+            pointerEvents="box-none"
+            style={[
+              chatStyles.column,
+              {
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                paddingHorizontal: 16,
+                paddingTop: insets.top + 10,
+                paddingBottom: 8,
+              },
+            ]}
+          >
+            <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'flex-start' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  backgroundColor: c.card,
+                  borderWidth: 1,
+                  borderColor: c.line,
+                  borderRadius: 24,
+                  boxShadow: `0 2px 9px ${c.shadow}`,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Back"
+                  onPress={() => router.back()}
+                  className="focus:border focus:border-accent active:bg-raised"
+                  style={chatStyles.iconButton}
+                >
+                  <ArrowLeft color={c.plum} size={20} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open chat history"
+                  onPress={() => setShowHistory(true)}
+                  className="focus:border focus:border-accent active:bg-raised"
+                  style={chatStyles.iconButton}
+                >
+                  <History color={c.plum} size={20} />
+                </Pressable>
+              </View>
+            </View>
+            <View pointerEvents="none" style={{ alignItems: 'center' }}>
+              <View
+                style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: 29,
+                  backgroundColor: c.featured,
+                  borderWidth: 2,
+                  borderColor: c.card,
+                  boxShadow: `0 3px 12px ${c.shadow}`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Dumbbell color={c.ink} size={26} />
+              </View>
+              <Text
+                accessibilityRole="header"
+                style={{
+                  color: c.ink,
+                  backgroundColor: c.card,
+                  borderColor: c.line,
+                  borderWidth: 1,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  marginTop: -8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  fontFamily: 'DM Sans Semibold',
+                  fontSize: 13,
+                }}
+              >
+                Coach
+              </Text>
+            </View>
+            <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'flex-end' }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Start a new conversation"
+                onPress={coach.newConversation}
+                className="border border-divider focus:border-accent active:opacity-70"
+                style={[
+                  chatStyles.iconButton,
+                  { backgroundColor: c.card, boxShadow: `0 2px 9px ${c.shadow}` },
+                ]}
+              >
+                <SquarePen color={c.plum} size={19} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+        <Modal
+          visible={showHistory}
+          animationType="slide"
+          onRequestClose={() => setShowHistory(false)}
+        >
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: c.canvas,
+              paddingTop: insets.top + 16,
+              paddingHorizontal: 20,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 16 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Back to conversation"
+                onPress={() => {
+                  setShowHistory(false)
+                }}
+                style={{ padding: 8 }}
+              >
+                <ArrowLeft color={c.plum} />
+              </Pressable>
+              <Text style={{ flex: 1, color: c.ink, fontSize: 25, fontFamily: 'DM Sans Semibold' }}>
+                Your chats
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  coach.newConversation()
+                  setShowHistory(false)
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  backgroundColor: c.plum,
+                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                }}
+              >
+                <Plus size={15} color={c.onPlum} />
+                <Text style={{ color: c.onPlum, fontFamily: 'DM Sans Semibold', fontSize: 12 }}>
+                  New chat
+                </Text>
+              </Pressable>
+            </View>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 9,
+                backgroundColor: c.surface,
+                borderRadius: 15,
+                paddingHorizontal: 13,
+                marginBottom: 12,
+              }}
+            >
+              <Search size={17} color={c.quiet} />
+              <TextInput
+                accessibilityLabel="Search chats"
+                placeholder="Search your chats"
+                placeholderTextColor={c.quiet}
+                value={historySearch}
+                onChangeText={setHistorySearch}
+                style={{
+                  flex: 1,
+                  minHeight: 46,
+                  color: c.ink,
+                  fontFamily: 'DM Sans',
+                  fontSize: 13,
+                }}
+              />
+            </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 12 }}
+            >
+              {history.length === 0 && (
+                <View style={{ alignItems: 'center', padding: 55, gap: 8 }}>
+                  <Search size={28} color={c.quiet} />
+                  <Text style={{ color: c.ink, fontSize: 18, fontFamily: 'DM Sans Semibold' }}>
+                    {historySearch ? 'No chats found' : 'No conversations yet'}
+                  </Text>
+                  <Text style={{ color: c.quiet, textAlign: 'center' }}>
+                    {historySearch
+                      ? 'Try a workout name or another topic.'
+                      : 'Start a conversation with Coach.'}
+                  </Text>
+                </View>
+              )}
+              {history.map((entry, index) => (
+                <View key={entry.id}>
+                  {(index === 0 ||
+                    dayLabel(history[index - 1].updated_at) !== dayLabel(entry.updated_at)) && (
+                    <Text
+                      style={{
+                        color: c.quiet,
+                        fontSize: 12,
+                        marginTop: 18,
+                        marginBottom: 4,
+                        fontFamily: 'DM Sans Semibold',
+                      }}
+                    >
+                      {dayLabel(entry.updated_at)}
+                    </Text>
+                  )}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 12,
+                      gap: 11,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 44,
+                        height: 39,
+                        borderRadius: 12,
+                        backgroundColor: c.featured,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {entry.artifact ? (
+                        <Dumbbell size={19} color={c.plum} />
+                      ) : (
+                        <MessageCircle size={19} color={c.plum} />
+                      )}
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open conversation: ${entry.title}`}
+                      onPress={() => {
+                        setShowHistory(false)
+                        void coach.openConversation(entry.id)
+                      }}
+                      style={{ flex: 1 }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            flex: 1,
+                            color: c.ink,
+                            fontSize: 14,
+                            fontFamily: 'DM Sans Semibold',
+                          }}
+                        >
+                          {entry.title}
+                        </Text>
+                        <Text style={{ color: c.quiet, fontSize: 10 }}>
+                          {dayLabel(entry.updated_at) === 'Today' ||
+                          dayLabel(entry.updated_at) === 'Yesterday'
+                            ? new Date(entry.updated_at).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : new Date(entry.updated_at).toLocaleDateString([], {
+                                weekday: 'short',
+                              })}
+                        </Text>
+                      </View>
+                      <Text numberOfLines={2} style={{ color: c.quiet, fontSize: 11 }}>
+                        {entry.preview || 'Start a conversation with Coach.'}
+                      </Text>
+                      {!!entry.artifact && (
+                        <Text style={{ color: c.plum, fontSize: 11 }}>
+                          {entry.saved ? 'Saved ' : ''}
+                          {entry.artifact === 'plan'
+                            ? entry.isEdit
+                              ? 'routine'
+                              : 'plan'
+                            : 'workout'}
+                          {entry.isEdit ? ' edit' : entry.saved ? '' : ' draft'}
+                        </Text>
+                      )}
+                      {entry.id === coach.currentConversationId && (
+                        <Text style={{ color: c.quiet, fontSize: 10 }}>Current chat</Text>
+                      )}
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete conversation: ${entry.title}`}
+                      onPress={() =>
+                        Alert.alert(
+                          'Delete conversation?',
+                          'This removes the conversation from this device.',
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: () => void coach.deleteConversation(entry.id),
+                            },
+                          ]
+                        )
+                      }
+                      style={{ padding: 12 }}
+                    >
+                      <X color={c.quiet} size={18} />
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            {isReady && (
+              <View style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+                <Button
+                  variant="ghost"
+                  onPress={() => {
+                    setShowHistory(false)
+                    void coach.removeModel()
+                  }}
+                >
+                  Delete downloaded model
+                </Button>
+              </View>
+            )}
+          </View>
+        </Modal>
+        <ScrollView
+          key={scrollKey}
+          ref={scroll}
+          style={{ flex: 1 }}
+          onScroll={(event) => {
+            if (!restorePosition.current) {
+              const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
+              nearBottom.current = shouldFollowCoachMessages(
+                contentOffset.y,
+                layoutMeasurement.height,
+                contentSize.height
+              )
+              coach.setScrollOffset(contentOffset.y)
+            }
+          }}
+          scrollEventThrottle={100}
+          onLayout={(event) => {
+            const height = event.nativeEvent.layout.height
+            if (height < viewportHeight.current && nearBottom.current && !restorePosition.current) {
+              scroll.current?.scrollToEnd({ animated: false })
+            }
+            viewportHeight.current = height
+          }}
+          onContentSizeChange={(_width, height) => {
+            if (restorePosition.current) {
+              nearBottom.current = shouldFollowCoachMessages(
+                coach.scrollOffset,
+                viewportHeight.current,
+                height
+              )
+              if (followMessages.current) scroll.current?.scrollToEnd({ animated: true })
+              else scroll.current?.scrollTo({ y: coach.scrollOffset, animated: false })
+              restorePosition.current = false
+              followMessages.current = false
+            } else if (followMessages.current) {
+              followMessages.current = false
+              scroll.current?.scrollToEnd({ animated: true })
+            }
+          }}
+          contentInsetAdjustmentBehavior="never"
+          scrollIndicatorInsets={{ top: headerHeight, bottom: composerHeight }}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            chatStyles.column,
+            {
+              flexGrow: 1,
+              justifyContent: hasMessages ? 'flex-end' : 'center',
+              paddingHorizontal: 16,
+              paddingTop: headerHeight + 12,
+              paddingBottom: composerHeight + 14,
+              gap: 14,
+            },
+          ]}
+        >
+          {!hasMessages && (
+            <View style={{ gap: 16 }}>
+              <Text
+                accessibilityRole="header"
+                textBreakStrategy="balanced"
+                lineBreakStrategyIOS="standard"
+                style={{
+                  color: c.ink,
+                  fontFamily: 'DM Sans Semibold',
+                  fontSize: 28,
+                  lineHeight: 34,
+                }}
+              >
+                What would you like to work on?
+              </Text>
+              {isReady && (
+                <PromptChips
+                  choices={[
+                    'Build me a workout',
+                    'Build me a plan',
+                    'How long should I rest?',
+                    'Show my saved workouts and routines',
+                  ]}
+                  onChoose={(choice) => void coach.send(choice)}
+                />
+              )}
+            </View>
+          )}
+          {coach.items.map((item, i) => {
+            if (item.kind === 'user') {
+              return (
+                <View
+                  key={i}
+                  style={[
+                    chatStyles.bubble,
+                    { alignSelf: 'flex-end', backgroundColor: c.featured },
+                  ]}
+                >
+                  <Text
+                    accessible
+                    accessibilityLabel={`You. ${item.text}`}
+                    selectable
+                    style={[messageTextStyle, { color: c.ink, fontFamily: 'DM Sans' }]}
+                  >
+                    {item.text}
+                  </Text>
+                </View>
+              )
+            }
+            const choices =
+              item.response.kind === 'workout_draft'
+                ? ['Make it easier', 'Build a plan around this']
+                : item.response.kind === 'routine_draft'
+                  ? ['How do I progress?', 'Make sessions shorter']
+                  : null
+            return (
+              <View key={item.reviewId} style={{ gap: 10 }}>
+                <View
+                  style={choices ? undefined : [chatStyles.bubble, { backgroundColor: c.surface }]}
+                >
+                  <Response
+                    response={item.response}
+                    onChange={(draft) => coach.updateReview(item.reviewId, draft)}
+                    saveNotice={coach.saveNotice}
+                    saved={item.saved}
+                    details={item.details}
+                    save={(review) => void coach.saveReview(review, item.reviewId, item.request)}
+                    saving={coach.saving}
+                    remoteUnmapped={coach.remoteUnmapped}
+                    transitioning={coach.transitioning}
+                    request={item.request}
+                  />
+                </View>
+                {choices && i === coach.items.length - 1 && (
+                  <PromptChips
+                    choices={choices}
+                    disabled={!isReady}
+                    onChoose={(choice) => void coach.send(choice)}
+                  />
+                )}
+              </View>
+            )
+          })}
+          {isGenerating && <TypingIndicator color={c.quiet} background={c.surface} />}
+          {(coach.status === 'checking' || coach.status === 'loading') && (
+            <View
+              style={[
+                chatStyles.bubble,
+                { backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', gap: 8 },
+              ]}
+            >
+              <Text
+                accessibilityLiveRegion="polite"
+                style={{ color: c.quiet, fontFamily: 'DM Sans', flexShrink: 1 }}
+              >
+                {coach.status === 'loading'
+                  ? 'Loading model…'
+                  : `${coach.progressPhase === 'download' ? 'Downloading model' : 'Checking model'}… ${coach.progress > 0 ? `${Math.round(coach.progress * 100)}%` : ''}`}
+              </Text>
+              <Button variant="ghost" density="compact" onPress={coach.cancel}>
+                Cancel
+              </Button>
+            </View>
+          )}
+          {!!coach.notice && (
+            <Text selectable accessibilityLiveRegion="polite" style={{ color: c.quiet }}>
+              {coach.notice}
+            </Text>
+          )}
+          {!!coach.saveNotice && (
+            <Text selectable accessibilityLiveRegion="polite" style={{ color: c.ink }}>
+              {coach.saveNotice}
+            </Text>
+          )}
+          {coach.status === 'download' && (
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: c.quiet, fontFamily: 'DM Sans', lineHeight: 21 }}>
+                Download the 2.08 GB fine-tuned Qwen 3.5 2B model to use Coach. Extra free space is
+                needed for verification.
+              </Text>
+              <Button onPress={() => void coach.prepare(true)}>Download model</Button>
+            </View>
+          )}
+          {coach.status === 'error' && (
+            <Button variant="secondary" onPress={() => void coach.prepare()}>
+              Retry
+            </Button>
+          )}
+        </ScrollView>
+        <View
+          pointerEvents="box-none"
+          onLayout={(event) => {
+            const height = event.nativeEvent.layout.height
+            if (height > composerHeight && nearBottom.current && !restorePosition.current) {
+              followMessages.current = true
+            }
+            setComposerHeight(height)
+          }}
+          style={[chatStyles.overlay, { bottom: 0 }]}
+        >
+          <LinearGradient
+            pointerEvents="none"
+            colors={[`${c.canvas}00`, `${c.canvas}F5`, c.canvas]}
+            locations={[0, 0.58, 1]}
+            style={[StyleSheet.absoluteFill, { top: -22 }]}
+          />
+          <View
+            pointerEvents="box-none"
+            style={[
+              chatStyles.column,
+              { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, gap: 8 },
+            ]}
+          >
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-end',
+                gap: 8,
+                backgroundColor: c.card,
+                borderColor: c.line,
+                borderWidth: 1,
+                borderRadius: 28,
+                borderCurve: 'continuous',
+                boxShadow: `0 3px 14px ${c.shadow}`,
+                padding: 5,
+                paddingLeft: 16,
+              }}
+            >
+              <TextInput
+                accessibilityLabel="Message Coach"
+                multiline
+                value={coach.draft}
+                onChangeText={coach.setDraft}
+                editable={isReady}
+                placeholder="Message Coach…"
+                placeholderTextColor={c.quiet}
+                cursorColor={c.plum}
+                maxLength={4000}
+                style={[
+                  messageTextStyle,
+                  {
+                    flex: 1,
+                    minHeight: 44,
+                    maxHeight: 112,
+                    color: c.ink,
+                    fontFamily: 'DM Sans',
+                    paddingVertical: 10,
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={isGenerating ? 'Stop generation' : 'Send message'}
+                disabled={!composerActionEnabled}
+                accessibilityState={{ disabled: !composerActionEnabled }}
+                onPress={isGenerating ? coach.cancel : () => void coach.send()}
+                className="focus:border focus:border-foreground active:opacity-70"
+                style={[
+                  chatStyles.iconButton,
+                  { backgroundColor: composerActionEnabled ? c.plum : c.surface },
+                ]}
+              >
+                {isGenerating ? (
+                  <Square size={14} color={c.onPlum} fill={c.onPlum} />
+                ) : (
+                  <ArrowUp size={21} color={canSend ? c.onPlum : c.quiet} />
+                )}
+              </Pressable>
+            </View>
+            <Text
+              style={{
+                color: c.quiet,
+                fontFamily: 'DM Sans',
+                textAlign: 'center',
+                fontSize: 11,
+                lineHeight: 15,
+              }}
+            >
+              Experimental coach. Training advice and workout drafts have not been validated. Review
+              suggestions carefully.
+            </Text>
+          </View>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  )
+}

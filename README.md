@@ -132,3 +132,7 @@ The workflow uses the repository's `EXPO_TOKEN` Actions secret. Android signing 
 Google Play submission credentials must already be configured in EAS for non-interactive use.
 The current `eas.json` submits a draft to the internal testing track; publish the release from
 Google Play Console to distribute it to testers. Build numbers increment automatically.
+
+### Local coach build evidence
+
+Ordinary builds keep the coach disabled and verify the shipped coach data locally. To enable the development coach, set `EXPO_PUBLIC_COACH_DEV=1` and provide the independently stored review archive under `evaluation/coach-v1/reviews/knowledge-review-01/` beneath `COACH_EVIDENCE_ROOT`. The archive and its manifest are hash checked; missing or modified evidence fails configuration. `EXPO_PUBLIC_COACH_PROMOTE=1` additionally runs the release gate, which currently refuses promotion until the documented review, rights, quality, device, offline, and persistence acceptance evidence exists. The archive is not a substitute for those approvals.

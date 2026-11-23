@@ -126,14 +126,22 @@ export function useWorkoutSession(
                             durationSeconds: value,
                             completed:
                               set.completed &&
-                              hasSetValues(exercise.category, { ...set, durationSeconds: value }),
+                              hasSetValues(
+                                exercise.category,
+                                { ...set, durationSeconds: value },
+                                exercise.coachPrescription?.sets[0]?.kind === 'timed'
+                              ),
                           }
                         : {
                             ...set,
                             [field]: value,
                             completed:
                               set.completed &&
-                              hasSetValues(exercise.category, { ...set, [field]: value }),
+                              hasSetValues(
+                                exercise.category,
+                                { ...set, [field]: value },
+                                exercise.coachPrescription?.sets[0]?.kind === 'timed'
+                              ),
                           }
                       : set
                   ),
@@ -155,7 +163,14 @@ export function useWorkoutSession(
         const exercise = exercises.find((exercise) => exercise.sessionId === exerciseId)
         const targetSet = exercise?.sets.find((set) => set.id === setId)
         if (!exercise || !targetSet) return
-        if (!targetSet.completed && !hasSetValues(exercise.category, targetSet)) {
+        if (
+          !targetSet.completed &&
+          !hasSetValues(
+            exercise.category,
+            targetSet,
+            exercise.coachPrescription?.sets[0]?.kind === 'timed'
+          )
+        ) {
           haptics.error()
           return
         }

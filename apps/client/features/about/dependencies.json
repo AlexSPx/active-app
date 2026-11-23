@@ -967,6 +967,13 @@
   },
   {
     "ecosystem": "JavaScript",
+    "name": "@expo/schema-utils",
+    "version": "58.0.3",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@expo/schema-utils/v/58.0.3"
+  },
+  {
+    "ecosystem": "JavaScript",
     "name": "@expo/sdk-runtime-versions",
     "version": "1.0.1",
     "license": "MIT",
@@ -1090,6 +1097,13 @@
     "version": "1.2.5",
     "license": "MIT",
     "url": "https://www.npmjs.com/package/@napi-rs/wasm-runtime/v/1.2.5"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "@noble/hashes",
+    "version": "1.8.0",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/@noble/hashes/v/1.8.0"
   },
   {
     "ecosystem": "JavaScript",
@@ -2388,6 +2402,13 @@
   },
   {
     "ecosystem": "JavaScript",
+    "name": "expo-build-properties",
+    "version": "58.0.12",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/expo-build-properties/v/58.0.12"
+  },
+  {
+    "ecosystem": "JavaScript",
     "name": "expo-constants",
     "version": "58.0.13",
     "license": "MIT",
@@ -3225,6 +3246,13 @@
     "version": "1.32.0",
     "license": "MPL-2.0",
     "url": "https://www.npmjs.com/package/lightningcss-win32-x64-msvc/v/1.32.0"
+  },
+  {
+    "ecosystem": "JavaScript",
+    "name": "llama.rn",
+    "version": "0.13.0-rc.9",
+    "license": "MIT",
+    "url": "https://www.npmjs.com/package/llama.rn/v/0.13.0-rc.9"
   },
   {
     "ecosystem": "JavaScript",

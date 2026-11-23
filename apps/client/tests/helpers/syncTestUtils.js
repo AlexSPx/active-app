@@ -112,10 +112,10 @@ class FakeDb {
     if (sql === 'SELECT table_name, old_id, new_id FROM id_remaps') {
       return Array.from(this.idRemaps.values())
     }
-    if (sql === 'SELECT id, pattern FROM routines WHERE is_deleted = 0') {
+    if (sql === 'SELECT id, pattern, updated_at FROM routines WHERE is_deleted = 0') {
       return Array.from(this.tables.routines.values())
         .filter((row) => !row.is_deleted)
-        .map(({ id, pattern }) => ({ id, pattern }))
+        .map(({ id, pattern, updated_at }) => ({ id, pattern, updated_at }))
     }
 
     if (sql.includes('FROM sync_queue') && sql.includes('WHERE sequence > ?')) {
@@ -250,9 +250,12 @@ class FakeDb {
       return sql.includes('is_deleted = 0') && row?.is_deleted ? null : row
     }
 
-    if (sql === 'SELECT server_version FROM routines WHERE id = ?') {
+    if (
+      sql === 'SELECT server_version FROM routines WHERE id = ?' ||
+      sql === 'SELECT server_version, updated_at FROM routines WHERE id = ?'
+    ) {
       const row = this.tables.routines.get(params[0])
-      return row ? { server_version: row.server_version ?? null } : null
+      return row ? { server_version: row.server_version ?? null, updated_at: row.updated_at } : null
     }
 
     if (
@@ -467,9 +470,12 @@ class FakeDb {
       return
     }
 
-    if (sql === 'UPDATE routines SET pattern = ? WHERE id = ?') {
-      const row = this.tables.routines.get(params[1])
-      if (row) row.pattern = params[0]
+    if (sql === 'UPDATE routines SET pattern = ?, updated_at = ? WHERE id = ?') {
+      const row = this.tables.routines.get(params[2])
+      if (row) {
+        row.pattern = params[0]
+        row.updated_at = params[1]
+      }
       return
     }
 

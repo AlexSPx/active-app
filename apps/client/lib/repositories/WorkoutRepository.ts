@@ -1,10 +1,11 @@
+import type { WorkoutExercise } from '../../types/workout'
 /**
  * WorkoutRepository - Centralized data access for workouts & workout records.
  *
  * All reads come from local SQLite.
  * All writes go to local SQLite first, then to the sync queue.
  */
-import { BaseRepository } from './BaseRepository'
+import { BaseRepository, nextUpdatedAt } from './BaseRepository'
 import { syncEngine } from '../sync'
 import type {
   ApiExercise,
@@ -27,7 +28,7 @@ interface WorkoutRow {
   id: string
   title: string
   notes: string | null
-  created_at: string
+  created_at: string | null
   updated_at: string | null
   workout_template: string | null
   is_synced: number
@@ -50,6 +51,11 @@ interface WorkoutRecordRow {
 // ---------------------------------------------------------------------------
 // Repository
 // ---------------------------------------------------------------------------
+
+function requiredTarget(value: number | null | undefined): number {
+  if (value == null || !Number.isFinite(value)) throw new Error('Missing workout target.')
+  return value
+}
 
 export class WorkoutRepository extends BaseRepository {
   // -------------------------------------------------------------------------
@@ -77,7 +83,8 @@ export class WorkoutRepository extends BaseRepository {
 
   async create(
     workout: CreateWorkoutRequest,
-    selectedExercises: ApiExercise[]
+    selectedExercises: (ApiExercise &
+      Partial<Pick<WorkoutExercise, 'sets' | 'coachPrescription'>>)[]
   ): Promise<ApiWorkout> {
     const localId = this.generateLocalId()
     const now = new Date().toISOString()
@@ -127,7 +134,8 @@ export class WorkoutRepository extends BaseRepository {
   async update(
     workoutId: string,
     payload: UpdateWorkoutRequest,
-    selectedExercises: ApiExercise[]
+    selectedExercises: (ApiExercise &
+      Partial<Pick<WorkoutExercise, 'sets' | 'coachPrescription'>>)[]
   ): Promise<void> {
     return this.commitMutation(async (tx) => {
       const resolvedWorkoutId = syncEngine.resolveId('workouts', workoutId)
@@ -137,6 +145,7 @@ export class WorkoutRepository extends BaseRepository {
       )
       const requestPayload: UpdateWorkoutRequest =
         row?.server_version == null ? payload : { ...payload, baseVersion: row.server_version }
+      const now = nextUpdatedAt(row?.updated_at || row?.created_at)
       const sets: string[] = []
       const vals: any[] = []
 
@@ -150,7 +159,6 @@ export class WorkoutRepository extends BaseRepository {
       }
       if (payload.template) {
         const current = row ? this.rowToWorkout(row) : null
-        const now = new Date().toISOString()
         sets.push('workout_template = ?')
         vals.push(
           JSON.stringify({
@@ -165,7 +173,7 @@ export class WorkoutRepository extends BaseRepository {
       sets.push('is_synced = ?')
       vals.push(0)
       sets.push('updated_at = ?')
-      vals.push(new Date().toISOString())
+      vals.push(now)
       vals.push(resolvedWorkoutId) // for WHERE clause
 
       if (sets.length > 2) {
@@ -191,9 +199,11 @@ export class WorkoutRepository extends BaseRepository {
         resolvedId
       )
       await tx.runAsync('UPDATE workouts SET is_deleted = 1 WHERE id = ?', resolvedId)
-      const routines = await tx.getAllAsync<{ id: string; pattern: string | null }>(
-        'SELECT id, pattern FROM routines WHERE is_deleted = 0'
-      )
+      const routines = await tx.getAllAsync<{
+        id: string
+        pattern: string | null
+        updated_at: string | null
+      }>('SELECT id, pattern, updated_at FROM routines WHERE is_deleted = 0')
       for (const routine of routines) {
         if (!routine.pattern) continue
         let pattern: { workoutId: string | null }[]
@@ -204,12 +214,13 @@ export class WorkoutRepository extends BaseRepository {
         }
         if (!pattern.some((day) => day.workoutId === resolvedId)) continue
         await tx.runAsync(
-          'UPDATE routines SET pattern = ? WHERE id = ?',
+          'UPDATE routines SET pattern = ?, updated_at = ? WHERE id = ?',
           JSON.stringify(
             pattern.map((day) =>
               day.workoutId === resolvedId ? { ...day, dayType: 'REST', workoutId: null } : day
             )
           ),
+          nextUpdatedAt(routine.updated_at),
           routine.id
         )
       }
@@ -406,11 +417,12 @@ export class WorkoutRepository extends BaseRepository {
   // -------------------------------------------------------------------------
 
   private rowToWorkout = (row: WorkoutRow): ApiWorkout => {
+    const createdAt = row.created_at || ''
     let template: ApiWorkoutTemplate
     try {
       template = JSON.parse(row.workout_template || '{}')
     } catch {
-      template = { id: row.id, exercises: [], createdAt: row.created_at, updatedAt: row.created_at }
+      template = { id: row.id, exercises: [], createdAt, updatedAt: createdAt }
     }
 
     template = {
@@ -425,8 +437,8 @@ export class WorkoutRepository extends BaseRepository {
       id: row.id,
       title: row.title,
       notes: row.notes,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at || row.created_at,
+      createdAt,
+      updatedAt: row.updated_at || createdAt,
       workoutTemplate: template,
       version: row.server_version ?? undefined,
     }
@@ -434,7 +446,8 @@ export class WorkoutRepository extends BaseRepository {
 
   private withExerciseMetadata(
     templateExercises: TemplateExercise[],
-    selectedExercises: ApiExercise[]
+    selectedExercises: (ApiExercise &
+      Partial<Pick<WorkoutExercise, 'sets' | 'coachPrescription'>>)[]
   ): ApiWorkoutTemplate['exercises'] {
     const exercisesById = new Map(selectedExercises.map((exercise) => [exercise.id, exercise]))
     return templateExercises.map((exercise) => {
@@ -451,6 +464,28 @@ export class WorkoutRepository extends BaseRepository {
         category: details.category,
         primaryMuscles: details.primaryMuscles,
         secondaryMuscles: details.secondaryMuscles,
+        ...(details.coachPrescription && details.sets
+          ? {
+              coachPrescription: {
+                guidance: details.coachPrescription.guidance,
+                sets: details.sets.map((set) =>
+                  details.coachPrescription?.sets[0]?.kind === 'timed'
+                    ? {
+                        kind: 'timed' as const,
+                        durationSeconds: requiredTarget(set.durationSeconds),
+                      }
+                    : {
+                        kind: 'strength' as const,
+                        repetitions: requiredTarget(set.reps),
+                        load:
+                          set.coachBodyweight && set.weight === 0
+                            ? { kind: 'bodyweight' as const }
+                            : { kind: 'kilograms' as const, value: requiredTarget(set.weight) },
+                      }
+                ),
+              },
+            }
+          : {}),
       }
     })
   }

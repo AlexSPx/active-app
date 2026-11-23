@@ -1,0 +1,92 @@
+[
+  {
+    "sourceKey": "Barbell_Deadlift",
+    "equipment": ["BARBELL", "WEIGHT_PLATES"],
+    "movementPatterns": ["hinge"],
+    "aliases": ["deadlift"],
+    "note": "A loaded bar requires plates.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  },
+  {
+    "sourceKey": "Barbell_Squat",
+    "equipment": ["BARBELL", "WEIGHT_PLATES", "SQUAT_RACK"],
+    "movementPatterns": ["squat"],
+    "aliases": ["back squat"],
+    "note": "The catalog instructions use a rack.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  },
+  {
+    "sourceKey": "Bent_Over_Barbell_Row",
+    "equipment": ["BARBELL", "WEIGHT_PLATES"],
+    "movementPatterns": ["horizontal pull"],
+    "aliases": ["barbell row"],
+    "note": "A loaded bar requires plates.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  },
+  {
+    "sourceKey": "Bodyweight_Squat",
+    "equipment": [],
+    "movementPatterns": ["squat"],
+    "aliases": ["air squat"],
+    "note": "The catalog describes a standing bodyweight movement.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  },
+  {
+    "sourceKey": "Dumbbell_Bench_Press",
+    "equipment": ["DUMBBELL", "BENCH"],
+    "movementPatterns": ["horizontal push"],
+    "aliases": ["dumbbell chest press"],
+    "note": "The catalog specifies a flat bench.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  },
+  {
+    "sourceKey": "Dumbbell_Shoulder_Press",
+    "equipment": ["DUMBBELL", "BACK_SUPPORT_BENCH"],
+    "movementPatterns": ["vertical push"],
+    "aliases": ["seated dumbbell press"],
+    "note": "The catalog specifies a bench with back support.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  },
+  {
+    "sourceKey": "Dumbbell_Squat",
+    "equipment": ["DUMBBELL"],
+    "movementPatterns": ["squat"],
+    "aliases": ["dumbbell squat"],
+    "note": "The catalog specifies a dumbbell in each hand.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  },
+  {
+    "sourceKey": "Plank",
+    "equipment": [],
+    "movementPatterns": ["trunk stability"],
+    "aliases": ["forearm plank"],
+    "note": "The catalog describes a floor plank.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  },
+  {
+    "sourceKey": "Pullups",
+    "equipment": ["PULL_UP_BAR"],
+    "movementPatterns": ["vertical pull"],
+    "aliases": ["pull up", "pullup"],
+    "note": "The catalog specifies a pull-up bar.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  },
+  {
+    "sourceKey": "Pushups",
+    "equipment": [],
+    "movementPatterns": ["horizontal push"],
+    "aliases": ["push up", "pushup"],
+    "note": "The catalog describes a floor push-up.",
+    "reviewStatus": "pending_review",
+    "sourceId": "free-exercise-db-f00c92c"
+  }
+]

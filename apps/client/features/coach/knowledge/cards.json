@@ -1,0 +1,398 @@
+[
+  {
+    "id": "card-001",
+    "title": "Start small",
+    "claim": "Begin with a manageable amount of strength work and add work gradually as you learn how you recover.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["beginner", "starting", "strength"]
+  },
+  {
+    "id": "card-002",
+    "title": "Choose a repeatable schedule",
+    "claim": "Choose training days you can repeat consistently within your other commitments.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["frequency", "schedule", "consistency"]
+  },
+  {
+    "id": "card-003",
+    "title": "Allow recovery time",
+    "claim": "Leave time between demanding sessions for the same muscles and adjust if soreness or fatigue persists.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["recovery", "rest", "frequency"]
+  },
+  {
+    "id": "card-004",
+    "title": "Practice movement",
+    "claim": "Use a controllable load while learning a movement and prioritize consistent technique.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["technique", "beginner", "load", "form"]
+  },
+  {
+    "id": "card-005",
+    "title": "Select a squat pattern",
+    "claim": "A squat pattern can train the legs; choose a version that fits available equipment and comfortable range.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["squat", "legs", "selection"]
+  },
+  {
+    "id": "card-006",
+    "title": "Select a hinge pattern",
+    "claim": "A hip hinge is one option for training the posterior chain; choose a variation you can control.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["hinge", "deadlift", "posterior", "chain"]
+  },
+  {
+    "id": "card-007",
+    "title": "Select a horizontal push",
+    "claim": "A push-up or press can provide a horizontal pushing pattern when appropriate for the person and equipment.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["chest", "horizontal", "push", "press"]
+  },
+  {
+    "id": "card-008",
+    "title": "Select a horizontal pull",
+    "claim": "A row can provide a horizontal pulling pattern; select a variation that fits the available equipment.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["back", "row", "horizontal", "pull"]
+  },
+  {
+    "id": "card-009",
+    "title": "Select a vertical push",
+    "claim": "An overhead press is one option for a vertical push if the movement is comfortable.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["shoulder", "overhead", "vertical", "push"]
+  },
+  {
+    "id": "card-010",
+    "title": "Select a vertical pull",
+    "claim": "A pull-up or pulldown can provide a vertical pulling pattern if suitable equipment is available.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["back", "pullup", "pulldown", "vertical", "pull"]
+  },
+  {
+    "id": "card-011",
+    "title": "Use single-leg work",
+    "claim": "A split squat or step-up can add single-leg work when it fits balance and available support.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["unilateral", "single", "leg", "split", "squat"]
+  },
+  {
+    "id": "card-012",
+    "title": "Consider a trunk exercise",
+    "claim": "A plank is one option for practicing trunk stability; choose a duration that preserves control.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["core", "trunk", "plank", "stability"]
+  },
+  {
+    "id": "card-013",
+    "title": "Match exercise to equipment",
+    "claim": "Check every required item, including benches, racks and bars, before selecting an exercise.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["equipment", "bench", "rack", "availability"]
+  },
+  {
+    "id": "card-014",
+    "title": "Choose a substitute by pattern",
+    "claim": "When replacing an exercise, compare movement, equipment and comfort rather than relying on the name alone.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["substitution", "replace", "exercise", "movement"]
+  },
+  {
+    "id": "card-015",
+    "title": "Adapt to range of motion",
+    "claim": "Use a range you can control and adjust the exercise if the available range is uncomfortable.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["range", "motion", "mobility", "comfort"]
+  },
+  {
+    "id": "card-016",
+    "title": "Set an initial load",
+    "claim": "Choose an initial load you can lift with consistent form while leaving some repetitions in reserve.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["initial", "weight", "load", "effort", "reps", "reserve"]
+  },
+  {
+    "id": "card-017",
+    "title": "Keep load unspecified",
+    "claim": "When ability or equipment is unknown, leave the load for the person to choose rather than inventing a weight.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["unknown", "weight", "load", "selection"]
+  },
+  {
+    "id": "card-018",
+    "title": "Progress repetitions first",
+    "claim": "One progression option is to add repetitions within a chosen range before increasing load.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["progression", "repetitions", "rep", "range"]
+  },
+  {
+    "id": "card-019",
+    "title": "Progress load gradually",
+    "claim": "After completing the planned repetitions with good control, consider a small load increase next time.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["progression", "increase", "weight", "load"]
+  },
+  {
+    "id": "card-020",
+    "title": "Repeat a load",
+    "claim": "If a new load makes technique inconsistent, repeat or reduce it while practicing the movement.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["progression", "plateau", "technique", "weight"]
+  },
+  {
+    "id": "card-021",
+    "title": "Change one variable",
+    "claim": "When adjusting training, consider changing one of load, repetitions or sets at a time so the response is easier to interpret.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["progression", "adjust", "sets", "reps", "weight"]
+  },
+  {
+    "id": "card-022",
+    "title": "Use a repetition range",
+    "claim": "A repetition range allows a person to progress within the same load before adjusting it.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["rep", "range", "repetitions", "progression"]
+  },
+  {
+    "id": "card-023",
+    "title": "Rest between sets",
+    "claim": "Rest long enough to perform the next set with the intended technique and effort.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["rest", "between", "sets", "recovery"]
+  },
+  {
+    "id": "card-024",
+    "title": "Use effort as a guide",
+    "claim": "Repetitions in reserve describe how many additional repetitions a person estimates they could perform with good form.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["effort", "rir", "reps", "in", "reserve"]
+  },
+  {
+    "id": "card-025",
+    "title": "Avoid forced maximums",
+    "claim": "A useful training session does not require testing a maximal lift; select loads suited to the session.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["maximum", "one", "rep", "max", "effort", "safety"]
+  },
+  {
+    "id": "card-026",
+    "title": "Track working sets",
+    "claim": "Record sets and repetitions consistently so future changes can be compared with the original plan.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["volume", "sets", "tracking", "record"]
+  },
+  {
+    "id": "card-027",
+    "title": "Adjust total work",
+    "claim": "If a workload is hard to recover from, consider reducing sets or spacing the work across sessions.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["volume", "fatigue", "recovery", "reduce", "sets"]
+  },
+  {
+    "id": "card-028",
+    "title": "Build volume gradually",
+    "claim": "When adding sets, make small changes and observe how performance and recovery respond.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["volume", "sets", "progression", "workload"]
+  },
+  {
+    "id": "card-029",
+    "title": "Distribute work",
+    "claim": "Spreading planned work across available days is one way to manage session length.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["frequency", "volume", "schedule", "sessions"]
+  },
+  {
+    "id": "card-030",
+    "title": "Set a time limit",
+    "claim": "For a short session, prioritize a few relevant movements and leave sufficient time for warm-up and rest.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["time", "limit", "short", "workout", "selection"]
+  },
+  {
+    "id": "card-031",
+    "title": "Warm up specifically",
+    "claim": "Before harder sets, practice the movement with lighter effort appropriate to the exercise.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["warmup", "warm", "up", "preparation"]
+  },
+  {
+    "id": "card-032",
+    "title": "Plan around sleep",
+    "claim": "Consider sleep and other stressors when deciding whether to maintain or reduce a demanding session.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["sleep", "recovery", "fatigue", "stress"]
+  },
+  {
+    "id": "card-033",
+    "title": "Respond to persistent fatigue",
+    "claim": "If fatigue persists, consider reducing training demands and seek qualified advice when needed.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["fatigue", "persistent", "recovery", "advice"]
+  },
+  {
+    "id": "card-034",
+    "title": "Take symptoms seriously",
+    "claim": "Stop an exercise that causes concerning pain and seek an appropriate qualified professional for assessment.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["pain", "symptoms", "injury", "stop"]
+  },
+  {
+    "id": "card-035",
+    "title": "Interpret a missed session",
+    "claim": "A missed session alone does not establish a trend; resume with a practical schedule rather than compensating automatically.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["missed", "session", "adherence", "history"]
+  },
+  {
+    "id": "card-036",
+    "title": "Interpret a short history",
+    "claim": "A few recorded workouts may be too little evidence to identify a reliable performance trend.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["limited", "history", "records", "trend"]
+  },
+  {
+    "id": "card-037",
+    "title": "Separate plan and completion",
+    "claim": "A planned set is not evidence that the set was completed; use completed records for history claims.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["history", "planned", "completed", "evidence"]
+  },
+  {
+    "id": "card-038",
+    "title": "Treat missing load as unknown",
+    "claim": "A missing recorded weight is unknown and should not be assumed to be zero.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["missing", "weight", "unknown", "history", "volume"]
+  },
+  {
+    "id": "card-039",
+    "title": "Compare like with like",
+    "claim": "Compare similar exercises, units and repetition targets before drawing conclusions from recorded sets.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["compare", "history", "reps", "units", "exercise"]
+  },
+  {
+    "id": "card-040",
+    "title": "Account for individual context",
+    "claim": "Adjust exercise choices to the person’s goals, experience, equipment and response rather than using a universal plan.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["individual", "goals", "experience", "selection"]
+  },
+  {
+    "id": "card-041",
+    "title": "Strength emphasis",
+    "claim": "For a strength-oriented goal, practice the selected lifts regularly with loads and repetition targets the person can manage.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["strength", "goal", "programming"]
+  },
+  {
+    "id": "card-042",
+    "title": "Muscle-building emphasis",
+    "claim": "For a muscle-building goal, choose exercises that can be performed consistently and progressed over time.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["hypertrophy", "muscle", "growth", "goal"]
+  },
+  {
+    "id": "card-043",
+    "title": "Plan easier sessions",
+    "claim": "If a session must be easier, reducing load or sets is an option while keeping movements familiar.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["deload", "easy", "session", "reduce", "load"]
+  },
+  {
+    "id": "card-044",
+    "title": "Review after changes",
+    "claim": "After changing a plan, compare recorded performance and recovery over several sessions before making another large change.",
+    "applicability": "General adult strength training; adapt to individual circumstances. Not diagnosis or rehabilitation.",
+    "sourceIds": ["original-author"],
+    "reviewStatus": "pending_review",
+    "aliases": ["review", "progress", "performance", "recovery"]
+  }
+]
