@@ -1,4 +1,5 @@
 jest.mock('lucide-react-native', () => new Proxy({}, { get: (_, name) => name }))
+jest.mock('uniwind', () => ({ useUniwind: () => ({ theme: 'light' }) }))
 jest.mock('../../stores/authStore', () => { const state = { isProfileTransitioning: false, isDeviceDataErasing: false }; const useAuthStore = selector => selector(state); useAuthStore.getState = () => state; useAuthStore.subscribe = () => () => {}; return { useAuthStore } })
 jest.mock('../../lib/sync', () => ({ syncEngine: { resolveId: (_, id) => id, withIdRemapLock: fn => fn(), enqueue: async () => {}, scheduleQueueProcessing: () => {} } }))
 jest.mock('../../lib/db/connection', () => ({ getDatabase: async () => mockDb }))
@@ -37,6 +38,17 @@ test('running correction persists and replacement changes rendered coach metrics
     const first = await record(0)
     mockOutputs = []
     await act(async () => { tree = create(React.createElement(CoachScreen)); await flush() })
+    const render = () => JSON.stringify(tree.toJSON())
+    expect(render()).toContain('What would you like to work on?')
+    expect(render()).not.toContain('Your chats')
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: 'Open chat history' }).props.onPress()
+    })
+    expect(render()).toContain('Your chats')
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: 'Back to conversation' }).props.onPress()
+    })
+    expect(render()).not.toContain('Your chats')
     async function ask() {
       mockOutputs.push({ intent: 'history_question' }, { type: 'latest', exercise: 'Pull-ups', days: 30 })
       const input = tree.root.findByProps({ accessibilityLabel: 'Message Coach' })
@@ -45,6 +57,7 @@ test('running correction persists and replacement changes rendered coach metrics
     }
     await ask()
     expect(JSON.stringify(tree.toJSON())).toContain('0 kg, 8 reps')
+    expect(render()).not.toContain('What would you like to work on?')
     await new WorkoutRepository(mockDb).deleteRecord(first.workoutRecord.id)
     await record(25)
     await ask()

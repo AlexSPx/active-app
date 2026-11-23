@@ -5,11 +5,13 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  StyleSheet,
   Text,
+  TextInput,
   View,
-  useColorScheme,
   type TextInputProps,
 } from 'react-native'
+import { LinearGradient } from 'expo-linear-gradient'
 import { useRouter } from 'expo-router'
 import {
   ArrowLeft,
@@ -18,17 +20,18 @@ import {
   ChevronRight,
   Dumbbell,
   History,
+  MessageCircle,
   Pencil,
   Plus,
   Search,
+  SquarePen,
   Trash2,
-  MessageCircle,
   X,
 } from 'lucide-react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useEffect, useRef, useState, type ComponentRef } from 'react'
 import { Button, UiText, TextField, SegmentedSelection } from '../../../components/ui/Controls'
-import { TextInput } from 'react-native'
+import { useUniwind } from 'uniwind'
 import { useCoachController } from '../hooks/useCoachController'
 import { exerciseCatalog } from '../../../lib/exercises/catalog'
 import type { CoachResponse, CoachReview, CoachWorkout } from '../contracts'
@@ -87,7 +90,7 @@ function SetNumberInput({
 }
 
 function RoutineCycle({ draft }: { draft: Extract<Draft, { kind: 'routine_draft' }> }) {
-  const c = colors(useColorScheme() === 'dark')
+  const c = colors(useUniwind().theme === 'dark')
   if (draft.routine.type === 'WEEKLY_COMPLETION') {
     return (
       <Text
@@ -196,7 +199,7 @@ export function Review({
   const [openExercises, setOpenExercises] = useState<Record<string, boolean>>({})
   const [openLoadOptions, setOpenLoadOptions] = useState<string | null>(null)
   const [openGuidance, setOpenGuidance] = useState<string | null>(null)
-  const c = colors(useColorScheme() === 'dark')
+  const c = colors(useUniwind().theme === 'dark')
   const workouts = draft.kind === 'workout_draft' ? [draft.workout] : draft.workouts
   const updateWorkout = (
     index: number,
@@ -803,20 +806,37 @@ function Response({
     wasSaving.current = saving
   }, [saving, saved, saveNotice])
   const insets = useSafeAreaInsets()
-  const dark = useColorScheme() === 'dark'
-  const c = colors(dark)
-  if (response.kind === 'clarification') return <UiText selectable>{response.question}</UiText>
-  if (response.kind === 'cannot_fulfill') return <UiText selectable>{response.reason}</UiText>
+  const c = colors(useUniwind().theme === 'dark')
+  if (response.kind === 'clarification' || response.kind === 'cannot_fulfill') {
+    const message = response.kind === 'clarification' ? response.question : response.reason
+    return (
+      <UiText
+        accessible
+        accessibilityLabel={`Coach. ${message}`}
+        selectable
+        style={messageTextStyle}
+      >
+        {message}
+      </UiText>
+    )
+  }
   if (response.kind === 'library_edit') {
     const { target, summary } = response.edit
     const action = `Update ${target.kind}`
     return (
       <View className="gap-compact">
-        <UiText selectable textRole="cardTitle">
+        <UiText
+          accessible
+          accessibilityLabel={`Coach. ${target.title}`}
+          selectable
+          textRole="cardTitle"
+        >
           {target.title}
         </UiText>
         {summary.map((line, index) => (
-          <UiText key={index} selectable>{line}</UiText>
+          <UiText key={index} selectable style={messageTextStyle}>
+            {line}
+          </UiText>
         ))}
         {saved ? (
           <UiText textRole="bodyMuted" accessibilityLiveRegion="polite">
@@ -839,22 +859,30 @@ function Response({
   if (response.kind === 'answer')
     return (
       <View className="gap-compact">
-        {response.blocks.map((block, i) =>
-          block.kind === 'metric' ? (
-            <UiText key={i} selectable>
-              {details.metrics.get(block.metricId) ?? block.metricId}
-            </UiText>
-          ) : (
-            <View key={i}>
-              <UiText selectable>{block.text}</UiText>
-              {block.evidence.map((ref) => (
-                <UiText key={`${ref.kind}:${ref.id}`} textRole="caption" selectable>
-                  Evidence: {ref.kind} · {details.evidence.get(`${ref.kind}:${ref.id}`) ?? ref.id}
-                </UiText>
-              ))}
+        {response.blocks.map((block, index) => {
+          const message =
+            block.kind === 'metric'
+              ? (details.metrics.get(block.metricId) ?? block.metricId)
+              : block.text
+          return (
+            <View key={index}>
+              <UiText
+                accessible={index === 0 ? true : undefined}
+                accessibilityLabel={index === 0 ? `Coach. ${message}` : undefined}
+                selectable
+                style={messageTextStyle}
+              >
+                {message}
+              </UiText>
+              {block.kind !== 'metric' &&
+                block.evidence.map((ref) => (
+                  <UiText key={`${ref.kind}:${ref.id}`} textRole="caption" selectable>
+                    Evidence: {ref.kind} · {details.evidence.get(`${ref.kind}:${ref.id}`) ?? ref.id}
+                  </UiText>
+                ))}
             </View>
           )
-        )}
+        })}
         {response.limitations.map((limit, i) => (
           <UiText key={i} textRole="bodyMuted">
             {limit}
@@ -883,13 +911,17 @@ function Response({
         backgroundColor: c.card,
         borderColor: c.line,
         borderWidth: 1,
-        borderRadius: 22,
-        overflow: 'hidden',
+        borderRadius: 26,
+        borderCurve: 'continuous',
+        boxShadow: `0 3px 14px ${c.shadow}`,
       }}
     >
       <View
         style={{
           backgroundColor: c.featured,
+          borderTopLeftRadius: 25,
+          borderTopRightRadius: 25,
+          borderCurve: 'continuous',
           paddingTop: 15,
           paddingHorizontal: 16,
           paddingBottom: 13,
@@ -924,6 +956,8 @@ function Response({
           </Text>
         </View>
         <Text
+          accessible
+          accessibilityLabel={`Coach. ${title}`}
           style={{
             color: c.ink,
             fontSize: 24,
@@ -1056,7 +1090,7 @@ function Response({
           }}
           style={{
             backgroundColor: c.plum,
-            borderRadius: 14,
+            borderRadius: 23,
             minHeight: 46,
             flexDirection: 'row',
             alignItems: 'center',
@@ -1178,6 +1212,7 @@ const colors = (dark: boolean) =>
         featured: '#493656',
         featuredLine: '#796287',
         card: '#382b42',
+        shadow: '#00000026',
       }
     : {
         canvas: '#faf7fc',
@@ -1191,16 +1226,86 @@ const colors = (dark: boolean) =>
         featured: '#e3d7ee',
         featuredLine: '#c6b8d0',
         card: '#fffcff',
+        shadow: '#62457214',
       }
+
+const messageTextStyle = { fontSize: 16, lineHeight: 23 }
+const chatStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    zIndex: 1,
+  },
+  column: {
+    width: '100%',
+    maxWidth: 680,
+    alignSelf: 'center',
+  },
+  iconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bubble: {
+    alignSelf: 'flex-start',
+    maxWidth: '92%',
+    borderRadius: 22,
+    borderCurve: 'continuous',
+    paddingHorizontal: 15,
+    paddingVertical: 11,
+  },
+})
+
+function PromptChips({
+  choices,
+  disabled = false,
+  onChoose,
+}: {
+  choices: readonly string[]
+  disabled?: boolean
+  onChoose: (choice: string) => void
+}) {
+  const c = colors(useUniwind().theme === 'dark')
+  return (
+    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
+      {choices.map((choice) => (
+        <Pressable
+          key={choice}
+          disabled={disabled}
+          accessibilityRole="button"
+          accessibilityState={{ disabled }}
+          onPress={() => onChoose(choice)}
+          className="border border-divider focus:border-accent active:opacity-70 disabled:opacity-50"
+          style={{
+            minHeight: 44,
+            justifyContent: 'center',
+            backgroundColor: c.card,
+            borderRadius: 22,
+            paddingHorizontal: 14,
+            paddingVertical: 8,
+          }}
+        >
+          <Text style={{ color: c.plum, fontFamily: 'DM Sans Medium', fontSize: 13 }}>
+            {choice}
+          </Text>
+        </Pressable>
+      ))}
+    </View>
+  )
+}
 
 export function CoachScreen() {
   const coach = useCoachController()
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const c = colors(useColorScheme() === 'dark')
-  const [showHistory, setShowHistory] = useState(true)
+  const c = colors(useUniwind().theme === 'dark')
+  const [showHistory, setShowHistory] = useState(false)
   const [historySearch, setHistorySearch] = useState('')
-  const [composerHeight, setComposerHeight] = useState(72)
+  const [headerHeight, setHeaderHeight] = useState(insets.top + 96)
+  const [composerHeight, setComposerHeight] = useState(108)
   const scroll = useRef<ComponentRef<typeof ScrollView>>(null)
   const restorePosition = useRef(true)
   const scrollKey = coach.currentConversationId ?? '__new__'
@@ -1209,6 +1314,11 @@ export function CoachScreen() {
   const nearBottom = useRef(true)
   const viewportHeight = useRef(0)
   const followMessages = useRef(false)
+  const hasMessages = coach.items.length > 0
+  const isReady = coach.status === 'ready'
+  const canSend = isReady && coach.draft.trim().length > 0
+  const busy =
+    coach.status === 'checking' || coach.status === 'loading' || coach.status === 'generating'
   if (lastScrollKey.current !== scrollKey) {
     const firstSend =
       lastScrollKey.current === '__new__' && coach.items.length > previousItemCount.current
@@ -1236,505 +1346,611 @@ export function CoachScreen() {
   }
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: c.canvas, paddingTop: insets.top }}
+      style={{ flex: 1, backgroundColor: c.canvas }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingHorizontal: 16,
-          paddingBottom: 16,
-          gap: 10,
-        }}
-      >
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Back"
-          onPress={() => router.back()}
-          style={{ padding: 6 }}
-        >
-          <ArrowLeft color={c.plum} size={20} />
-        </Pressable>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Open chat history"
-          onPress={() => setShowHistory(true)}
-          style={{ padding: 8 }}
-        >
-          <History color={c.plum} />
-        </Pressable>
+      <View style={{ flex: 1 }}>
         <View
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: 21,
-            backgroundColor: c.featured,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          pointerEvents="box-none"
+          onLayout={(event) => setHeaderHeight(event.nativeEvent.layout.height)}
+          style={[chatStyles.overlay, { top: 0 }]}
         >
-          <Dumbbell color={c.ink} size={22} />
+          <LinearGradient
+            pointerEvents="none"
+            colors={[c.canvas, `${c.canvas}F5`, `${c.canvas}00`]}
+            locations={[0, 0.53, 1]}
+            style={[StyleSheet.absoluteFill, { bottom: -16 }]}
+          />
+          <View
+            pointerEvents="box-none"
+            style={[
+              chatStyles.column,
+              {
+                flexDirection: 'row',
+                alignItems: 'flex-start',
+                paddingHorizontal: 16,
+                paddingTop: insets.top + 10,
+                paddingBottom: 8,
+              },
+            ]}
+          >
+            <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'flex-start' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  backgroundColor: c.card,
+                  borderWidth: 1,
+                  borderColor: c.line,
+                  borderRadius: 24,
+                  boxShadow: `0 2px 9px ${c.shadow}`,
+                }}
+              >
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Back"
+                  onPress={() => router.back()}
+                  className="focus:border focus:border-accent active:bg-raised"
+                  style={chatStyles.iconButton}
+                >
+                  <ArrowLeft color={c.plum} size={20} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Open chat history"
+                  onPress={() => setShowHistory(true)}
+                  className="focus:border focus:border-accent active:bg-raised"
+                  style={chatStyles.iconButton}
+                >
+                  <History color={c.plum} size={20} />
+                </Pressable>
+              </View>
+            </View>
+            <View pointerEvents="none" style={{ alignItems: 'center' }}>
+              <View
+                style={{
+                  width: 58,
+                  height: 58,
+                  borderRadius: 29,
+                  backgroundColor: c.featured,
+                  borderWidth: 2,
+                  borderColor: c.card,
+                  boxShadow: `0 3px 12px ${c.shadow}`,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <Dumbbell color={c.ink} size={26} />
+              </View>
+              <Text
+                accessibilityRole="header"
+                style={{
+                  color: c.ink,
+                  backgroundColor: c.card,
+                  borderColor: c.line,
+                  borderWidth: 1,
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  marginTop: -8,
+                  paddingHorizontal: 10,
+                  paddingVertical: 3,
+                  fontFamily: 'DM Sans Semibold',
+                  fontSize: 13,
+                }}
+              >
+                Coach
+              </Text>
+            </View>
+            <View pointerEvents="box-none" style={{ flex: 1, alignItems: 'flex-end' }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Start a new conversation"
+                onPress={coach.newConversation}
+                className="border border-divider focus:border-accent active:opacity-70"
+                style={[
+                  chatStyles.iconButton,
+                  { backgroundColor: c.card, boxShadow: `0 2px 9px ${c.shadow}` },
+                ]}
+              >
+                <SquarePen color={c.plum} size={19} />
+              </Pressable>
+            </View>
+          </View>
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ color: c.ink, fontSize: 18, fontWeight: '600' }}>Coach</Text>
-          <Text style={{ color: c.quiet, fontSize: 11 }}>Your training assistant</Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Start a new conversation"
-          onPress={coach.newConversation}
-          style={{ padding: 8 }}
+        <Modal
+          visible={showHistory}
+          animationType="slide"
+          onRequestClose={() => setShowHistory(false)}
         >
-          <Plus color={c.plum} />
-        </Pressable>
-      </View>
-      <Modal
-        visible={showHistory}
-        animationType="slide"
-        onRequestClose={() => setShowHistory(false)}
-      >
-        <View
-          style={{
-            flex: 1,
-            backgroundColor: c.canvas,
-            paddingTop: insets.top + 16,
-            paddingHorizontal: 20,
-          }}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 16 }}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Back to conversation"
-              onPress={() => {
-                setShowHistory(false)
-              }}
-              style={{ padding: 8 }}
-            >
-              <ArrowLeft color={c.plum} />
-            </Pressable>
-            <Text style={{ flex: 1, color: c.ink, fontSize: 25, fontFamily: 'DM Sans Semibold' }}>
-              Your chats
-            </Text>
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => {
-                coach.newConversation()
-                setShowHistory(false)
-              }}
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: c.canvas,
+              paddingTop: insets.top + 16,
+              paddingHorizontal: 20,
+            }}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 16 }}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Back to conversation"
+                onPress={() => {
+                  setShowHistory(false)
+                }}
+                style={{ padding: 8 }}
+              >
+                <ArrowLeft color={c.plum} />
+              </Pressable>
+              <Text style={{ flex: 1, color: c.ink, fontSize: 25, fontFamily: 'DM Sans Semibold' }}>
+                Your chats
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => {
+                  coach.newConversation()
+                  setShowHistory(false)
+                }}
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  gap: 5,
+                  backgroundColor: c.plum,
+                  borderRadius: 20,
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                }}
+              >
+                <Plus size={15} color={c.onPlum} />
+                <Text style={{ color: c.onPlum, fontFamily: 'DM Sans Semibold', fontSize: 12 }}>
+                  New chat
+                </Text>
+              </Pressable>
+            </View>
+            <View
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 5,
-                backgroundColor: c.plum,
-                borderRadius: 20,
-                paddingHorizontal: 12,
-                paddingVertical: 10,
+                gap: 9,
+                backgroundColor: c.surface,
+                borderRadius: 15,
+                paddingHorizontal: 13,
+                marginBottom: 12,
               }}
             >
-              <Plus size={15} color={c.onPlum} />
-              <Text style={{ color: c.onPlum, fontFamily: 'DM Sans Semibold', fontSize: 12 }}>
-                New chat
-              </Text>
-            </Pressable>
-          </View>
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              gap: 9,
-              backgroundColor: c.surface,
-              borderRadius: 15,
-              paddingHorizontal: 13,
-              marginBottom: 12,
-            }}
-          >
-            <Search size={17} color={c.quiet} />
-            <TextInput
-              accessibilityLabel="Search chats"
-              placeholder="Search your chats"
-              placeholderTextColor={c.quiet}
-              value={historySearch}
-              onChangeText={setHistorySearch}
-              style={{ flex: 1, minHeight: 46, color: c.ink, fontFamily: 'DM Sans', fontSize: 13 }}
-            />
-          </View>
-          <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
-            {history.length === 0 && (
-              <View style={{ alignItems: 'center', padding: 55, gap: 8 }}>
-                <Search size={28} color={c.quiet} />
-                <Text style={{ color: c.ink, fontSize: 18, fontFamily: 'DM Sans Semibold' }}>
-                  {historySearch ? 'No chats found' : 'No conversations yet'}
-                </Text>
-                <Text style={{ color: c.quiet, textAlign: 'center' }}>
-                  {historySearch
-                    ? 'Try a workout name or another topic.'
-                    : 'Start a conversation with Coach.'}
-                </Text>
-              </View>
-            )}
-            {history.map((entry, index) => (
-              <View key={entry.id}>
-                {(index === 0 ||
-                  dayLabel(history[index - 1].updated_at) !== dayLabel(entry.updated_at)) && (
-                  <Text
-                    style={{
-                      color: c.quiet,
-                      fontSize: 12,
-                      marginTop: 18,
-                      marginBottom: 4,
-                      fontFamily: 'DM Sans Semibold',
-                    }}
-                  >
-                    {dayLabel(entry.updated_at)}
-                  </Text>
-                )}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingVertical: 12,
-                    gap: 11,
-                  }}
-                >
-                  <View
-                    style={{
-                      width: 44,
-                      height: 39,
-                      borderRadius: 12,
-                      backgroundColor: c.featured,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    {entry.artifact ? (
-                      <Dumbbell size={19} color={c.plum} />
-                    ) : (
-                      <MessageCircle size={19} color={c.plum} />
-                    )}
-                  </View>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Open conversation: ${entry.title}`}
-                    onPress={() => {
-                      setShowHistory(false)
-                      void coach.openConversation(entry.id)
-                    }}
-                    style={{ flex: 1 }}
-                  >
-                    <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
-                      <Text
-                        numberOfLines={1}
-                        style={{
-                          flex: 1,
-                          color: c.ink,
-                          fontSize: 14,
-                          fontFamily: 'DM Sans Semibold',
-                        }}
-                      >
-                        {entry.title}
-                      </Text>
-                      <Text style={{ color: c.quiet, fontSize: 10 }}>
-                        {dayLabel(entry.updated_at) === 'Today' ||
-                        dayLabel(entry.updated_at) === 'Yesterday'
-                          ? new Date(entry.updated_at).toLocaleTimeString([], {
-                              hour: '2-digit',
-                              minute: '2-digit',
-                            })
-                          : new Date(entry.updated_at).toLocaleDateString([], { weekday: 'short' })}
-                      </Text>
-                    </View>
-                    <Text numberOfLines={2} style={{ color: c.quiet, fontSize: 11 }}>
-                      {entry.preview || 'Start a conversation with Coach.'}
-                    </Text>
-                    {!!entry.artifact && (
-                      <Text style={{ color: c.plum, fontSize: 11 }}>
-                        {entry.saved ? 'Saved ' : ''}
-                        {entry.artifact === 'plan' ? (entry.isEdit ? 'routine' : 'plan') : 'workout'}
-                        {entry.isEdit ? ' edit' : entry.saved ? '' : ' draft'}
-                      </Text>
-                    )}
-                    {entry.id === coach.currentConversationId && (
-                      <Text style={{ color: c.quiet, fontSize: 10 }}>Current chat</Text>
-                    )}
-                  </Pressable>
-                  <Pressable
-                    accessibilityRole="button"
-                    accessibilityLabel={`Delete conversation: ${entry.title}`}
-                    onPress={() =>
-                      Alert.alert(
-                        'Delete conversation?',
-                        'This removes the conversation from this device.',
-                        [
-                          { text: 'Cancel', style: 'cancel' },
-                          {
-                            text: 'Delete',
-                            style: 'destructive',
-                            onPress: () => void coach.deleteConversation(entry.id),
-                          },
-                        ]
-                      )
-                    }
-                    style={{ padding: 12 }}
-                  >
-                    <X color={c.quiet} size={18} />
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
-        </View>
-      </Modal>
-      <ScrollView
-        key={scrollKey}
-        ref={scroll}
-        onScroll={(event) => {
-          if (!restorePosition.current) {
-            const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
-            nearBottom.current = shouldFollowCoachMessages(
-              contentOffset.y,
-              layoutMeasurement.height,
-              contentSize.height
-            )
-            coach.setScrollOffset(contentOffset.y)
-          }
-        }}
-        scrollEventThrottle={100}
-        onLayout={(event) => {
-          viewportHeight.current = event.nativeEvent.layout.height
-        }}
-        onContentSizeChange={(_width, height) => {
-          if (restorePosition.current) {
-            nearBottom.current = shouldFollowCoachMessages(
-              coach.scrollOffset,
-              viewportHeight.current,
-              height
-            )
-            if (followMessages.current) scroll.current?.scrollToEnd({ animated: true })
-            else scroll.current?.scrollTo({ y: coach.scrollOffset, animated: false })
-            restorePosition.current = false
-            followMessages.current = false
-          } else if (followMessages.current) {
-            followMessages.current = false
-            scroll.current?.scrollToEnd({ animated: true })
-          }
-        }}
-        contentInsetAdjustmentBehavior="automatic"
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          padding: 19,
-          paddingBottom: composerHeight + 46,
-          gap: 20,
-          flexGrow: 1,
-        }}
-      >
-        <Text style={{ color: c.quiet, textAlign: 'center', fontSize: 11 }}>Today</Text>
-        <View style={{ gap: 7 }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-            <Dumbbell size={13} color={c.plum} />
-            <Text style={{ color: c.plum, fontSize: 11, fontFamily: 'DM Sans Semibold' }}>
-              Coach
-            </Text>
-          </View>
-          <Text style={{ color: c.ink, lineHeight: 22 }}>What would you like to work on?</Text>
-          <Text style={{ color: c.quiet, fontSize: 12, lineHeight: 18 }}>
-            Experimental coach. Training advice and workout drafts have not been validated. Review
-            suggestions carefully.
-          </Text>
-        </View>
-        {coach.items.length === 0 && coach.status === 'ready' && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-            {[
-              'Build me a workout',
-              'Build me a plan',
-              'How long should I rest?',
-              'Show my saved workouts and routines',
-            ].map((choice) => (
-              <Pressable
-                key={choice}
-                accessibilityRole="button"
-                onPress={() => void coach.send(choice)}
+              <Search size={17} color={c.quiet} />
+              <TextInput
+                accessibilityLabel="Search chats"
+                placeholder="Search your chats"
+                placeholderTextColor={c.quiet}
+                value={historySearch}
+                onChangeText={setHistorySearch}
                 style={{
-                  backgroundColor: c.surface,
-                  borderRadius: 22,
-                  paddingHorizontal: 12,
-                  paddingVertical: 9,
-                  minHeight: 38,
-                  opacity: coach.status === 'ready' ? 1 : 0.45,
+                  flex: 1,
+                  minHeight: 46,
+                  color: c.ink,
+                  fontFamily: 'DM Sans',
+                  fontSize: 13,
                 }}
-              >
-                <Text style={{ color: c.plum, fontSize: 12 }}>{choice}</Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
-        {coach.items.map((item, i) =>
-          item.kind === 'user' ? (
-            <View key={i} style={{ alignItems: 'flex-end' }}>
-              <Text
-                selectable
-                style={{
-                  overflow: 'hidden',
-                  maxWidth: '88%',
-                  backgroundColor: c.plum,
-                  color: c.onPlum,
-                  borderRadius: 17,
-                  borderBottomRightRadius: 5,
-                  padding: 12,
-                  lineHeight: 21,
-                }}
-              >
-                {item.text}
-              </Text>
-            </View>
-          ) : (
-            <View key={item.reviewId} style={{ gap: 8 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
-                <Dumbbell size={13} color={c.plum} />
-                <Text style={{ color: c.plum, fontSize: 11, fontFamily: 'DM Sans Semibold' }}>
-                  Coach
-                </Text>
-              </View>
-              <Response
-                response={item.response}
-                onChange={(draft) => coach.updateReview(item.reviewId, draft)}
-                saveNotice={coach.saveNotice}
-                saved={item.saved}
-                details={item.details}
-                save={(review) => void coach.saveReview(review, item.reviewId, item.request)}
-                saving={coach.saving}
-                remoteUnmapped={coach.remoteUnmapped}
-                transitioning={coach.transitioning}
-                request={item.request}
               />
-              {i === coach.items.length - 1 && (
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-                  {(item.response.kind === 'workout_draft'
-                    ? ['Make it easier', 'Build a plan around this']
-                    : item.response.kind === 'routine_draft'
-                      ? ['How do I progress?', 'Make sessions shorter']
-                      : []
-                  ).map((choice) => (
-                    <Pressable
-                      key={choice}
-                      disabled={coach.status !== 'ready'}
-                      accessibilityRole="button"
-                      onPress={() => void coach.send(choice)}
-                      style={{
-                        backgroundColor: c.surface,
-                        borderRadius: 22,
-                        paddingHorizontal: 12,
-                        paddingVertical: 9,
-                        minHeight: 38,
-                        opacity: coach.status === 'ready' ? 1 : 0.45,
-                      }}
-                    >
-                      <Text style={{ color: c.plum, fontSize: 12 }}>{choice}</Text>
-                    </Pressable>
-                  ))}
+            </View>
+            <ScrollView
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingBottom: 12 }}
+            >
+              {history.length === 0 && (
+                <View style={{ alignItems: 'center', padding: 55, gap: 8 }}>
+                  <Search size={28} color={c.quiet} />
+                  <Text style={{ color: c.ink, fontSize: 18, fontFamily: 'DM Sans Semibold' }}>
+                    {historySearch ? 'No chats found' : 'No conversations yet'}
+                  </Text>
+                  <Text style={{ color: c.quiet, textAlign: 'center' }}>
+                    {historySearch
+                      ? 'Try a workout name or another topic.'
+                      : 'Start a conversation with Coach.'}
+                  </Text>
                 </View>
               )}
-            </View>
-          )
-        )}
-        {(coach.status === 'checking' ||
-          coach.status === 'loading' ||
-          coach.status === 'generating') && (
-          <Text accessibilityLiveRegion="polite" style={{ color: c.quiet }}>
-            {coach.status === 'generating'
-              ? 'Thinking…'
-              : coach.status === 'loading'
-                ? 'Loading model…'
-                : `${coach.progressPhase === 'download' ? 'Downloading model' : 'Checking model'}… ${coach.progress > 0 ? `${Math.round(coach.progress * 100)}%` : ''}`}
-          </Text>
-        )}
-        {!!coach.notice && (
-          <Text selectable accessibilityLiveRegion="polite" style={{ color: c.quiet }}>
-            {coach.notice}
-          </Text>
-        )}
-        {!!coach.saveNotice && (
-          <Text selectable accessibilityLiveRegion="polite" style={{ color: c.ink }}>
-            {coach.saveNotice}
-          </Text>
-        )}
-        {coach.status === 'download' && (
-          <View style={{ gap: 8 }}>
-            <Text style={{ color: c.quiet }}>
-              Download the 2.08 GB fine-tuned Qwen 3.5 2B model to use Coach. Extra free space is
-              needed for verification.
-            </Text>
-            <Button onPress={() => void coach.prepare(true)}>Download model</Button>
+              {history.map((entry, index) => (
+                <View key={entry.id}>
+                  {(index === 0 ||
+                    dayLabel(history[index - 1].updated_at) !== dayLabel(entry.updated_at)) && (
+                    <Text
+                      style={{
+                        color: c.quiet,
+                        fontSize: 12,
+                        marginTop: 18,
+                        marginBottom: 4,
+                        fontFamily: 'DM Sans Semibold',
+                      }}
+                    >
+                      {dayLabel(entry.updated_at)}
+                    </Text>
+                  )}
+                  <View
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      paddingVertical: 12,
+                      gap: 11,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 44,
+                        height: 39,
+                        borderRadius: 12,
+                        backgroundColor: c.featured,
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {entry.artifact ? (
+                        <Dumbbell size={19} color={c.plum} />
+                      ) : (
+                        <MessageCircle size={19} color={c.plum} />
+                      )}
+                    </View>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Open conversation: ${entry.title}`}
+                      onPress={() => {
+                        setShowHistory(false)
+                        void coach.openConversation(entry.id)
+                      }}
+                      style={{ flex: 1 }}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 8 }}>
+                        <Text
+                          numberOfLines={1}
+                          style={{
+                            flex: 1,
+                            color: c.ink,
+                            fontSize: 14,
+                            fontFamily: 'DM Sans Semibold',
+                          }}
+                        >
+                          {entry.title}
+                        </Text>
+                        <Text style={{ color: c.quiet, fontSize: 10 }}>
+                          {dayLabel(entry.updated_at) === 'Today' ||
+                          dayLabel(entry.updated_at) === 'Yesterday'
+                            ? new Date(entry.updated_at).toLocaleTimeString([], {
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })
+                            : new Date(entry.updated_at).toLocaleDateString([], {
+                                weekday: 'short',
+                              })}
+                        </Text>
+                      </View>
+                      <Text numberOfLines={2} style={{ color: c.quiet, fontSize: 11 }}>
+                        {entry.preview || 'Start a conversation with Coach.'}
+                      </Text>
+                      {!!entry.artifact && (
+                        <Text style={{ color: c.plum, fontSize: 11 }}>
+                          {entry.saved ? 'Saved ' : ''}
+                          {entry.artifact === 'plan'
+                            ? entry.isEdit
+                              ? 'routine'
+                              : 'plan'
+                            : 'workout'}
+                          {entry.isEdit ? ' edit' : entry.saved ? '' : ' draft'}
+                        </Text>
+                      )}
+                      {entry.id === coach.currentConversationId && (
+                        <Text style={{ color: c.quiet, fontSize: 10 }}>Current chat</Text>
+                      )}
+                    </Pressable>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`Delete conversation: ${entry.title}`}
+                      onPress={() =>
+                        Alert.alert(
+                          'Delete conversation?',
+                          'This removes the conversation from this device.',
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: () => void coach.deleteConversation(entry.id),
+                            },
+                          ]
+                        )
+                      }
+                      style={{ padding: 12 }}
+                    >
+                      <X color={c.quiet} size={18} />
+                    </Pressable>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+            {isReady && (
+              <View style={{ paddingBottom: Math.max(insets.bottom, 12) }}>
+                <Button
+                  variant="ghost"
+                  onPress={() => {
+                    setShowHistory(false)
+                    void coach.removeModel()
+                  }}
+                >
+                  Delete downloaded model
+                </Button>
+              </View>
+            )}
           </View>
-        )}
-        {(coach.status === 'checking' ||
-          coach.status === 'loading' ||
-          coach.status === 'generating') && (
-          <Button variant="secondary" onPress={coach.cancel}>
-            Cancel
-          </Button>
-        )}
-        {coach.status === 'error' && (
-          <Button variant="secondary" onPress={() => void coach.prepare()}>
-            Retry
-          </Button>
-        )}
-        {coach.status === 'ready' && (
-          <Button variant="ghost" onPress={() => void coach.removeModel()}>
-            Delete downloaded model
-          </Button>
-        )}
-      </ScrollView>
-      <View
-        onLayout={(event) => setComposerHeight(event.nativeEvent.layout.height)}
-        style={{
-          position: 'absolute',
-          left: 16,
-          right: 16,
-          bottom: Math.max(insets.bottom, 28),
-        }}
-      >
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'flex-end',
-            gap: 8,
-            backgroundColor: c.card,
-            borderColor: c.line,
-            borderWidth: 1,
-            borderRadius: 29,
-            padding: 8,
-            paddingLeft: 13,
+        </Modal>
+        <ScrollView
+          key={scrollKey}
+          ref={scroll}
+          style={{ flex: 1 }}
+          onScroll={(event) => {
+            if (!restorePosition.current) {
+              const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent
+              nearBottom.current = shouldFollowCoachMessages(
+                contentOffset.y,
+                layoutMeasurement.height,
+                contentSize.height
+              )
+              coach.setScrollOffset(contentOffset.y)
+            }
           }}
+          scrollEventThrottle={100}
+          onLayout={(event) => {
+            const height = event.nativeEvent.layout.height
+            if (height < viewportHeight.current && nearBottom.current && !restorePosition.current) {
+              scroll.current?.scrollToEnd({ animated: false })
+            }
+            viewportHeight.current = height
+          }}
+          onContentSizeChange={(_width, height) => {
+            if (restorePosition.current) {
+              nearBottom.current = shouldFollowCoachMessages(
+                coach.scrollOffset,
+                viewportHeight.current,
+                height
+              )
+              if (followMessages.current) scroll.current?.scrollToEnd({ animated: true })
+              else scroll.current?.scrollTo({ y: coach.scrollOffset, animated: false })
+              restorePosition.current = false
+              followMessages.current = false
+            } else if (followMessages.current) {
+              followMessages.current = false
+              scroll.current?.scrollToEnd({ animated: true })
+            }
+          }}
+          contentInsetAdjustmentBehavior="never"
+          scrollIndicatorInsets={{ top: headerHeight, bottom: composerHeight }}
+          keyboardDismissMode="on-drag"
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={[
+            chatStyles.column,
+            {
+              flexGrow: 1,
+              justifyContent: hasMessages ? 'flex-end' : 'center',
+              paddingHorizontal: 16,
+              paddingTop: headerHeight + 12,
+              paddingBottom: composerHeight + 14,
+              gap: 14,
+            },
+          ]}
         >
-          <TextInput
-            accessibilityLabel="Message Coach"
-            multiline
-            value={coach.draft}
-            onChangeText={coach.setDraft}
-            editable={coach.status === 'ready'}
-            placeholder="Message Coach…"
-            placeholderTextColor={c.quiet}
-            maxLength={4000}
-            style={{ flex: 1, minHeight: 36, maxHeight: 88, color: c.ink, paddingVertical: 7 }}
+          {!hasMessages && (
+            <View style={{ gap: 16 }}>
+              <Text
+                accessibilityRole="header"
+                textBreakStrategy="balanced"
+                lineBreakStrategyIOS="standard"
+                style={{
+                  color: c.ink,
+                  fontFamily: 'DM Sans Semibold',
+                  fontSize: 28,
+                  lineHeight: 34,
+                }}
+              >
+                What would you like to work on?
+              </Text>
+              {isReady && (
+                <PromptChips
+                  choices={[
+                    'Build me a workout',
+                    'Build me a plan',
+                    'How long should I rest?',
+                    'Show my saved workouts and routines',
+                  ]}
+                  onChoose={(choice) => void coach.send(choice)}
+                />
+              )}
+            </View>
+          )}
+          {coach.items.map((item, i) => {
+            if (item.kind === 'user') {
+              return (
+                <View
+                  key={i}
+                  style={[
+                    chatStyles.bubble,
+                    { alignSelf: 'flex-end', backgroundColor: c.featured },
+                  ]}
+                >
+                  <Text
+                    accessible
+                    accessibilityLabel={`You. ${item.text}`}
+                    selectable
+                    style={[messageTextStyle, { color: c.ink, fontFamily: 'DM Sans' }]}
+                  >
+                    {item.text}
+                  </Text>
+                </View>
+              )
+            }
+            const choices =
+              item.response.kind === 'workout_draft'
+                ? ['Make it easier', 'Build a plan around this']
+                : item.response.kind === 'routine_draft'
+                  ? ['How do I progress?', 'Make sessions shorter']
+                  : null
+            return (
+              <View key={item.reviewId} style={{ gap: 10 }}>
+                <View
+                  style={choices ? undefined : [chatStyles.bubble, { backgroundColor: c.surface }]}
+                >
+                  <Response
+                    response={item.response}
+                    onChange={(draft) => coach.updateReview(item.reviewId, draft)}
+                    saveNotice={coach.saveNotice}
+                    saved={item.saved}
+                    details={item.details}
+                    save={(review) => void coach.saveReview(review, item.reviewId, item.request)}
+                    saving={coach.saving}
+                    remoteUnmapped={coach.remoteUnmapped}
+                    transitioning={coach.transitioning}
+                    request={item.request}
+                  />
+                </View>
+                {choices && i === coach.items.length - 1 && (
+                  <PromptChips
+                    choices={choices}
+                    disabled={!isReady}
+                    onChoose={(choice) => void coach.send(choice)}
+                  />
+                )}
+              </View>
+            )
+          })}
+          {busy && (
+            <View
+              style={[
+                chatStyles.bubble,
+                { backgroundColor: c.surface, flexDirection: 'row', alignItems: 'center', gap: 8 },
+              ]}
+            >
+              <Text
+                accessibilityLiveRegion="polite"
+                style={{ color: c.quiet, fontFamily: 'DM Sans', flexShrink: 1 }}
+              >
+                {coach.status === 'generating'
+                  ? 'Thinking…'
+                  : coach.status === 'loading'
+                    ? 'Loading model…'
+                    : `${coach.progressPhase === 'download' ? 'Downloading model' : 'Checking model'}… ${coach.progress > 0 ? `${Math.round(coach.progress * 100)}%` : ''}`}
+              </Text>
+              <Button variant="ghost" density="compact" onPress={coach.cancel}>
+                Cancel
+              </Button>
+            </View>
+          )}
+          {!!coach.notice && (
+            <Text selectable accessibilityLiveRegion="polite" style={{ color: c.quiet }}>
+              {coach.notice}
+            </Text>
+          )}
+          {!!coach.saveNotice && (
+            <Text selectable accessibilityLiveRegion="polite" style={{ color: c.ink }}>
+              {coach.saveNotice}
+            </Text>
+          )}
+          {coach.status === 'download' && (
+            <View style={{ gap: 8 }}>
+              <Text style={{ color: c.quiet, fontFamily: 'DM Sans', lineHeight: 21 }}>
+                Download the 2.08 GB fine-tuned Qwen 3.5 2B model to use Coach. Extra free space is
+                needed for verification.
+              </Text>
+              <Button onPress={() => void coach.prepare(true)}>Download model</Button>
+            </View>
+          )}
+          {coach.status === 'error' && (
+            <Button variant="secondary" onPress={() => void coach.prepare()}>
+              Retry
+            </Button>
+          )}
+        </ScrollView>
+        <View
+          pointerEvents="box-none"
+          onLayout={(event) => {
+            const height = event.nativeEvent.layout.height
+            if (height > composerHeight && nearBottom.current && !restorePosition.current) {
+              followMessages.current = true
+            }
+            setComposerHeight(height)
+          }}
+          style={[chatStyles.overlay, { bottom: 0 }]}
+        >
+          <LinearGradient
+            pointerEvents="none"
+            colors={[`${c.canvas}00`, `${c.canvas}F5`, c.canvas]}
+            locations={[0, 0.58, 1]}
+            style={[StyleSheet.absoluteFill, { top: -22 }]}
           />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Send message"
-            disabled={coach.status !== 'ready' || !coach.draft.trim()}
-            onPress={() => void coach.send()}
-            style={{
-              width: 44,
-              height: 36,
-              borderRadius: 18,
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: c.plum,
-              opacity: coach.status === 'ready' && coach.draft.trim() ? 1 : 0.4,
-            }}
+          <View
+            pointerEvents="box-none"
+            style={[
+              chatStyles.column,
+              { paddingHorizontal: 16, paddingTop: 6, paddingBottom: 10, gap: 8 },
+            ]}
           >
-            <ArrowUp size={20} color={c.onPlum} />
-          </Pressable>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'flex-end',
+                gap: 8,
+                backgroundColor: c.card,
+                borderColor: c.line,
+                borderWidth: 1,
+                borderRadius: 28,
+                borderCurve: 'continuous',
+                boxShadow: `0 3px 14px ${c.shadow}`,
+                padding: 5,
+                paddingLeft: 16,
+              }}
+            >
+              <TextInput
+                accessibilityLabel="Message Coach"
+                multiline
+                value={coach.draft}
+                onChangeText={coach.setDraft}
+                editable={isReady}
+                placeholder="Message Coach…"
+                placeholderTextColor={c.quiet}
+                cursorColor={c.plum}
+                maxLength={4000}
+                style={[
+                  messageTextStyle,
+                  {
+                    flex: 1,
+                    minHeight: 44,
+                    maxHeight: 112,
+                    color: c.ink,
+                    fontFamily: 'DM Sans',
+                    paddingVertical: 10,
+                  },
+                ]}
+              />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Send message"
+                disabled={!canSend}
+                accessibilityState={{ disabled: !canSend }}
+                onPress={() => void coach.send()}
+                className="focus:border focus:border-foreground active:opacity-70"
+                style={[chatStyles.iconButton, { backgroundColor: canSend ? c.plum : c.surface }]}
+              >
+                <ArrowUp size={21} color={canSend ? c.onPlum : c.quiet} />
+              </Pressable>
+            </View>
+            <Text
+              style={{
+                color: c.quiet,
+                fontFamily: 'DM Sans',
+                textAlign: 'center',
+                fontSize: 11,
+                lineHeight: 15,
+              }}
+            >
+              Experimental coach. Training advice and workout drafts have not been validated. Review
+              suggestions carefully.
+            </Text>
+          </View>
         </View>
       </View>
     </KeyboardAvoidingView>
