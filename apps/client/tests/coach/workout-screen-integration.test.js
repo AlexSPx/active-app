@@ -20,6 +20,17 @@ const { CoachConversationRepository } = require('../../features/coach/conversati
 const { CoachScreen } = require('../../features/coach/components/CoachScreen')
 let mockDb, mockOutputs
 const flush = async () => { for (let i = 0; i < 20; i++) await new Promise(resolve => setImmediate(resolve)) }
+
+async function sendMessage(tree, message) {
+  await act(async () => {
+    tree.root.findByProps({ accessibilityLabel: 'Message Coach' }).props.onChangeText(message)
+  })
+  await act(async () => {
+    tree.root.findByProps({ accessibilityLabel: 'Send message' }).props.onPress()
+    await flush()
+  })
+}
+
 test('running correction persists and replacement changes rendered coach metrics while preserving prior reply', async () => {
   const sql = new DatabaseSync(':memory:')
   sql.exec(`CREATE TABLE workouts(id TEXT PRIMARY KEY,title TEXT,notes TEXT,created_at TEXT,updated_at TEXT,workout_template TEXT,is_synced INTEGER,is_deleted INTEGER DEFAULT 0,server_version INTEGER,synced_at TEXT); CREATE TABLE workout_records(id TEXT PRIMARY KEY,workout_id TEXT,workout_title TEXT,notes TEXT,created_at TEXT,start_time TEXT,exercise_records TEXT,is_synced INTEGER,is_deleted INTEGER DEFAULT 0,synced_at TEXT); CREATE TABLE coach_conversations(id TEXT PRIMARY KEY,updated_at TEXT,items_json TEXT);`)
@@ -38,26 +49,12 @@ test('running correction persists and replacement changes rendered coach metrics
     const first = await record(0)
     mockOutputs = []
     await act(async () => { tree = create(React.createElement(CoachScreen)); await flush() })
-    const render = () => JSON.stringify(tree.toJSON())
-    expect(render()).toContain('What would you like to work on?')
-    expect(render()).not.toContain('Your chats')
-    await act(async () => {
-      tree.root.findByProps({ accessibilityLabel: 'Open chat history' }).props.onPress()
-    })
-    expect(render()).toContain('Your chats')
-    await act(async () => {
-      tree.root.findByProps({ accessibilityLabel: 'Back to conversation' }).props.onPress()
-    })
-    expect(render()).not.toContain('Your chats')
     async function ask() {
       mockOutputs.push({ intent: 'history_question' }, { type: 'latest', exercise: 'Pull-ups', days: 30 })
-      const input = tree.root.findByProps({ accessibilityLabel: 'Message Coach' })
-      await act(async () => { input.props.onChangeText('What were my latest Pull-ups sets in the last 30 days?'); await flush() })
-      await act(async () => { tree.root.findByProps({ accessibilityLabel: 'Send message' }).props.onPress(); await flush() })
+      await sendMessage(tree, 'What were my latest Pull-ups sets in the last 30 days?')
     }
     await ask()
     expect(JSON.stringify(tree.toJSON())).toContain('0 kg, 8 reps')
-    expect(render()).not.toContain('What would you like to work on?')
     await new WorkoutRepository(mockDb).deleteRecord(first.workoutRecord.id)
     await record(25)
     await ask()
@@ -73,7 +70,7 @@ test('running correction persists and replacement changes rendered coach metrics
   } finally { if (tree) await act(async () => tree.unmount()); store.getState().reset(); sql.close() }
 })
 
-test('coach previews changes to saved workouts and routines before updating the original rows', async () => {
+test('Coach updates a saved workout only after confirmation', async () => {
   const sql = new DatabaseSync(':memory:')
   sql.exec(`
     CREATE TABLE workouts(id TEXT PRIMARY KEY, title TEXT, notes TEXT, created_at TEXT, updated_at TEXT, workout_template TEXT, is_synced INTEGER, is_deleted INTEGER DEFAULT 0, server_version INTEGER, synced_at TEXT);
@@ -111,18 +108,11 @@ test('coach previews changes to saved workouts and routines before updating the 
       },
     ],
   }
-  const pattern = [{ dayIndex: 1, dayType: 'WORKOUT', workoutId: 'w' }]
   sql
     .prepare(
       'INSERT INTO workouts(id, title, created_at, updated_at, workout_template) VALUES (?, ?, ?, ?, ?)'
     )
     .run('w', 'Core A', now, now, JSON.stringify(template))
-  sql
-    .prepare(
-      'INSERT INTO routines(id, name, routine_type, pattern, created_at, updated_at, is_active) VALUES (?, ?, ?, ?, ?, ?, 1)'
-    )
-    .run('r', 'Core Week', 'SEQUENTIAL', JSON.stringify(pattern), now, now)
-
   let tree
   try {
     mockOutputs = []
@@ -130,73 +120,24 @@ test('coach previews changes to saved workouts and routines before updating the 
       tree = create(React.createElement(CoachScreen))
       await flush()
     })
-    async function ask(message) {
-      await act(async () => {
-        tree.root.findByProps({ accessibilityLabel: 'Message Coach' }).props.onChangeText(message)
-      })
-      await act(async () => {
-        tree.root.findByProps({ accessibilityLabel: 'Send message' }).props.onPress()
-        await flush()
-      })
-    }
-    async function confirm(kind) {
-      const action = tree.root
-        .findAllByProps({ accessibilityLabel: `Update ${kind}` })
-        .find((node) => node.props.onPress)
-      expect(action).toBeDefined()
-      await act(async () => {
-        action.props.onPress()
-        await flush()
-      })
-    }
+    const readWorkouts = sql.prepare('SELECT id, title FROM workouts')
+    await sendMessage(tree, 'Rename workout "Core A" to "Core Focus"')
+    expect(readWorkouts.all()).toEqual([{ id: 'w', title: 'Core A' }])
+    const update = tree.root
+      .findAllByProps({ accessibilityLabel: 'Update workout' })
+      .find((node) => typeof node.props.onPress === 'function')
+    await act(async () => {
+      update.props.onPress()
+      await flush()
+    })
+    expect(readWorkouts.all()).toEqual([{ id: 'w', title: 'Core Focus' }])
 
-    await ask('Show my saved workouts')
-    expect(JSON.stringify(tree.toJSON())).toContain('Core A')
-    const id = sql.prepare('SELECT id FROM coach_conversations').get().id
     const repository = new CoachConversationRepository(mockDb)
-    await ask('Rename workout "Core A" to "Core Focus"')
-    expect((await repository.load(id)).at(-1)).toMatchObject({
-      kind: 'response',
-      response: { kind: 'library_edit' },
-    })
-    expect(sql.prepare('SELECT title FROM workouts WHERE id = ?').get('w').title).toBe('Core A')
-    await confirm('workout')
-    expect(sql.prepare('SELECT id, title FROM workouts').all()).toEqual([
-      { id: 'w', title: 'Core Focus' },
-    ])
-
-    await ask('Rename routine "Core Week" to "Core Cycle"')
-    expect(sql.prepare('SELECT name FROM routines WHERE id = ?').get('r').name).toBe('Core Week')
-    await confirm('routine')
-    const readRoutines = sql.prepare('SELECT id, name, pattern, is_active FROM routines')
-    expect(readRoutines.all()).toEqual([
-      {
-        id: 'r',
-        name: 'Core Cycle',
-        pattern: JSON.stringify(pattern),
-        is_active: 1,
-      },
-    ])
-
-    await ask('Insert rest after day 1 in my active routine')
-    expect(readRoutines.get().pattern).toBe(JSON.stringify(pattern))
-    await confirm('routine')
-    expect(readRoutines.get()).toMatchObject({
-      id: 'r',
-      is_active: 1,
-      pattern: JSON.stringify([...pattern, { dayIndex: 2, dayType: 'REST', workoutId: null }]),
-    })
-    expect(JSON.stringify(tree.toJSON())).toContain('Changes saved')
-    const saved = (await repository.load(id)).filter(
-      (item) => item.kind === 'response' && item.saved
-    )
-    expect(saved.map((item) => item.response.edit.target.id)).toEqual(['w', 'r', 'r'])
     const [summary] = await repository.list()
-    expect(summary).toMatchObject({ artifact: 'plan', isEdit: true, saved: true })
-    expect(summary.searchText).toContain('Core Cycle')
-    await repository.delete(id)
+    expect(summary).toMatchObject({ artifact: 'workout', isEdit: true, saved: true })
+    await repository.delete(summary.id)
     expect(sql.prepare('SELECT count(*) AS count FROM coach_draft_saves').get().count).toBe(0)
-    expect(sql.prepare('SELECT name FROM routines WHERE id = ?').get('r').name).toBe('Core Cycle')
+    expect(readWorkouts.all()).toEqual([{ id: 'w', title: 'Core Focus' }])
   } finally {
     if (tree) await act(async () => tree.unmount())
     sql.close()

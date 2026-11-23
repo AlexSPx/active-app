@@ -244,6 +244,51 @@ const { SqliteDb } = require('../helpers/sqliteDb')
 
 const owner = { ownerId: 'account:alice', legacyOwnerId: 'account:alice' }
 
+test('upgrading a v8 profile creates usable Coach conversation and review tables', async () => {
+  const db = new SqliteDb(':memory:')
+  try {
+    await db.execAsync(`
+      CREATE TABLE migration_metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+      PRAGMA user_version = 8;
+    `)
+    await db.runAsync(
+      'INSERT INTO migration_metadata (key, value) VALUES (?, ?)',
+      'legacy_active_db_import_owner',
+      owner.ownerId
+    )
+
+    await migrateDbIfNeeded(db, owner)
+
+    const items = JSON.stringify([{ kind: 'user', text: 'Show my saved workouts' }])
+    await db.runAsync(
+      'INSERT INTO coach_conversations (id, updated_at, items_json) VALUES (?, ?, ?)',
+      'chat',
+      '2026-11-23T12:00:00Z',
+      items
+    )
+    expect(
+      await db.getFirstAsync('SELECT items_json FROM coach_conversations WHERE id = ?', 'chat')
+    ).toEqual({ items_json: items })
+
+    const draft = JSON.stringify({ title: 'Core Focus' })
+    const result = JSON.stringify({ workoutIds: ['workout'] })
+    await db.runAsync(
+      'INSERT INTO coach_draft_saves (revision, draft_json, result_json) VALUES (?, ?, ?)',
+      'review',
+      draft,
+      result
+    )
+    expect(
+      await db.getFirstAsync(
+        'SELECT draft_json, result_json FROM coach_draft_saves WHERE revision = ?',
+        'review'
+      )
+    ).toEqual({ draft_json: draft, result_json: result })
+  } finally {
+    await db.closeAsync()
+  }
+})
+
 async function seedVersionThree(db, rows = []) {
   await db.execAsync(`
     CREATE TABLE sync_queue (

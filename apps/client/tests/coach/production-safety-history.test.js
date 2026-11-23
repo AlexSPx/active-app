@@ -50,9 +50,3 @@ test('explicit set revision retains request and context without the old count', 
   expect(result).not.toMatch(/3 sets/)
   expect(applyWorkoutFollowUp('Make a new leg workout', prior)).toBe('Make a new leg workout')
 })
-
-test('ISO-date history clarification does not widen the named scope', async () => {
-  const turn = run('What was my latest Pushups load in 2024-01-01?', [{ intent: 'history_question' }])
-  expect((await turn.result).response.question).toMatch(/period.*dates/i)
-  expect(turn.readHistory).not.toHaveBeenCalled()
-})

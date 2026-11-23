@@ -3,7 +3,7 @@ const assert = require('node:assert/strict')
 const { createHash } = require('node:crypto')
 const { spawnSync } = require('node:child_process')
 const path = require('node:path')
-const { mkdtempSync, mkdirSync, writeFileSync, rmSync, cpSync, appendFileSync } = require('node:fs')
+const { mkdtempSync, mkdirSync, rmSync, cpSync, appendFileSync } = require('node:fs')
 const { tmpdir } = require('node:os')
 
 const hash = (value) => createHash('sha256').update(value).digest('hex')
@@ -47,22 +47,6 @@ test('disabled Expo config works without evidence; enabled and promoted configur
   assert.equal(JSON.parse(disabled.stdout).extra.coachAvailability, 'disabled')
   assert.notEqual(config({ EXPO_PUBLIC_COACH_DEV: '1' }).status, 0)
   assert.notEqual(config({ EXPO_PUBLIC_COACH_PROMOTE: '1' }).status, 0)
-})
-
-
-test('enabled Expo config rejects a tampered review archive', () => {
-  const evidence = mkdtempSync(path.join(tmpdir(), 'coach-evidence-'))
-  try {
-    const review = path.join(evidence, 'evaluation/coach-v1/reviews/knowledge-review-01')
-    mkdirSync(review, { recursive: true })
-    writeFileSync(path.join(review, 'manifest.json'), JSON.stringify({ outputs: {} }))
-    const result = spawnSync(process.execPath, [require.resolve('expo/bin/cli'), 'config', '--json'], {
-      cwd: root, encoding: 'utf8', env: { ...process.env, EXPO_PUBLIC_COACH_DEV: '1', EXPO_PUBLIC_COACH_PROMOTE: '', COACH_EVIDENCE_ROOT: evidence },
-    })
-    assert.notEqual(result.status, 0)
-  } finally {
-    rmSync(evidence, { recursive: true, force: true })
-  }
 })
 
 

@@ -32,7 +32,10 @@ test('ISO clarification resolves the exercise and interval with one SQLite read'
     db.getAllAsync.mockClear()
     const original = 'What was my latest Pull-ups load in 2024-01-01?'
     const first = await turn(original, readHistory, [{ intent: 'history_question' }])
-    expect(first.response.kind).toBe('clarification')
+    expect(first.response).toMatchObject({
+      kind: 'clarification',
+      question: expect.stringMatching(/period.*dates/i),
+    })
     expect(db.getAllAsync).not.toHaveBeenCalled()
     const message = applyWorkoutFollowUp('30 days', [{ kind: 'user', text: original }, { kind: 'response', response: first.response, request: original }])
     const result = await turn(message, readHistory, [{ intent: 'history_question' }, { type: 'latest', exercise: 'Pull-ups', days: 30 }])

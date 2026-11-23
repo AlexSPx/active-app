@@ -1,4 +1,4 @@
-const { runConstrainedCoachTurn, applyWorkoutFollowUp } = require('../../features/coach/constrainedTurn')
+const { runConstrainedCoachTurn } = require('../../features/coach/constrainedTurn')
 const { fallbackHistoryQuery, resolveHistoryExercise } = require('../../features/coach/historyQuery')
 
 const run = (outputs, readHistory, message, guards = {}) => runConstrainedCoachTurn({
@@ -118,21 +118,6 @@ test('presence reports a matching record without a metric', async () => {
   const result = await run([history, query('presence', 'Split Squat')], readRecords(record('r', '2026-01-01', [splitSquat])), 'Have I ever done Split Squat?')
   expect(result.response.blocks).toEqual([{ kind: 'text', text: 'I found a matching training record.', evidence: [{ kind: 'record', id: 'r' }] }])
   expect(result.metrics).toBeUndefined()
-})
-
-test('ISO-date clarification retains the named exercise and requested relative interval', async () => {
-  const original = 'What was my latest Pull-ups load in 2024-01-01?'
-  const readHistory = readRecords()
-  const first = await run([history], readHistory, original)
-  expect(first.response.kind).toBe('clarification')
-  expect(readHistory).not.toHaveBeenCalled()
-  const message = applyWorkoutFollowUp('30 days', [{ kind: 'user', text: original }, { kind: 'response', response: first.response, request: original }])
-  await run([history, query('latest', 'Pull-ups', 30)], readHistory, message)
-  expect(readHistory).toHaveBeenCalledTimes(1)
-  const { interval, exercise } = readHistory.mock.calls[0][0]
-  expect(Date.parse(interval.end) - Date.parse(interval.start)).toBe(30 * 86400000)
-  expect(exercise.match({ exerciseId: 'pull-id', name: 'Pull Up' })).toBe('match')
-  expect(message).toMatch(/Pull-ups.*past 30 days/)
 })
 
 test.each(['cancelled', 'stale_profile'])('discards a pending history result when %s', async code => {

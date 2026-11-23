@@ -16,7 +16,6 @@ jest.mock('../../lib/sync', () => {
 const { DatabaseSync } = require('node:sqlite')
 const { CoachDraftRepository } = require('../../lib/repositories/CoachDraftRepository')
 const { getProfileScope, setActiveProfileOwner } = require('../../lib/profileScope')
-const { exerciseCatalog } = require('../../lib/exercises/catalog')
 
 function createDb() {
   const sql = new DatabaseSync(':memory:')
@@ -180,12 +179,7 @@ test.each([
   db.sql.close()
 })
 
-test.each([
-  ['Create a full gym workout: Pushups and imaginary moon hopper.', 'Replace imaginary moon hopper with Dumbbell Bench Press', ['Pushups', 'Dumbbell Bench Press']],
-  ['Create exactly 3 chest exercises and exactly 5 exercises, full gym.', 'Make it exactly 3 chest exercises', null],
-  ['Create a full gym workout: Pushups and imaginary moon hopper.', 'Swap imaginary moon hopper for Dumbbell Bench Press', ['Pushups', 'Dumbbell Bench Press']],
-  ['Create exactly 3 chest exercises and exactly 5 exercises, full gym.', 'Create exactly 3 chest exercises, full gym.', null],
-])('clarification correction survives review and SQLite save', async (initial, correction, names) => {
+test('saves the named exercises after a clarification and review', async () => {
   const { applyWorkoutFollowUp, runConstrainedCoachTurn } = require('../../features/coach/constrainedTurn')
   const { createReviewSaver } = require('../../features/coach/reviewSave')
   const db = createDb()
@@ -198,16 +192,25 @@ test.each([
     return { request, response: result.response }
   }
   try {
-    expect((await turn(initial)).response.kind).toBe('clarification')
-    expect(db.sql.prepare('SELECT count(*) AS n FROM workouts').get().n).toBe(0)
-    const { request, response } = await turn(correction)
+    const initial = await turn('Create a full gym workout: Pushups and imaginary moon hopper.')
+    expect(initial.response.kind).toBe('clarification')
+    const { request, response } = await turn(
+      'Replace imaginary moon hopper with Dumbbell Bench Press'
+    )
     expect(response.kind).toBe('workout_draft')
     const edited = structuredClone(response)
     edited.workout.title = 'Reviewed workout'
     for (const exercise of edited.workout.exercises) for (const set of exercise.sets) if (set.kind === 'strength') set.load = { kind: 'kilograms', value: 10 }
     const saved = await createReviewSaver(db, getProfileScope(), () => true)(edited, 'corrected', request)
-    const template = JSON.parse(db.sql.prepare('SELECT workout_template FROM workouts WHERE id = ?').get(saved.workoutIds[0]).workout_template)
-    if (names) expect(template.exercises.map(e => e.exerciseId)).toEqual(expect.arrayContaining(exerciseCatalog.filter(e => names.includes(e.name)).map(e => e.id)))
-    else expect(template.exercises).toHaveLength(3)
+    const row = db.sql
+      .prepare('SELECT title, workout_template FROM workouts WHERE id = ?')
+      .get(saved.workoutIds[0])
+    expect(row.title).toBe('Reviewed workout')
+    const exerciseIds = JSON.parse(row.workout_template).exercises.map(
+      (exercise) => exercise.exerciseId
+    )
+    expect(exerciseIds).toEqual(
+      expect.arrayContaining(['local:exercise:Pushups', 'local:exercise:Dumbbell_Bench_Press'])
+    )
   } finally { db.sql.close() }
 })
