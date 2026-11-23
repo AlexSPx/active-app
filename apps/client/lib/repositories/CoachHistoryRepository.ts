@@ -27,16 +27,19 @@ type HistoryRecord = {
 
 type HistoryInterval = { start: string; end: string }
 
+type HistoryNameSuggestion = (exercise: Pick<HistoryExercise, 'name' | 'exerciseId'>) => boolean
+
 export type HistoryExerciseFilter =
-  | { kind: 'ambiguous' }
+  | { kind: 'ambiguous'; suggest?: HistoryNameSuggestion }
   | {
       kind: 'catalog' | 'custom'
+      suggest?: HistoryNameSuggestion
       match: (exercise: Pick<HistoryExercise, 'name' | 'exerciseId'>) => 'match' | 'conflict' | null
     }
 
 type HistoryReadResult =
   | { kind: 'success'; records: HistoryRecord[]; limitations: string[] }
-  | { kind: 'ambiguous' | 'unidentified'; limitations: string[] }
+  | { kind: 'ambiguous' | 'unidentified'; limitations: string[]; suggestions?: string[] }
 
 type RecordRow = {
   id: string | null
@@ -69,6 +72,7 @@ export class CoachHistoryRepository {
     )
     const records: HistoryRecord[] = []
     const matchingIds = new Set<string>()
+    const suggestedNames = new Set<string>()
     let unresolvedIdentity = false
     let unidentifiedEntries = 0
     let omitted = 0
@@ -100,8 +104,10 @@ export class CoachHistoryRepository {
         weightsKg: entry.weight,
         durationSeconds: entry.durationSeconds ?? null,
       }))
-      if (exercise && exercise.kind !== 'ambiguous') {
+      if (exercise) {
         for (const entry of exercises) {
+          if (entry.exerciseId && entry.name.length <= 120 && suggestedNames.size < 5 && exercise.suggest?.(entry)) suggestedNames.add(entry.name)
+          if (exercise.kind === 'ambiguous') continue
           if (!entry.exerciseId) unidentifiedEntries++
           const match = exercise.match(entry)
           if (!match) continue
@@ -126,14 +132,15 @@ export class CoachHistoryRepository {
       )
     }
     if (!exercise) return { kind: 'success', records, limitations }
-    if (exercise.kind === 'ambiguous') return { kind: 'unidentified', limitations }
+    const suggestions = suggestedNames.size ? { suggestions: [...suggestedNames] } : {}
+    if (exercise.kind === 'ambiguous') return { kind: 'unidentified', limitations, ...suggestions }
     if (unresolvedIdentity || matchingIds.size > 1) {
-      return { kind: 'ambiguous', limitations }
+      return { kind: 'ambiguous', limitations, ...suggestions }
     }
     const [exerciseId] = matchingIds
     if (!exerciseId) {
       return exercise.kind === 'custom'
-        ? { kind: 'unidentified', limitations }
+        ? { kind: 'unidentified', limitations, ...suggestions }
         : { kind: 'success', records: [], limitations }
     }
     const matchingRecords = records.flatMap((record) => {

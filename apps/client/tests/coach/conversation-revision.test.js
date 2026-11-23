@@ -59,6 +59,19 @@ test('time edit with a rest asks instead of silently dropping either constraint'
   expect(result.request).toMatch(/90 seconds rest/)
 })
 
+test('an exercise-swap request preserves the draft for a subsequent supported revision', async () => {
+  const prior = []
+  await next(prior, 'Create a leg workout with 3 exercises, 2 sets of 8, bodyweight only.')
+  const swap = await next(prior, 'Swap squats for lunges')
+  expect(swap.response).toMatchObject({ kind: 'clarification', question: expect.stringMatching(/exercise swaps.*new workout/i) })
+  const revised = await next(prior, '10 reps instead')
+  expect(revised.response.kind).toBe('workout_draft')
+  expect(revised.response.workout.exercises).toHaveLength(3)
+  expect(revised.response.workout.exercises.every(exercise =>
+    exercise.sets.length === 2 && exercise.sets.every(set => set.repetitions === 10)
+  )).toBe(true)
+})
+
 test('exercise count and uncomplicated duration revisions retain the other prescription', async () => {
   const prior = []
   await next(prior, 'Create a chest workout with 3 exercises, 2 sets of 8, full gym.')

@@ -3,13 +3,13 @@ const { coachResponseSchema } = require('../../features/coach/contracts')
 const { validateWorkoutReview } = require('../../features/coach/workoutPlanner')
 const { exerciseCatalog } = require('../../lib/exercises/catalog')
 
-function harness(mode = 'valid') {
+function harness(mode = 'valid', intent = 'create_workout') {
   const prompts = []
   let calls = 0
   const session = {
     appendUserMessage: async prompt => prompts.push(prompt),
     generate: async ({ finalResponseSchema: schema }) => {
-      if (calls++ === 0) return { kind: 'final', content: { intent: 'create_workout' } }
+      if (calls++ === 0) return { kind: 'final', content: { intent } }
       if (mode === 'timeout') throw new Error('Model timed out')
       const sessions = Object.fromEntries(Object.entries(schema.properties.sessions.properties).map(([day, daySchema]) => {
         const slots = daySchema.properties.selections.properties
@@ -169,4 +169,62 @@ test('the reported simple request asks for equipment after malformed classificat
   const result = await runConstrainedCoachTurn({ message: 'Build me a workout', session, readHistory: async () => {}, signal: new AbortController().signal, isCurrentProfile: () => true, maxOutputTokens: 1024 })
   expect(result.response.kind).toBe('clarification')
   expect(result.response.question).toMatch(/equipment/i)
+})
+
+test.each(['valid', 'timeout'])('two dumbbells stays dumbbells-only through the %s selection path', async mode => {
+  const h = harness(mode)
+  const request = 'Plan a leg workout using only dumbbells, 4 exercises, 3 sets of 10 reps each'
+  const first = await h.run(request)
+  expect(first.response).toMatchObject({ kind: 'clarification', question: expect.stringMatching(/one dumbbell or two dumbbells/) })
+  const followUp = applyWorkoutFollowUp('Two', [{ kind: 'user', text: request }, { kind: 'response', request, response: first.response }])
+  for (const message of [followUp, request.replace('only dumbbells', 'only two dumbbells')]) {
+    const { response } = await harness(mode).run(message)
+    expect(response.kind).toBe('workout_draft')
+    expect(response.assumptions.some(text => text.startsWith('Model selection was unavailable'))).toBe(mode === 'timeout')
+    expect(response.workout.exercises.map(item => exerciseCatalog.find(entry => entry.id === item.catalogId).equipment)).toEqual(Array(4).fill('DUMBBELL'))
+    expect(validateWorkoutReview(message, response)).toEqual([])
+  }
+  const { response } = await harness(mode).run(request.replace('only dumbbells', 'only one dumbbell'))
+  expect(response.workout).toMatchObject({ title: 'Partial workout', exercises: [expect.objectContaining({ catalogId: 'local:exercise:Plie_Dumbbell_Squat' })] })
+})
+
+test.each(['valid', 'timeout'])('single push and timed workouts honor the request through the %s path', async mode => {
+  const push = await harness(mode).run('Create a push workout with 4 exercises and 3 sets, bodyweight only')
+  expect(push.response.kind).toBe('workout_draft')
+  expect(push.response.workout.exercises.map(item => exerciseCatalog.find(entry => entry.id === item.catalogId).primaryMuscles)).toEqual(Array(4).fill(['chest']))
+  const request = 'Create a HIIT workout with 30s on and 20s off, bodyweight only, 2 exercises, 3 sets'
+  const timed = await harness(mode).run(request)
+  expect(timed.response.assumptions.some(text => text.startsWith('Model selection was unavailable'))).toBe(mode === 'timeout')
+  expect(timed.response.workout.schedule).toEqual({ estimatedSeconds: 290, transitionSeconds: 30 })
+  for (const exercise of timed.response.workout.exercises) {
+    expect(exercise.sets).toEqual(Array(3).fill({ kind: 'timed', durationSeconds: 30 }))
+    expect(exercise.guidance.restSeconds).toBe(20)
+  }
+  expect(validateWorkoutReview(request, timed.response)).toEqual([])
+  const edited = structuredClone(timed.response)
+  edited.workout.exercises[0].sets[0].durationSeconds = 45
+  expect(validateWorkoutReview(request, edited)).toContain('Each interval must keep the requested 30 seconds of work.')
+})
+
+test('requested routine variation survives repeated model picks through the catalog fallback', async () => {
+  const request = 'Create a 3-day bodyweight routine with different workouts, 3 exercises per day'
+  const { response } = await harness().run(request)
+  expect(response.kind).toBe('routine_draft')
+  expect(response.assumptions).toContain('Model selection was unavailable; this draft uses validated catalog choices.')
+  const signatures = response.workouts.map(workout => workout.exercises.map(item => item.catalogId).sort().join(','))
+  expect(new Set(signatures).size).toBe(3)
+  expect(validateWorkoutReview(request, response)).toEqual([])
+})
+
+test.each([
+  ['Build a weekly routine: rest days are Monday and Tuesday; train Thursday, bodyweight only', [3]],
+  ['I want to train on Tuesdays and Thursdays, bodyweight only', [1, 3]],
+])('preserves the stated training days for %s', async (request, expectedDays) => {
+  const { response } = await harness('valid', 'coach_qa').run(request)
+  expect(response).toMatchObject({
+    kind: 'routine_draft',
+    routine: { type: 'SEQUENTIAL', startsOnMonday: true },
+  })
+  expect(response.routine.days.flatMap((day, index) => day.kind === 'workout' ? [index] : [])).toEqual(expectedDays)
+  expect(validateWorkoutReview(request, response)).toEqual([])
 })

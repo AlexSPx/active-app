@@ -71,6 +71,7 @@ const routineSchema = z.discriminatedUnion('type', [
   z.strictObject({
     type: z.literal('SEQUENTIAL'),
     title: text,
+    startsOnMonday: z.literal(true).optional(),
     days: z
       .array(
         z.discriminatedUnion('kind', [
@@ -139,6 +140,8 @@ const coachResponseShapeSchema = z.discriminatedUnion('kind', [
 export const coachResponseSchema = coachResponseShapeSchema.superRefine((response, context) => {
   if (response.kind !== 'routine_draft') return
 
+  if (response.routine.type === 'SEQUENTIAL' && response.routine.startsOnMonday && response.routine.days.length !== 7)
+    context.addIssue({ code: 'custom', message: 'A weekday schedule must cover seven days.' })
   const included = new Set<string>()
   for (const workout of response.workouts) {
     if (included.has(workout.ref)) {
