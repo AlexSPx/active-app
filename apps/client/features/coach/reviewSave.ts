@@ -1,13 +1,14 @@
 import type { SQLiteDatabase } from 'expo-sqlite'
 import { adaptCoachDraft } from './draftAdapter'
 import { validateWorkoutReview } from './workoutPlanner'
-import { coachResponseSchema, type CoachResponse } from './contracts'
+import { coachResponseSchema, type CoachReview } from './contracts'
 import { CoachDraftRepository } from '../../lib/repositories/CoachDraftRepository'
+import { CoachLibraryRepository } from '../../lib/repositories/CoachLibraryRepository'
 import { isCurrentProfile, type ProfileScope } from '../../lib/profileScope'
 import { syncEngine } from '../../lib/sync'
 import { launchFacade } from '../launch/launchFacade'
 
-type Draft = Extract<CoachResponse, { kind: 'workout_draft' | 'routine_draft' }>
+type Draft = Exclude<CoachReview, { kind: 'library_edit' }>
 const pendingKey = '__coach_pending_review__'
 
 type Pending = { revision: string; reviewId: string; draft: Draft; request?: string }
@@ -46,7 +47,7 @@ export async function loadPendingReview(db: SQLiteDatabase): Promise<Pending | n
 
 export function createReviewSaver(db: SQLiteDatabase, scope: ProfileScope, current: () => boolean) {
   let saving = false
-  return async (draft: Draft, reviewId: string, request?: string) => {
+  return async (review: CoachReview, reviewId: string, request?: string) => {
     if (saving) throw new Error('A save is already in progress.')
     saving = true
     const assertOwner = () => {
@@ -54,9 +55,20 @@ export function createReviewSaver(db: SQLiteDatabase, scope: ProfileScope, curre
     }
     try {
       assertOwner()
-      if (!coachResponseSchema.safeParse(draft).success)
+      if (!coachResponseSchema.safeParse(review).success)
         throw new Error('Check that titles and set values are valid and greater than zero.')
       if (!request?.trim()) throw new Error('The original request is required to save this review.')
+      if (review.kind === 'library_edit') {
+        await new CoachLibraryRepository(db).save({
+          edit: review.edit,
+          revision: reviewId,
+          scope,
+          isAllowed: current,
+        })
+        assertOwner()
+        return
+      }
+      const draft = review
       const errors = validateWorkoutReview(request, draft)
       if (errors.length) throw new Error(errors.join(' '))
       const parsed = adaptCoachDraft(draft, launchFacade.api.backendMode()).draft

@@ -49,7 +49,27 @@ export type ConversationSummary = {
   preview: string
   searchText: string
   artifact: 'workout' | 'plan' | null
+  isEdit: boolean
   saved: boolean
+}
+
+function responseText(response: Extract<ConversationItem, { kind: 'response' }>['response']) {
+  switch (response.kind) {
+    case 'answer':
+      return response.blocks
+        .flatMap((block) => (block.kind === 'text' ? [block.text] : []))
+        .join(' ')
+    case 'clarification':
+      return response.question
+    case 'cannot_fulfill':
+      return response.reason
+    case 'workout_draft':
+      return response.workout.title
+    case 'routine_draft':
+      return response.routine.title
+    case 'library_edit':
+      return [response.edit.target.title, ...response.edit.summary].join(' ')
+  }
 }
 
 export class CoachConversationRepository {
@@ -66,55 +86,28 @@ export class CoachConversationRepository {
         .find(
           (item) =>
             item.kind === 'response' &&
-            (item.response.kind === 'workout_draft' || item.response.kind === 'routine_draft')
+            (item.response.kind === 'workout_draft' ||
+              item.response.kind === 'routine_draft' ||
+              item.response.kind === 'library_edit')
         )
-      const response = latest?.kind === 'response' ? latest.response : null
       const last = items.at(-1)
-      const preview =
-        response?.kind === 'answer'
-          ? response.blocks
-              .map((block) => (block.kind === 'text' ? block.text : ''))
-              .filter(Boolean)
-              .join(' ')
-          : response?.kind === 'clarification'
-            ? response.question
-            : response?.kind === 'cannot_fulfill'
-              ? response.reason
-              : response?.kind === 'workout_draft'
-                ? response.workout.title
-                : response?.kind === 'routine_draft'
-                  ? response.routine.title
-                  : last?.kind === 'user'
-                    ? last.text
-                    : ''
+      const preview = latest ? responseText(latest.response) : last?.kind === 'user' ? last.text : ''
       return {
         id: row.id,
         updated_at: row.updated_at,
         title: items.find((item) => item.kind === 'user')?.text.slice(0, 80) ?? 'Conversation',
         preview,
         searchText: items
-          .map((item) =>
-            item.kind === 'user'
-              ? item.text
-              : item.response.kind === 'answer'
-                ? item.response.blocks
-                    .map((block) => (block.kind === 'text' ? block.text : ''))
-                    .join(' ')
-                : item.response.kind === 'clarification'
-                  ? item.response.question
-                  : item.response.kind === 'cannot_fulfill'
-                    ? item.response.reason
-                    : item.response.kind === 'workout_draft'
-                      ? item.response.workout.title
-                      : item.response.routine.title
-          )
+          .map((item) => (item.kind === 'user' ? item.text : responseText(item.response)))
           .join(' '),
         artifact:
           artifact?.kind === 'response'
-            ? artifact.response.kind === 'routine_draft'
+            ? artifact.response.kind === 'routine_draft' ||
+              (artifact.response.kind === 'library_edit' && artifact.response.edit.target.kind === 'routine')
               ? 'plan'
               : 'workout'
             : null,
+        isEdit: artifact?.kind === 'response' && artifact.response.kind === 'library_edit',
         saved: artifact?.kind === 'response' && !!artifact.saved,
       }
     })

@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { coachLibraryEditSchema } from './libraryContracts'
 
 const text = z.string().trim().min(1)
 const reference = z.string().trim().min(1)
@@ -115,13 +116,24 @@ const cannotFulfillSchema = z.strictObject({
   kind: z.literal('cannot_fulfill'),
   reason: text,
 })
+const libraryEditResponseSchema = z.strictObject({
+  version: z.literal(1),
+  kind: z.literal('library_edit'),
+  edit: coachLibraryEditSchema,
+})
 
-const coachResponseShapeSchema = z.discriminatedUnion('kind', [
+const modelResponseSchemas = [
   answerSchema,
   workoutDraftSchema,
   routineDraftSchema,
   clarificationSchema,
   cannotFulfillSchema,
+] as const
+const modelResponseShapeSchema = z.discriminatedUnion('kind', modelResponseSchemas)
+
+const coachResponseShapeSchema = z.discriminatedUnion('kind', [
+  ...modelResponseSchemas,
+  libraryEditResponseSchema,
 ])
 
 export const coachResponseSchema = coachResponseShapeSchema.superRefine((response, context) => {
@@ -155,10 +167,14 @@ export const coachResponseSchema = coachResponseShapeSchema.superRefine((respons
 })
 
 export type CoachResponse = z.infer<typeof coachResponseSchema>
+export type CoachReview = Extract<
+  CoachResponse,
+  { kind: 'workout_draft' | 'routine_draft' | 'library_edit' }
+>
 export type CoachWorkout = z.infer<typeof coachWorkoutSchema>
 export type CoachEvidenceReference = z.infer<typeof coachEvidenceReferenceSchema>
 
 // Cross-reference checks run in coachResponseSchema since JSON Schema cannot express them.
 export function coachResponseJsonSchema() {
-  return z.toJSONSchema(coachResponseShapeSchema)
+  return z.toJSONSchema(modelResponseShapeSchema)
 }

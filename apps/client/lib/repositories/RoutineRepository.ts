@@ -4,7 +4,7 @@
  * All reads come from local SQLite.
  * All writes go to local SQLite first, then to the sync queue.
  */
-import { BaseRepository } from './BaseRepository'
+import { BaseRepository, nextUpdatedAt } from './BaseRepository'
 import { syncEngine } from '../sync'
 import { getCurrentProfileVersion } from '../profileScope'
 import type {
@@ -130,10 +130,9 @@ export class RoutineRepository extends BaseRepository {
   async update(routineId: string, payload: UpdateRoutineRequest): Promise<Routine | null> {
     return this.commitMutation(async (tx) => {
       const resolvedRoutineId = syncEngine.resolveId('routines', routineId)
-      const rowBeforeMutation = await tx.getFirstAsync<Pick<RoutineRow, 'server_version'>>(
-        'SELECT server_version FROM routines WHERE id = ?',
-        resolvedRoutineId
-      )
+      const rowBeforeMutation = await tx.getFirstAsync<
+        Pick<RoutineRow, 'server_version' | 'updated_at'>
+      >('SELECT server_version, updated_at FROM routines WHERE id = ?', resolvedRoutineId)
       const profileBaseVersion = getCurrentProfileVersion()
       const changesProfile = payload.active !== undefined
       const resolvedPayload: UpdateRoutineRequest = {
@@ -179,7 +178,7 @@ export class RoutineRepository extends BaseRepository {
       sets.push('is_synced = ?')
       vals.push(0)
       sets.push('updated_at = ?')
-      vals.push(new Date().toISOString())
+      vals.push(nextUpdatedAt(rowBeforeMutation?.updated_at))
       vals.push(resolvedRoutineId)
 
       await tx.runAsync(`UPDATE routines SET ${sets.join(', ')} WHERE id = ?`, ...vals)

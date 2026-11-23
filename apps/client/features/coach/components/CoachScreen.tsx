@@ -31,7 +31,7 @@ import { Button, UiText, TextField, SegmentedSelection } from '../../../componen
 import { TextInput } from 'react-native'
 import { useCoachController } from '../hooks/useCoachController'
 import { exerciseCatalog } from '../../../lib/exercises/catalog'
-import type { CoachResponse, CoachWorkout } from '../contracts'
+import type { CoachResponse, CoachReview, CoachWorkout } from '../contracts'
 import { shouldFollowCoachMessages } from '../scrollBehavior'
 
 type Details = {
@@ -789,7 +789,7 @@ function Response({
   saveNotice: string
   saved?: boolean
   details: Details
-  save: (draft: Draft) => void
+  save: (review: CoachReview) => void
   saving: boolean
   remoteUnmapped: boolean
   transitioning: boolean
@@ -807,6 +807,35 @@ function Response({
   const c = colors(dark)
   if (response.kind === 'clarification') return <UiText selectable>{response.question}</UiText>
   if (response.kind === 'cannot_fulfill') return <UiText selectable>{response.reason}</UiText>
+  if (response.kind === 'library_edit') {
+    const { target, summary } = response.edit
+    const action = `Update ${target.kind}`
+    return (
+      <View className="gap-compact">
+        <UiText selectable textRole="cardTitle">
+          {target.title}
+        </UiText>
+        {summary.map((line, index) => (
+          <UiText key={index} selectable>{line}</UiText>
+        ))}
+        {saved ? (
+          <UiText textRole="bodyMuted" accessibilityLiveRegion="polite">
+            Changes saved
+          </UiText>
+        ) : remoteUnmapped ? (
+          <UiText textRole="bodyMuted">Coach edits are available in device mode.</UiText>
+        ) : (
+          <Button
+            accessibilityLabel={action}
+            disabled={transitioning || saving || !request}
+            onPress={() => save(response)}
+          >
+            {action}
+          </Button>
+        )}
+      </View>
+    )
+  }
   if (response.kind === 'answer')
     return (
       <View className="gap-compact">
@@ -1421,8 +1450,8 @@ export function CoachScreen() {
                     {!!entry.artifact && (
                       <Text style={{ color: c.plum, fontSize: 11 }}>
                         {entry.saved ? 'Saved ' : ''}
-                        {entry.artifact === 'plan' ? 'plan' : 'workout'}
-                        {entry.saved ? '' : ' draft'}
+                        {entry.artifact === 'plan' ? (entry.isEdit ? 'routine' : 'plan') : 'workout'}
+                        {entry.isEdit ? ' edit' : entry.saved ? '' : ' draft'}
                       </Text>
                     )}
                     {entry.id === coach.currentConversationId && (
@@ -1515,7 +1544,12 @@ export function CoachScreen() {
         </View>
         {coach.items.length === 0 && coach.status === 'ready' && (
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 7 }}>
-            {['Build me a workout', 'Build me a plan', 'How long should I rest?'].map((choice) => (
+            {[
+              'Build me a workout',
+              'Build me a plan',
+              'How long should I rest?',
+              'Show my saved workouts and routines',
+            ].map((choice) => (
               <Pressable
                 key={choice}
                 accessibilityRole="button"
@@ -1567,7 +1601,7 @@ export function CoachScreen() {
                 saveNotice={coach.saveNotice}
                 saved={item.saved}
                 details={item.details}
-                save={(draft) => void coach.saveReview(draft, item.reviewId, item.request)}
+                save={(review) => void coach.saveReview(review, item.reviewId, item.request)}
                 saving={coach.saving}
                 remoteUnmapped={coach.remoteUnmapped}
                 transitioning={coach.transitioning}

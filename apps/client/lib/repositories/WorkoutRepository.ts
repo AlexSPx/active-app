@@ -5,7 +5,7 @@ import type { WorkoutExercise } from '../../types/workout'
  * All reads come from local SQLite.
  * All writes go to local SQLite first, then to the sync queue.
  */
-import { BaseRepository } from './BaseRepository'
+import { BaseRepository, nextUpdatedAt } from './BaseRepository'
 import { syncEngine } from '../sync'
 import type {
   ApiExercise,
@@ -28,7 +28,7 @@ interface WorkoutRow {
   id: string
   title: string
   notes: string | null
-  created_at: string
+  created_at: string | null
   updated_at: string | null
   workout_template: string | null
   is_synced: number
@@ -145,6 +145,7 @@ export class WorkoutRepository extends BaseRepository {
       )
       const requestPayload: UpdateWorkoutRequest =
         row?.server_version == null ? payload : { ...payload, baseVersion: row.server_version }
+      const now = nextUpdatedAt(row?.updated_at || row?.created_at)
       const sets: string[] = []
       const vals: any[] = []
 
@@ -158,7 +159,6 @@ export class WorkoutRepository extends BaseRepository {
       }
       if (payload.template) {
         const current = row ? this.rowToWorkout(row) : null
-        const now = new Date().toISOString()
         sets.push('workout_template = ?')
         vals.push(
           JSON.stringify({
@@ -173,7 +173,7 @@ export class WorkoutRepository extends BaseRepository {
       sets.push('is_synced = ?')
       vals.push(0)
       sets.push('updated_at = ?')
-      vals.push(new Date().toISOString())
+      vals.push(now)
       vals.push(resolvedWorkoutId) // for WHERE clause
 
       if (sets.length > 2) {
@@ -199,9 +199,11 @@ export class WorkoutRepository extends BaseRepository {
         resolvedId
       )
       await tx.runAsync('UPDATE workouts SET is_deleted = 1 WHERE id = ?', resolvedId)
-      const routines = await tx.getAllAsync<{ id: string; pattern: string | null }>(
-        'SELECT id, pattern FROM routines WHERE is_deleted = 0'
-      )
+      const routines = await tx.getAllAsync<{
+        id: string
+        pattern: string | null
+        updated_at: string | null
+      }>('SELECT id, pattern, updated_at FROM routines WHERE is_deleted = 0')
       for (const routine of routines) {
         if (!routine.pattern) continue
         let pattern: { workoutId: string | null }[]
@@ -212,12 +214,13 @@ export class WorkoutRepository extends BaseRepository {
         }
         if (!pattern.some((day) => day.workoutId === resolvedId)) continue
         await tx.runAsync(
-          'UPDATE routines SET pattern = ? WHERE id = ?',
+          'UPDATE routines SET pattern = ?, updated_at = ? WHERE id = ?',
           JSON.stringify(
             pattern.map((day) =>
               day.workoutId === resolvedId ? { ...day, dayType: 'REST', workoutId: null } : day
             )
           ),
+          nextUpdatedAt(routine.updated_at),
           routine.id
         )
       }
@@ -414,11 +417,12 @@ export class WorkoutRepository extends BaseRepository {
   // -------------------------------------------------------------------------
 
   private rowToWorkout = (row: WorkoutRow): ApiWorkout => {
+    const createdAt = row.created_at || ''
     let template: ApiWorkoutTemplate
     try {
       template = JSON.parse(row.workout_template || '{}')
     } catch {
-      template = { id: row.id, exercises: [], createdAt: row.created_at, updatedAt: row.created_at }
+      template = { id: row.id, exercises: [], createdAt, updatedAt: createdAt }
     }
 
     template = {
@@ -433,8 +437,8 @@ export class WorkoutRepository extends BaseRepository {
       id: row.id,
       title: row.title,
       notes: row.notes,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at || row.created_at,
+      createdAt,
+      updatedAt: row.updated_at || createdAt,
       workoutTemplate: template,
       version: row.server_version ?? undefined,
     }

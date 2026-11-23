@@ -7,6 +7,7 @@ import { calculateHistoryMetrics, type CoachHistoryMetric } from './historyMetri
 import { fallbackHistoryQuery, historyExerciseFilter, historyMeasureHint, historyQuerySchema, normalizeHistoryName } from './historyQuery'
 import { exerciseCatalog } from '../../lib/exercises/catalog'
 import type { CoachHistoryRepository } from '../../lib/repositories/CoachHistoryRepository'
+import { runLibraryTurn } from './libraryTurn'
 
 export function applyWorkoutFollowUp(message: string, prior: ({ kind: 'user'; text: string } | { kind: 'response'; response: { kind: string; question?: string }; request?: string })[]): string {
   const last = prior.at(-1)
@@ -142,6 +143,9 @@ export async function runConstrainedCoachTurn(input: {
   message: string
   session: CoachRuntimeSession
   readHistory: CoachHistoryRepository['readHistory']
+  readLibrary?: Parameters<typeof runLibraryTurn>[0]['readLibrary']
+  previewLibraryEdit?: Parameters<typeof runLibraryTurn>[0]['previewLibraryEdit']
+  libraryMessage?: string
   signal: AbortSignal
   isCurrentProfile: () => boolean
   maxOutputTokens: number
@@ -160,12 +164,24 @@ export async function runConstrainedCoachTurn(input: {
     // This bounded safety route is not a substitute for clinical review.
     const emergency = /\b(?:chest\s+(?:pains?|pressure|tightness|discomfort|aches?|hurts?|is\s+(?:tight|heavy|hurting))|(?:pains?|aches?|pressure|tightness)\s+in\s+(?:my\s+|the\s+)?chest|faint(?:ed|ing)?|passed out|short(?:ness)? of breath|breathless|can(?:not|'t) breathe|(?:difficulty|trouble|struggling|hard time) (?:to |with )?breath(?:e|ing)|breathing (?:is )?(?:difficult|hard)|severe bleeding|stroke|heart attack)\b/i
     const restricted = /\b(pregnan\w*|postpartum|breastfeed\w*|child\w*|teen\w*|adolescen\w*|elderly|senior\w*|older adult\w*|injur\w*|rehab\w*|disab\w*|surgery|surgical|disease|diabet\w*|cardiac|heart|dizz\w*|symptom\w*|pain|hurts?|aches?|discomfort|soreness|cancer)\b/i
-    const history = [...(input.priorUserMessages ?? []), message]
+    const libraryMessage = input.libraryMessage ?? message
+    const currentMessages = libraryMessage === message ? [message] : [message, libraryMessage]
+    const history = [...(input.priorUserMessages ?? []), ...currentMessages]
     const acute = history.some(text => emergency.test(text) && !/^(?:i have |there is )?no (?:chest pain|chest pressure|chest tightness|difficulty breathing|shortness of breath)[.!]?$/i.test(text.trim()) && !/\b(?:resolved|gone away|went away)\b.*\b(?:years? ago|months? ago)\b|\b(?:years? ago|months? ago)\b.*\b(?:resolved|gone away|went away)\b/i.test(text))
     if (acute) return { kind: 'response', repaired: false, response: { version: 1, kind: 'cannot_fulfill', reason: 'Stop exercising. If these symptoms are current or have just occurred, call your local emergency number now; do not drive yourself. Seek urgent medical help. I cannot determine from this conversation whether it is safe to train.' } }
     if (history.some(text => emergency.test(text))) return clarification('Are these symptoms current or recent, or explicitly absent or resolved? I cannot determine whether training is safe; consult a qualified health professional before exercising.')
-    if (/\bno\s+(?:pain|injuries|injury|symptoms)\b/i.test(message)) return clarification('You mentioned no pain or injuries. I cannot determine whether training is safe; consult a qualified health professional if you have concerns.')
-    if (restricted.test(message)) return { kind: 'response', repaired: false, response: { version: 1, kind: 'cannot_fulfill', reason: 'Stop any activity that causes symptoms or pain. I cannot recommend exercise for this situation; consult a qualified health professional who knows your circumstances.' } }
+    if (currentMessages.some(text => /\bno\s+(?:pain|injuries|injury|symptoms)\b/i.test(text))) return clarification('You mentioned no pain or injuries. I cannot determine whether training is safe; consult a qualified health professional if you have concerns.')
+    if (currentMessages.some(text => restricted.test(text))) return { kind: 'response', repaired: false, response: { version: 1, kind: 'cannot_fulfill', reason: 'Stop any activity that causes symptoms or pain. I cannot recommend exercise for this situation; consult a qualified health professional who knows your circumstances.' } }
+    if (input.readLibrary) {
+      const response = await runLibraryTurn({
+        message: workoutRequestText(libraryMessage),
+        readLibrary: input.readLibrary,
+        previewLibraryEdit: input.previewLibraryEdit,
+        alive,
+      })
+      if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
+      if (response) return { kind: 'response', response, repaired: false }
+    }
     if (message.includes('\nUnsupported workout revision: ')) return clarification('Which single change should I make? You can specify a number of sets, reps, exercises, or rest. For equipment or other changes, please start a new workout request with all your requirements.')
     const explicitWorkout = /\b(?:build|create|make|design|generate|give|suggest|write|plan)\b[^.!?]{0,100}\b(?:workouts?|routines?|exercise plans?|training plans?)\b/i.test(workoutRequestText(message))
     let intent: z.infer<typeof intentSchema> | undefined
