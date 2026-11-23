@@ -15,6 +15,16 @@ test('a 13-minute cap preserves three movements by reducing default sets', () =>
   expect(result.plan.partial).toBe(false)
 })
 
+test.each([['', 6], [' within 12 minutes', 5]])('a workout with no exercise count%s plans %i movements', (timeLimit, count) => {
+  const request = `Create a workout${timeLimit}, full gym.`
+  const { result, response } = draft(request)
+  expect(response.workout.exercises).toHaveLength(count)
+  expect(response.assumptions).toContain(`Planned ${count} exercises.`)
+  expect(result.plan.partial).toBe(false)
+  expect(validateWorkoutReview(request, response)).toEqual([])
+  if (timeLimit) expect(estimateWorkoutSeconds(response.workout)).toBeLessThanOrEqual(720)
+})
+
 test.each(['90 seconds rest', 'rest for 90 seconds', '1.5 minutes of rest', 'rest 1.5 minutes'])('preserves %s in planning, rendering and save review', rest => {
   const request = `Create 3 chest exercises, 2 sets of 8 reps, ${rest}, full gym.`
   const { result, response } = draft(request)

@@ -34,6 +34,7 @@ const groupTerms: [RegExp, string[]][] = [
 ]
 const upper = ['chest', 'shoulders', 'triceps']
 const lower = ['quadriceps', 'hamstrings', 'glutes']
+const defaultExerciseCount = 6
 const numberWords = ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
 const unsafeNames = /\b(?:pistol|handstand|muscle.?up)\b/i
 function movementFamily(exercise: Exercise): string {
@@ -203,9 +204,9 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const countMatches = [...message.matchAll(countPattern)]
   const countMatch = countMatches[0]
   const countScopes = new Set(countMatches.map(match => match[4].trim().toLowerCase()))
-  const countMinimum = countMatches.length ? Math.max(...countMatches.map(match => match[2] ? numberValue(match[2]) : /^(?:up to|at most|maximum|max\.?|no more than)$/i.test(match[1] ?? '') ? 1 : numberValue(match[3]))) : 3
-  const countMaximum = countMatches.length ? Math.min(...countMatches.map(match => /^(?:at least|minimum)$/i.test(match[1] ?? '') ? 8 : numberValue(match[3]))) : 3
-  let count = countMatches.length ? (countMatches.every(match => /^(?:at least|minimum)$/i.test(match[1] ?? '')) ? countMinimum : countMaximum) : 3
+  const countMinimum = countMatches.length ? Math.max(...countMatches.map(match => match[2] ? numberValue(match[2]) : /^(?:up to|at most|maximum|max\.?|no more than)$/i.test(match[1] ?? '') ? 1 : numberValue(match[3]))) : 1
+  const countMaximum = countMatches.length ? Math.min(...countMatches.map(match => /^(?:at least|minimum)$/i.test(match[1] ?? '') ? 8 : numberValue(match[3]))) : defaultExerciseCount
+  let count = countMatches.length && countMatches.every(match => /^(?:at least|minimum)$/i.test(match[1] ?? '')) ? countMinimum : countMaximum
   const isCap = countMatches.length > 0 && countMatches.every(match => /^(?:up to|at most|maximum|max\.?|no more than)$/i.test(match[1] ?? ''))
   const prescription = prescriptions(message)
   const duration = prescription.duration
@@ -214,7 +215,6 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     ? prescription.reps : /\b(?:rep|repetition) ranges?\b/i.test(message) ? { min: 8, max: 12 } : undefined
   const repsMatch = prescription.reps !== undefined
   const includeCues = /\b(?:coaching|exercise) cues\b/i.test(message)
-  let sets = prescription.sets ?? (duration === null ? 3 : Math.min(3, Math.max(1, Math.floor(duration / (count * 2)))) )
   const reps = repetitionsRange ? Math.round((repetitionsRange.min + repetitionsRange.max) / 2) : prescription.reps?.min ?? 10
   const restSeconds = prescription.rest ?? 60
   // Explicit lists are bounded by punctuation or a prescription; other prose is not an identity parser.
@@ -263,6 +263,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const exactNames = !!namedClause?.[1] && namedExercises.length > 0
   if (namedExercises.length && ((countMatch && (namedExercises.length > count || (exactNames && namedExercises.length !== count))) || (!countMatch && exactNames && namedExercises.length > 8))) return { kind: 'clarification', question: 'The named exercise list conflicts with the requested exercise count. Which count and movements should I use?' }
   if (exactNames && !countMatch) count = namedExercises.length
+  let sets = prescription.sets ?? (duration === null ? 3 : Math.min(3, Math.max(1, Math.floor(duration / (count * 2)))))
   if (!equipmentSpecified) return { kind: 'clarification', question: 'What equipment can you use: a full gym, specific equipment, or bodyweight only?' }
   if (!Number.isSafeInteger(restSeconds) || restSeconds < 0) return fail('Rest must be a whole number of seconds.')
   if (countMinimum < 1 || countMinimum > countMaximum || count < 1 || sets < 1 || sets > 5 || reps < 1 || reps > 30 || (repetitionsRange && (repetitionsRange.min < 1 || repetitionsRange.max > 30 || repetitionsRange.min > repetitionsRange.max))) return fail('The requested exercise, set, or repetition count is outside the supported range.')
@@ -400,9 +401,9 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     selectedAssignments = selectedAssignments.slice(0, -1)
   }
   if (durationIsMaximum && duration !== null && scheduleSeconds(selectedAssignments) > duration * 60) return fail(`The requested work, rest, transitions, and preparation do not fit within ${duration} minutes.`)
-  if (!isCap && (selectedAssignments.length < filled.length)) unmetRequirements.push(`The time limit restricts the requested exercise count with the estimated work, rest, transitions and preparation.`)
+  if ((countMatch || exactNames) && !isCap && selectedAssignments.length < filled.length) unmetRequirements.push(`The time limit restricts the requested exercise count with the estimated work, rest, transitions and preparation.`)
   const estimatedMinutes = Math.ceil(scheduleSeconds(selectedAssignments) / 60)
-  if (filled.length < requestedSlots && !isCap) unmetRequirements.push(`Requested ${count} exercises; found ${filled.length} distinct catalog choices with reviewed setup compatible with the known equipment and restrictions; other catalog setup requirements may be unknown.`)
+  if ((countMatch || exactNames) && !isCap && filled.length < requestedSlots) unmetRequirements.push(`Requested ${count} exercises; found ${filled.length} distinct catalog choices with reviewed setup compatible with the known equipment and restrictions; other catalog setup requirements may be unknown.`)
   if (isCap && count > 1 && filled.length === 1 && /\bbalanced\b/i.test(message)) unmetRequirements.push('Only one distinct movement pattern fits this setup, so this is not a balanced session; add equipment or allow another variation.')
   if (/\barms?\b/i.test(message) && /\bbalanced\b/i.test(message) && !['biceps', 'triceps'].every(muscle => selectedAssignments.some(({ exercise }) => exercise.primaryMuscles.some(item => item.toLowerCase() === muscle)))) unmetRequirements.push('The selected movements do not cover both biceps and triceps, so this is not a balanced arm session.')
   if (explicitTargetCount > count || (fullBody && targets.length > count)) unmetRequirements.push(`The request names ${fullBody ? targets.length : explicitTargetCount} muscle groups but allows at most ${count} exercise${count === 1 ? '' : 's'}; some groups are uncovered.`)
@@ -417,7 +418,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     ...(!/\b(?:beginner|novice|intermediate|advanced|expert|experienced)\b/i.test(message) && !context?.profile?.trainingAge
       ? ['No ability level was provided; choose only movements you can perform comfortably and with control.']
       : []),
-    ...(!countMatch ? ['Assumed 3 exercises.'] : []),
+    ...(!countMatch && !exactNames ? [`Planned ${selectedAssignments.length} ${selectedAssignments.length === 1 ? 'exercise' : 'exercises'}.`] : []),
     ...(!setsMatch ? [`Assumed ${sets} sets.`] : []),
     `${restSeconds} seconds rest between sets${prescription.rest === undefined ? ' (assumed)' : ''}.`,
     ...(repetitionsRange

@@ -71,10 +71,11 @@ test('structured gym equipment is recognized and metadata day counts do not chan
   expect(result.response.workouts).toHaveLength(3)
 })
 
-test('a gym routine without an exercise count uses available weights across all three sessions', async () => {
+test('a gym routine without an exercise count defaults to six exercises across all three sessions', async () => {
   const { response } = await harness().run('Create a 3-day workout with a full gym')
   expect(response.kind).toBe('routine_draft')
   expect(response.workouts).toHaveLength(3)
+  expect(response.workouts.map(workout => workout.exercises.length)).toEqual([6, 6, 6])
   expect(response.workouts.every(workout => workout.exercises.some(exercise => exerciseCatalog.find(entry => entry.id === exercise.catalogId).equipment !== 'BODY_ONLY'))).toBe(true)
   expect(response.assumptions).toContain('Full gym is treated as including a bench and pairs of dumbbells.')
 })
@@ -102,7 +103,7 @@ test.each(['valid', 'alllegs', 'timeout'])('PPL keeps each day in its own muscle
   expect(response.workouts.map(workout => workout.title)).toEqual(['Day 1 — Push', 'Day 2 — Pull', 'Day 3 — Legs'])
   response.workouts.forEach((workout, index) => {
     const entries = workout.exercises.map(exercise => exerciseCatalog.find(entry => entry.id === exercise.catalogId))
-    expect(entries).toHaveLength(3)
+    expect(entries).toHaveLength(6)
     expect(entries.every(entry => entry.primaryMuscles.some(muscle => focusMuscles[index].includes(muscle.toLowerCase())))).toBe(true)
   })
   expect(validateWorkoutReview(pplRequest, response)).toEqual([])
