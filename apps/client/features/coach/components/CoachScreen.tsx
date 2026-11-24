@@ -36,6 +36,7 @@ import { Button, UiText, TextField, SegmentedSelection } from '../../../componen
 import { useUniwind } from 'uniwind'
 import { useCoachController } from '../hooks/useCoachController'
 import { exerciseCatalog } from '../../../lib/exercises/catalog'
+import { weekdayLabels } from '../workoutSchedule'
 import type { CoachResponse, CoachReview, CoachWorkout } from '../contracts'
 import { shouldFollowCoachMessages } from '../scrollBehavior'
 
@@ -46,6 +47,11 @@ type Details = {
 }
 
 type Draft = Extract<CoachResponse, { kind: 'workout_draft' | 'routine_draft' }>
+
+function coachExerciseName(id: string, details: Details) {
+  return id === 'local:exercise:Air_Bike' ? 'Air Bike (Bicycle Crunch)' :
+    details.names.get(id) ?? exerciseCatalog.find(item => item.id === id)?.name ?? id
+}
 
 function loadSummary(exercise: CoachWorkout['exercises'][number]) {
   const loads = exercise.sets.flatMap((set) => (set.kind === 'strength' ? [set.load] : []))
@@ -127,13 +133,15 @@ function RoutineCycle({ draft }: { draft: Extract<Draft, { kind: 'routine_draft'
       </Text>
     )
   }
+  const { days, startsOnMonday } = draft.routine
   return (
     <View>
       <Text style={{ color: c.quiet, fontSize: 11, marginBottom: 6 }}>
-        Repeating {draft.routine.days.length}-day cycle · Rest included
+        {startsOnMonday ? 'Weekly schedule' : `Repeating ${days.length}-day cycle · Rest included`}
       </Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 5 }}>
-        {draft.routine.days.map((day, index) => {
+        {days.map((day, index) => {
+          const dayLabel = startsOnMonday ? weekdayLabels[index] : `Day ${index + 1}`
           const workoutIndex =
             day.kind === 'workout'
               ? draft.workouts.findIndex((workout) => workout.ref === day.workoutRef)
@@ -147,7 +155,7 @@ function RoutineCycle({ draft }: { draft: Extract<Draft, { kind: 'routine_draft'
           return (
             <View
               key={index}
-              accessibilityLabel={`Day ${index + 1}: ${day.kind === 'rest' ? 'Rest' : (draft.workouts[workoutIndex]?.title ?? 'Workout')}`}
+              accessibilityLabel={`${dayLabel}: ${day.kind === 'rest' ? 'Rest' : (draft.workouts[workoutIndex]?.title ?? 'Workout')}`}
               style={{
                 flexGrow: 1,
                 minWidth: 38,
@@ -158,7 +166,7 @@ function RoutineCycle({ draft }: { draft: Extract<Draft, { kind: 'routine_draft'
                 backgroundColor: day.kind === 'rest' ? c.surface : c.featured,
               }}
             >
-              <Text style={{ color: c.quiet, fontSize: 9 }}>Day {index + 1}</Text>
+              <Text style={{ color: c.quiet, fontSize: 9 }}>{startsOnMonday ? dayLabel.slice(0, 3) : dayLabel}</Text>
               <Text
                 style={{
                   color: day.kind === 'rest' ? c.quiet : c.plum,
@@ -302,42 +310,44 @@ export function Review({
             >
               Schedule
             </Text>
-            <SegmentedSelection
-              accessibilityLabel="Routine schedule"
-              disabled={saving}
-              value={draft.routine.type}
-              options={[
-                { value: 'SEQUENTIAL', label: 'Repeating cycle' },
-                { value: 'WEEKLY_COMPLETION', label: 'Weekly goal' },
-              ]}
-              onValueChange={(type) =>
-                setDraft((old) => {
-                  if (old.kind !== 'routine_draft' || old.routine.type === type) return old
-                  if (old.routine.type === 'SEQUENTIAL') cycleRef.current = old.routine.days
-                  const title = old.routine.title
-                  return {
-                    ...old,
-                    routine:
-                      type === 'WEEKLY_COMPLETION'
-                        ? { type, title, workoutRefs: old.workouts.map((workout) => workout.ref) }
-                        : {
-                            type: 'SEQUENTIAL',
-                            title,
-                            days:
-                              cycleRef.current ??
-                              old.workouts.flatMap((workout, index) =>
-                                index % 2 === 1
-                                  ? [
-                                      { kind: 'workout' as const, workoutRef: workout.ref },
-                                      { kind: 'rest' as const },
-                                    ]
-                                  : [{ kind: 'workout' as const, workoutRef: workout.ref }]
-                              ),
-                          },
-                  }
-                })
-              }
-            />
+            {!(draft.routine.type === 'SEQUENTIAL' && draft.routine.startsOnMonday) && (
+              <SegmentedSelection
+                accessibilityLabel="Routine schedule"
+                disabled={saving}
+                value={draft.routine.type}
+                options={[
+                  { value: 'SEQUENTIAL', label: 'Repeating cycle' },
+                  { value: 'WEEKLY_COMPLETION', label: 'Weekly goal' },
+                ]}
+                onValueChange={(type) =>
+                  setDraft((old) => {
+                    if (old.kind !== 'routine_draft' || old.routine.type === type) return old
+                    if (old.routine.type === 'SEQUENTIAL') cycleRef.current = old.routine.days
+                    const title = old.routine.title
+                    return {
+                      ...old,
+                      routine:
+                        type === 'WEEKLY_COMPLETION'
+                          ? { type, title, workoutRefs: old.workouts.map((workout) => workout.ref) }
+                          : {
+                              type: 'SEQUENTIAL',
+                              title,
+                              days:
+                                cycleRef.current ??
+                                old.workouts.flatMap((workout, index) =>
+                                  index % 2 === 1
+                                    ? [
+                                        { kind: 'workout' as const, workoutRef: workout.ref },
+                                        { kind: 'rest' as const },
+                                      ]
+                                    : [{ kind: 'workout' as const, workoutRef: workout.ref }]
+                                ),
+                            },
+                    }
+                  })
+                }
+              />
+            )}
             <RoutineCycle draft={draft} />
           </View>
         )}
@@ -442,10 +452,7 @@ export function Review({
                   const catalogExercise = exerciseCatalog.find(
                     (item) => item.id === exercise.catalogId
                   )
-                  const name =
-                    details.names.get(exercise.catalogId) ??
-                    catalogExercise?.name ??
-                    exercise.catalogId
+                  const name = coachExerciseName(exercise.catalogId, details)
                   const rest = exercise.guidance?.restSeconds
                   const summary = [
                     setSummary(exercise),
@@ -1024,10 +1031,7 @@ function Response({
       <View style={{ paddingHorizontal: 16, paddingTop: 3 }}>
         {response.kind === 'workout_draft'
           ? workouts[0].exercises.map((exercise, index) => {
-              const name =
-                details.names.get(exercise.catalogId) ??
-                exerciseCatalog.find((item) => item.id === exercise.catalogId)?.name ??
-                exercise.catalogId
+              const name = coachExerciseName(exercise.catalogId, details)
               const detail = [
                 exercise.guidance?.restSeconds !== undefined
                   ? `Rest ${exercise.guidance.restSeconds} sec`

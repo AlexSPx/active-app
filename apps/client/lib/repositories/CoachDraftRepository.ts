@@ -5,8 +5,17 @@ import { isCurrentProfile, type ProfileScope } from '../profileScope'
 import { syncEngine } from '../sync'
 import { validateWorkoutReview } from '../../features/coach/workoutPlanner'
 import type { RoutinePatternItem } from '../../types/routine'
+import { startOfWeek, toISODate } from '../../utils/date'
 
 export type CoachDraftSaveResult = { workoutIds: string[]; routineId: string | null }
+
+function mondayStartDate(savedAt: Date) {
+  const monday = startOfWeek(savedAt)
+  const offset = -monday.getTimezoneOffset()
+  const hours = String(Math.floor(Math.abs(offset) / 60)).padStart(2, '0')
+  const minutes = String(Math.abs(offset) % 60).padStart(2, '0')
+  return `${toISODate(monday)}T00:00:00${offset < 0 ? '-' : '+'}${hours}:${minutes}`
+}
 
 function localId() {
   return `local_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}_${Math.random().toString(36).slice(2)}`
@@ -50,7 +59,8 @@ export class CoachDraftRepository {
           return
         }
         const ids = new Map(adapted.workouts.map((workout) => [workout.ref, localId()]))
-        const now = new Date().toISOString()
+        const savedAt = new Date()
+        const now = savedAt.toISOString()
         for (const workout of adapted.workouts) {
           const id = ids.get(workout.ref)
           if (!id) throw new Error('Missing workout reference.')
@@ -90,7 +100,9 @@ export class CoachDraftRepository {
             null,
             routine.type,
             JSON.stringify(pattern),
-            now,
+            routine.type === 'SEQUENTIAL' && routine.startsOnMonday
+              ? mondayStartDate(savedAt)
+              : now,
             now,
             now
           )

@@ -214,3 +214,48 @@ test('saves the named exercises after a clarification and review', async () => {
     )
   } finally { db.sql.close() }
 })
+
+test('saves timed prescriptions and the Monday/Thursday schedule to the existing routine cycle', async () => {
+  const { runConstrainedCoachTurn } = require('../../features/coach/constrainedTurn')
+  const { routinePatternIndex, startOfWeek, toISODate } = require('../../utils/date')
+  const request = 'Build a weekly routine: upper body on Mondays, lower body on Thursdays, full gym, timed intervals, 30 seconds work, 20 seconds rest, 2 exercises each, 3 sets'
+  const { response } = await runConstrainedCoachTurn({
+    message: request,
+    session: {
+      appendUserMessage: async () => {},
+      generate: async () => ({ kind: 'final', content: { intent: 'create_workout' } }),
+    },
+    readHistory: async () => { throw new Error('Unexpected history read') },
+    signal: new AbortController().signal,
+    isCurrentProfile: () => true,
+    maxOutputTokens: 1024,
+  })
+  expect(response.workouts.map(workout => workout.title)).toEqual(['Monday — Upper body', 'Thursday — Legs — partial workout'])
+  const db = createDb()
+  try {
+    const repo = new CoachDraftRepository(db)
+    const input = { revision: 'weekday-timed', draft: response, request, scope: getProfileScope() }
+    const changed = structuredClone(response)
+    ;[changed.routine.days[1], changed.routine.days[3]] = [changed.routine.days[3], changed.routine.days[1]]
+    await expect(repo.save({ ...input, draft: changed })).rejects.toThrow('Keep the requested weekdays')
+    const saved = await repo.save(input)
+    const row = db.sql.prepare('SELECT routine_type, pattern, start_date FROM routines WHERE id = ?').get(saved.routineId)
+    const monday = startOfWeek(new Date())
+    const thursday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 3)
+    const pattern = JSON.parse(row.pattern)
+    expect(row.routine_type).toBe('SEQUENTIAL')
+    expect(row.start_date.split('T')[0]).toBe(toISODate(monday))
+    expect(new Date(row.start_date).getTime()).toBe(monday.getTime())
+    expect(pattern.map(day => day.workoutId)).toEqual([saved.workoutIds[0], null, null, saved.workoutIds[1], null, null, null])
+    expect(pattern[routinePatternIndex(row.start_date, pattern.length, monday)].workoutId).toBe(saved.workoutIds[0])
+    expect(pattern[routinePatternIndex(row.start_date, pattern.length, thursday)].workoutId).toBe(saved.workoutIds[1])
+    const template = JSON.parse(db.sql.prepare('SELECT workout_template FROM workouts WHERE id = ?').get(saved.workoutIds[0]).workout_template)
+    expect(template.coachSchedule).toEqual({ preparation: [], estimatedSeconds: 290, transitionSeconds: 30 })
+    expect(template.exercises.map(exercise => ({
+      durations: exercise.durationSeconds,
+      rest: exercise.coachPrescription.guidance.restSeconds,
+    }))).toEqual(Array(2).fill({ durations: [30, 30, 30], rest: 20 }))
+  } finally {
+    db.sql.close()
+  }
+})

@@ -21,3 +21,18 @@ test('recognizes two PPL cycles and clarifies incompatible day counts', () => {
   expect(parseWorkoutSchedule('4-day PPL').kind).toBe('clarification')
   expect(parseWorkoutSchedule('Give me a 4 days Push Pull Leg routine').kind).toBe('clarification')
 })
+
+test('keeps named training focus and ignores explicit rest weekdays', () => {
+  expect(parseWorkoutSchedule('Build a weekly routine: upper body on Mondays, lower body on Thursdays, rest on Wednesdays and Saturdays.')).toEqual({
+    kind: 'weekdays',
+    sessions: 2,
+    days: [{ index: 0, focus: 'upper' }, { index: 3, focus: 'legs' }],
+  })
+  expect(parseWorkoutSchedule('Build a weekly routine: train Tuesdays, Mondays and Wednesdays are rest days.')).toEqual({
+    kind: 'weekdays', sessions: 1, days: [{ index: 1, focus: undefined }],
+  })
+  expect(parseWorkoutSchedule('Build a weekly routine: train Mondays and Thursdays, Thursday is a rest day.')).toEqual({
+    kind: 'clarification',
+    question: 'A weekday is listed for both training and rest. Which days should have workouts?',
+  })
+})
