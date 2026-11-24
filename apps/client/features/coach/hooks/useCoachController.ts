@@ -231,12 +231,7 @@ export function useCoachController() {
       if (id && offsets.current.has(id)) persist(id, itemsRef.current)
     }
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state !== 'active') {
-        flushScroll()
-        clear()
-        setNotice('Coach paused while the app was away. Retry to continue.')
-        setStatus('error')
-      }
+      if (state === 'background') flushScroll()
     })
     return () => {
       flushScroll()
@@ -266,6 +261,7 @@ export function useCoachController() {
       conversationId.current = conversation
       generatingConversation.current = conversation
       const withUser: Item[] = [...items, { kind: 'user', text: message }]
+      itemsRef.current = withUser
       setItems(withUser)
       persist(conversation, withUser)
       setStatus('generating')
@@ -347,7 +343,10 @@ export function useCoachController() {
           const offset = await repository.loadScrollOffset(conversation)
           if (!current()) return
           const next = [...latest, reply]
-          if (conversationId.current === conversation) setItems(next)
+          if (conversationId.current === conversation) {
+            itemsRef.current = next
+            setItems(next)
+          }
           persist(
             conversation,
             next,
@@ -373,7 +372,6 @@ export function useCoachController() {
         }
       } catch {
         clearTimeout(timeout)
-        generatingConversation.current = null
         if (current()) {
           clear()
           setNotice('Could not continue this conversation. Retry to continue.')

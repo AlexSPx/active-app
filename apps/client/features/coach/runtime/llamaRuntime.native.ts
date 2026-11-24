@@ -202,7 +202,12 @@ export const llamaCoachRuntime: CoachRuntime = {
         return { kind: 'failure' as const, code: 'runtime_error' as const, message: STALL_MESSAGE }
       }
       try {
-        const context = await initLlama({ model: artifact.path, n_ctx: 4096, n_gpu_layers: 0 })
+        const context = await initLlama({
+          model: artifact.path,
+          n_ctx: 4096,
+          n_gpu_layers: 0,
+          use_mmap: true,
+        })
         if (timedOut) {
           try { await context.release() } catch { contextReleaseFailed = true }
           unlock()
