@@ -44,6 +44,12 @@ jest.mock('expo-file-system', () => {
       mockDigestCount++
       return mockDigest(mockFiles.get(this.uri))
     }
+    textSync() {
+      return mockFiles.get(this.uri)
+    }
+    writeSync(text) {
+      mockFiles.set(this.uri, text)
+    }
     delete() {
       mockFiles.delete(this.uri)
     }
@@ -120,6 +126,21 @@ test('downloads, hashes, promotes and re-verifies the exact artifact', async () 
   expect(mockReadCount).toBe(0)
   mockFiles.set(result.artifact.path, Uint8Array.from([97, 98, 100]))
   expect((await getVerifiedModel(model)).code).toBe('invalid_artifact')
+})
+
+test('reuses verification after restart and rechecks a same-size replacement', async () => {
+  const result = await downloadCoachModel(model)
+  expect(result.kind).toBe('ready')
+
+  await jest.isolateModulesAsync(async () => {
+    const { getVerifiedModel: reopen } = require('../../features/coach/runtime/modelFiles.native')
+    expect(await reopen(model)).toEqual(result)
+    expect(mockDigestCount).toBe(1)
+
+    mockFiles.set(result.artifact.path, Uint8Array.from([97, 98, 100]))
+    expect(await reopen(model)).toMatchObject({ kind: 'failure', code: 'invalid_artifact' })
+    expect(mockDigestCount).toBe(2)
+  })
 })
 
 test('cleans a corrupt or interrupted partial and refuses insufficient space', async () => {

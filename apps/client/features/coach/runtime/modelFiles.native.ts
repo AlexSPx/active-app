@@ -7,40 +7,46 @@ import type { VerifiedCoachArtifact } from './types'
 
 const directory = new Directory(Paths.document, 'coach-models')
 const active = new Set<string>()
-const verified = new Map<
-  string,
-  { sha256: string; size: number; modified: number; created: number }
->()
 
-function metadata(file: File) {
+function verificationProof(file: File, model: CoachModelManifest): string | null {
   if (!file.exists) return null
   const size = file.size
   const modified = file.modificationTime
   const created = file.creationTime
-  return file.exists && size != null && modified != null && created != null
-    ? { size, modified, created }
+  return file.exists && size === model.byteSize && modified != null && created != null
+    ? JSON.stringify({ size, modified, created, sha256: model.sha256 })
     : null
 }
 
-function sameMetadata(a: ReturnType<typeof metadata>, b: ReturnType<typeof metadata>): boolean {
-  return !!a && !!b && a.size === b.size && a.modified === b.modified && a.created === b.created
+function verificationReceipt(model: CoachModelManifest): File {
+  return new File(directory, `${model.sha256}.verified`)
 }
 
-function promote(partial: File, target: File, model: CoachModelManifest): void {
-  const before = metadata(partial)
-  const cached = verified.get(partial.uri)
-  verified.delete(target.uri)
-  verified.delete(partial.uri)
+function matchesReceipt(receipt: File, proof: string): boolean {
+  try {
+    return receipt.exists && receipt.textSync() === proof
+  } catch {
+    return false
+  }
+}
+
+function saveReceipt(receipt: File, proof: string): void {
+  try {
+    receipt.writeSync(proof)
+  } catch {
+    // Verification still succeeded. A later startup can hash the file again.
+  }
+}
+
+function promote(
+  partial: File,
+  target: File,
+  model: CoachModelManifest,
+  receipt: File,
+  proof: string | null
+): void {
   partial.rename(`${model.sha256}.gguf`)
-  const after = metadata(target)
-  if (
-    cached &&
-    cached.sha256 === model.sha256 &&
-    sameMetadata(cached, before) &&
-    sameMetadata(before, after) &&
-    after
-  )
-    verified.set(target.uri, { ...after, sha256: model.sha256 })
+  if (proof && verificationProof(target, model) === proof) saveReceipt(receipt, proof)
 }
 
 function validManifest(model: CoachModelManifest): boolean {
@@ -64,20 +70,16 @@ async function verify(
   file: File,
   model: CoachModelManifest,
   signal?: AbortSignal,
-  onProgress?: (bytes: number, total: number) => void
-): Promise<boolean> {
+  onProgress?: (bytes: number, total: number) => void,
+  receipt?: File
+): Promise<{ proof: string | null } | null> {
   if (signal?.aborted) throw new Error('cancelled')
-  const before = metadata(file)
-  if (!file.exists || file.size !== model.byteSize) {
-    verified.delete(file.uri)
-    return false
-  }
-  const cached = verified.get(file.uri)
-  if (cached?.sha256 === model.sha256 && sameMetadata(cached, before)) {
+  if (!file.exists || file.size !== model.byteSize) return null
+  const before = verificationProof(file, model)
+  if (receipt && before && matchesReceipt(receipt, before)) {
     onProgress?.(model.byteSize, model.byteSize)
-    return true
+    return { proof: before }
   }
-  verified.delete(file.uri)
   onProgress?.(0, model.byteSize)
   let digest: string
   if (typeof file.digest === 'function') {
@@ -91,7 +93,7 @@ async function verify(
       while (total < model.byteSize) {
         if (signal?.aborted) throw new Error('cancelled')
         const bytes = await handle.readBytes(Math.min(1024 * 1024, model.byteSize - total))
-        if (!bytes.length) return false
+        if (!bytes.length) return null
         total += bytes.length
         hash.update(bytes)
         onProgress?.(total, model.byteSize)
@@ -103,12 +105,13 @@ async function verify(
     digest = bytesToHex(hash.digest())
   }
   if (signal?.aborted) throw new Error('cancelled')
-  const after = metadata(file)
-  if (!file.exists || file.size !== model.byteSize || digest !== model.sha256) return false
-  if (before && after && !sameMetadata(before, after)) return false
-  if (before && after) verified.set(file.uri, { ...after, sha256: model.sha256 })
+  const after = verificationProof(file, model)
+  if (!file.exists || file.size !== model.byteSize || digest !== model.sha256) return null
+  if (before && after && before !== after) return null
+  const proof = before ? after : null
+  if (receipt && proof) saveReceipt(receipt, proof)
   onProgress?.(model.byteSize, model.byteSize)
-  return true
+  return { proof }
 }
 
 function artifact(file: File, model: CoachModelManifest): VerifiedCoachArtifact {
@@ -133,9 +136,12 @@ export async function getVerifiedModel(
     if (signal?.aborted)
       return { kind: 'failure', code: 'cancelled', message: 'Verification cancelled.' }
     const file = new File(directory, `${model.sha256}.gguf`)
-    if (!(await verify(file, model, signal, onProgress))) {
+    const receipt = verificationReceipt(model)
+    if (!(await verify(file, model, signal, onProgress, receipt))) {
+      if (receipt.exists) receipt.delete()
       const partial = new File(directory, `${model.sha256}.partial`)
-      if (await verify(partial, model, signal, onProgress)) {
+      const checked = await verify(partial, model, signal, onProgress)
+      if (checked) {
         if (Platform.OS === 'android' && Number(Platform.Version) < 26)
           return {
             kind: 'failure',
@@ -144,7 +150,7 @@ export async function getVerifiedModel(
           }
         if (signal?.aborted) throw new Error('cancelled')
         if (file.exists) file.delete()
-        promote(partial, file, model)
+        promote(partial, file, model, receipt, checked.proof)
         return { kind: 'ready', artifact: artifact(file, model) }
       }
       if (partial.exists) partial.delete()
@@ -191,6 +197,7 @@ export async function downloadCoachModel(
   active.add(model.sha256)
   const partial = new File(directory, `${model.sha256}.partial`)
   const target = new File(directory, `${model.sha256}.gguf`)
+  const receipt = verificationReceipt(model)
   let preservePartial = partial.exists && partial.size === model.byteSize
   let step = 'prepare model storage'
   try {
@@ -198,17 +205,19 @@ export async function downloadCoachModel(
       return { kind: 'failure', code: 'cancelled', message: 'Download cancelled.' }
     directory.create({ intermediates: true, idempotent: true })
     const onVerify = (bytes: number, total: number) => options.onProgress?.('verify', bytes, total)
-    if (await verify(target, model, options.signal, onVerify)) {
+    if (await verify(target, model, options.signal, onVerify, receipt)) {
       if (options.signal?.aborted)
         return { kind: 'failure', code: 'cancelled', message: 'Download cancelled.' }
       return { kind: 'ready', artifact: artifact(target, model) }
     }
+    if (receipt.exists) receipt.delete()
     if (target.exists) target.delete()
     if (partial.exists && partial.size === model.byteSize) {
       preservePartial = true
-      if (await verify(partial, model, options.signal, onVerify)) {
+      const checked = await verify(partial, model, options.signal, onVerify)
+      if (checked) {
         if (options.signal?.aborted) throw new Error('cancelled')
-        promote(partial, target, model)
+        promote(partial, target, model, receipt, checked.proof)
         return { kind: 'ready', artifact: artifact(target, model) }
       }
       preservePartial = false
@@ -231,7 +240,8 @@ export async function downloadCoachModel(
     })
     step = 'verify the downloaded model'
     preservePartial = true
-    if (!(await verify(partial, model, options.signal, onVerify))) {
+    const checked = await verify(partial, model, options.signal, onVerify)
+    if (!checked) {
       preservePartial = false
       return {
         kind: 'failure',
@@ -243,7 +253,7 @@ export async function downloadCoachModel(
       return { kind: 'failure', code: 'cancelled', message: 'Download cancelled.' }
     // Same-directory rename avoids the copy fallback in File.move.
     step = 'store the verified model'
-    promote(partial, target, model)
+    promote(partial, target, model, receipt, checked.proof)
     return { kind: 'ready', artifact: artifact(target, model) }
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error)
@@ -265,8 +275,8 @@ export function deleteCoachModel(model: CoachModelManifest): void {
   if (!validManifest(model)) throw new Error('Invalid model manifest.')
   if (active.has(model.sha256)) throw new Error('Model download is in progress.')
   const file = new File(directory, `${model.sha256}.gguf`)
-  verified.delete(file.uri)
-  verified.delete(new File(directory, `${model.sha256}.partial`).uri)
+  const receipt = verificationReceipt(model)
+  if (receipt.exists) receipt.delete()
   if (file.exists) file.delete()
   const partial = new File(directory, `${model.sha256}.partial`)
   if (partial.exists) partial.delete()

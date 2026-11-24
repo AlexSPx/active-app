@@ -17,12 +17,16 @@ jest.mock('expo-router', () => ({ useRouter: () => ({ back: () => {} }) }))
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 0, bottom: 0 }) }))
 jest.mock('@tanstack/react-query', () => ({ useQueryClient: () => ({ invalidateQueries: async () => {} }) }))
 const React = require('react')
+const { AppState, DeviceEventEmitter } = require('react-native')
 const { act, create } = require('react-test-renderer')
 const { DatabaseSync } = require('node:sqlite')
 const { useRunningWorkoutStore } = require('../../features/workout-session/stores/runningWorkoutStore')
 const { WorkoutRepository } = require('../../lib/repositories/WorkoutRepository')
 const { CoachConversationRepository } = require('../../features/coach/conversations')
 const { CoachScreen } = require('../../features/coach/components/CoachScreen')
+AppState.addEventListener.mockImplementation((event, listener) =>
+  DeviceEventEmitter.addListener(event, listener)
+)
 let mockDb, mockOutputs
 const flush = async () => { for (let i = 0; i < 20; i++) await new Promise(resolve => setImmediate(resolve)) }
 
@@ -35,6 +39,71 @@ async function sendMessage(tree, message) {
     await flush()
   })
 }
+
+test('Coach restores readiness when returning to the app with a draft', async () => {
+  mockDb = { getAllAsync: async () => [], runAsync: async () => {} }
+  let tree
+  try {
+    await act(async () => {
+      tree = create(React.createElement(CoachScreen))
+      await flush()
+    })
+    await act(async () => {
+      tree.root.findByProps({ accessibilityLabel: 'Message Coach' }).props.onChangeText('My draft')
+    })
+    const sendButton = () => tree.root.findByProps({ accessibilityLabel: 'Send message' })
+    expect(sendButton().props.accessibilityState.disabled).toBe(false)
+    for (const state of ['inactive', 'background', 'active']) {
+      await act(async () => {
+        DeviceEventEmitter.emit('change', state)
+        await flush()
+      })
+      expect(sendButton().props.accessibilityState.disabled).toBe(false)
+    }
+    expect(tree.root.findByProps({ accessibilityLabel: 'Message Coach' }).props.value).toBe('My draft')
+  } finally {
+    if (tree) await act(async () => tree.unmount())
+  }
+})
+
+test('Coach completes and saves the reply when the phone locks during generation', async () => {
+  const sql = new DatabaseSync(':memory:')
+  sql.exec('CREATE TABLE coach_conversations(id TEXT PRIMARY KEY, updated_at TEXT, items_json TEXT)')
+  mockDb = {
+    getFirstAsync: async (query, ...params) => sql.prepare(query).get(...params) ?? null,
+    getAllAsync: async (query, ...params) => sql.prepare(query).all(...params),
+    runAsync: async (query, ...params) => sql.prepare(query).run(...params),
+  }
+  const { promise, resolve: finishGeneration } = Promise.withResolvers()
+  mockOutputs = [promise]
+  let tree
+  try {
+    await act(async () => {
+      tree = create(React.createElement(CoachScreen))
+      await flush()
+    })
+    await sendMessage(tree, 'How long should I rest?')
+    expect(tree.root.findByProps({ accessibilityLabel: 'Stop generation' }).props.disabled).toBe(false)
+
+    await act(async () => {
+      DeviceEventEmitter.emit('change', 'inactive')
+      DeviceEventEmitter.emit('change', 'background')
+      await flush()
+      finishGeneration({ intent: 'coach_qa' })
+      await flush()
+      const { id } = sql.prepare('SELECT id FROM coach_conversations').get()
+      const items = await new CoachConversationRepository(mockDb).load(id)
+      expect(items.map((item) => item.kind)).toEqual(['user', 'response'])
+      DeviceEventEmitter.emit('change', 'active')
+      await flush()
+    })
+    expect(JSON.stringify(tree.toJSON())).toContain('I cannot answer that advice question')
+  } finally {
+    finishGeneration()
+    if (tree) await act(async () => tree.unmount())
+    sql.close()
+  }
+})
 
 test('Coach shows three staggered dots while generating and stops from the composer', async () => {
   mockDb = { getAllAsync: async () => [], runAsync: async () => {} }
