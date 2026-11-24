@@ -3,6 +3,13 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { isCurrentProfile, type ProfileScope } from '../../../lib/profileScope'
 
+export interface WeightEntry {
+  id: string
+  weightKg: number
+  recordedAt: string
+  initial?: boolean
+}
+
 interface SettingsState {
   // Rest timer settings
   restTimerEnabled: boolean
@@ -16,6 +23,9 @@ interface SettingsState {
 
   // Body measurements
   bodyWeight: number | null // stored in kg
+  weightHistory: WeightEntry[]
+  weightReminderEnabled: boolean
+  weightReminderHour: number
   height: number | null // stored in cm
   bodyWeightUnit: 'kg' | 'lb'
   heightUnit: 'cm' | 'in'
@@ -33,7 +43,17 @@ interface SettingsState {
 }
 
 export type SettingsProfileChanges = Partial<
-  Pick<SettingsState, 'timeZone' | 'bodyWeight' | 'height' | 'bodyWeightUnit' | 'heightUnit'>
+  Pick<
+    SettingsState,
+    | 'timeZone'
+    | 'bodyWeight'
+    | 'height'
+    | 'bodyWeightUnit'
+    | 'heightUnit'
+    | 'weightHistory'
+    | 'weightReminderEnabled'
+    | 'weightReminderHour'
+  >
 >
 
 const pausedStorage = createJSONStorage(() => ({
@@ -95,6 +115,9 @@ const defaultSettings = () => ({
   timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
   theme: 'system' as const,
   bodyWeight: null,
+  weightHistory: [] as WeightEntry[],
+  weightReminderEnabled: false,
+  weightReminderHour: 8,
   height: null,
   bodyWeightUnit: 'kg' as const,
   heightUnit: 'cm' as const,
@@ -111,7 +134,20 @@ export const useSettingsStore = create<SettingsState>()(
       setTimeZone: (tz) => set({ timeZone: tz || 'UTC' }),
       setTheme: (theme) => set({ theme }),
       setBodyWeight: (weight) =>
-        set({ bodyWeight: weight == null || isNaN(weight as any) ? null : Math.max(0, weight) }),
+        set((state) => ({
+          bodyWeight: weight == null || isNaN(weight as any) ? null : Math.max(0, weight),
+          weightHistory:
+            state.weightHistory.length || weight == null || !Number.isFinite(weight) || weight <= 0
+              ? state.weightHistory
+              : [
+                  {
+                    id: 'initial',
+                    weightKg: state.bodyWeight ?? weight,
+                    recordedAt: new Date().toISOString(),
+                    initial: true,
+                  },
+                ],
+        })),
       setHeight: (height) =>
         set({ height: height == null || isNaN(height as any) ? null : Math.max(0, height) }),
       setBodyWeightUnit: (unit) => set({ bodyWeightUnit: unit }),
@@ -123,6 +159,9 @@ export const useSettingsStore = create<SettingsState>()(
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC',
           theme: 'system',
           bodyWeight: null,
+          weightHistory: [],
+          weightReminderEnabled: false,
+          weightReminderHour: 8,
           height: null,
           bodyWeightUnit: 'kg',
           heightUnit: 'cm',
@@ -132,17 +171,35 @@ export const useSettingsStore = create<SettingsState>()(
       name: 'settings-storage',
       storage: settingsProfileStorage,
       skipHydration: true,
-      merge: (persistedState, currentState) => ({
-        ...currentState,
-        ...defaultSettings(),
-        ...(persistedState as Partial<SettingsState> | undefined),
-      }),
+      merge: (persistedState, currentState) => {
+        const saved = persistedState as Partial<SettingsState> | undefined
+        return {
+          ...currentState,
+          ...defaultSettings(),
+          ...saved,
+          weightHistory:
+            saved?.weightHistory ??
+            (saved?.bodyWeight != null
+              ? [
+                  {
+                    id: 'initial',
+                    weightKg: saved.bodyWeight,
+                    recordedAt: new Date().toISOString(),
+                    initial: true,
+                  },
+                ]
+              : []),
+        }
+      },
       partialize: (state) => ({
         restTimerEnabled: state.restTimerEnabled,
         restTimerDefaultSeconds: state.restTimerDefaultSeconds,
         timeZone: state.timeZone,
         theme: state.theme,
         bodyWeight: state.bodyWeight,
+        weightHistory: state.weightHistory,
+        weightReminderEnabled: state.weightReminderEnabled,
+        weightReminderHour: state.weightReminderHour,
         height: state.height,
         bodyWeightUnit: state.bodyWeightUnit,
         heightUnit: state.heightUnit,
@@ -165,7 +222,23 @@ export async function saveSettingsProfile(
     }
     if (!isCurrentProfile(scope)) throw new Error('Profile changed while saving settings.')
 
-    const nextState = { ...useSettingsStore.getState(), ...changes }
+    const currentState = useSettingsStore.getState()
+    const initialHistory =
+      !currentState.weightHistory.length &&
+      changes.weightHistory === undefined &&
+      typeof changes.bodyWeight === 'number' &&
+      changes.bodyWeight > 0
+        ? [
+            {
+              id: 'initial',
+              weightKg: currentState.bodyWeight ?? changes.bodyWeight,
+              recordedAt: new Date().toISOString(),
+              initial: true,
+            },
+          ]
+        : currentState.weightHistory
+    const effectiveChanges = { ...changes, weightHistory: changes.weightHistory ?? initialHistory }
+    const nextState = { ...currentState, ...effectiveChanges }
     const state = options.partialize ? options.partialize(nextState) : nextState
 
     await AsyncStorage.setItem(expectedName, JSON.stringify({ state, version: options.version }))
@@ -178,7 +251,7 @@ export async function saveSettingsProfile(
 
     useSettingsStore.persist.setOptions({ storage: pausedStorage })
     try {
-      useSettingsStore.setState(changes)
+      useSettingsStore.setState(effectiveChanges)
     } finally {
       useSettingsStore.persist.setOptions({ storage: options.storage })
     }

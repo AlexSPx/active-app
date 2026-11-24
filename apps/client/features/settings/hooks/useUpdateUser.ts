@@ -3,7 +3,7 @@ import { useAuth } from '../../../contexts/AuthContext'
 import type { UpdateUserRequest, User, ApiError } from '../../../types/api'
 import { useQueryClient } from '@tanstack/react-query'
 import { useProfileQueryKeys } from '../../../lib/hooks/useProfileQueryKeys'
-import { saveSettingsProfile } from '../stores/settingsStore'
+import { saveSettingsProfile, useSettingsStore } from '../stores/settingsStore'
 import { getProfileScope, isCurrentProfile } from '../../../lib/profileScope'
 
 // Simple email regex (client-side validation aid; server performs authoritative validation)
@@ -12,7 +12,11 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 export interface UseUpdateUserResult {
   updateUserProfile: (
     updates: UpdateUserRequest,
-    localPreferences?: { bodyWeightUnit?: 'kg' | 'lb'; heightUnit?: 'cm' | 'in' }
+    localPreferences?: {
+      bodyWeightUnit?: 'kg' | 'lb'
+      heightUnit?: 'cm' | 'in'
+      recordWeight?: boolean
+    }
   ) => Promise<User | null>
   isUpdating: boolean
   error: string | null
@@ -47,7 +51,11 @@ export function useUpdateUser(): UseUpdateUserResult {
   const updateUserProfile = useCallback(
     async (
       updates: UpdateUserRequest,
-      localPreferences?: { bodyWeightUnit?: 'kg' | 'lb'; heightUnit?: 'cm' | 'in' }
+      localPreferences?: {
+        bodyWeightUnit?: 'kg' | 'lb'
+        heightUnit?: 'cm' | 'in'
+        recordWeight?: boolean
+      }
     ): Promise<User | null> => {
       setError(null)
       const validationError = validate(updates)
@@ -58,10 +66,48 @@ export function useUpdateUser(): UseUpdateUserResult {
       setIsUpdating(true)
       try {
         const scope = getProfileScope()
+        const previousWeight =
+          updates.measurements?.weightKg != null ? useSettingsStore.getState().bodyWeight : null
         const user = await updateUser(updates)
-        if (user && localPreferences) {
+        const newWeight = updates.measurements?.weightKg
+        const appendWeight =
+          typeof newWeight === 'number' &&
+          newWeight > 0 &&
+          (newWeight !== previousWeight || localPreferences?.recordWeight)
+        if (user && (localPreferences || appendWeight)) {
           if (!isCurrentProfile(scope)) throw new Error('Profile changed while saving settings.')
-          await saveSettingsProfile(scope, localPreferences)
+          const currentHistory = useSettingsStore.getState().weightHistory
+          const existingHistory =
+            previousWeight == null
+              ? currentHistory.filter((entry) => !entry.initial)
+              : currentHistory
+          const history =
+            existingHistory.length || previousWeight == null
+              ? existingHistory
+              : [
+                  {
+                    id: 'initial',
+                    weightKg: previousWeight,
+                    recordedAt: new Date().toISOString(),
+                    initial: true,
+                  },
+                ]
+          const { recordWeight: _recordWeight, ...preferences } = localPreferences ?? {}
+          await saveSettingsProfile(scope, {
+            ...preferences,
+            ...(appendWeight
+              ? {
+                  weightHistory: [
+                    ...history,
+                    {
+                      id: `${Date.now()}-${Math.random()}`,
+                      weightKg: newWeight,
+                      recordedAt: new Date().toISOString(),
+                    },
+                  ],
+                }
+              : {}),
+          })
         }
         setIsUpdating(false)
         // Invalidate user query

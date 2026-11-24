@@ -2,6 +2,8 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+export const WEIGHT_WIDGET_ID = '__body_weight__'
+
 export type ProgressionMetric = 'oneRm' | 'volume' | 'maxWeight'
 
 export interface WidgetConfig {

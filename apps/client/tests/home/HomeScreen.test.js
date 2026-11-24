@@ -1,3 +1,4 @@
+jest.mock('../../components/WeightWidget', () => ({ WeightWidget: () => null }))
 jest.mock('expo-router', () => ({ useRouter: jest.fn() }))
 jest.mock('../../components/ui/Controls', () => {
   const React = require('react')

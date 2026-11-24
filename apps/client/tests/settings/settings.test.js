@@ -1,3 +1,5 @@
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn() }) }))
+jest.mock('../../components/WeightReminderSettings', () => ({ WeightReminderSettings: () => null }))
 jest.mock('../../components/ui/CadenceOverlay', () => ({
   CadenceOverlay: ({ open, children }) => (open ? children : null),
 }))

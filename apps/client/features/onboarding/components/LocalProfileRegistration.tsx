@@ -13,6 +13,7 @@ import {
 } from '../../../components/ui/icons'
 import { Button, TextField, UiText } from '../../../components/ui/Controls'
 import { useCadenceColors } from '../../../components/ui/useCadenceColors'
+import { WeightReminderSettings } from '../../../components/WeightReminderSettings'
 import NotificationPermissions from '../../../components/NotificationPermissions'
 import { useUpdateUser } from '../../settings'
 import { launchFacade } from '../../launch/launchFacade'
@@ -526,6 +527,7 @@ export default function LocalProfileRegistration() {
                   </UiText>
                   <View className="mt-section overflow-hidden rounded-[18px] bg-surface">
                     <NotificationPermissions onboarding />
+                    <WeightReminderSettings />
                   </View>
                   <UiText textRole="caption" className="mt-field">
                     You can finish without enabling either permission and change these choices later
