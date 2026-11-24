@@ -270,14 +270,21 @@ test('preserves the workout creation, advice, and personal history routes', asyn
     expect(create.readLibrary).not.toHaveBeenCalled()
   }
 
-  const advice = turn('What is in a warmup?')
-  expect((await advice.result).response.blocks[0].text).toContain(
-    'generated coaching advice is currently unavailable'
-  )
+  const warmup = 'Start with easy movement and prepare for your first exercise with lighter sets.'
+  const advice = turn('What is in a warmup?', {
+    session: {
+      appendUserMessage: async () => {},
+      generate: jest.fn()
+        .mockResolvedValueOnce({ kind: 'final', content: { intent: 'coach_qa' } })
+        .mockResolvedValueOnce({ kind: 'final', content: { text: warmup } }),
+    },
+  })
+  expect((await advice.result).response.blocks[0].text).toBe(warmup)
   expect(advice.readLibrary).not.toHaveBeenCalled()
 
-  const history = turn('Show my recorded workouts')
-  await history.result
-  expect(history.generate).toHaveBeenCalledTimes(1)
+  const history = turn('How many workouts did I log in the past 30 days?', {
+    readHistory: async () => ({ kind: 'success', records: [], limitations: [] }),
+  })
+  expect((await history.result).response.blocks[0].text).toBe('I found no matching recorded data in the reviewed period.')
   expect(history.readLibrary).not.toHaveBeenCalled()
 })

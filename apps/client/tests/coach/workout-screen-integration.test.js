@@ -66,7 +66,7 @@ test('Coach restores readiness when returning to the app with a draft', async ()
   }
 })
 
-test('Coach completes and saves the reply when the phone locks during generation', async () => {
+test('Coach displays and saves the model’s rest advice when the phone locks during generation', async () => {
   const sql = new DatabaseSync(':memory:')
   sql.exec('CREATE TABLE coach_conversations(id TEXT PRIMARY KEY, updated_at TEXT, items_json TEXT)')
   mockDb = {
@@ -75,7 +75,8 @@ test('Coach completes and saves the reply when the phone locks during generation
     runAsync: async (query, ...params) => sql.prepare(query).run(...params),
   }
   const { promise, resolve: finishGeneration } = Promise.withResolvers()
-  mockOutputs = [promise]
+  mockOutputs = [{ intent: 'coach_qa' }, promise]
+  const reply = 'If you mean between sets, take longer rests for heavy strength work than for lighter sets.'
   let tree
   try {
     await act(async () => {
@@ -89,15 +90,16 @@ test('Coach completes and saves the reply when the phone locks during generation
       DeviceEventEmitter.emit('change', 'inactive')
       DeviceEventEmitter.emit('change', 'background')
       await flush()
-      finishGeneration({ intent: 'coach_qa' })
+      finishGeneration({ text: reply })
       await flush()
       const { id } = sql.prepare('SELECT id FROM coach_conversations').get()
       const items = await new CoachConversationRepository(mockDb).load(id)
       expect(items.map((item) => item.kind)).toEqual(['user', 'response'])
+      expect(items[1].response.blocks).toEqual([{ kind: 'text', text: reply, evidence: [] }])
       DeviceEventEmitter.emit('change', 'active')
       await flush()
     })
-    expect(JSON.stringify(tree.toJSON())).toContain('I cannot answer that advice question')
+    expect(JSON.stringify(tree.toJSON())).toContain(reply)
   } finally {
     finishGeneration()
     if (tree) await act(async () => tree.unmount())
