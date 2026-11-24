@@ -96,6 +96,7 @@ export function applyWorkoutFollowUp(message: string, prior: ({ kind: 'user'; te
 }
 
 const intentSchema = z.strictObject({ intent: z.enum(['create_workout', 'coach_qa', 'history_question']) })
+const adviceSchema = z.strictObject({ text: z.string().trim().min(1) })
 
 export type CoachTurnResult =
   | { kind: 'response'; response: CoachResponse; repaired: boolean; metrics?: CoachHistoryMetric[] }
@@ -312,8 +313,30 @@ export async function runConstrainedCoachTurn(input: {
         return textAnswer('I could not read your training history.', ['History read failed.'])
       }
     }
+    if (intent.intent === 'coach_qa') {
+      await session.appendUserMessage([
+        'Answer the latest fitness question directly in two or three plain-text sentences. Use relevant conversation context and name the exercise when one is specified.',
+        'If an exercise question about rest is ambiguous, assume it means between sets and say so. Use about 1–2 minutes for lighter strength sets and 2–3 minutes or more for heavy lifts as starting points. Rest longer if needed to maintain form and effort.',
+        'For a warmup question about a specific lift, include easy practice sets of that lift before the working sets.',
+        'Do not provide medical advice, suggest training through symptoms, or invent personal data or citations.',
+        `Question: ${JSON.stringify(libraryMessage)}`,
+      ].join('\n'))
+      const generated = await session.generate({
+        finalResponseSchema: z.toJSONSchema(adviceSchema),
+        maxOutputTokens: Math.min(input.maxOutputTokens, 256),
+        signal,
+      })
+      if (!alive()) return { kind: 'failure', code: signal.aborted ? 'cancelled' : 'stale_profile', message: 'The coach request was interrupted.' }
+      if (generated.kind === 'failure') return { kind: 'failure', code: 'runtime_error', message: generated.message }
+      const parsed = adviceSchema.safeParse(generated.kind === 'final' ? generated.content : undefined)
+      if (!parsed.success) return cannotFulfill('I could not generate a coaching answer. Try asking again.')
+      return {
+        kind: 'response',
+        response: { version: 1, kind: 'answer', blocks: [{ kind: 'text', text: parsed.data.text, evidence: [] }], limitations: [] },
+        repaired: false,
+      }
+    }
     const userRequest = request
-    if (intent.intent === 'coach_qa') return { kind: 'response', response: { version: 1, kind: 'answer', blocks: [{ kind: 'text', text: 'I cannot answer that advice question: generated coaching advice is currently unavailable. I can help build a workout from your available equipment and preferences, or review your recorded training history. For individual exercise advice, consult a qualified professional.', evidence: [] }], limitations: ['Specific coaching advice is unavailable until its sources and safety have been reviewed.'] }, repaired: false }
     if (schedule.kind === 'clarification') return clarification(schedule.question)
     const sessionCount = schedule.kind === 'single' ? 1 : schedule.sessions
     const focuses = workoutSessionFocuses(schedule)

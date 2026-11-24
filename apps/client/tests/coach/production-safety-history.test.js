@@ -20,12 +20,13 @@ test('routes nonacute symptoms conservatively before classification', async () =
   expect((await turn.result).response.reason).toMatch(/stop.*qualified health professional/i)
   expect(turn.generate).not.toHaveBeenCalled()
 })
-test('does not display schema-valid generated advice', async () => {
-  const turn = run('How should I train?', [{ intent: 'coach_qa' }, { text: 'Train through pain.' }])
-  const result = await turn.result
-  expect(result.response.blocks[0].text).not.toMatch(/train through pain/i)
-  expect(result.response.limitations.join(' ')).toMatch(/reviewed/i)
-  expect(turn.generate).toHaveBeenCalledTimes(1)
+test('shows a retry message when the model returns blank coaching advice', async () => {
+  const turn = run('How should I train?', [{ intent: 'coach_qa' }, { text: '   ' }])
+  expect((await turn.result).response).toEqual({
+    version: 1,
+    kind: 'cannot_fulfill',
+    reason: 'I could not generate a coaching answer. Try asking again.',
+  })
 })
 test('understands ordinary session count and retains the requested period', async () => {
   const turn = run('How many workouts did I log in the past 30 days?', [{ intent: 'history_question' }, { type: 'sessions', exercise: null, days: 30 }])

@@ -71,12 +71,14 @@ test('understands the bounded count even when model output is unusable', async (
   }
 })
 
-test('QA returns an answer after model runtime failure and never asks a question', async () => {
+test('QA reports a model runtime failure without reading history', async () => {
   const readHistory = readRecords()
   const result = await run([{ intent: 'coach_qa' }, Error('timeout')], readHistory, 'How should I train?')
-  expect(result.response.kind).toBe('answer')
-  expect(result.response.blocks[0].text).not.toMatch(/\?/)
-  expect(result.response.limitations.join(' ')).toMatch(/unavailable/)
+  expect(result).toEqual({
+    kind: 'failure',
+    code: 'runtime_error',
+    message: 'The coach could not complete this request.',
+  })
   expect(readHistory).not.toHaveBeenCalled()
 })
 
