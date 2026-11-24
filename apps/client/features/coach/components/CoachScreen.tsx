@@ -959,20 +959,18 @@ function Response({
         backgroundColor: c.card,
         borderColor: c.line,
         borderWidth: 1,
-        borderRadius: 26,
+        borderRadius: 16,
         borderCurve: 'continuous',
-        boxShadow: `0 3px 14px ${c.shadow}`,
       }}
     >
       <View
         style={{
           backgroundColor: c.featured,
-          borderTopLeftRadius: 25,
-          borderTopRightRadius: 25,
+          borderTopLeftRadius: 15,
+          borderTopRightRadius: 15,
           borderCurve: 'continuous',
-          paddingTop: 15,
-          paddingHorizontal: 16,
-          paddingBottom: 13,
+          paddingVertical: 10,
+          paddingHorizontal: 12,
         }}
       >
         <View
@@ -980,7 +978,7 @@ function Response({
             flexDirection: 'row',
             justifyContent: 'space-between',
             alignItems: 'center',
-            marginBottom: 8,
+            marginBottom: 4,
           }}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5 }}>
@@ -989,30 +987,16 @@ function Response({
               {response.kind === 'workout_draft' ? 'Workout' : 'Routine'}
             </Text>
           </View>
-          <Text
-            style={{
-              color: c.quiet,
-              backgroundColor: c.card,
-              borderRadius: 8,
-              overflow: 'hidden',
-              paddingHorizontal: 8,
-              paddingVertical: 3,
-              fontSize: 10,
-            }}
-          >
-            {saved ? 'Saved' : 'Draft'}
-          </Text>
+          <Text style={{ color: c.quiet, fontSize: 11 }}>{saved ? 'Saved' : 'Draft'}</Text>
         </View>
         <Text
           accessible
           accessibilityLabel={`Coach. ${title}`}
           style={{
             color: c.ink,
-            fontSize: 24,
-            lineHeight: 30,
-            letterSpacing: -0.8,
+            fontSize: 18,
+            lineHeight: 24,
             fontWeight: '600',
-            marginBottom: 5,
           }}
         >
           {title}
@@ -1023,12 +1007,12 @@ function Response({
             : `${workouts.length} workouts${workouts[0].schedule && workouts.every((workout) => workout.schedule?.estimatedSeconds === workouts[0].schedule?.estimatedSeconds) ? ` · About ${Math.round(workouts[0].schedule.estimatedSeconds / 60)} min each` : ''}`}
         </Text>
       </View>
-      {response.kind === 'routine_draft' && (
-        <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>
+      {response.kind === 'routine_draft' && response.routine.type === 'SEQUENTIAL' && (
+        <View style={{ paddingHorizontal: 12, paddingVertical: 6 }}>
           <RoutineCycle draft={response} />
         </View>
       )}
-      <View style={{ paddingHorizontal: 16, paddingTop: 3 }}>
+      <View style={{ paddingHorizontal: 12 }}>
         {response.kind === 'workout_draft'
           ? workouts[0].exercises.map((exercise, index) => {
               const name = coachExerciseName(exercise.catalogId, details)
@@ -1046,8 +1030,7 @@ function Response({
                   style={{
                     borderTopWidth: 1,
                     borderColor: c.line,
-                    paddingVertical: 10,
-                    minHeight: 48,
+                    paddingVertical: 5,
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 10,
@@ -1079,17 +1062,18 @@ function Response({
                 style={{
                   borderTopWidth: 1,
                   borderColor: c.line,
-                  paddingVertical: 7,
+                  minHeight: 48,
+                  paddingVertical: 4,
                   flexDirection: 'row',
-                  gap: 12,
+                  gap: 8,
                   alignItems: 'center',
                 }}
               >
                 <View
                   style={{
-                    width: 32,
-                    height: 34,
-                    borderRadius: 11,
+                    width: 24,
+                    height: 24,
+                    borderRadius: 7,
                     backgroundColor: c.surface,
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -1114,7 +1098,7 @@ function Response({
               </Pressable>
             ))}
       </View>
-      <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 14 }}>
+      <View style={{ paddingHorizontal: 12, borderTopWidth: 1, borderColor: c.line }}>
         <Pressable
           accessibilityRole="button"
           onPress={() => {
@@ -1122,17 +1106,15 @@ function Response({
             setReviewing(true)
           }}
           style={{
-            backgroundColor: c.plum,
-            borderRadius: 23,
-            minHeight: 46,
+            minHeight: 48,
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'center',
             gap: 8,
           }}
         >
-          <Pencil size={17} color={c.onPlum} />
-          <Text style={{ color: c.onPlum, fontSize: 13, fontWeight: '600' }}>
+          <Pencil size={15} color={c.plum} />
+          <Text style={{ color: c.plum, fontSize: 13, fontWeight: '600' }}>
             {saved ? 'View saved' : 'Review'}{' '}
             {response.kind === 'workout_draft' ? 'workout' : 'routine'}
           </Text>
