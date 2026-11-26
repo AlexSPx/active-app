@@ -51,3 +51,42 @@ test('explicit set revision retains request and context without the old count', 
   expect(result).not.toMatch(/3 sets/)
   expect(applyWorkoutFollowUp('Make a new leg workout', prior)).toBe('Make a new leg workout')
 })
+
+test('recurring loss of sensation outside training prompts assessment before classification', async () => {
+  const turn = run('My toes still feel numb while sitting after every long ride. Should I keep riding?')
+  expect((await turn.result).response).toMatchObject({
+    kind: 'cannot_fulfill',
+    reason: expect.stringMatching(/stop.*prompt assessment.*health professional/i),
+  })
+  expect(turn.generate).not.toHaveBeenCalled()
+})
+
+test('an underspecified workload adjustment asks what the user wants to change', async () => {
+  const turn = run('Should I do more tomorrow or cut back?', [{ intent: 'coach_qa' }])
+  expect((await turn.result).response).toMatchObject({
+    kind: 'clarification',
+    question: expect.stringMatching(/which exercise or session/i),
+  })
+  expect(turn.generate).toHaveBeenCalledTimes(1)
+})
+
+test('a missed endurance session does not get stacked with a scheduled hard workout', async () => {
+  const turn = run('I missed my long ride. I have a tempo workout tomorrow. Should I make up the ride today?', [{ intent: 'coach_qa' }])
+  expect((await turn.result).response).toMatchObject({
+    kind: 'answer',
+    blocks: [{ kind: 'text', text: expect.stringMatching(/skip making up the missed long ride.*planned hard session/i), evidence: [] }],
+  })
+  expect(turn.generate).toHaveBeenCalledTimes(1)
+})
+
+test('unresponsiveness with irregular gasps routes to immediate help without inference', async () => {
+  const turn = run('The runner is unresponsive and gasping. What should we do?')
+  expect((await turn.result).response.reason).toMatch(/emergency number now.*CPR.*AED/i)
+  expect(turn.generate).not.toHaveBeenCalled()
+})
+
+test('new facial droop and slurred speech lead to an immediate emergency response', async () => {
+  const turn = run('Their face started drooping and their speech is slurred. What now?')
+  expect((await turn.result).response.reason).toMatch(/emergency number now.*when they began/i)
+  expect(turn.generate).not.toHaveBeenCalled()
+})

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { parseWorkoutSchedule, weekdayLabels, workoutSessionFocuses, workoutSessionRequests, workoutVariation } from './workoutSchedule'
 import type { CoachWorkout, CoachResponse } from './contracts'
-import { defaultSelection, planWorkout, renderWorkout, selectionSchema, sessionsMeetVariation, validateSelection, variedCatalogSelections, workoutRequestText } from './workoutPlanner'
+import { defaultSelection, deterministicSelection, planWorkout, renderWorkout, selectionSchema, sessionsMeetVariation, validateSelection, variedCatalogSelections, workoutRequestText } from './workoutPlanner'
 import type { CoachRuntimeSession } from './runtime/types'
 import { calculateHistoryMetrics, type CoachHistoryMetric } from './historyMetrics'
 import { historyExerciseFilter, historyExerciseSuggestions, normalizeHistoryName, parseHistoryRequest } from './historyQuery'
@@ -112,6 +112,7 @@ export async function runConstrainedCoachTurn(input: {
   signal: AbortSignal
   isCurrentProfile: () => boolean
   maxOutputTokens: number
+  workoutSelection?: 'model' | 'deterministic'
   priorUserMessages?: string[]
   now?: () => Date
 }): Promise<CoachTurnResult> {
@@ -127,10 +128,27 @@ export async function runConstrainedCoachTurn(input: {
     const libraryMessage = input.libraryMessage ?? message
     const currentMessages = libraryMessage === message ? [message] : [message, libraryMessage]
     const history = [...(input.priorUserMessages ?? []), ...currentMessages]
+    const unresponsiveAndNotBreathingNormally = currentMessages.some(text =>
+      /\b(?:unresponsive|won['’]t respond|not responding|cannot wake|can['’]t wake)\b/i.test(text) &&
+      /\b(?:gasps?|gasping|not breathing|stopped breathing|no normal breathing)\b/i.test(text))
+    if (unresponsiveAndNotBreathingNormally) {
+      return cannotFulfill('Call your local emergency number now. Put the phone on speaker, start CPR as directed by the dispatcher, and ask someone to bring an AED if one is available.')
+    }
+    const acuteNeurologicalSymptoms = currentMessages.some(text =>
+      /\b(?:face|facial|one side of (?:my|the|their) face)\b[^.!?\n]{0,32}\b(?:droop\w*|sag\w*)\b/i.test(text) &&
+      /\b(?:slurr\w*|(?:trouble|difficulty) (?:speaking|talking|getting words out)|(?:arm|leg)\b[^.!?\n]{0,30}\bweak(?:ness)?)\b/i.test(text))
+    if (acuteNeurologicalSymptoms) {
+      return cannotFulfill('Stop exercising and call your local emergency number now. Report the speech, face or limb changes and note when they began. Do not drive yourself.')
+    }
     const acute = history.some(text => emergency.test(text) && !/^(?:i have |there is )?no (?:chest pain|chest pressure|chest tightness|difficulty breathing|shortness of breath)[.!]?$/i.test(text.trim()) && !/\b(?:resolved|gone away|went away)\b.*\b(?:years? ago|months? ago)\b|\b(?:years? ago|months? ago)\b.*\b(?:resolved|gone away|went away)\b/i.test(text))
     if (acute) return { kind: 'response', repaired: false, response: { version: 1, kind: 'cannot_fulfill', reason: 'Stop exercising. If these symptoms are current or have just occurred, call your local emergency number now; do not drive yourself. Seek urgent medical help. I cannot determine from this conversation whether it is safe to train.' } }
     if (history.some(text => emergency.test(text))) return clarification('Are these symptoms current or recent, or explicitly absent or resolved? I cannot determine whether training is safe; consult a qualified health professional before exercising.')
     if (currentMessages.some(text => /\bno\s+(?:pain|injuries|injury|symptoms)\b/i.test(text))) return clarification('You mentioned no pain or injuries. I cannot determine whether training is safe; consult a qualified health professional if you have concerns.')
+    const recurringSensorySymptoms = currentMessages.some(text =>
+      /\b(?:tingl\w*|numb\w*|pins and needles)\b/i.test(text) &&
+      /\b(?:recurr\w*|persis\w*|still|keeps?|every time|at rest|out(?:side)? of training|at my desk|while (?:sitting|resting|typing))\b/i.test(text) &&
+      !/\b(?:no|without)\s+(?:tingl\w*|numb\w*|pins and needles)\b/i.test(text))
+    if (recurringSensorySymptoms) return cannotFulfill('Stop the activity that brings on the symptoms and arrange a prompt assessment with a qualified health professional. If symptoms worsen quickly or you notice new weakness, seek urgent medical care.')
     if (currentMessages.some(text => restricted.test(text))) return { kind: 'response', repaired: false, response: { version: 1, kind: 'cannot_fulfill', reason: 'Stop any activity that causes symptoms or pain. I cannot recommend exercise for this situation; consult a qualified health professional who knows your circumstances.' } }
     if (input.readLibrary) {
       const response = await runLibraryTurn({
@@ -150,7 +168,9 @@ export async function runConstrainedCoachTurn(input: {
     }
     const request = workoutRequestText(message)
     const schedule = parseWorkoutSchedule(request)
-    const explicitWorkout = schedule.kind === 'weekdays' || /\b(?:build|create|make|design|generate|give|suggest|write|plan)\b[^.!?]{0,100}\b(?:workouts?|routines?|exercise plans?|training plans?)\b/i.test(request)
+    const explicitWorkout = schedule.kind === 'weekdays' || /\b(?:build|create|draft|make|design|generate|give|suggest|write|plan)\b[^.!?]{0,100}\b(?:workouts?|routines?|exercise plans?|training plans?|(?:strength|training|lifting) sessions?)\b/i.test(request) ||
+      (/\b(?:workout|routine)\b/i.test(request) &&
+        /\b(?:use|give (?:me|us)|include|keep it to)\b[^.!?]{0,60}\b\d+ (?:exercises?|movements?)\b/i.test(request))
     const explicitRecordedBest = /\b(?:best|heaviest|highest|maximum|max|personal record|pr)\b/i.test(request)
       && /\b(?:load|weight|lift|personal record|pr)\b/i.test(request)
       && (/\b(?:recorded|logged|history|(?:sessions?|records?|log) (?:shown|supplied|provided)|i (?:have|did)|i've)\b/i.test(request) || /\bmy\s+heaviest\b/i.test(request))
@@ -314,6 +334,21 @@ export async function runConstrainedCoachTurn(input: {
       }
     }
     if (intent.intent === 'coach_qa') {
+      if (!input.priorUserMessages?.length && /^\s*(?:should|can|could) i (?:add more|do more|do less|cut back|increase it|reduce it)(?: (?:(?:on|for|before|after) )?(?:next )?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|today|tomorrow|this weekend|next week))?(?: or (?:add more|do more|do less|cut back|keep it (?:the same|as is)))?[?!.]?\s*$/i.test(libraryMessage)) {
+        return clarification('Which exercise or session are you adjusting, and how did your last session feel?')
+      }
+      const missedLongSession = /\b(?:missed|skipped)\b[^.!?\n]{0,60}\blong (run|ride|swim|hike)\b/i.exec(libraryMessage)
+      const upcomingHardSession = /\b(?:have|planned|scheduled)\b[^.!?\n]{0,40}\b(?:intervals?|tempo(?: work)?|hard (?:workout|session|run|ride|swim))\b[^.!?\n]{0,35}\b(?:tomorrow|the next day)\b/i.test(libraryMessage)
+      if (missedLongSession && upcomingHardSession && /\b(?:make up|reschedule|fit (?:it|the)|move (?:it|the)|catch up)\b/i.test(libraryMessage)) {
+        const activity = missedLongSession[1].toLowerCase()
+        return {
+          kind: 'response', repaired: false, response: {
+            version: 1, kind: 'answer',
+            blocks: [{ kind: 'text', text: `Skip making up the missed long ${activity} this week and keep the planned hard session if you feel recovered. Resume the long ${activity} in its next normal slot so you keep recovery time between demanding sessions.`, evidence: [] }],
+            limitations: [],
+          },
+        }
+      }
       await session.appendUserMessage([
         'Answer the latest fitness question directly in two or three plain-text sentences. Use relevant conversation context and name the exercise when one is specified.',
         'If an exercise question about rest is ambiguous, assume it means between sets and say so. Use about 1–2 minutes for lighter strength sets and 2–3 minutes or more for heavy lifts as starting points. Rest longer if needed to maintain form and effort.',
@@ -357,12 +392,20 @@ export async function runConstrainedCoachTurn(input: {
       return label ? `${day} — ${label}` : day
     })
     const errors: string[] = []
+    const deterministic = input.workoutSelection === 'deterministic'
     let selected: string[][] | undefined
+    if (deterministic) {
+      const sessions = plans.flatMap(plan => {
+        const names = deterministicSelection(plan)
+        return names ? [names] : []
+      })
+      if (sessions.length === sessionCount && sessionsMeetVariation(sessions, variation)) selected = sessions
+    }
     const workoutSelections = z.strictObject({ sessions: z.strictObject(Object.fromEntries(
       plans.map((plan, index) => [`day_${index + 1}`, selectionSchema(plan)])
     )) })
     const schema = z.toJSONSchema(workoutSelections)
-    for (let attempt = 0; attempt < 2; attempt++) {
+    for (let attempt = 0; !deterministic && attempt < 2; attempt++) {
       try {
         await session.appendUserMessage(`Original request: ${userRequest}\nPlan ${sessionCount} training session(s). Exercise counts, sets, repetitions, and duration apply to each session. Choose one distinct exercise name for each slot, in order, for each session. Prefer complementary movements and angles; multiple exercises from the same movement family are allowed. Never repeat the same exercise within a session. ${variation === 'disjoint' ? 'Never repeat exercises across sessions. ' : variation ? 'Choose a different set of exercises for each session. ' : ''}Return a sessions object with the listed day keys, starting at day_1. Each day contains a selections object keyed slot_1, slot_2, etc., with one allowed exercise name per slot. Respect each day's focus and choices. Session slots: ${JSON.stringify(plans.map((plan, index) => ({ day: `day_${index + 1}`, title: titles[index], slots: plan.slots.map(slot => slot.map(exercise => exercise.name)) })))}. ${errors.length ? `Validation errors: ${errors.join('; ')}` : ''}`)
         const generated = await session.generate({ finalResponseSchema: schema, maxOutputTokens: input.maxOutputTokens, signal })
@@ -389,11 +432,11 @@ export async function runConstrainedCoachTurn(input: {
       }
     }
     const backup = selected ? null : variation ? variedCatalogSelections(plans, variation) : plans.map(defaultSelection)
-    if (!selected && !backup)
+    if (!selected && (!backup || backup.some((names, index) => validateSelection(plans[index], { selections: names }).errors.length)))
       return clarification('I could not find enough compatible exercises for the requested variation. Can exercises repeat, or can you use more equipment?')
     const renderedSessions = plans.map((plan, index) => renderWorkout(plan, selected?.[index] ?? backup?.[index] ?? defaultSelection(plan)))
     const workouts: CoachWorkout[] = renderedSessions.map((rendered, index) => ({ ...rendered.workout, ref: `workout-${index + 1}`, title: `${titles[index]}${plans[index].partial ? ' — partial workout' : ''}` }))
-    const fallbackAssumption = selected ? [] : [
+    const fallbackAssumption = selected || deterministic ? [] : [
       schedule.kind === 'weekly' && schedule.split === 'ppl'
         ? 'Model selection was unavailable; each training day uses its own focus-specific catalog template.'
         : schedule.kind === 'weekly' && !variation

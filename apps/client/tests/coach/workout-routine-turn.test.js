@@ -228,3 +228,20 @@ test.each([
   expect(response.routine.days.flatMap((day, index) => day.kind === 'workout' ? [index] : [])).toEqual(expectedDays)
   expect(validateWorkoutReview(request, response)).toEqual([])
 })
+
+
+test('a routine that can fit anywhere in the week keeps its weekly session count', async () => {
+  const { response } = await harness().run('Build a 3-day routine for a full gym with 3 exercises per session. I can fit them in during the week.')
+  expect(response.kind).toBe('routine_draft')
+  expect(response.workouts).toHaveLength(3)
+  expect(response.routine.type).toBe('WEEKLY_COMPLETION')
+})
+
+test('a bodyweight-only routine request keeps its named weekdays', async () => {
+  const { response } = await harness().run('I want a bodyweight-only routine for Mondays and Thursdays. Include 2 exercises per session.')
+  expect(response.kind).toBe('routine_draft')
+  expect(response.workouts).toHaveLength(2)
+  expect(response.routine.days.map(day => day.kind)).toEqual([
+    'workout', 'rest', 'rest', 'workout', 'rest', 'rest', 'rest',
+  ])
+})
