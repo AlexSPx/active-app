@@ -505,18 +505,24 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
       selectedTargets[index] = [...new Set(options.flatMap(exercise => exercise.primaryMuscles.map(muscle => muscle.toLowerCase())))]
     })
   }
-  // A broad leg session keeps both a knee-dominant and a hip-dominant slot when the request
-  // leaves room for them, so a named press does not crowd out posterior-chain work.
+  // A broad leg session keeps a knee-dominant and a hip-dominant slot when the request leaves
+  // room for them, so a named main lift does not crowd out posterior-chain work. Patterns the
+  // named movements already cover by their primary muscles are not reserved a second time.
   const legPatterns = ['knee-dominant', 'hinge']
   const legPatternOptions = legPatterns.map(pattern => catalog.filter(exercise =>
     exercise.mechanic === 'COMPOUND' && movementFamily(exercise) === pattern))
-  const coverLegPatterns = !coverWholeBodyPatterns && broadLegs && !timed && explicitTargetCount === 0 &&
-    requestedSlots >= namedExercises.length + legPatterns.length && legPatternOptions.every(options => options.length > 0)
+  const legSession = !focus && !fullBody && /(?:\blegs?\b|lower[- ]body)/i.test(message) || broadLegs
+  const kneeCovered = namedExercises.some(exercise => exercise.primaryMuscles.includes('quadriceps'))
+  const hingeCovered = namedExercises.some(exercise => ['hamstrings', 'glutes'].some(muscle => exercise.primaryMuscles.includes(muscle)))
+  const reservedPatterns = legPatterns.filter((_, index) => (index === 0 ? !kneeCovered : !hingeCovered))
+  const coverLegPatterns = !coverWholeBodyPatterns && legSession && !timed && explicitTargetCount <= 1 &&
+    requestedSlots >= namedExercises.length + reservedPatterns.length &&
+    reservedPatterns.every(pattern => legPatternOptions[legPatterns.indexOf(pattern)].length > 0)
   if (coverLegPatterns) {
-    legPatternOptions.forEach((options, index) => {
-      const coveredFamily = legPatterns[index]
+    reservedPatterns.forEach((pattern, index) => {
       const target = namedExercises.length + index
-      if (target >= requestedSlots || namedExercises.some(exercise => movementFamily(exercise) === coveredFamily)) return
+      if (target >= requestedSlots) return
+      const options = legPatternOptions[legPatterns.indexOf(pattern)]
       allCandidates[target] = options
       selectedTargets[target] = [...new Set(options.flatMap(exercise => exercise.primaryMuscles.map(muscle => muscle.toLowerCase())))]
     })
