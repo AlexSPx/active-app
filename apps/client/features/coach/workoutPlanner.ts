@@ -79,7 +79,8 @@ function prescriptions(request: string) {
   const setsRanges = [...request.matchAll(/\b(\d+)\s*(?:-|–|—|to)\s*(\d+)\s*sets?\b/gi)]
   const invalidSetsRange = setsRanges.some(([, min, max]) => Number(min) < 1 || Number(min) > Number(max))
   const withStartingSets = request.replace(/\b(\d+)\s*(?:-|–|—|to)\s*\d+\s*sets?\b/gi, '$1 sets')
-  for (const match of withStartingSets.matchAll(/(-?\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*sets?\b(?:\s+of\s+(-?\d+|one|two|three|four|five|six|seven|eight|nine|ten)(?:\s*(?:-|–|—|to)\s*(\d+))?)?/gi)) {
+  const withQualifiedSets = withStartingSets.replace(/\b((?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+)(?:working|hard|heavy|straight)\s+sets\b/gi, '$1sets')
+  for (const match of withQualifiedSets.matchAll(/(-?\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*sets?\b(?:\s+of\s+(-?\d+|one|two|three|four|five|six|seven|eight|nine|ten)(?:\s*(?:-|–|—|to)\s*(\d+))?)?/gi)) {
     sets.push(numberValue(match[1])); if (match[2]) addReps(String(numberValue(match[2])), match[3])
   }
   for (const match of request.matchAll(/(-?\d+)\s*[x×]\s*(-?\d+)(?:\s*(?:-|–|—|to)\s*(\d+))?/gi)) {
@@ -430,6 +431,15 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     (broadLegs || fullBody || requested.length === 0 || focus !== undefined || /\bstrength\b/i.test(message))
   const onlyClause = implementsOnlyPattern.exec(message)
   const requiredImplements = new Set(equipmentTerms.filter(([pattern, equipment]) => equipment !== 'BODY_ONLY' && pattern.test(onlyClause?.[1] ?? onlyClause?.[2] ?? '')).map(([, equipment]) => equipment))
+  // Qualified exercise counts such as "exactly 4 barbell exercises" name the implement the
+  // counted movements must use, so they join the required-implement set.
+  const countQualifiers: Partial<Record<Equipment, RegExp>> = {
+    DUMBBELL: /\b(?:resistance[- ])?dumbbells?\b/i, BARBELL: /\b(?:resistance[- ])?barbells?\b/i,
+    BANDS: /\b(?:resistance[- ])?bands?\b/i, KETTLEBELLS: /\b(?:resistance[- ])?kettlebells?\b/i,
+    CABLE: /\b(?:resistance[- ])?cables?\b/i, MACHINE: /\b(?:resistance[- ])?machines?\b/i,
+  }
+  for (const [equipment, qualifier] of Object.entries(countQualifiers))
+    if (qualifier && countMatches.some(match => qualifier.test(match[0]))) requiredImplements.add(equipment as Equipment)
   const inventory = `${message} ${(context?.equipment ?? []).join(' ')}`
   const unknownDumbbellQuantity = requiredImplements.has('DUMBBELL') && !/\bfull[- ]gym\b/i.test(inventory) && implementQuantity(inventory, 'dumbbells?') === undefined
   const potentialPairChoices = new Set<string>()
@@ -552,6 +562,26 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     })
   }
   namedExercises.forEach((exercise, index) => { allCandidates[index] = [exercise]; selectedTargets[index] = exercise.primaryMuscles.map(muscle => muscle.toLowerCase()) })
+  // A muscle-target slot goes dry when the named movements or required implements narrow the
+  // pool below what that group supports. An uncovered whole-body pattern then fills the empty
+  // slot instead of the session silently shrinking below the requested count.
+  if (!timed && explicitTargetCount === 0 && requestedSlots >= 2 && (fullBody || legSession || upperSession || broadBack || broadLegs)) {
+    let offeredFamilies = new Set(namedExercises.map(exercise => movementFamily(exercise)))
+    for (let index = 0; index < allCandidates.length; index++) {
+      if (allCandidates[index].length) {
+        allCandidates[index].forEach(exercise => offeredFamilies.add(movementFamily(exercise)))
+        continue
+      }
+      if (index < namedExercises.length) continue
+      const pattern = wholeBodyPatterns.find(candidate => !offeredFamilies.has(candidate) &&
+        patternOptions[wholeBodyPatterns.indexOf(candidate)].length > 0)
+      if (!pattern) continue
+      const options = patternOptions[wholeBodyPatterns.indexOf(pattern)]
+      allCandidates[index] = options
+      selectedTargets[index] = [...new Set(options.flatMap(exercise => exercise.primaryMuscles.map(muscle => muscle.toLowerCase())))]
+      options.forEach(exercise => offeredFamilies.add(movementFamily(exercise)))
+    }
+  }
   const viableTargets = selectedTargets.filter((_, index) => allCandidates[index].length > 0)
   const candidates = allCandidates.filter(slot => slot.length > 0)
   const targetHasPrimary = catalog.some(exercise => viableTargets.some(target => exercise.primaryMuscles.some(muscle => target.includes(muscle.toLowerCase()))))

@@ -65,6 +65,8 @@ const completeSetup: Record<string, { anchors: string[]; supports: string[]; blo
   'Kettlebell_Overhead_Triceps_Extension': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
   'Romanian_Deadlift': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
   'Cable_Chest_Press': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Barbell_Squat': { anchors: ['rack'], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Standing_Military_Press': { anchors: ['rack'], supports: [], blocks: [], fixedLoadsKg: [] },
   'Kettlebell_One-Legged_Deadlift': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
   'Seated_Cable_Rows': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
   'Cable_Crossover': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
