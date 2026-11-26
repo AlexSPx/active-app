@@ -131,3 +131,30 @@ tools/coach-sft/run.sh decide 2
 ```
 
 The runner keeps the final app comparison in `final-v3`. The original Round 8 adapter is referenced as `round-1` in this run. Candidate 2 was retained for analysis after its promotion failed.
+
+Round 3 tuned coaching replies only, resuming from the round-1 adapter:
+
+```bash
+tools/coach-sft/run.sh round 3 tools/coach-sft/generalization-v3-round3-source.jsonl \
+  --from-adapter "$COACH_SFT_RUN/round-1/adapter" --lr 0.00005 --epochs 1 --focus-on-answers
+tools/coach-sft/run.sh decide 3
+```
+
+Round 3 gained one coaching case over round 1 with no regression, which is short of the promotion threshold, so `decide` rejected it and the recorded stopping rule (two consecutive rounds without a meaningful gain) ended tuning. Round 1 stays the promoted adapter. The round-3 source rows are kept for a future round, which should mix coaching-quality rows with the existing safety and symptom-rehearsal rows: the round-3 replies drifted on symptom handling in exchange for coaching polish.
+
+After an app fix, re-measure the incumbent against base Qwen with a fresh `robustness-vN` directory, keeping `round-1` in `checkpoint.txt`, capturing the app diff in `app.patch`, and recording the graded comparison with `compare_planner.py prepare` and `apply` so the ledger's `planner_comparison` points at the app revision that the promoted adapter was measured on:
+
+```bash
+export COACH_SFT_DEV_VERSION=3
+export COACH_SFT_RUN="$HOME/.local/share/active-coach-tuning/teacher-20261125/generalization-v3"
+dir="$COACH_SFT_RUN/robustness-v7"
+mkdir -p "$dir"
+git diff 35e5040d -- apps/client > "$dir/app.patch"
+tools/coach-sft/run.sh eval-dev "$dir/baseline.jsonl"
+tools/coach-sft/run.sh eval-dev "$dir/adapter.jsonl" --lora "$COACH_SFT_RUN/round-1/adapter.gguf"
+echo round-1 > "$dir/checkpoint.txt"
+python3 tools/coach-sft/compare_planner.py prepare "$COACH_SFT_RUN" robustness-v7
+# blind grading writes verdicts.jsonl into the prepared packet directory
+python3 tools/coach-sft/compare_planner.py apply "$COACH_SFT_RUN" robustness-v7
+```
+
