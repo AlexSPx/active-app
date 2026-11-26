@@ -145,6 +145,7 @@ const completeSetup: Record<string, { anchors: string[]; supports: string[]; blo
 }
 
 const floorVariationCues: Record<string, string> = {
+  'Dumbbell_Floor_Press': 'Lie on the floor holding one dumbbell in each hand with your knees bent. Press both dumbbells up until your arms are extended and lower them until your upper arms rest on the floor. Use a load you can control without a bench.',
   Standing_Dumbbell_Calf_Raise: 'Stand on the flat floor with a dumbbell at each side. Raise both heels under control and lower them back to the floor. Use a load that lets you balance without an elevated surface.',
   'Push-Ups_-_Close_Triceps_Position': 'Place your hands just inside shoulder width and keep your elbows near your sides. Use your knees if needed to keep your torso steady through the prescribed reps.',
 }

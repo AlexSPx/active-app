@@ -497,10 +497,12 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const wholeBodyPatterns = ['knee-dominant', 'press', 'row', 'hinge']
   const patternOptions = wholeBodyPatterns.map(pattern => catalog.filter(exercise =>
     exercise.mechanic === 'COMPOUND' && movementFamily(exercise) === pattern))
+  const coveredWholeBodyPatterns = wholeBodyPatterns.slice(0, requestedSlots)
   const coverWholeBodyPatterns = fullBody && !timed && explicitTargetCount === 0 && !namedExercises.length &&
-    requestedSlots >= wholeBodyPatterns.length && patternOptions.every(options => options.length > 0)
+    requestedSlots >= 2 && coveredWholeBodyPatterns.every((_, index) => patternOptions[index].length > 0)
   if (coverWholeBodyPatterns) {
-    patternOptions.forEach((options, index) => {
+    coveredWholeBodyPatterns.forEach((_, index) => {
+      const options = patternOptions[index]
       allCandidates[index] = options
       selectedTargets[index] = [...new Set(options.flatMap(exercise => exercise.primaryMuscles.map(muscle => muscle.toLowerCase())))]
     })
@@ -523,6 +525,28 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
       const target = namedExercises.length + index
       if (target >= requestedSlots) return
       const options = legPatternOptions[legPatterns.indexOf(pattern)]
+      allCandidates[target] = options
+      selectedTargets[target] = [...new Set(options.flatMap(exercise => exercise.primaryMuscles.map(muscle => muscle.toLowerCase())))]
+    })
+  }
+  // An upper-body session keeps a pressing and a rowing slot when the request leaves room for
+  // them, so accessory raises cannot displace coverage of both directions of upper-body work.
+  const upperPatterns = ['press', 'row']
+  const upperPatternOptions = upperPatterns.map(pattern => catalog.filter(exercise =>
+    exercise.mechanic === 'COMPOUND' && movementFamily(exercise) === pattern))
+  const upperSession = (!focus || focus === 'upper') && !fullBody && !legSession &&
+    /\b(?:upper[- ]body|push and (?:a )?pull|both (?:a )?push and (?:a )?pull)\b/i.test(message)
+  const pressCovered = namedExercises.some(exercise => /press|push[ -]?ups?\b/i.test(exercise.name) || exercise.primaryMuscles.includes('chest'))
+  const rowCovered = namedExercises.some(exercise => /\brows?\b/i.test(exercise.name) || ['lats', 'middle back'].some(muscle => exercise.primaryMuscles.includes(muscle)))
+  const reservedUpperPatterns = upperPatterns.filter((_, index) => (index === 0 ? !pressCovered : !rowCovered))
+  const coverUpperPatterns = !coverWholeBodyPatterns && upperSession && !timed && explicitTargetCount <= 2 &&
+    requestedSlots >= namedExercises.length + reservedUpperPatterns.length &&
+    reservedUpperPatterns.every(pattern => upperPatternOptions[upperPatterns.indexOf(pattern)].length > 0)
+  if (coverUpperPatterns) {
+    reservedUpperPatterns.forEach((pattern, index) => {
+      const target = namedExercises.length + index
+      if (target >= requestedSlots) return
+      const options = upperPatternOptions[upperPatterns.indexOf(pattern)]
       allCandidates[target] = options
       selectedTargets[target] = [...new Set(options.flatMap(exercise => exercise.primaryMuscles.map(muscle => muscle.toLowerCase())))]
     })
