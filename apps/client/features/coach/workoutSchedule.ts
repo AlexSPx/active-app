@@ -125,12 +125,16 @@ export function parseWorkoutSchedule(request: string): WorkoutSchedule {
     if (!days.length && restDays.size)
       return { kind: 'clarification', question: 'Which weekdays should have workouts?' }
     if (days.length) {
-      if (counts.some((count) => count !== days.length))
+      if (counts.some((count) => count !== days.length)) {
+        const labels = days.map(day => weekdayLabels[day])
+        const requested = [...new Set(counts)].join(' or ')
         return {
           kind: 'clarification',
           question:
-            'The requested session count and named weekdays differ. Which weekdays should have workouts?',
+            `You asked for ${requested} ${counts.some(c => c === 1) && days.length === 1 ? 'session' : 'sessions'} per week, but the named training day${days.length === 1 ? '' : 's'} (${labels.join(' and ')}) ${days.length === 1 ? 'gives' : 'give'} at most ${days.length}. ` +
+            `Is ${days.length} ${days.length === 1 ? 'session' : 'sessions'} per week on ${days.length === 1 ? 'that day' : 'those days'} acceptable, or should one day host two sessions?`,
         }
+      }
       const focuses = new Map<number, WorkoutFocus | undefined>()
       const entries = [
         ...[...request.matchAll(focusBeforeDay)].map(([, label, day]) => ({

@@ -282,7 +282,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const repsMatch = prescription.reps !== undefined
   const includeCues = /\b(?:coaching|exercise) cues\b/i.test(message)
   const reps = repetitionsRange ? Math.round((repetitionsRange.min + repetitionsRange.max) / 2) : prescription.reps?.min ?? 10
-  const restSeconds = prescription.rest ?? (timed ? 15 : 60)
+  const restSeconds = prescription.rest ?? (timed ? 15 : reps <= 8 && /\bstrength\b/i.test(message) ? 90 : 60)
   // Explicit lists are bounded by punctuation or a prescription; other prose is not an identity parser.
   // Candidates are scanned in order of appearance and the first that actually names movements is
   // kept: quantity clauses ("exactly 3 band exercises") and inventory clauses ("a barbell and
@@ -503,6 +503,22 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     patternOptions.forEach((options, index) => {
       allCandidates[index] = options
       selectedTargets[index] = [...new Set(options.flatMap(exercise => exercise.primaryMuscles.map(muscle => muscle.toLowerCase())))]
+    })
+  }
+  // A broad leg session keeps both a knee-dominant and a hip-dominant slot when the request
+  // leaves room for them, so a named press does not crowd out posterior-chain work.
+  const legPatterns = ['knee-dominant', 'hinge']
+  const legPatternOptions = legPatterns.map(pattern => catalog.filter(exercise =>
+    exercise.mechanic === 'COMPOUND' && movementFamily(exercise) === pattern))
+  const coverLegPatterns = !coverWholeBodyPatterns && broadLegs && !timed && explicitTargetCount === 0 &&
+    requestedSlots >= namedExercises.length + legPatterns.length && legPatternOptions.every(options => options.length > 0)
+  if (coverLegPatterns) {
+    legPatternOptions.forEach((options, index) => {
+      const coveredFamily = legPatterns[index]
+      const target = namedExercises.length + index
+      if (target >= requestedSlots || namedExercises.some(exercise => movementFamily(exercise) === coveredFamily)) return
+      allCandidates[target] = options
+      selectedTargets[target] = [...new Set(options.flatMap(exercise => exercise.primaryMuscles.map(muscle => muscle.toLowerCase())))]
     })
   }
   namedExercises.forEach((exercise, index) => { allCandidates[index] = [exercise]; selectedTargets[index] = exercise.primaryMuscles.map(muscle => muscle.toLowerCase()) })
