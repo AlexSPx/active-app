@@ -42,7 +42,7 @@ export function singleWorkoutFocus(request: string): WorkoutFocus | undefined {
 }
 
 const weekdayPattern = '(monday|tuesday|wednesday|thursday|friday|saturday|sunday)s?'
-const dayFocus = '(push|pull|legs?|upper[- ]body|lower[- ]body|full[- ]body)'
+const dayFocus = '(push|pull|legs?|upper[- ]body|lower[- ]body|(?:full|whole)[- ]body)'
 const focusBeforeDay = new RegExp(
   String.raw`\b${dayFocus}(?:\s+(?:workout|training|day))?\s+(?:on\s+)?${weekdayPattern}\b`,
   'gi'
@@ -92,7 +92,7 @@ export function parseWorkoutSchedule(request: string): WorkoutSchedule {
       'gi'
     ),
     new RegExp(
-      `\\b${quantity}\\s+(?:workouts?|sessions?|times?)\\s*(?:(?:a|per|each)\\s+week|/\\s*week|weekly)\\b`,
+      `\\b${quantity}\\s*[-–]?\\s*(?:workouts?|sessions?|times?)\\s*(?:(?:a|per|each)\\s+week|/\\s*week|weekly)\\b`,
       'gi'
     ),
   ]
@@ -125,12 +125,16 @@ export function parseWorkoutSchedule(request: string): WorkoutSchedule {
     if (!days.length && restDays.size)
       return { kind: 'clarification', question: 'Which weekdays should have workouts?' }
     if (days.length) {
-      if (counts.some((count) => count !== days.length))
+      if (counts.some((count) => count !== days.length)) {
+        const labels = days.map(day => weekdayLabels[day])
+        const requested = [...new Set(counts)].join(' or ')
         return {
           kind: 'clarification',
           question:
-            'The requested session count and named weekdays differ. Which weekdays should have workouts?',
+            `You asked for ${requested} ${counts.some(c => c === 1) && days.length === 1 ? 'session' : 'sessions'} per week, but the named training day${days.length === 1 ? '' : 's'} (${labels.join(' and ')}) ${days.length === 1 ? 'gives' : 'give'} at most ${days.length}. ` +
+            `Is ${days.length} ${days.length === 1 ? 'session' : 'sessions'} per week on ${days.length === 1 ? 'that day' : 'those days'} acceptable, or should one day host two sessions?`,
         }
+      }
       const focuses = new Map<number, WorkoutFocus | undefined>()
       const entries = [
         ...[...request.matchAll(focusBeforeDay)].map(([, label, day]) => ({
@@ -171,7 +175,7 @@ export function parseWorkoutSchedule(request: string): WorkoutSchedule {
   if (
     new Set(counts).size !== 1 ||
     /\b(?:rest days?|consecutive|calendar|every day|weeks?)\b/i.test(
-      request.replace(/(?:\b(?:a|per|each)\s+week\b|\/\s*week\b|\bweekly\b)/gi, '')
+      request.replace(/(?:\b(?:a|per|each|every)\s+week\b|\b(?:during|throughout|within)\s+the\s+week\b|\/\s*week\b|\bweekly\b)/gi, '')
     )
   )
     return {
@@ -218,10 +222,10 @@ export function workoutSessionRequests(message: string, schedule: WorkoutSchedul
     const label = weekdayLabels[index].toLowerCase()
     const explicitlyFullBody =
       [...request.matchAll(focusBeforeDay)].some(
-        ([, focus, day]) => /^full/i.test(focus) && day.toLowerCase() === label
+        ([, focus, day]) => /^(?:full|whole)/i.test(focus) && day.toLowerCase() === label
       ) ||
       [...request.matchAll(dayBeforeFocus)].some(
-        ([, day, focus]) => /^full/i.test(focus) && day.toLowerCase() === label
+        ([, day, focus]) => /^(?:full|whole)/i.test(focus) && day.toLowerCase() === label
       )
     return explicitlyFullBody ? 'Full body. ' + common : common
   })

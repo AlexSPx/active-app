@@ -36,3 +36,8 @@ test('keeps named training focus and ignores explicit rest weekdays', () => {
     question: 'A weekday is listed for both training and rest. Which days should have workouts?',
   })
 })
+
+test('hyphenated weekly session counts still conflict with too few named training days', () => {
+  const result = parseWorkoutSchedule('Draft a 4-session weekly routine for Monday, Wednesday and Friday.')
+  expect(result.kind).toBe('clarification')
+})

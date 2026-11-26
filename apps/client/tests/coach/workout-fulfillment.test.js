@@ -98,3 +98,29 @@ test.each(['valid', 'missing', 'extra', 'invented', 'legacy', 'retry'])(
     if (mode !== 'valid') expect(prompts[2]).toContain('Validation errors:')
   }
 )
+
+test.each([
+  ['2–4 sets of 8 reps', 2],
+  ['exactly 6 sets of 8 reps', 6],
+])('fulfills a supported prescription of %s', (prescription, sets) => {
+  const request = `Create a chest workout at a full gym with 2 exercises and ${prescription}.`
+  const result = planWorkout(request)
+  expect(result.kind).toBe('plan')
+  const draft = renderWorkout(result.plan, defaultSelection(result.plan))
+  expect(draft.workout.exercises).toHaveLength(2)
+  for (const exercise of draft.workout.exercises) {
+    expect(exercise.sets).toHaveLength(sets)
+    expect(exercise.sets.every(set => set.repetitions === 8)).toBe(true)
+  }
+  expect(validateWorkoutReview(request, draft)).toEqual([])
+})
+
+test('a set range with per-exercise wording is a prescription and remains editable within the range', () => {
+  const request = 'Make a full-gym shoulder workout with 2–4 sets per exercise.'
+  const result = planWorkout(request)
+  expect(result.kind).toBe('plan')
+  const draft = renderWorkout(result.plan, defaultSelection(result.plan))
+  const exercise = draft.workout.exercises[0]
+  exercise.sets.push(exercise.sets[0])
+  expect(validateWorkoutReview(request, draft)).toEqual([])
+})

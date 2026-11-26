@@ -54,6 +54,26 @@ const reviewedSetup: Record<string, { anchors?: string[]; supports?: string[]; b
 
 // Complete setup review is deliberately separate from partial historical annotations.
 const completeSetup: Record<string, { anchors: string[]; supports: string[]; blocks: string[]; fixedLoadsKg: number[]; minimumEquipmentQuantity?: number }> = {
+  'Barbell_Bench_Press_-_Medium_Grip': { anchors: ['bench press rack'], supports: ['flat bench'], blocks: [], fixedLoadsKg: [] },
+  'Close-Grip_Front_Lat_Pulldown': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Leg_Press': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Seated_Leg_Curl': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Standing_Calf_Raises': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Goblet_Squat': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Kettlebell_Halo': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Extended_Range_One-Arm_Kettlebell_Floor_Press': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Kettlebell_Overhead_Triceps_Extension': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Romanian_Deadlift': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Cable_Chest_Press': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Barbell_Squat': { anchors: ['rack'], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Standing_Military_Press': { anchors: ['rack'], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Kettlebell_One-Legged_Deadlift': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Seated_Cable_Rows': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Cable_Crossover': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Cable_One_Arm_Tricep_Extension': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Mountain_Climbers': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
+  'Standing_Dumbbell_Calf_Raise': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [], minimumEquipmentQuantity: 2 },
+  'Push-Ups_-_Close_Triceps_Position': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
   'Alternate_Heel_Touchers': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
   'Bent-Knee_Hip_Raise': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
   'Bottoms_Up': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [] },
@@ -96,6 +116,7 @@ const completeSetup: Record<string, { anchors: string[]; supports: string[]; blo
   'Single_Dumbbell_Raise': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [], minimumEquipmentQuantity: 1 },
   'Dumbbell_Bench_Press': { anchors: [], supports: ['bench'], blocks: [], fixedLoadsKg: [], minimumEquipmentQuantity: 2 },
   'Dumbbell_Bench_Press_with_Neutral_Grip': { anchors: [], supports: ['bench'], blocks: [], fixedLoadsKg: [], minimumEquipmentQuantity: 2 },
+  Dumbbell_Floor_Press: { anchors: [], supports: [], blocks: [], fixedLoadsKg: [], minimumEquipmentQuantity: 2 },
   'Dumbbell_Flyes': { anchors: [], supports: ['bench'], blocks: [], fixedLoadsKg: [], minimumEquipmentQuantity: 2 },
   'Dumbbell_Incline_Row': { anchors: [], supports: ['bench'], blocks: [], fixedLoadsKg: [], minimumEquipmentQuantity: 2 },
   'Incline_Dumbbell_Press': { anchors: [], supports: ['bench'], blocks: [], fixedLoadsKg: [], minimumEquipmentQuantity: 2 },
@@ -125,6 +146,12 @@ const completeSetup: Record<string, { anchors: string[]; supports: string[]; blo
   'Standing_Bent-Over_One-Arm_Dumbbell_Triceps_Extension': { anchors: [], supports: [], blocks: [], fixedLoadsKg: [], minimumEquipmentQuantity: 1 },
 }
 
+const floorVariationCues: Record<string, string> = {
+  'Dumbbell_Floor_Press': 'Lie on the floor holding one dumbbell in each hand with your knees bent. Press both dumbbells up until your arms are extended and lower them until your upper arms rest on the floor. Use a load you can control without a bench.',
+  Standing_Dumbbell_Calf_Raise: 'Stand on the flat floor with a dumbbell at each side. Raise both heels under control and lower them back to the floor. Use a load that lets you balance without an elevated surface.',
+  'Push-Ups_-_Close_Triceps_Position': 'Place your hands just inside shoulder width and keep your elbows near your sides. Use your knees if needed to keep your torso steady through the prescribed reps.',
+}
+
 export const exerciseCatalog = catalogSchema.parse(artifact).map((exercise) => {
   if (exercise.id !== `local:exercise:${exercise.sourceKey}`) {
     throw new Error(`Exercise catalog ID does not match its source key: ${exercise.sourceKey}`)
@@ -140,6 +167,8 @@ export const exerciseCatalog = catalogSchema.parse(artifact).map((exercise) => {
   const complete = completeSetup[exercise.sourceKey] ?? {}
   return {
     ...exercise,
+    floorVariationCue: floorVariationCues[exercise.sourceKey],
+    equipment: exercise.sourceKey === 'Mountain_Climbers' ? 'BODY_ONLY' as const : exercise.equipment,
     setupReviewStatus: Object.hasOwn(completeSetup, exercise.sourceKey) ? 'reviewed' as const : 'unknown' as const,
     setupRequirements: {
       anchors: complete.anchors ?? reviewed.anchors ?? anchors,
