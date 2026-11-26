@@ -23,11 +23,22 @@ def prepare(run, directory, ledger):
             folder = receipt.parent / name
             if (folder / "grades.jsonl").is_file() and folder not in existing:
                 existing.append(folder)
+    # A signature reused across comparisons can carry conflicting verdicts when graders or
+    # harness conventions evolved. Reuse the verdict only while every recorded generation
+    # agrees; otherwise the reply is re-graded fresh instead of one opinion being silently kept.
     known = {}
+    conflicted = set()
     for folder in existing:
         grades = {g["code"]: g for g in rows(folder / "grades.jsonl")}
         for row in rows(folder / "blind.jsonl"):
-            known.setdefault(signature(row), grades[row["code"]])
+            sig = signature(row)
+            verdict = grades[row["code"]]
+            prior = known.get(sig)
+            if prior is None:
+                known[sig] = verdict
+                continue
+            if (prior["quality"], prior["critical"]) != (verdict["quality"], verdict["critical"]):
+                conflicted.add(sig)
 
     novel = {}
     for name in ("baseline", "adapter"):
@@ -37,7 +48,7 @@ def prepare(run, directory, ledger):
         ready = []
         for row in rows(folder / "blind.jsonl"):
             sig = signature(row)
-            if sig in known:
+            if sig in known and sig not in conflicted:
                 ready.append(dict(known[sig], code=row["code"]))
             else:
                 novel.setdefault(sig, []).append((name, row["code"]))
