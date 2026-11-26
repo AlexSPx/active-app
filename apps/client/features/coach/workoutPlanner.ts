@@ -55,9 +55,9 @@ function hasDurationLimit(request: string): boolean {
   return /\b(?:only have|at most|maximum|no more than|within|fits?|time (?:for|available)|under)\b/i.test(request) || /\bin\s+\d+\s*-?\s*(?:minutes?|mins?)\b/i.test(request)
 }
 
-const intervalWorkPattern = /(-?\d+(?:\.\d+)?)\s*-?\s*(seconds?|secs?|s|minutes?|mins?|m)\s*(?:of\s+)?(?:work\b|on\b|intervals?\b)|\bwork\s+(?:for\s+)?(-?\d+(?:\.\d+)?)\s*(seconds?|secs?|s|minutes?|mins?|m)\b/gi
+const intervalWorkPattern = /(-?\d+(?:\.\d+)?)\s*-?\s*(seconds?|secs?|s|minutes?|mins?|m)\s*(?:of\s+)?(?:work\b|intervals?\b|on\b(?=[^.!?\n]*\b(?:off|rest)\b))|\bwork\s+(?:for\s+)?(-?\d+(?:\.\d+)?)\s*(seconds?|secs?|s|minutes?|mins?|m)\b/gi
 const intervalOffPattern = /(-?\d+(?:\.\d+)?)\s*-?\s*(seconds?|secs?|s|minutes?|mins?|m)\s+off\b/gi
-const restPattern = /(-?\d+(?:\.\d+)?|one|two|three|half a)\s*(seconds?|secs?|minutes?|mins?)\s+(?:of\s+)?rest\b|\brest\s+(?:for\s+)?(-?\d+(?:\.\d+)?|one|two|three|half a)\s*(seconds?|secs?|minutes?|mins?)\b/gi
+const restPattern = /(-?\d+(?:\.\d+)?|one|two|three|half a)\s*(seconds?|secs?|minutes?|mins?)\s+(?:of\s+)?rest\b|\brest\s+(?:for\s+)?(-?\d+(?:\.\d+)?|one|two|three|half a)\s*(seconds?|secs?|minutes?|mins?)\b|(-?\d+(?:\.\d+)?|one|two|three|half a)\s*(seconds?|secs?|minutes?|mins?)\s+between\s+(?:sets?|exercises?|movements?)\b/gi
 
 function numberValue(value: string): number {
   return value === 'half a' ? 0.5 : numberWords.indexOf(value.toLowerCase()) + 1 || Number(value)
@@ -88,7 +88,7 @@ function prescriptions(request: string) {
   for (const match of request.matchAll(/(-?\d+)(?:\s*(?:-|–|—|to)\s*(\d+))?\s*(?:reps?|repetitions?)\b/gi)) addReps(match[1], match[2])
   const withoutPreparation = request.replace(/(-?\d+(?:\.\d+)?)\s*-?\s*(minutes?|mins?)\s+(?:of\s+)?(?:warm[ -]?up|cool[ -]?down)\b/gi, ' ')
   const withoutRest = withoutPreparation.replace(restPattern, (...args: string[]) => {
-    const value = args[1] ?? args[3], unit = args[2] ?? args[4]
+    const value = args[1] ?? args[3] ?? args[5], unit = args[2] ?? args[4] ?? args[6]
     rest.push(numberValue(value) * (/^min/i.test(unit) ? 60 : 1)); return ' '
   })
   for (const match of withoutRest.matchAll(/(-?\d+(?:\.\d+)?)\s*-?\s*(minutes?|mins?|hours?|hrs?)\b|\b(half an hour)\b/gi)) durations.push(match[3] ? 30 : Number(match[1]) * (/^(?:hour|hr)/i.test(match[2]) ? 60 : 1))
@@ -261,8 +261,11 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   // values participate in movement checks; counts, duration, and exclusions come from the request.
   const safetyText = [messageText, restrictions].filter(Boolean).join('\n')
   message = messageText
-  const countPattern = /(?<![\d.])(?:(at least|minimum|at most|up to|maximum|max\.?|no more than|exactly)\s+)?(?:(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:-|–|—|to)\s*)?(-?\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+((?:(?:beginner|intermediate|advanced|balanced|chest|back|legs?|glutes?|quads?|quadriceps|hamstrings?|calves?|arms?|shoulders?|core|biceps|triceps)\s+)*)(?:exercises?|movements?)\b/gi
-  const countMatches = [...message.matchAll(countPattern)]
+  const countPattern = /(?<![\d.])(?:(at least|minimum|at most|up to|maximum|max\.?|no more than|exactly)\s+)?(?:(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:-|–|—|to)\s*)?(-?\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+((?:(?:beginner|intermediate|advanced|balanced|chest|back|legs?|glutes?|quads?|quadriceps|hamstrings?|calves?|arms?|shoulders?|core|biceps|triceps|selectori[sz]ed|(?:resistance[- ]|loop[- ]|long[- ])?(?:bands?|barbells?|dumbbells?|kettlebells?|cables?|machines?)|barbell|dumbbell|kettlebell|cable|machine|band|body ?weights?)\s+)*)(?:exercises?|movements?)\b/gi
+  // A sub-requirement such as "one exercise to be a goblet squat" constrains a member of the
+  // workout, not the exercise total, so it must not participate in the total-count check.
+  const roleMention = /\b(?:(?:i(?:'d| would) like|please\s+(?:make|let)|make|let)\s+)?(?:(?:exactly|at least|at most|just|only)\s+)?(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:(?:beginner|intermediate|advanced|balanced|chest|back|legs?|glutes?|quads?|quadriceps|hamstrings?|calves?|arms?|shoulders?|core|biceps|triceps|selectori[sz]ed|(?:resistance[- ]|loop[- ]|long[- ])?(?:bands?|barbells?|dumbbells?|kettlebells?|cables?|machines?)|barbell|dumbbell|kettlebell|cable|machine|band|body ?weights?)\s+)*(?:exercises?|movements?)\s+(?:to\s+(?:be|start|open|lead|finish|end|close|include)|being)\b/gi
+  const countMatches = [...message.replace(roleMention, ' ').matchAll(countPattern)]
   const countMatch = countMatches[0]
   const countScopes = new Set(countMatches.map(match => match[4].trim().toLowerCase()))
   const countMinimum = countMatches.length ? Math.max(...countMatches.map(match => match[2] ? numberValue(match[2]) : /^(?:up to|at most|maximum|max\.?|no more than)$/i.test(match[1] ?? '') ? 1 : numberValue(match[3]))) : 1
@@ -281,16 +284,37 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const reps = repetitionsRange ? Math.round((repetitionsRange.min + repetitionsRange.max) / 2) : prescription.reps?.min ?? 10
   const restSeconds = prescription.rest ?? (timed ? 15 : 60)
   // Explicit lists are bounded by punctuation or a prescription; other prose is not an identity parser.
-  const namedClause = /\b(?:including|include|perform|featuring|consisting of|i want(?!\s+to\b)|with)\s+(?:(only|exactly)\s+)?(?:the\s+)?(.+?)(?=(?:\s+and\s+|[,;]\s*(?:and\s+)?)(?:use|give me|keep it to|prescribe)\s+\d+|[,;]\s*(?:\d+\s*(?:sets?|reps?|exercises?|movements?)|full[- ]gym|bodyweight|no equipment)|[.!?\n]|$)/i.exec(message)
+  // Candidates are scanned in order of appearance and the first that actually names movements is
+  // kept: quantity clauses ("exactly 3 band exercises") and inventory clauses ("a barbell and
+  // rack") are skipped so a later genuine list such as "include a Romanian deadlift" is found.
   const colonNames = /\bworkout\s*:\s*([^.!?\n]+)/i.exec(message)?.[1]
-  const rawNames = (namedClause?.[2] ?? colonNames)?.replace(/\s+(?:among|in|for)\s+\d+\s+(?:exercises?|movements?).*$/i, '').trim() ?? ''
-  const namesAPlan = /^(?:a\s+)?(?:body ?weight(?:[- ]only)?\s+)?(?:routine|workout|training plan|split)\b/i.test(rawNames)
-  const describesPatterns = /^both (?:pressing|pushing|pulling|rowing)\b/i.test(rawNames)
-  const namingShape = !namesAPlan && !describesPatterns && (!!colonNames || !!namedClause && (!!namedClause[1] || /^(?:a|an)\s+/i.test(rawNames) || /\b(?:including|include|perform|featuring|consisting of|i want)\b/i.test(namedClause[0]) || /\b(?:exercise|movement|press|row|push[ -]?ups?|spin)\b/i.test(rawNames))) &&
-    !/^(?:\d+(?:\s*(?:-|–|—|to)\s*\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:(?:chest|back|legs?|glutes?|arms?|shoulders?|core)\s+)?(?:sets?|exercises?|movements?|days?)\b/i.test(rawNames) && !/^(?:a\s+)?(?:\d+\s*(?:minute|min)\s+)?(?:warm[ -]?up|cool[ -]?down|focus\b|goal\b|full[- ]gym|sets?\b|reps?\b|rests?\b|not\b)/i.test(rawNames) && !equipmentClausePattern.test(rawNames)
-  const names = namingShape ? rawNames.replace(/^(?:a|an)\s+/i, '').replace(/\s+(?:exercise|movement)$/i, '').split(/\s*(?:,|;)\s*(?:and\s+)?|\s+and\s+/i).map(name => name.trim()).filter(Boolean) : []
+  const listClausePattern = /\b(?:including|include|perform|featuring|consisting of|i want(?!\s+to\b)|with)\s+(?:(only|exactly)\s+)?(?:the\s+)?(.+?)(?=(?:\s+and\s+|[,;]\s*(?:and\s+)?)(?:use|give me|keep it to|prescribe)\s+\d+|\s+and\s+(?:also\s+)?(?:include|including|perform|featuring|consisting of)\b|[,;]\s*(?:\d+\s*(?:sets?|reps?|exercises?|movements?)|full[- ]gym|bodyweight|no equipment)|[.!?]|$)/gi
+  const roleClausePattern = /\b(?:i(?:'d| would) like|make|let|have|i want)\s+(?:exactly\s+)?(?:\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:(?:beginner|intermediate|advanced|balanced|chest|back|legs?|glutes?|quads?|quadriceps|hamstrings?|calves?|arms?|shoulders?|core|biceps|triceps)\s+)*(?:exercises?|movements?)\s+(?:to\s+(?:be|start|open|lead|finish|end|close|include)|being)\s+(?:(only|exactly)\s+)?(?:the\s+)?(.+?)(?=[.!?]|$)/gi
+  const scopedCountNoun = /^(?:\d+(?:\s*(?:-|\u2013|\u2014|to)\s*\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:(?:beginner|intermediate|advanced|balanced|chest|back|legs?|glutes?|arms?|shoulders?|core|biceps|triceps|selectori[sz]ed|(?:resistance[- ]|loop[- ]|long[- ])?(?:bands?|barbells?|dumbbells?|kettlebells?|cables?|machines?)|barbell|dumbbell|kettlebell|cable|machine|band|body ?weights?|plyo|isolation|compound|strength|cardio|working|hiit|upper[- ]body|lower[- ]body)\s+)*(?:sets?|exercises?|movements?|days?)\s*$/i
+  const inventoryOnly = /^(?:a|an|one|two|three|the|my|some)?\s*(?:light\s+|heavy\s+|single\s+)?(?:dumbbells?|barbells?|kettlebells?|bands?|cables?|machines?)(?:\s+(?:and|or)\s+(?:a\s+|an\s+|the\s+)?(?:dumbbells?|barbells?|kettlebells?|bands?|cables?|machines?|rack|rig|bench|stand|pull[- ]?up bar))*(?:\s+(?:and|or)\s+nothing\s+else)?(?:\s+only)?$/i
+  const nameCandidates = [...message.matchAll(listClausePattern), ...message.matchAll(roleClausePattern)]
+    .map(match => ({ match, raw: (match[2] ?? '').replace(/\s+(?:among|in|for)\s+\d+\s+(?:exercises?|movements?).*$/i, '').trim() }))
+    .sort((a, b) => a.match.index - b.match.index)
+  const namesAPlan = (raw: string) => /^(?:a\s+)?(?:body ?weight(?:[- ]only)?\s+)?(?:routine|workout|training plan|split)\b/i.test(raw)
+  const selectedClause = nameCandidates.find(({ match, raw }) => raw && !namesAPlan(raw) &&
+    !/^both (?:pressing|pushing|pulling|rowing)\b/i.test(raw) &&
+    (!!colonNames || !!match[1] || /^(?:a|an)\s+/i.test(raw) ||
+      /\b(?:including|include|perform|featuring|consisting of|i want)\b/i.test(match[0]) ||
+      /(?:to\s+(?:be|start|open|lead|finish|end|close|include)|being)\s/i.test(match[0]) ||
+      /\b(?:exercise|movement|press|row|push[ -]?ups?|spin)\b/i.test(raw)) &&
+    !/^(?:\d+(?:\s*(?:-|\u2013|\u2014|to)\s*\d+)?|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:(?:chest|back|legs?|glutes?|arms?|shoulders?|core|selectori[sz]ed|barbells?|dumbbells?|kettlebells?|cables?|machines?|bands?|body ?weights?|working)\s+)*(?:sets?|exercises?|movements?|days?)\b/i.test(raw) &&
+    !scopedCountNoun.test(raw) &&
+    !/^(?:a\s+)?(?:\d+\s*(?:minute|min)\s+)?(?:warm[ -]?up|cool[ -]?down|focus\b|goal\b|full[- ]gym|sets?\b|reps?\b|rests?\b|not\b)/i.test(raw) &&
+    !equipmentClausePattern.test(raw) && !inventoryOnly.test(raw))
+  const namedClause = selectedClause?.match
+  const namesClause = selectedClause?.raw ?? ''
+  const rawNames = (namesClause || (nameCandidates.length ? '' : colonNames ?? ''))?.trim() ?? ''
+  const namingShape = !!selectedClause || (!nameCandidates.length && !!colonNames)
+  const names = rawNames
+    ? rawNames.replace(/^(?:a|an)\s+/i, '').replace(/\s+(?:exercise|movement)$/i, '').split(/\s*(?:,|;)\s*(?:and\s+)?|\s+and\s+/i).map(name => name.trim()).filter(Boolean)
+    : []
   const excluded = excludedEquipment(message)
-  const equipmentText = namingShape && namedClause ? message.replace(namedClause[0], ' ') : message
+  const equipmentText = selectedClause ? message.replace(namedClause![0], ' ') : message
   const explicitlySpecified = new Set<Equipment>()
   for (const [pattern, equipment] of equipmentTerms) if (pattern.test(equipmentText) && !excluded.has(equipment)) explicitlySpecified.add(equipment)
   if (/\bfull[- ]gym\b/i.test(equipmentText)) for (const value of fullGymEquipment) explicitlySpecified.add(value)
@@ -314,7 +338,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   if (timed && (!Number.isSafeInteger(intervalSeconds) || intervalSeconds < 1))
     return fail('Work intervals must be a positive whole number of seconds.')
   if (duration !== null && (!Number.isFinite(duration) || duration <= 0)) return fail('Session duration must be positive.')
-  const namedExercises: Exercise[] = []
+  const resolvedNamed: Exercise[] = []
   for (const name of names) {
     const resolved = resolveHistoryExercise(name)
     if (resolved.kind !== 'match') {
@@ -322,12 +346,12 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
       const choices = exerciseCatalog.filter(exercise => exercise.setupReviewStatus === 'reviewed' && normalizeHistoryName(exercise.name).includes(query)).slice(0, 5).map(exercise => exercise.name)
       return { kind: 'clarification', question: `I cannot identify “${name}” as one specific catalog exercise.${choices.length ? ` Did you mean ${choices.join(', ')}?` : ' Please name a supported catalog exercise.'} I cannot substitute another movement.` }
     }
-    namedExercises.push(resolved.exercise)
+    resolvedNamed.push(resolved.exercise)
   }
-  if (new Set(namedExercises.map(exercise => exerciseSlotIdentity(exercise.id))).size !== namedExercises.length) return { kind: 'clarification', question: 'Please choose distinct named exercises.' }
-  const exactNames = !!namedClause?.[1] && namedExercises.length > 0
-  if (namedExercises.length && ((countMatch && (namedExercises.length > count || (exactNames && namedExercises.length !== count))) || (!countMatch && exactNames && namedExercises.length > 8))) return { kind: 'clarification', question: 'The named exercise list conflicts with the requested exercise count. Which count and movements should I use?' }
-  if (exactNames && !countMatch) count = namedExercises.length
+  if (new Set(resolvedNamed.map(exercise => exerciseSlotIdentity(exercise.id))).size !== resolvedNamed.length) return { kind: 'clarification', question: 'Please choose distinct named exercises.' }
+  const exactNames = !!namedClause?.[1] && resolvedNamed.length > 0
+  if (resolvedNamed.length && ((countMatch && (resolvedNamed.length > count || (exactNames && resolvedNamed.length !== count))) || (!countMatch && exactNames && resolvedNamed.length > 8))) return { kind: 'clarification', question: 'The named exercise list conflicts with the requested exercise count. Which count and movements should I use?' }
+  if (exactNames && !countMatch) count = resolvedNamed.length
   let sets = prescription.sets ?? (timed || duration === null ? 3 : Math.min(3, Math.max(1, Math.floor(duration / (count * 2)))))
   if (!equipmentSpecified) return { kind: 'clarification', question: 'What equipment can you use: a full gym, specific equipment, or bodyweight only?' }
   if (!Number.isSafeInteger(restSeconds) || restSeconds < 0) return fail('Rest must be a whole number of seconds.')
@@ -389,9 +413,9 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   if (/\bunknown (?:ability|experience)\b/i.test(message)) {
     return { kind: 'clarification', question: 'What exercises or movement patterns can you currently perform comfortably, and what support or equipment is available?' }
   }
-  const broadBack = !focus && !namedExercises.length && requested.length === 1 && /\bback\b/i.test(message) &&
+  const broadBack = !focus && !resolvedNamed.length && requested.length === 1 && /\bback\b/i.test(message) &&
     !/\b(?:upper back|lower back|horizontal|rows? only|no (?:pulldowns?|overhead work))\b/i.test(message)
-  const broadLegs = !focus && !namedExercises.length && requested.length === 1 && /\b(?:legs?|lower[- ]body)\b/i.test(message)
+  const broadLegs = !focus && !resolvedNamed.length && requested.length === 1 && /\b(?:legs?|lower[- ]body)\b/i.test(message)
   if (!countMatch && broadBack && sets >= 6) count = Math.min(count, 3)
   if (!countMatch && broadLegs) count = Math.min(count, 4)
   const requestedSlots = Math.min(count, 8)
@@ -401,7 +425,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const preferredTargets = broadLegs ? focusTargets.legs : targets
   const selectedTargets = Array.from({ length: requestedSlots }, (_, i) =>
     preferredTargets[i] ?? (addTrunkSlot && i === targets.length ? ['abdominals'] : allTargets))
-  const compoundFirst = !timed && !namedExercises.length &&
+  const compoundFirst = !timed && !resolvedNamed.length &&
     !/\b(?:first|last|lead|start|finish|before|after|prioriti[sz]e)\b/i.test(message) &&
     (broadLegs || fullBody || requested.length === 0 || focus !== undefined || /\bstrength\b/i.test(message))
   const onlyClause = implementsOnlyPattern.exec(message)
@@ -423,7 +447,7 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
     const strengthExercise = exercise.category === 'STRENGTH' || exercise.sourceKey === 'Dumbbell_Floor_Press'
     if (!levelAllowed || (!strengthExercise && !(timed && (exercise.category === 'CARDIO' || (prescription.hiit && exercise.category === 'PLYOMETRICS')))) ||
       (includeCues && !exercise.instructions.length) || unsafeNames.test(exercise.name) || restrictionExcludes(exercise, safetyText) ||
-      !focusForceAllowed || (!targetMatch && !namedExercises.some(item => item.id === exercise.id)) ||
+      !focusForceAllowed || (!targetMatch && !resolvedNamed.some(item => item.id === exercise.id)) ||
       (!focus && /\bupper[- ]body\b/i.test(message) && !exercise.primaryMuscles.some(muscle => focusTargets.upper.flat().includes(muscle.toLowerCase()))) ||
       (focus && !exercise.primaryMuscles.some(muscle => focusTargets[focus].flat().includes(muscle.toLowerCase())))) return false
     if (!missingSetup(exercise, message, context)) return true
@@ -434,12 +458,23 @@ export function planWorkout(message: string, focus?: WorkoutFocus): PlanResult {
   const confirmDumbbellQuantity = { kind: 'clarification', question: countMatch && !isCap
     ? `Do you have one dumbbell or two dumbbells? A pair may be needed to give you ${count} distinct exercises using only the equipment you listed.`
     : 'Do you have one dumbbell or two dumbbells? That determines which exercises I can include.' } as const
-  for (const exercise of namedExercises) {
+  const keptNamed: Exercise[] = []
+  const namedExercises: Exercise[] = keptNamed
+  for (const exercise of resolvedNamed) {
     if (potentialPairChoices.has(exercise.id)) return confirmDumbbellQuantity
     if (!catalog.some(item => item.id === exercise.id)) {
-      const reason = exercise.setupReviewStatus !== 'reviewed' ? 'its setup has not been reviewed' : !uniqueAvailable.includes(exercise.equipment ?? 'BODY_ONLY') ? `the available equipment does not include ${exercise.equipment ?? 'bodyweight'}` : missingSetup(exercise, message, context) ? 'the required setup is not available or specified' : restrictionExcludes(exercise, safetyText) ? 'it conflicts with your stated restriction' : 'its ability level or other setup requirements do not match this request'
+      if (!uniqueAvailable.includes(exercise.equipment ?? 'BODY_ONLY')) {
+        // An explicit "only these movements" list keeps the equipment clarification. Within a
+        // broader session, the named movement is instead dropped from the draft without silently
+        // substituting, and the gap is surfaced in the plan's own assumptions.
+        if (exactNames) return { kind: 'clarification', question: `${exercise.name} cannot be included because the available equipment does not include ${exercise.equipment ?? 'bodyweight'}. What compatible alternative can you use?` }
+        unmetRequirements.push(`${exercise.name} is cataloged for ${exercise.equipment?.toLowerCase() ?? 'bodyweight'} and was left out. Name a movement possible with ${uniqueAvailable.join(', ').toLowerCase() || 'the available equipment'} if you want a replacement.`)
+        continue
+      }
+      const reason = exercise.setupReviewStatus !== 'reviewed' ? 'its setup has not been reviewed' : missingSetup(exercise, message, context) ? 'the required setup is not available or specified' : restrictionExcludes(exercise, safetyText) ? 'it conflicts with your stated restriction' : 'its ability level or other setup requirements do not match this request'
       return { kind: 'clarification', question: `${exercise.name} cannot be included because ${reason}. What compatible alternative can you use?` }
     }
+    keptNamed.push(exercise)
   }
   const allCandidates = selectedTargets.map(target => {
     return catalog

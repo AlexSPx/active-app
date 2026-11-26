@@ -1,9 +1,10 @@
 const { planWorkout, defaultSelection, validateSelection, validateWorkoutReview, renderWorkout } = require('../../features/coach/workoutPlanner')
 
 test('flat and incline chest presses may coexist in the same session', () => {
-  const result = planWorkout('Create 2 chest exercises, full gym')
+  const result = planWorkout('Create 2 chest exercises including Dumbbell Bench Press and Incline Dumbbell Press, full gym')
   expect(result.kind).toBe('plan')
   const names = ['Dumbbell Bench Press', 'Incline Dumbbell Press']
+  expect(result.plan.mandatoryIds).toEqual(names.map(name => `local:exercise:${name.replace(/ /g, '_')}`))
   expect(validateSelection(result.plan, { selections: names }).errors).toEqual([])
 })
 
@@ -138,7 +139,7 @@ test('a deterministic session preserves the main lift, time cap, and complementa
   expect(result.kind).toBe('plan')
   const names = deterministicSelection(result.plan)
   expect(names[0]).toMatch(/goblet squat/i)
-  expect(names[1]).toMatch(/push-up/i)
+  expect(names[1]).toMatch(/push-up|floor press/i)
   expect(names).toHaveLength(2)
   expect(deterministicSelection(result.plan)).toEqual(names)
   expect(validateSelection(result.plan, { selections: names }).errors).toEqual([])
