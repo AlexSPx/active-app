@@ -7,7 +7,7 @@ import { normalizeHistoryName, resolveHistoryExercise } from './historyQuery'
 type Equipment = NonNullable<(typeof exerciseCatalog)[number]['equipment']>
 type Exercise = (typeof exerciseCatalog)[number]
 const interchangeableExerciseGroups: readonly (readonly string[])[] = [
-  ['local:exercise:Dumbbell_Bench_Press', 'local:exercise:Dumbbell_Bench_Press_with_Neutral_Grip'],
+  ['local:exercise:Dumbbell_Bench_Press', 'local:exercise:Dumbbell_Bench_Press_with_Neutral_Grip', 'local:exercise:Close-Grip_Dumbbell_Press', 'local:exercise:One_Arm_Dumbbell_Bench_Press', 'local:exercise:Dumbbell_Floor_Press'],
 ]
 
 function exerciseSlotIdentity(id: string): string {
@@ -740,7 +740,13 @@ export function deterministicSelection(plan: Plan): string[] | undefined {
 
 export function sessionsMeetVariation(sessions: string[][], variation: ReturnType<typeof workoutVariation>) {
   if (variation === 'disjoint') return new Set(sessions.flat()).size === sessions.flat().length
-  if (variation === 'distinct') return new Set(sessions.map(names => JSON.stringify([...names].sort()))).size === sessions.length
+  if (variation === 'distinct') {
+    if (new Set(sessions.map(names => JSON.stringify([...names].sort()))).size !== sessions.length) return false
+    // A vary-selection request is not met by swapping one accessory: any two sessions may
+    // share at most half of their exercises.
+    return sessions.every((names, first) => sessions.slice(first + 1).every(other =>
+      names.filter(name => other.includes(name)).length * 2 <= Math.min(names.length, other.length)))
+  }
   return true
 }
 
